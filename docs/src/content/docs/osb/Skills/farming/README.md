@@ -7,7 +7,7 @@ Farming in the bot works like in-game: your minion is sent on planting or harves
 When harvesting trees, either:
 
 - Meet the Woodcutting level (and receive logs), or
-- Pay 200gp for a farmer to remove the tree (no logs)
+- Pay a farmer to remove the tree (200gp per tree, or 2000gp per redwood tree; no logs)
 
 Other farming activities:
 
@@ -32,32 +32,38 @@ XP, speed, and harvest quantity can be boosted by the following:
 - **Farming cape** - 5% harvest quantity boost **(works from bank)**
 - **Full graceful outfit** - 10% trip speed **(must be equipped and charged)**
 - **[Ring of endurance](../agility/hallowed-sepulchre#ring-of-endurance)** - 10% trip speed **(must be charged and either equipped or in bank)**
+- **Ardougne hard diary** - 4% trip speed when completed
 - **Ardougne elite diary** - 4% trip speed when completed
 
 ---
 
 ## Commands
 
-- [[/farming plant]] – Plant or harvest & replant
-- [[/farming harvest]] – Harvest only
-- [[/farming check_patches]] – View patch status
-- [[/farming auto_farm]] – Auto-plant highest seed
-- [[/farming auto_farm_filter]] – Set auto-farm filter
-- [[/farming default_compost]] – Auto apply compost
-- [[/farming always_pay]] – Auto apply protection
+- [[/farming plant]] – Plant or harvest and replant
+- [[/farming harvest]] – Harvest without replanting
+- [[/farming check_patches]] – View patch status (includes an Auto Farm button when a patch is ready or can be planted)
+- [[/farming auto_farm]] – Run a combined auto-farm trip
+- [[/farming auto_farm_filter]] – Choose the auto-farm filter
+- [[/farming set_preferred]] – View or set per-patch seed preferences, quantity, and contract priority
+- [[/farming default_compost]] – Set the compost tier to auto apply
+- [[/farming always_pay]] – Toggle automatic farmer payments
 
 ---
 
-## Auto Farm
+## Auto Farming
 
-Auto farming automatically plants seeds based on your filter.
+[[/farming auto_farm]] plans every eligible patch into one Farming trip. Ready patches are harvested and replanted, and empty patches are planted when the filter allows it.
 
+- The trip length is the sum of each patch step, up to the maximum Farming trip length. Patches that would exceed that limit are skipped.
 - **All Farm** – [[/farming auto_farm_filter auto_farm_filter_data\:AllFarm]]
   Plants the highest seed in every patch
-
 - **Replant** – [[/farming auto_farm_filter auto_farm_filter_data\:Replant]]
   Replants the same seed in only the patches that had it
   _(Empty other patches using [[/farming harvest]] for better control)_
+- [[/farming set_preferred]] can force a seed, choose `highest_available`, skip a patch with `empty`, limit quantity, or prioritise the active farming contract.
+- Default compost and the always-pay setting are applied automatically.
+
+See [Auto Farming](auto-farming.md) for the full behaviour.
 
 ---
 

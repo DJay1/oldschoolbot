@@ -2,6 +2,9 @@ import type { IFarmingContract } from '@oldschoolgg/schemas';
 
 import type { CropUpgradeType } from '@/prisma/main/enums.js';
 import type { FarmingPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
+
+export type { FarmingPatchName };
+
 import type { getFarmingInfoFromUser } from '@/lib/skilling/skills/farming/utils/getFarmingInfo.js';
 import type { Plant } from '@/lib/skilling/types.js';
 
@@ -35,3 +38,10 @@ export type DetailedFarmingContract = {
 	matchingPlantedCrop: IPatchDataDetailed | undefined;
 	farmingInfo: ReturnType<typeof getFarmingInfoFromUser>;
 };
+
+export type FarmingSeedPreference =
+	| { type: 'seed'; seedID: number; quantity?: number }
+	| { type: 'highest_available'; quantity?: number }
+	| { type: 'empty'; quantity?: number };
+
+export type FarmingPreferredSeeds = Record<string, FarmingSeedPreference>;

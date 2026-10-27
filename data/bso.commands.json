@@ -190,6 +190,7 @@
 			"plant",
 			"auto_farm",
 			"auto_farm_filter",
+			"set_preferred",
 			"default_compost",
 			"always_pay",
 			"harvest",
