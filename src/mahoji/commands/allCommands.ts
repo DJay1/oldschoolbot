@@ -69,6 +69,7 @@ import { payCommand } from '@/mahoji/commands/pay.js';
 import { pohCommand } from '@/mahoji/commands/poh.js';
 import { pollCommand } from '@/mahoji/commands/poll.js';
 import { priceCommand } from '@/mahoji/commands/price.js';
+import { qualityCheckCommand } from '@/mahoji/commands/qualitycheck.js';
 import { raidCommand } from '@/mahoji/commands/raid.js';
 import { redeemCommand } from '@/mahoji/commands/redeem.js';
 import { rollCommand } from '@/mahoji/commands/roll.js';
@@ -134,6 +135,7 @@ export const allCommandsDONTIMPORT: AnyCommand[] = [
 	runecraftCommand,
 	raidCommand,
 	pollCommand,
+	qualityCheckCommand,
 	pohCommand,
 	priceCommand,
 	openCommand,

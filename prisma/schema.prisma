@@ -1976,3 +1976,34 @@ model UserLog {
   @@index([user_id, date])
   @@map("user_logs")
 }
+
+/// Open quality-check campaign. See src/lib/qualityChecks/config.ts and prisma/sql/quality_checks.sql.
+model QualityCheckCampaign {
+  id               String    @id @db.VarChar(64)
+  channel_id       String    @db.VarChar(19)
+  opened_at        DateTime  @default(now()) @db.Timestamp(6)
+  closed_at        DateTime? @db.Timestamp(6)
+  last_reminded_at DateTime? @db.Timestamp(6)
+
+  @@map("quality_check_campaign")
+}
+
+/// One forum bounty. status uses the forum tag names. Credit is status "passed" plus claimer_id.
+model QualityCheckBounty {
+  id                  Int       @id @default(autoincrement())
+  campaign_id         String    @db.VarChar(64)
+  item_id             String    @db.VarChar(64)
+  thread_id           String?   @db.VarChar(19)
+  starter_message_id  String?   @db.VarChar(19)
+  status              String    @db.VarChar(16)
+  claimer_id          String?   @db.VarChar(19)
+  claimed_at          DateTime? @db.Timestamp(6)
+  reviewer_id         String?   @db.VarChar(19)
+  review_note         String?   @db.VarChar(400)
+  evidence_message_id String?   @db.VarChar(19)
+  updated_at          DateTime  @default(now()) @db.Timestamp(6)
+
+  @@unique([campaign_id, item_id])
+  @@index([campaign_id, status, claimer_id])
+  @@map("quality_check_bounty")
+}
