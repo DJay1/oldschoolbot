@@ -2,13 +2,13 @@ import type { APIInteraction } from '@oldschoolgg/discord';
 import type { IMessage } from '@oldschoolgg/schemas';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
-import type { OldSchoolBotClient } from '@/discord/OldSchoolBotClient.js';
 import { interactionHandler } from '@/discord/interactionHandler.js';
+import type { OldSchoolBotClient } from '@/discord/OldSchoolBotClient.js';
 import { globalConfig } from '@/lib/constants.js';
 import { onMessage } from '@/lib/events.js';
 import {
-	DISCORD_EVENT_CLAIM_LIMIT,
 	claimDiscordEvent,
+	DISCORD_EVENT_CLAIM_LIMIT,
 	resetDiscordEventClaimsForTests
 } from '@/lib/util/discordEventGate.js';
 
