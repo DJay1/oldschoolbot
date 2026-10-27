@@ -12,7 +12,8 @@ import { Items, LootTable, Monsters } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import { customBossLootIndex, findBossLoot } from '@/lib/bosses/index.js';
-import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
+import { allCollectionLogs } from '@/lib/data/Collections.js';
+import killableMonsters, { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 
 const dedicatedCommandBosses = [
 	'Vasa Magus',
@@ -85,5 +86,32 @@ describe('custom boss loot hub', () => {
 				name
 			).toBe(false);
 		}
+	});
+
+	test('playable hub bosses have one killcount row, a collection log page, and a monster name', () => {
+		const playable = [
+			{ name: 'Vasa Magus', id: VasaMagus.id },
+			{ name: 'Ignecarus', id: Ignecarus.id },
+			{ name: 'Kalphite King', id: KalphiteKingMonster.id },
+			{ name: 'King Goldemar', id: KingGoldemar.id },
+			{ name: 'Moktang', id: EBSOMonster.MOKTANG },
+			{ name: 'Naxxus', id: Naxxus.id },
+			{ name: 'Nex', id: NexMonster.id }
+		] as const;
+
+		for (const boss of playable) {
+			expect(
+				effectiveMonsters.filter(monster => monster.id === boss.id).map(monster => monster.name),
+				boss.name
+			).toEqual([boss.name]);
+			expect(Monsters.get(boss.id)?.name, boss.name).toBe(boss.name);
+			const page = allCollectionLogs.PvM.activities[boss.name];
+			expect(page?.items.length, boss.name).toBeGreaterThan(0);
+			expect(page?.fmtProg, boss.name).toBeTypeOf('function');
+		}
+
+		expect(effectiveMonsters.some(monster => monster.id === Koschei.id)).toBe(false);
+		expect(allCollectionLogs.PvM.activities['Koschei the deathless']).toBeUndefined();
+		expect(Monsters.get(Koschei.id)?.name).toBe('Koschei the deathless');
 	});
 });

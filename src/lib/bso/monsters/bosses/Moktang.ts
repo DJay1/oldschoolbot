@@ -1,3 +1,5 @@
+import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
+import { setCustomMonster } from '@/lib/bso/monsters/setCustomMonster.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import {
 	ClueTable,
@@ -8,7 +10,7 @@ import {
 	StoneSpiritTable
 } from '@/lib/bso/tables/sharedTables.js';
 
-import { LootTable } from 'oldschooljs';
+import { LootTable, Monsters } from 'oldschooljs';
 
 const BarTable = new LootTable()
 	.add('Bronze bar', 10)
@@ -29,3 +31,9 @@ export const MoktangLootTable = new LootTable()
 	.add(lowRuneHighAdamantTable, [2, 3])
 	.add(FletchingTipsTable, [2, 3])
 	.add(runeWeaponTable, [1, 2]);
+
+export const Moktang = setCustomMonster(EBSOMonster.MOKTANG, 'Moktang', MoktangLootTable, Monsters.GeneralGraardor, {
+	id: EBSOMonster.MOKTANG,
+	name: 'Moktang',
+	aliases: ['moktang', 'mt']
+});
