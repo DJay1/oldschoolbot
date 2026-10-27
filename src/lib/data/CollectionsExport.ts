@@ -3,10 +3,9 @@ import { allHolidayItems, PartyhatTable } from '@/lib/bso/holidayItems.js';
 import { stoneSpirits } from '@/lib/bso/skills/mining/stoneSpirits.js';
 import { LampTable } from '@/lib/bso/xpLamps.js';
 
-import { Bank, EItem, type Item, ItemGroups, Items, resolveItems } from 'oldschooljs';
+import { Bank, ItemGroups } from 'oldschooljs';
 
 import type { Minigame } from '@/prisma/main.js';
-import { removeDiscontinuedItems } from '@/lib/customItems/customItems.js';
 import {
 	gracefulCapes,
 	gracefulFeet,
@@ -16,6 +15,7 @@ import {
 	gracefulTops
 } from '@/lib/data/gracefulVariants.js';
 import { growablePets } from '@/lib/growablePets.js';
+import { EItem, type Item, Items, removeDiscontinuedItems, resolveItems } from '@/lib/items/index.js';
 import type { MinigameScore } from '@/lib/settings/minigames.js';
 import type { MUserStats } from '@/lib/structures/MUserStats.js';
 

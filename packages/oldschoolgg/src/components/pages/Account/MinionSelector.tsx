@@ -69,7 +69,7 @@ export function MinionSelector({ onSelect }: { onSelect?: (bot: 'osb' | 'bso', u
 			<h2 className="text-xl font-bold mb-4 text-center">Select a Minion</h2>
 			<div className="flex flex-row gap-4 flex-wrap items-center justify-center">
 				{minions.map(minion => {
-					const botLabel = minion.bot === 'osb' ? 'Old School Bot' : 'BSO';
+					const botLabel = minion.bot === 'osb' ? 'NEED TO REPLACE' : 'NEED TO REPLACE';
 					const ironmanLabel = minion.is_ironman ? ' (Ironman)' : '';
 
 					return (

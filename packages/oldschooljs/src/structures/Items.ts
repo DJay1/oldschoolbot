@@ -1,3 +1,8 @@
+/**
+ * Stock OSRS item singleton.
+ * `item_data.json` is the reserved item-ID catalog. Custom bot items are applied
+ * later by `src/lib/items/index.ts` — do not add those IDs to this JSON.
+ */
 import {
 	type ArrayItemsResolvable,
 	type ArrayItemsResolved,

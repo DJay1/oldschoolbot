@@ -341,7 +341,7 @@ export const beachCombingTask: MinionTask = {
 				}
 				secretLoot.add(buriedTreasureItem);
 				discoveries.push(
-					`# 🏴‍☠️🏴‍☠️🏴‍☠️\n🤯 A buried cache was pried loose from the shoreline stash...  ---   **... You just found one of Cyr's Treasure Chests!!!**\nIt contains ${secretLoot}.\n`
+					`# 🏴‍☠️🏴‍☠️🏴‍☠️\n🤯 A buried cache was pried loose from the shoreline stash...  ---   **... You just found a buried treasure chest!**\nIt contains ${secretLoot}.\n`
 				);
 			}
 		}

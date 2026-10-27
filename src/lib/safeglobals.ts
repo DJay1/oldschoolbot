@@ -1,6 +1,6 @@
 import { MathRNG as importedMathRNG } from 'node-rng';
 
-import './customItems/customItems.js';
+import './items/index.js';
 import './data/itemAliases.js';
 import '../discord/index.js';
 import './util/logger.js';

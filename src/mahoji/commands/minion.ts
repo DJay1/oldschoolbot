@@ -82,7 +82,6 @@ export async function getUserInfo(user: MUser) {
 		isIronman: user.isIronman,
 		bitfields,
 		currentTask: taskText,
-		patreon: roboChimpUser.patreon_id ? 'Yes' : 'None',
 		github: roboChimpUser.github_id ? 'Yes' : 'None'
 	};
 
@@ -123,7 +122,6 @@ export async function getUserInfo(user: MUser) {
 **Badges:** ${result.badges}
 **Ironman:** ${result.isIronman}
 **Bitfields:** ${result.bitfields}
-**Patreon Connected:** ${result.patreon}
 **Github Connected:** ${result.github}
 **Leagues:** ${roboChimpUser.leagues_completed_tasks_ids.length} tasks, ${
 			roboChimpUser.leagues_points_total

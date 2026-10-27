@@ -1,10 +1,17 @@
+/**
+ * Combined killable list. To add or edit a boss drop, start at `src/lib/bosses/index.ts`.
+ * Item names and IDs used below come from the item hub (`src/lib/items/index.ts`).
+ * Boot loads that hub from `src/lib/safeglobals.ts` before this module.
+ */
+
 import { bsoKillableMonsters } from '@/lib/bso/monsters/bsoKillableMonsters.js';
 import { bsoAutocompleteMonsters, bsoEffectiveMonsters } from '@/lib/bso/monsters/bsoMonstersMisc.js';
 
 import { GearStat } from '@oldschoolgg/gear';
 import { stringMatches, Time } from '@oldschoolgg/toolkit';
-import { Bank, deepResolveItems, EMonster, itemID, Monsters, NIGHTMARES_HP, resolveItems } from 'oldschooljs';
+import { Bank, EMonster, Monsters, NIGHTMARES_HP } from 'oldschooljs';
 
+import { deepResolveItems, itemID, resolveItems } from '@/lib/items/index.js';
 import { bossKillables } from '@/lib/minions/data/killableMonsters/bosses/index.js';
 import { camdozaalMonsters } from '@/lib/minions/data/killableMonsters/camdozaalMonsters.js';
 import { chaeldarMonsters } from '@/lib/minions/data/killableMonsters/chaeldarMonsters.js';

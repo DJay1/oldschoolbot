@@ -36,8 +36,8 @@ export function TransactionFilters({ query, setQuery, loading, onSearch, onReset
 
 					<Select
 						options={[
-							{ label: 'OSB', value: 'osb' },
-							{ label: 'BSO', value: 'bso' }
+							{ label: 'NEED TO REPLACE A', value: 'osb' },
+							{ label: 'NEED TO REPLACE B', value: 'bso' }
 						]}
 						value={query.bot}
 						onChange={_t => setQuery({ bot: _t as IBotType })}

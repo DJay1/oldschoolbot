@@ -11,13 +11,8 @@ To become an Ironman:
 
 **Note:** You can have multiple ironman accounts alongside a main, but they must be set as permanent.
 
-Trip length extension from sacrifice value is halved for ironmen — max +1 minute (or +3 minutes with T3 Patron) requires only 5b sacrificed (instead of 10b).  
-For more info, see: [Minion Icons](https://wiki.oldschool.gg/#minion-icons)
+Trip length extension from sacrifice value is halved for ironmen — max +1 minute (or +3 minutes with a tier 3 perk) requires only 5b sacrificed (instead of 10b).
 
 ## Ironman Leaderboards
 
 Use the `ironmen_only: true` flag to filter any leaderboard to only show ironmen: e.g., [[/lb skill\:smithing ironmen_only\:true]]
-
-## Ironman Discord Server
-
-Join the official Old School Bot Ironman community here: [https://discord.gg/gGmd9znG3Y](https://discord.gg/gGmd9znG3Y)

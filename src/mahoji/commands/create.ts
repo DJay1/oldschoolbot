@@ -43,7 +43,7 @@ export const createCommand = defineCommand({
 		const itemName = options.item?.toLowerCase();
 		let { quantity } = options;
 		if (options.showall) {
-			return 'You can view all creatable items at: https://wiki.oldschool.gg/creatables';
+			return 'Pass an item name to /create. This bot does not link out to an external creatables list.';
 		}
 
 		const createableItem = Createables.find(item => stringMatches(item.name, itemName));

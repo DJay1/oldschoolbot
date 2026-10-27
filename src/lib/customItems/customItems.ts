@@ -1,3 +1,8 @@
+/**
+ * Custom / discontinued / bot-specific item definitions.
+ * Import these through the item hub: `src/lib/items/index.ts`.
+ * Stock OSRS IDs stay in `packages/oldschooljs/src/assets/item_data.json`.
+ */
 // Base custom items are referenced elsewhere in the custom items files and must be loaded first
 import './baseCustomItems.js';
 import '../bso/deletedItems.js';

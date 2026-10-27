@@ -7,7 +7,7 @@ import {
 	tameSpecies
 } from '@/lib/bso/tames/tames.js';
 
-import { Emoji, formatDuration, round, Time } from '@oldschoolgg/toolkit';
+import { formatDuration, round, Time } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { Bank, type Item, type ItemBank, Items } from 'oldschooljs';
 
@@ -232,11 +232,10 @@ export class MTame {
 		}
 
 		const cyrTripBonus = getCyrTripBonus((await Cache.getRoboChimpUser(user.id)).bits);
-		const cyrEmote = cyrTripBonus > 0 ? Emoji.Seer : '';
 		const patronBonus = Math.max(patronMaxTripBonus(await user.fetchPerkTier()), cyrTripBonus) * 2;
 		if (patronBonus > 0) {
 			maxTripLength += patronBonus;
-			messages.push(`+${formatDuration(patronBonus, true)} trip length (${cyrEmote} Patron bonus)`);
+			messages.push(`+${formatDuration(patronBonus, true)} trip length (perk bonus)`);
 		}
 
 		if (activity === 'Clues') {

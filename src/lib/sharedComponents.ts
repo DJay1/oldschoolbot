@@ -1,41 +1,4 @@
-import { ButtonBuilder, ButtonStyle, ComponentType } from '@oldschoolgg/discord';
-
-const buttonSource = [
-	{
-		label: 'Wiki',
-		emoji: '802136964027121684',
-		url: 'https://wiki.oldschool.gg/'
-	},
-	{
-		label: 'Patreon',
-		emoji: '679334888792391703',
-		url: 'https://www.patreon.com/OldSchoolCyr'
-	},
-	{
-		label: 'Support Server',
-		emoji: '778418736180494347',
-		url: 'https://www.discord.gg/ob'
-	},
-	{
-		label: 'Bot Invite',
-		emoji: '778418736180494347',
-		url: 'http://www.oldschool.gg/invite/osb'
-	}
-];
-
-export const informationalButtons: ButtonBuilder[] = buttonSource.map(i =>
-	new ButtonBuilder().setLabel(i.label).setEmoji({ id: i.emoji }).setURL(i.url).setStyle(ButtonStyle.Link)
-);
-export const mahojiInformationalButtons = buttonSource.map(
-	i =>
-		new ButtonBuilder({
-			type: ComponentType.Button,
-			label: i.label,
-			emoji: { id: i.emoji },
-			style: ButtonStyle.Link,
-			url: i.url
-		})
-);
+import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
 
 export const minionBuyButton = new ButtonBuilder()
 	.setCustomId('BUY_MINION')

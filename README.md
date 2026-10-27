@@ -1,18 +1,12 @@
-[![Discord](https://i.imgur.com/AWqUL0x.png)](http://discord.gg/ob) [![Discord](https://i.imgur.com/OcOyprP.png)](https://invite.oldschool.gg/)
+# NEED TO REPLACE
 
-# ![Logo](https://i.imgur.com/VLvOEwo.png) Old School Bot
+NEED TO REPLACE is a Discord bot based on [Old School RuneScape](https://oldschool.runescape.com/).
 
-Old School Bot is a Discord Bot based on [Old School RuneScape](https://oldschool.runescape.com/)
+> NEED TO REPLACE is not affiliated with or endorsed by Jagex. Play Old School RuneScape for free at https://oldschool.runescape.com
 
-For more information on the bot: https://www.oldschool.gg/oldschoolbot
+## oldschooljs
 
-> Old School Bot is not affiliated with or endorsed by Jagex. Play Old School RS for free at https://oldschool.runescape.com
-
-## OldschoolJS
-
-Old School Bot uses `oldschooljs` (also made by me), for most of the OSRS related features like: simulating killing monsters, simulating clues, fetching the hiscores, checking worlds, etc. It's completely open-source and free to use.
-
-https://github.com/gc/oldschooljs
+This codebase uses the `oldschooljs` package for OSRS-related features such as simulating monster kills, simulating clues, fetching the hiscores, and checking worlds.
 
 ## Suggestions & Bug Reports
 
@@ -22,7 +16,7 @@ To suggest a new feature, [click here](https://github.com/oldschoolgg/oldschoolb
 
 ## Contributing
 
-Anyone is free to create PR's with improvements and additions to Old School Bot. If you have questions, ask in the `#developers` channel on our Discord server.
+Anyone is free to create PRs with improvements and additions. If you have questions, ask in your development Discord.
 
 [Read this file for help setting up a bot](SETUP.md)
 

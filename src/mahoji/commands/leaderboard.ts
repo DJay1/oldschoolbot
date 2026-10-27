@@ -436,8 +436,9 @@ async function globalLb(interaction: MInteraction, type: GlobalLbType) {
 				osb: r.osb_xp_percent,
 				bso: r.bso_xp_percent
 			})),
-			title: 'Global (OSB+BSO) XP Leaderboard (% of the max XP)',
-			render: (u, username) => `**${username}:** ${u.osb.toFixed(2)}% OSB, ${u.bso.toFixed(2)}% BSO`
+			title: 'Global XP Leaderboard (% of the max XP)',
+			render: (u, username) =>
+				`**${username}:** ${u.osb.toFixed(2)}% NEED TO REPLACE, ${u.bso.toFixed(2)}% NEED TO REPLACE`
 		});
 	}
 	if (type === 'mastery') {
@@ -452,7 +453,7 @@ async function globalLb(interaction: MInteraction, type: GlobalLbType) {
 			ironmanOnly: false,
 			interaction,
 			users: result.map(r => ({ id: r.id, score: r.avg })),
-			title: 'Global (OSB+BSO) Mastery Leaderboard',
+			title: 'Global Mastery Leaderboard',
 			formatter: v => `${v.toFixed(2)}%`
 		});
 	}
@@ -467,7 +468,7 @@ async function globalLb(interaction: MInteraction, type: GlobalLbType) {
 		ironmanOnly: false,
 		interaction,
 		users: result.map(r => ({ id: r.id, score: r.total_cl_percent })),
-		title: 'Global (OSB+BSO) CL Leaderboard',
+		title: 'Global CL Leaderboard',
 		formatter: v => `${v.toLocaleString()}%`
 	});
 }
@@ -637,7 +638,7 @@ export const leaderboardCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'challenges',
-			description: 'Check the BSO challenges won leaderboard.'
+			description: 'Check the challenges won leaderboard.'
 		},
 		{
 			type: 'Subcommand',
@@ -871,7 +872,7 @@ export const leaderboardCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'global',
-			description: 'Check the global (OSB+BSO) leaderboards.',
+			description: 'Check the global leaderboards.',
 			options: [
 				{
 					type: 'String',

@@ -90,7 +90,8 @@ export default defineConfig({
 		smartypants: false,
 		syntaxHighlight: false
 	},
-	site: 'https://wiki.oldschool.gg',
+	// NEED TO REPLACE — docs site origin. Placeholder until a real host is set.
+	site: 'https://example.com',
 	integrations: [
 		starlight({
 			plugins: [
@@ -105,12 +106,9 @@ export default defineConfig({
 				Footer: './src/components/Footer.astro',
 				Header: './src/components/Header.astro'
 			},
-			title: 'Oldschool.gg Wiki',
+			title: 'NEED TO REPLACE',
 			favicon: 'favicon.ico',
-			social: [
-				{ icon: 'discord', label: 'Discord', href: 'https://discord.gg/ob' },
-				{ icon: 'github', label: 'GitHub', href: 'https://github.com/oldschoolgg/oldschoolbot' }
-			],
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/DJay1/oldschoolbot' }],
 			customCss: ['./src/styles/main.css', './src/fonts/font-face.css'],
 			pagination: false,
 			head: [
@@ -126,7 +124,7 @@ window.onload = () => document.body.classList.add('bso-theme');
 				}
 			],
 			editLink: {
-				baseUrl: 'https://github.com/oldschoolgg/oldschoolbot/edit/master/docs/'
+				baseUrl: 'https://github.com/DJay1/oldschoolbot/edit/los-perros/docs/'
 			},
 			sidebar: [
 				{
@@ -135,12 +133,12 @@ window.onload = () => document.body.classList.add('bso-theme');
 					collapsed: false
 				},
 				{
-					label: 'Old School Bot (OSB)',
+					label: 'NEED TO REPLACE',
 					autogenerate: { directory: 'osb', collapsed: true },
 					collapsed: false
 				},
 				{
-					label: 'BSO',
+					label: 'NEED TO REPLACE custom',
 					autogenerate: { directory: 'bso', collapsed: true },
 					collapsed: false
 				}

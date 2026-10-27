@@ -143,9 +143,7 @@ export function perHourChance(
 	}
 }
 export function patronMsg(tierNeeded: number) {
-	return `You need to be a Tier ${
-		tierNeeded - 1
-	} Patron to use this command. You can become a patron to support the bot here: <https://www.patreon.com/OldschoolCyr>`;
+	return `You need to be a Tier ${tierNeeded - 1} perk holder to use this command.`;
 }
 
 export function isValidBitField(bit: number): bit is BitField {
