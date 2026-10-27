@@ -45,7 +45,7 @@ const claimables = [
 		name: independenceDay2Box,
 		hasRequirement: async (user: MUser): Promise<true | string> => {
 			if (BOT_TYPE !== 'BSO') {
-				return 'This can only be claimed in BSO.';
+				return 'This can only be claimed on NEED TO REPLACE.';
 			}
 			if (Date.now() >= independenceDay2EndDate.getTime()) {
 				return 'This event is no longer claimable.';
@@ -79,28 +79,28 @@ const claimables = [
 			if (roboChimpUser.osb_total_level === 2277 && roboChimpUser.bso_total_level === MAX_TOTAL_LEVEL) {
 				return true;
 			}
-			return 'You need to be maxed in both bots (OSB and BSO) to claim this.';
+			return 'You need to be maxed on both NEED TO REPLACE accounts to claim this.';
 		},
 		action: async (user: MUser) => {
 			if (user.bitfield.includes(BitField.BothBotsMaxedFreeTierOnePerks)) {
 				return 'You already claimed this!';
 			}
 			globalClient.sendMessage(Channel.ServerGeneral, {
-				content: `${user.mention} just claimed free T1 patron perks for being maxed in both bots!`
+				content: `${user.mention} just claimed free tier 1 perks for being maxed on both accounts!`
 			});
 			await user.update({
 				bitfield: {
 					push: BitField.BothBotsMaxedFreeTierOnePerks
 				}
 			});
-			return 'You claimed free T1 patron perks in BSO for being maxed in both bots. You can claim this on OSB too for free patron perks on OSB.';
+			return 'You claimed free tier 1 perks on NEED TO REPLACE for being maxed on both accounts.';
 		}
 	},
 	{
 		name: `Halloween Items`,
 		action: async (user: MUser) => {
 			if (BOT_TYPE === 'BSO') {
-				return 'This command is only for OSB.';
+				return 'This command is only for NEED TO REPLACE.';
 			}
 			const messages: string[] = [];
 			const allItemsCanGet = [...HolidayItems.Halloween.halloweenItems];

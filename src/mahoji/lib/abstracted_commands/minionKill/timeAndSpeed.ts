@@ -78,7 +78,7 @@ export function speedCalculations(args: Omit<BoostArgs, 'currentTaskOptions'>) {
 	if (percentReduced >= 1) messages.push(`${percentReduced}% for KC`);
 
 	timeToFinish /= 2;
-	messages.push('2x BSO Boost');
+	messages.push('2x boost');
 
 	if (gearBank.gear.wildy.hasEquipped(['Hellfire bow']) && isInWilderness) {
 		timeToFinish /= 3;

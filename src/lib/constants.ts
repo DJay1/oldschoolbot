@@ -266,7 +266,7 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 	[BitField.UsedSirenicTablet]: { name: 'Used Sirenic Tablet', protected: false, userConfigurable: false },
 	[BitField.UsedStrangledTablet]: { name: 'Used Strangled Tablet', protected: false, userConfigurable: false },
 	[BitField.SelfGamblingLocked]: { name: 'Self Gambling Lock', protected: false, userConfigurable: true },
-	[BitField.OriginalCyrSupporter]: { name: "One of Cyr's first Patrons", protected: false, userConfigurable: false },
+	[BitField.OriginalCyrSupporter]: { name: 'Original supporter', protected: false, userConfigurable: false },
 	[BitField.HasGivenBirthdayPack]: { name: 'Has Given Birthday Pack', protected: false, userConfigurable: false },
 	[BitField.BypassAgeRestriction]: { name: 'Bypassed Age Restriction', protected: false, userConfigurable: false },
 	[BitField.HasPermanentEventBackgrounds]: {
@@ -281,7 +281,7 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 		userConfigurable: false
 	},
 	[BitField.BothBotsMaxedFreeTierOnePerks]: {
-		name: 'Free T1 Perks for Maxed in OSB/BSO',
+		name: 'Free T1 perks for maxed accounts',
 		protected: false,
 		userConfigurable: false
 	},

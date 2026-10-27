@@ -17,7 +17,6 @@ import {
 	makeBirdHouseTripButton,
 	makeClaimDailyButton,
 	makeFishingContestButton,
-	makeosbBsoLeaguesButton,
 	makeSendICButton,
 	makeSpawnLampButton
 } from '@/lib/util/interactions.js';
@@ -70,8 +69,7 @@ export async function minionStatusCommand(
 	const currentActivity = await ActivityManager.getActivityOfUser(user.id);
 	const minionIsBusy = Boolean(currentActivity);
 	const birdhouseDetails = minionIsBusy ? { isReady: false } : user.fetchBirdhouseData();
-	const [roboChimpUser, gearPresetButtons, pinnedTripButtons, fishingResult, dailyIsReady] = await Promise.all([
-		Cache.getRoboChimpUser(user.id),
+	const [gearPresetButtons, pinnedTripButtons, fishingResult, dailyIsReady] = await Promise.all([
 		minionIsBusy ? [] : fetchFavoriteGearPresets(user.id),
 		minionIsBusy ? [] : fetchPinnedTrips(user.id),
 		getUsersFishingContestDetails(user),
@@ -81,7 +79,7 @@ export async function minionStatusCommand(
 	if (!user.hasMinion) {
 		return {
 			content:
-				"You haven't bought a minion yet! Click the button below to buy a minion and start playing the bot.",
+				"You haven't bought a minion yet! Click the button below to buy a minion and start playing NEED TO REPLACE.",
 			components: [minionBuyButton]
 		};
 	}
@@ -193,10 +191,6 @@ export async function minionStatusCommand(
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(true)
 		);
-	}
-
-	if (roboChimpUser.leagues_points_total === 0) {
-		buttons.push(makeosbBsoLeaguesButton());
 	}
 
 	if (gearPresetButtons.length > 0) {

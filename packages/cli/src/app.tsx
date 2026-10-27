@@ -226,7 +226,7 @@ export const Root: React.FC = () => {
 
 	return (
 		<Box flexDirection="column">
-			<Text>Old School Bot</Text>
+			<Text>NEED TO REPLACE</Text>
 
 			{status === 'running'
 				? renderStage(stages[stageIndex]!, stageIndex)

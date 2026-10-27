@@ -17,7 +17,7 @@ interface Link {
 	children?: LinkChild[];
 }
 
-const links: Link[] = [{ label: 'Wiki', href: 'https://wiki.oldschool.gg/' }];
+const links: Link[] = [];
 
 export default function Header() {
 	const state = globalState();
@@ -28,7 +28,7 @@ export default function Header() {
 			<div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
 				<nav className="flex items-center justify-between">
 					<a href="/">
-						<h1 className="text-5xl font-semibold">Oldschool.gg</h1>
+						<h1 className="text-5xl font-semibold">NEED TO REPLACE</h1>
 					</a>
 
 					<button

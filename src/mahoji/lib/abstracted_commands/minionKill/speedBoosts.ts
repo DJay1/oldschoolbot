@@ -494,7 +494,7 @@ export const mainBoostEffects: (Boost | Boost[])[] = [
 		}
 	},
 	{
-		description: 'BSO Boosts',
+		description: 'Extra boosts',
 		run: ({ isInWilderness, gearBank, monster, attackStyles, bitfield }) => {
 			const results: BoostResult[] = [];
 			if (

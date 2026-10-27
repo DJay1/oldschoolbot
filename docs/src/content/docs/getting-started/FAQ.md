@@ -60,7 +60,7 @@ Example: [[/create item\:Graceful]], [[/create item\:Odium ward]].
 ### How do I create a godsword?
 
 Example: [[/create item\:Godsword blade]] and [[/create item\:Bandos godsword]], requires [[smithing:80]].
-You can pay someone else to create it in the [support server](https://discord.gg/ob).
+You can pay someone else to create it.
 
 ### How do I get Barrows gloves?
 
@@ -72,7 +72,7 @@ Use [[/create item\:Medium pouch]] etc.
 
 ### Can I pay the bot to make shields (DFW/DFS) or spirit shields?
 
-No. Pay another player with the required levels in the [support server](https://discord.gg/ob).
+No. Pay another player with the required levels.
 
 ### Can you stack clues?
 
@@ -80,7 +80,7 @@ Yes. Clues can be juggled/stacked up to a combined limit of 100 in your bank.
 
 ### Why is the bot not responding?
 
-Try mentioning the bot (`@Old School Bot`), and check bot permissions. Ask in the [support server](https://discord.gg/ob) if unsure.
+Try mentioning the bot (`@NEED TO REPLACE`), and check bot permissions.
 
 ### How do I create/deconstruct a Barrows set?
 
@@ -89,7 +89,7 @@ To unpack: [[/create item\:Unpack dharok's armour set]]
 
 ### The bot says it needs “Manage Messages” permission. How?
 
-Go to Server Settings → Roles → Old School Bot → Enable **Manage Messages**
+Go to Server Settings → Roles → NEED TO REPLACE → Enable **Manage Messages**
 
 ### How do I create an Ornate Jewellery Box?
 

@@ -86,7 +86,7 @@ function formatLeaguesTaskList(taskIDs: number[]) {
 }
 
 function formatLeaguesPointSnapshot(points: { osb: number; bso: number; total: number }) {
-	return `OSB ${points.osb.toLocaleString()}, BSO ${points.bso.toLocaleString()}, Total ${points.total.toLocaleString()}`;
+	return `NEED TO REPLACE ${points.osb.toLocaleString()}, NEED TO REPLACE ${points.bso.toLocaleString()}, Total ${points.total.toLocaleString()}`;
 }
 
 function buildLeaguesTaskAuditBody(audit: LeaguesTaskAuditUserResult) {
@@ -275,7 +275,7 @@ async function buildCleanupDuplicatesTSV(
 ) {
 	const usernames = await fetchUsernames(users.map(user => user.userID));
 	return [
-		'userID\tusername\tduplicateTasksIDs\tpointsToRemove\tcurrentTotal\tcurrentOsb\tcurrentBSO',
+		'userID\tusername\tduplicateTasksIDs\tpointsToRemove\tcurrentTotal\tcurrentA\tcurrentB',
 		...users.map(user =>
 			[
 				sanitizeTSVCell(user.userID),
@@ -293,7 +293,7 @@ async function buildCleanupDuplicatesTSV(
 async function buildValidateTasksTSV(users: LeaguesTaskAuditUserResult[]) {
 	const usernames = await fetchUsernames(users.map(user => user.userID));
 	return [
-		'userID\tusername\tduplicateTasksIDs\tpointsToRemove\tcurrentTotal\tcurrentOsb\tcurrentBSO',
+		'userID\tusername\tduplicateTasksIDs\tpointsToRemove\tcurrentTotal\tcurrentA\tcurrentB',
 		...users.map(user =>
 			[
 				sanitizeTSVCell(user.userID),
@@ -1339,7 +1339,7 @@ ${META_CONSTANTS.RENDERED_STR}`
 				return 'No duplicate leagues task claims were found in RoboChimp.';
 			}
 
-			let confirmationMessage = `This will clean ${preview.affectedUsers.toLocaleString()} RoboChimp users, remove ${preview.duplicateEntriesRemoved.toLocaleString()} duplicate task entries, and deduct ${preview.pointsToRemove.toLocaleString()} from OSB balances, ${preview.pointsToRemove.toLocaleString()} from BSO balances, and ${preview.pointsToRemove.toLocaleString()} from total leagues points.`;
+			let confirmationMessage = `This will clean ${preview.affectedUsers.toLocaleString()} RoboChimp users, remove ${preview.duplicateEntriesRemoved.toLocaleString()} duplicate task entries, and deduct ${preview.pointsToRemove.toLocaleString()} from each NEED TO REPLACE balance, and ${preview.pointsToRemove.toLocaleString()} from total leagues points.`;
 			if (preview.unknownDuplicateTaskIDs.length > 0) {
 				confirmationMessage += ` Unknown duplicate task IDs with no point mapping: ${preview.unknownDuplicateTaskIDs.join(', ')}.`;
 			}
@@ -1361,7 +1361,7 @@ ${META_CONSTANTS.RENDERED_STR}`
 				return 'No duplicate leagues task claims were found in RoboChimp.';
 			}
 
-			let overview = `Leagues duplicate cleanup: ${result.affectedUsers.toLocaleString()} users | ${result.duplicateEntriesRemoved.toLocaleString()} duplicate entries removed | -${result.pointsToRemove.toLocaleString()} from OSB/BSO/Total`;
+			let overview = `Leagues duplicate cleanup: ${result.affectedUsers.toLocaleString()} users | ${result.duplicateEntriesRemoved.toLocaleString()} duplicate entries removed | -${result.pointsToRemove.toLocaleString()} from NEED TO REPLACE balances and total`;
 			if (result.unknownDuplicateTaskIDs.length > 0) {
 				overview += ` | Unknown IDs: ${result.unknownDuplicateTaskIDs.join(', ')}`;
 			}
@@ -1380,7 +1380,7 @@ ${META_CONSTANTS.RENDERED_STR}`
 
 			const totalRemovedTasks = sumArr(preview.map(user => user.removedTaskIDs.length));
 			const totalPointDelta = sumArr(preview.map(user => user.pointDelta));
-			let confirmationMsg = `This will validate ${preview.length.toLocaleString()} RoboChimp users, remove ${totalRemovedTasks.toLocaleString()} stored tasks that no longer exist, and apply a ${totalPointDelta >= 0 ? '+' : ''}${totalPointDelta.toLocaleString()} total balance delta across OSB/BSO leagues balances.`;
+			let confirmationMsg = `This will validate ${preview.length.toLocaleString()} RoboChimp users, remove ${totalRemovedTasks.toLocaleString()} stored tasks that no longer exist, and apply a ${totalPointDelta >= 0 ? '+' : ''}${totalPointDelta.toLocaleString()} total balance delta across NEED TO REPLACE leagues balances.`;
 			let rowData = '';
 			if (fullOutput) {
 				rowData = preview

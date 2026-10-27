@@ -233,7 +233,7 @@ const backgroundImages: BankBackground[] = [
 	},
 	{
 		id: 15,
-		name: 'OSB',
+		name: 'NEED TO REPLACE',
 		image: null,
 		available: true,
 		bitfield: BitField.HasPermanentEventBackgrounds,

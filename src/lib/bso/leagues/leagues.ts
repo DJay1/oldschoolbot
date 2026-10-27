@@ -502,7 +502,7 @@ function buildDuplicateClaimCleanupReport(users: LeaguesDuplicateClaimCleanupUse
 			return [
 				`User ${user.userID}`,
 				`Removed ${user.duplicateEntriesRemoved} duplicate entries`,
-				`Deducted ${user.pointsToRemove.toLocaleString()} from OSB/BSO/Total`,
+				`Deducted ${user.pointsToRemove.toLocaleString()} from NEED TO REPLACE balances and total`,
 				`Tasks: ${taskSummary}`
 			].join(' | ');
 		})

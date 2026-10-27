@@ -125,14 +125,6 @@ export function makeSpawnLampButton() {
 		.setStyle(ButtonStyle.Secondary);
 }
 
-export function makeosbBsoLeaguesButton() {
-	return new ButtonBuilder()
-		.setLabel('OSB/BSO Leagues')
-		.setEmoji({ id: EmojiId.Leagues })
-		.setStyle(ButtonStyle.Link)
-		.setURL('https://wiki.oldschool.gg/bso/leagues/');
-}
-
 export function makeFishingContestButton() {
 	return new ButtonBuilder()
 		.setCustomId(InteractionID.Commands.DoFishingContest)
