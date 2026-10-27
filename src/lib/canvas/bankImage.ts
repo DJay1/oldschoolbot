@@ -417,7 +417,8 @@ class BankImageTask {
 				textColor: isNewCLItem ? OSRSCanvas.COLORS.PURPLE : undefined,
 				user,
 				override_show_paints: paintOverride,
-				effect
+				effect,
+				networkTimeoutMs: 0
 			});
 
 			let bottomItemText: string | number | null = null;
@@ -636,6 +637,11 @@ class BankImageTask {
 		if (!isTransparent && noBorder !== 1) {
 			canvas.drawBorder(bgSprite, bgImage.name === 'Default');
 		}
+
+		await OSRSCanvas.prefetchItemImages(
+			items.map(([item]) => item.id),
+			opts.iconPackId ?? user?.iconPackId ?? undefined
+		);
 
 		await this.drawItems(
 			canvas,
