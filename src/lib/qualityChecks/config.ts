@@ -17,8 +17,7 @@
  *
  * The bounty board channel is the Forum #qc-bounties. The old #quality-checks channel is an archive.
  * Do not use that archive channel as the board. #qc-bounties must be a Discord Forum.
- * Forum tag names are locked to Guider's set
- * and matched exactly (case-sensitive):
+ * Forum tag names are locked to Guider's set and matched exactly (case-sensitive):
  *
  *   open | claimed | needs-DJ | passed | failed
  *
