@@ -5,7 +5,7 @@
  * Los Perros test-server defaults. Leave a variable unset to keep the default.
  *
  *   QUALITY_CHECK_GUILD_ID             Guild / test server snowflake
- *   QUALITY_CHECK_CHANNEL_ID           #quality-checks forum snowflake
+ *   QUALITY_CHECK_CHANNEL_ID           #qc-bounties forum snowflake
  *   QUALITY_CHECK_UPDATES_CHANNEL_ID   #updates channel snowflake (one quiet notice / ticker ping)
  *   QUALITY_CHECK_ROLE_ID              Quality Checkers role snowflake (mentioned when a bounty is ready for DJ)
  *   QUALITY_CHECK_DJ_USER_ID           Optional user snowflake pinged with the role. Unset = role only
@@ -15,7 +15,9 @@
  * Local command install uses TESTING_SERVER (see src/lib/constants.ts). Point that at the same guild
  * as QUALITY_CHECK_GUILD_ID so /qualitycheck is registered there.
  *
- * The quality-checks channel must be a Discord Forum. Forum tag names are locked to Guider's set
+ * The bounty board channel is the Forum #qc-bounties. The old #quality-checks channel is an archive.
+ * Do not use that archive channel as the board. #qc-bounties must be a Discord Forum.
+ * Forum tag names are locked to Guider's set
  * and matched exactly (case-sensitive):
  *
  *   open | claimed | needs-DJ | passed | failed
@@ -40,7 +42,7 @@
 
 const TEST_SERVER_GUILD_ID = '1564440506866606101';
 const TEST_SERVER_UPDATES_CHANNEL_ID = '1564454812349632562';
-const TEST_SERVER_QUALITY_CHECKS_CHANNEL_ID = '1564455296154468413';
+const TEST_SERVER_QUALITY_CHECKS_CHANNEL_ID = '1564459680997056604';
 const TEST_SERVER_QUALITY_CHECKERS_ROLE_ID = '1564455672270290975';
 
 function envId(name: string, fallback: string): string {

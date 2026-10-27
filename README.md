@@ -14,6 +14,13 @@ To report a bug, [click here](https://github.com/oldschoolgg/oldschoolbot/issues
 
 To suggest a new feature, [click here](https://github.com/oldschoolgg/oldschoolbot/issues/new?labels=feature+request&template=feature.md)
 
+## Quality checks
+
+Los Perros bounty-board defaults are in `src/lib/qualityChecks/config.ts` and `.env.example`.
+The board channel is the Forum `#qc-bounties` (`1564459680997056604`).
+The old `#quality-checks` channel is an archive. Do not use it as the board channel.
+Guild, `#updates`, and the Quality Checkers role IDs are unchanged.
+
 ## Contributing
 
 Anyone is free to create PRs with improvements and additions. If you have questions, ask in your development Discord.
