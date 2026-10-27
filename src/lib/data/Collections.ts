@@ -1,5 +1,6 @@
 import { BSOItem } from '@/lib/bso/BSOItem.js';
 import { OSB_VIRTUS_IDS } from '@/lib/bso/bsoConstants.js';
+import { firstAgeCL } from '@/lib/bso/collection-log/firstAge.js';
 import { allChristmasEvent2024Items, allChristmasEvent2025Items } from '@/lib/bso/collection-log/holiday.js';
 import {
 	abyssalDragonCL,
@@ -43,6 +44,7 @@ import { cookingCL, craftingCL, creatablesCL, herbloreCL } from '@/lib/bso/colle
 import { discontinuedDyes, dyedItems } from '@/lib/bso/dyedItems.js';
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
 import { ElderClueTable } from '@/lib/bso/elderClue.js';
+import { firstAgeAffinities } from '@/lib/bso/firstAge/affinities.js';
 import { GrandmasterClueTable } from '@/lib/bso/grandmasterClue.js';
 import { keyCrates } from '@/lib/bso/keyCrates.js';
 import { kibbleCL } from '@/lib/bso/kibble.js';
@@ -1492,6 +1494,12 @@ export const allCollectionLogs: ICollection = {
 					'Doopy'
 				]),
 				fmtProg: skillProg('divination')
+			},
+			'First Age': {
+				alias: ['firstage', 'first age'],
+				items: firstAgeCL,
+				fmtProg: ({ user }) =>
+					`${user.user.first_age_affinities?.length ?? 0}/${firstAgeAffinities.length} affinities unlocked`
 			}
 		}
 	},

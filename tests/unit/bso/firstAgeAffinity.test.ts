@@ -1,3 +1,4 @@
+import { firstAgeCL } from '@/lib/bso/collection-log/firstAge.js';
 import {
 	FIRST_AGE_MAX_SEAL_SHARD_COST,
 	firstAgeAffinities,
@@ -12,10 +13,25 @@ import { Bank, Items } from 'oldschooljs';
 import { expect, test } from 'vitest';
 
 import { FIRST_AGE_MAX_PIECES_TRADEABLE, FirstAgeItem } from '@/lib/customItems/firstAge.js';
+import { allCollectionLogs } from '@/lib/data/Collections.js';
 import { calcAnglerBoostPercent } from '@/lib/skilling/skills/fishing/fishingUtil.js';
 import { Gear } from '@/lib/structures/Gear.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
 import { makeGearBank } from '../utils.js';
+
+test('the First Age collection log page lists shards, tokens, the seal, and the max pieces', () => {
+	const page = allCollectionLogs.Skilling.activities['First Age'];
+	expect(page.alias).toEqual(['firstage', 'first age']);
+	expect(page.items).toEqual(firstAgeCL);
+	expect(firstAgeCL).toEqual([
+		FirstAgeItem.AFFINITY_SHARD,
+		...firstAgeAffinities.map(affinity => affinity.tokenId),
+		FirstAgeItem.MAX_SEAL,
+		...firstAgeMaxUpgrades.map(piece => piece.maxId)
+	]);
+	expect(new Set(firstAgeCL).size).toEqual(firstAgeCL.length);
+	expect(firstAgeCL).toHaveLength(1 + firstAgeAffinities.length + 1 + firstAgeMaxUpgrades.length);
+});
 
 test('affinity table ids, tokens, and max pieces are unique', () => {
 	expect(new Set(firstAgeAffinities.map(affinity => affinity.id)).size).toEqual(firstAgeAffinities.length);

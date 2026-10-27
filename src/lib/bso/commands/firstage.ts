@@ -101,7 +101,7 @@ export const firstAgeCommand = defineCommand({
 			const plan = planAbsorb(user.bank, options.absorb.outfit);
 			if ('error' in plan) return plan.error;
 			const shards = new Bank().add(FirstAgeItem.AFFINITY_SHARD, plan.affinity.shardValue);
-			await user.transactItems({ itemsToRemove: plan.remove, itemsToAdd: shards });
+			await user.transactItems({ itemsToRemove: plan.remove, itemsToAdd: shards, collectionLog: true });
 			return `You absorbed a full ${plan.affinity.name} outfit for ${plan.affinity.shardValue} First age affinity shards. Unlock it with \`/firstage unlock affinity:${plan.affinity.name}\`.`;
 		}
 
@@ -111,7 +111,10 @@ export const firstAgeCommand = defineCommand({
 			await user.transactItems({
 				itemsToRemove: new Bank().add(FirstAgeItem.AFFINITY_SHARD, plan.affinity.unlockCost)
 			});
-			await user.update({ first_age_affinities: [...unlocked, plan.affinity.tokenId] });
+			await user.addItemsToCollectionLog({
+				itemsToAdd: new Bank().add(plan.affinity.tokenId),
+				otherUpdates: { first_age_affinities: [...unlocked, plan.affinity.tokenId] }
+			});
 			return `You unlocked the ${plan.affinity.name} affinity (${plan.affinity.bonus}). It counts as that outfit while you are wearing any First Age piece, and it does not stack with the outfit itself.`;
 		}
 
