@@ -6,11 +6,10 @@ import { Inventions } from '@/lib/bso/skills/invention/inventions.js';
 
 import { writeFileSync } from 'node:fs';
 import { calcPerHour, Time } from '@oldschoolgg/toolkit';
-import { Items, itemID } from 'oldschooljs';
 import { groupBy, omit } from 'remeda';
 
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
-import { customItems } from '@/lib/customItems/util.js';
+import { customItems, Items, itemID } from '@/lib/items/index.js';
 
 function tameCluesData() {
 	const rawResults = [];

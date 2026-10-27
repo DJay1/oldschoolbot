@@ -1,4 +1,4 @@
-import '../../lib/customItems/customItems.js';
+import '@/lib/items/index.js';
 import '../data/itemAliases.js';
 
 import { MathRNG, randInt } from 'node-rng';

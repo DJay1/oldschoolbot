@@ -1,9 +1,9 @@
-import '../../lib/customItems/customItems.js';
+import { Items } from '@/lib/items/index.js';
 import '../data/itemAliases.js';
 
 import { removeFromArr } from '@oldschoolgg/toolkit';
 import { MathRNG } from 'node-rng';
-import { Bank, Items } from 'oldschooljs';
+import { Bank } from 'oldschooljs';
 
 import type { FinishWorkerArgs, FinishWorkerReturn } from '@/lib/workers/index.js';
 

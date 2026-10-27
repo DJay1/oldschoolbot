@@ -1,4 +1,4 @@
-import '../../../src/lib/customItems/customItems.js';
+import '../../../src/lib/items/index.js';
 import '../../../src/lib/data/itemAliases.js';
 
 import { renderCreatablesFile } from '../../../scripts/creatables.js';

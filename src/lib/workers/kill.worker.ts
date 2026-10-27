@@ -1,4 +1,4 @@
-import '../customItems/customItems.js';
+import '@/lib/items/index.js';
 import '../data/itemAliases.js';
 
 import { ORI_DISABLED_MONSTERS } from '@/lib/bso/bsoConstants.js';
@@ -29,7 +29,7 @@ export default async ({
 	if (simulatedKillable) {
 		if (quantity > limit) {
 			return {
-				error: `The quantity you gave exceeds your limit of ${limit.toLocaleString()}! *You can increase your limit by up to 1 million by becoming a patron at <https://www.patreon.com/OldschoolCyr>`
+				error: `The quantity you gave exceeds your limit of ${limit.toLocaleString()}!`
 			};
 		}
 		return {
@@ -45,7 +45,7 @@ export default async ({
 		}
 		if (quantity > limit) {
 			return {
-				error: `The quantity you gave exceeds your limit of ${limit.toLocaleString()}! *You can increase your limit by up to 1 million by becoming a patron at <https://www.patreon.com/OldschoolCyr>`
+				error: `The quantity you gave exceeds your limit of ${limit.toLocaleString()}!`
 			};
 		}
 

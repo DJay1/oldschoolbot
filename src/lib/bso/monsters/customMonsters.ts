@@ -1,3 +1,7 @@
+/**
+ * Register custom monsters here. Loot tables are edited in the files this module
+ * imports. The boss hub (`src/lib/bosses/index.ts`) lists those files.
+ */
 import { Akumu } from '@/lib/bso/monsters/bosses/Akumu.js';
 import { Venatrix } from '@/lib/bso/monsters/bosses/Venatrix.js';
 import { Malygos } from '@/lib/bso/monsters/demi-bosses/Malygos.js';
