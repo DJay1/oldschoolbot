@@ -1,4 +1,4 @@
-import {
+﻿import {
 	type APIApplicationCommandBasicOption,
 	type APIApplicationCommandOption,
 	type APIApplicationCommandSubcommandOption,
@@ -113,18 +113,22 @@ export function convertCommandOptionToAPIOption(option: CommandOption): APIAppli
 					BASIC_TYPES.has(c.type)
 				) ?? [];
 
+			const apiOptions = basicChildren
+				.map(convertCommandOptionToAPIOption)
+				.filter(
+					(o): o is APIApplicationCommandBasicOption =>
+						o.type !== ApplicationCommandOptionType.Subcommand &&
+						o.type !== ApplicationCommandOptionType.SubcommandGroup
+				);
+			// Discord requires required options before optional ones
+			apiOptions.sort((a, b) => Number(Boolean(b.required)) - Number(Boolean(a.required)));
+
 			return {
 				name: option.name,
 				description: option.description,
 				required: option.required ?? false,
 				type: ApplicationCommandOptionType.Subcommand,
-				options: basicChildren
-					.map(convertCommandOptionToAPIOption)
-					.filter(
-						(o): o is APIApplicationCommandBasicOption =>
-							o.type !== ApplicationCommandOptionType.Subcommand &&
-							o.type !== ApplicationCommandOptionType.SubcommandGroup
-					)
+				options: apiOptions
 			};
 		}
 		case 'SubcommandGroup': {
