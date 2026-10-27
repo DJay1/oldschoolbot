@@ -1,3 +1,5 @@
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+
 import { Emoji } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -58,30 +60,38 @@ export const titheFarmTask: MinionTask = {
 
 		let bonusXpMultiplier = 0;
 		let farmersPiecesCheck = 0;
-		if (user.hasEquippedOrInBank(["Farmer's strawhat"])) {
-			bonusXpMultiplier += 0.004;
-			farmersPiecesCheck += 1;
+		const farmerAffinity = isAffinityActive(user.gearBank, 'farmer');
+		// Affinity replaces the outfit. The jacket+shirt 'every' check stays as it was when affinity is off.
+		if (farmerAffinity) {
+			bonusXpMultiplier = 0.025;
+		} else {
+			if (user.hasEquippedOrInBank(["Farmer's strawhat"])) {
+				bonusXpMultiplier += 0.004;
+				farmersPiecesCheck += 1;
+			}
+			if (user.hasEquippedOrInBank(["Farmer's jacket", "Farmer's shirt"], 'every')) {
+				bonusXpMultiplier += 0.008;
+				farmersPiecesCheck += 1;
+			}
+			if (user.hasEquippedOrInBank(["Farmer's boro trousers"])) {
+				bonusXpMultiplier += 0.006;
+				farmersPiecesCheck += 1;
+			}
+			if (user.hasEquippedOrInBank(["Farmer's boots"])) {
+				bonusXpMultiplier += 0.002;
+				farmersPiecesCheck += 1;
+			}
+			if (farmersPiecesCheck === 4) bonusXpMultiplier += 0.005;
 		}
-		if (user.hasEquippedOrInBank(["Farmer's jacket", "Farmer's shirt"], 'every')) {
-			bonusXpMultiplier += 0.008;
-			farmersPiecesCheck += 1;
-		}
-		if (user.hasEquippedOrInBank(["Farmer's boro trousers"])) {
-			bonusXpMultiplier += 0.006;
-			farmersPiecesCheck += 1;
-		}
-		if (user.hasEquippedOrInBank(["Farmer's boots"])) {
-			bonusXpMultiplier += 0.002;
-			farmersPiecesCheck += 1;
-		}
-		if (farmersPiecesCheck === 4) bonusXpMultiplier += 0.005;
 
 		const bonusXp = (harvestXp + depositXp) * bonusXpMultiplier;
 		const totalXp = farmingXp + bonusXp;
 
 		let bonusXpStr = '';
 		if (bonusXp > 0) {
-			bonusXpStr = `You received an additional ${Math.floor(bonusXp)} Bonus XP from your farmer's outfit pieces.`;
+			bonusXpStr = farmerAffinity
+				? `You received an additional ${Math.floor(bonusXp)} Bonus XP from your First Age farmer affinity.`
+				: `You received an additional ${Math.floor(bonusXp)} Bonus XP from your farmer's outfit pieces.`;
 		}
 
 		const xpRes = await user.addXP({

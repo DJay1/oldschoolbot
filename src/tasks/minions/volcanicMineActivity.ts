@@ -1,3 +1,5 @@
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+
 import { Time } from '@oldschoolgg/toolkit';
 import { Bank, LootTable } from 'oldschooljs';
 
@@ -28,6 +30,7 @@ export const vmTask: MinionTask = {
 			boost += 0.3;
 		}
 		if (
+			isAffinityActive(user.gearBank, 'prospector') ||
 			user.hasEquippedOrInBank(
 				['Prospector helmet', 'Prospector jacket', 'Prospector legs', 'Prospector boots'],
 				'every'

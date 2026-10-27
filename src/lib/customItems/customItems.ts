@@ -19,6 +19,7 @@ import './moktang.js';
 import './leagues.js';
 import './paintCans.js';
 import './summoning.js';
+import './firstAge.js';
 
 import { EquipmentSlot } from '@oldschoolgg/gear';
 import { type ItemRequirements, Items, resolveItems } from 'oldschooljs';

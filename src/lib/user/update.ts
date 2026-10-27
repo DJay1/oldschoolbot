@@ -25,6 +25,7 @@ type PrismaIntArrayKeys =
 	| 'slayer_blocked_ids'
 	| 'slayer_unlocks'
 	| 'store_bitfield'
+	| 'first_age_affinities'
 	| 'combat_options'
 	| 'cl_array';
 

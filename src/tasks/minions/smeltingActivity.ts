@@ -1,5 +1,6 @@
 import { BlacksmithOutfit, MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 
 import { Time } from '@oldschoolgg/toolkit';
@@ -17,7 +18,8 @@ export const smeltingTask: MinionTask = {
 
 		// If this bar has a chance of failing to smelt, calculate that here.
 		const masterCapeInEffect = bar.chanceOfFail > 0 && user.hasEquippedOrInBank('Smithing master cape');
-		const hasBS = user.hasEquippedOrInBank(BlacksmithOutfit, 'every');
+		const hasBS =
+			isAffinityActive(user.gearBank, 'blacksmith') || user.hasEquippedOrInBank(BlacksmithOutfit, 'every');
 		const oldQuantity = quantity;
 		if ((bar.chanceOfFail > 0 && bar.name !== 'Iron bar') || (!blastf && bar.name === 'Iron bar')) {
 			const chance = masterCapeInEffect ? bar.chanceOfFail / 2 : bar.chanceOfFail;

@@ -484,6 +484,9 @@ model User {
 
   store_bitfield Int[] @default([])
 
+  // Unlocked First Age affinity token ids. Not bank items.
+  first_age_affinities Int[] @default([])
+
   farmingPatches_herb       Json? @map("farmingPatches.herb") @db.Json
   farmingPatches_fruit_tree Json? @map("farmingPatches.fruit tree") @db.Json
   farmingPatches_tree       Json? @map("farmingPatches.tree") @db.Json

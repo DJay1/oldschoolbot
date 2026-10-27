@@ -1,5 +1,6 @@
 import { BlacksmithOutfit } from '@/lib/bso/bsoConstants.js';
 import { dwarvenOutfit } from '@/lib/bso/collection-log/main.js';
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
 
 import { Bank } from 'oldschooljs';
 
@@ -16,7 +17,8 @@ export const smithingTask: MinionTask = {
 
 		let xpReceived = quantity * smithedItem.xp;
 
-		const hasBS = user.hasEquippedOrInBank(BlacksmithOutfit, 'every');
+		const blacksmithAffinity = isAffinityActive(user.gearBank, 'blacksmith');
+		const hasBS = blacksmithAffinity || user.hasEquippedOrInBank(BlacksmithOutfit, 'every');
 		if (hasBS) {
 			xpReceived *= 1.1;
 		}
@@ -31,7 +33,9 @@ export const smithingTask: MinionTask = {
 		});
 		let str = `${user}, ${user.minionName} finished smithing, you received ${loot}. ${xpRes}`;
 		if (hasBS) {
-			str += '\n**10%** Bonus XP For Blacksmith Outfit';
+			str += blacksmithAffinity
+				? '\n**10%** Bonus XP from your First Age blacksmith affinity'
+				: '\n**10%** Bonus XP For Blacksmith Outfit';
 		}
 
 		let collectionLog = true;

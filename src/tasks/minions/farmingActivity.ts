@@ -1,4 +1,5 @@
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { mutations } from '@/lib/bso/skills/farming/mutations.js';
 import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
@@ -91,6 +92,7 @@ export const farmingTask: MinionTask = {
 		let lives = 3;
 		let bonusXpMultiplier = 0;
 		let farmersPiecesCheck = 0;
+		const farmerAffinity = isAffinityActive(user.gearBank, 'farmer');
 		let loot = new Bank();
 
 		const hasPlopper = user.allItemsOwned.has('Plopper');
@@ -125,24 +127,29 @@ export const farmingTask: MinionTask = {
 
 		if (patchType.lastPayment) chanceOfDeathReduction = 0;
 
-		// check bank for farmer's items
-		if (user.hasEquippedOrInBank("Farmer's strawhat")) {
+		// Affinity replaces the outfit. Wearing both still uses the full 2.5% once.
+		if (farmerAffinity) {
+			bonusXpMultiplier = 0.025;
+		} else if (user.hasEquippedOrInBank("Farmer's strawhat")) {
 			bonusXpMultiplier += 0.004;
 			farmersPiecesCheck++;
 		}
-		if (user.hasEquippedOrInBank("Farmer's jacket") || user.hasEquippedOrInBank("Farmer's shirt")) {
+		if (
+			!farmerAffinity &&
+			(user.hasEquippedOrInBank("Farmer's jacket") || user.hasEquippedOrInBank("Farmer's shirt"))
+		) {
 			bonusXpMultiplier += 0.008;
 			farmersPiecesCheck++;
 		}
-		if (user.hasEquippedOrInBank("Farmer's boro trousers")) {
+		if (!farmerAffinity && user.hasEquippedOrInBank("Farmer's boro trousers")) {
 			bonusXpMultiplier += 0.006;
 			farmersPiecesCheck++;
 		}
-		if (user.hasEquippedOrInBank("Farmer's boots")) {
+		if (!farmerAffinity && user.hasEquippedOrInBank("Farmer's boots")) {
 			bonusXpMultiplier += 0.002;
 			farmersPiecesCheck++;
 		}
-		if (farmersPiecesCheck === 4) bonusXpMultiplier += 0.005;
+		if (!farmerAffinity && farmersPiecesCheck === 4) bonusXpMultiplier += 0.005;
 
 		// If they have nothing planted here, just plant the seeds and return.
 		if (!patchType.patchPlanted) {
@@ -390,7 +397,9 @@ export const farmingTask: MinionTask = {
 
 			if (bonusXP > 0) {
 				infoStr.push(
-					`\nYou received an additional ${bonusXP.toLocaleString()} bonus XP from your farmer's outfit.`
+					farmerAffinity
+						? `\nYou received an additional ${bonusXP.toLocaleString()} bonus XP from your First Age farmer affinity.`
+						: `\nYou received an additional ${bonusXP.toLocaleString()} bonus XP from your farmer's outfit.`
 				);
 			}
 
