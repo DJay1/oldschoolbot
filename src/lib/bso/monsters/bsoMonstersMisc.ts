@@ -2,6 +2,7 @@ import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
 import { Ignecarus } from '@/lib/bso/monsters/bosses/Ignecarus.js';
 import { KalphiteKingMonster } from '@/lib/bso/monsters/bosses/KalphiteKing.js';
 import { KingGoldemar } from '@/lib/bso/monsters/bosses/KingGoldemar.js';
+import { Moktang } from '@/lib/bso/monsters/bosses/Moktang.js';
 import { Naxxus } from '@/lib/bso/monsters/bosses/Naxxus.js';
 import { VasaMagus } from '@/lib/bso/monsters/bosses/VasaMagus.js';
 import { NexMonster } from '@/lib/bso/monsters/nex.js';
@@ -34,7 +35,7 @@ export const bsoEffectiveMonsters = [
 	},
 	{
 		name: 'Moktang',
-		aliases: ['moktang'],
+		aliases: ['moktang', 'mt'],
 		id: EBSOMonster.MOKTANG
 	},
 	{
@@ -51,9 +52,7 @@ export const bsoEffectiveMonsters = [
 
 export const bsoAutocompleteMonsters = [
 	{
-		name: 'Moktang',
-		aliases: ['moktang'],
-		id: EBSOMonster.MOKTANG,
+		...Moktang,
 		link: '/bso/monsters/bosses/moktang/'
 	},
 	{

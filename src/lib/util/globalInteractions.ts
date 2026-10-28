@@ -12,6 +12,7 @@ import type { ClueTier } from '@/lib/clues/clueTiers.js';
 import { BitField } from '@/lib/constants.js';
 import { InteractionID } from '@/lib/InteractionID.js';
 import { toggleAutoRummage } from '@/lib/minions/data/valeTotems.js';
+import { handleQualityCheckButton } from '@/lib/qualityChecks/buttons.js';
 import { type RunCommandArgs, runCommand } from '@/lib/settings/settings.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
 import { updateGiveawayMessage } from '@/lib/util/giveaway.js';
@@ -246,6 +247,7 @@ async function globalButtonInteractionHandler({
 	}
 
 	const user = interaction.user;
+	if (id.startsWith('QC:')) return handleQualityCheckButton(user, id, interaction);
 	if (id.includes(InteractionID.Commands.RepeatTrip)) return repeatTripHandler(user, id, interaction);
 
 	if (id.includes('GIVEAWAY_')) return giveawayButtonHandler(user, id, interaction);

@@ -3,9 +3,9 @@ import { setCustomMonster } from '@/lib/bso/monsters/setCustomMonster.js';
 
 import { LootTable, Monsters } from 'oldschooljs';
 
-const koscheiTable = new LootTable().add('Fremennik blade');
+export const KoscheiLootTable = new LootTable().add('Fremennik blade');
 
-setCustomMonster(EBSOMonster.KOSCHEI, 'Koschei the deathless', koscheiTable, Monsters.GeneralGraardor, {
+setCustomMonster(EBSOMonster.KOSCHEI, 'Koschei the deathless', KoscheiLootTable, Monsters.GeneralGraardor, {
 	id: EBSOMonster.KOSCHEI,
 	name: 'Koschei the deathless',
 	aliases: ['koschei the deathless', 'koschei', 'ko']

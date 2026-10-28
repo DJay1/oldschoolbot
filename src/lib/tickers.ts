@@ -13,6 +13,8 @@ import { Channel, globalConfig } from '@/lib/constants.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { cacheGEPrices } from '@/lib/marketPrices.js';
 import { collectMetrics } from '@/lib/metrics.js';
+import { qualityCheckConfig } from '@/lib/qualityChecks/config.js';
+import { remindQualityChecksIfNeeded } from '@/lib/qualityChecks/service.js';
 import { runCommand } from '@/lib/settings/settings.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
 import type { FarmingPatchName, FarmingPatchSettingsKey } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
@@ -335,6 +337,18 @@ LIMIT 10;`;
 		}
 	}
 ];
+
+if (qualityCheckConfig.tickerIntervalMinutes > 0) {
+	tickers.push({
+		name: 'quality_checks',
+		startupWait: Time.Minute * qualityCheckConfig.tickerIntervalMinutes,
+		interval: Time.Minute * qualityCheckConfig.tickerIntervalMinutes,
+		timer: null,
+		cb: async () => {
+			await remindQualityChecksIfNeeded();
+		}
+	});
+}
 
 async function runTicker(ticker: (typeof tickers)[number]): Promise<void> {
 	try {

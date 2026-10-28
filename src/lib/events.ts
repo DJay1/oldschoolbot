@@ -17,6 +17,7 @@ import { CONSTANTS, globalConfig } from '@/lib/constants.js';
 import { customItems } from '@/lib/customItems/util.js';
 import { roboChimpSyncData } from '@/lib/roboChimp.js';
 import type { ActivityTaskData } from '@/lib/types/minions.js';
+import { claimDiscordEvent } from '@/lib/util/discordEventGate.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { minionStatsEmbed } from '@/lib/util/minionStatsEmbed.js';
 import { refreshUserCache } from '@/lib/util/refreshCache.js';
@@ -292,6 +293,7 @@ const mentionCommands: MentionCommand[] = [
 const commandList = [...new Set(mentionCommands.flatMap(i => [i.name, ...i.aliases]))];
 
 export async function onMessage(msg: IMessage) {
+	if (!claimDiscordEvent('message', msg.id)) return;
 	if (!msg.content) return;
 	void boxSpawnHandler(msg);
 

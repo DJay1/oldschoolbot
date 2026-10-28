@@ -20,6 +20,32 @@ import { BaseInteraction } from './BaseInteraction.js';
 import { interactionConfirmation } from './confirmation.js';
 import { PaginatedMessage, type PaginatedMessageOptions } from './PaginatedMessage.js';
 
+const IMAGE_RENDER_FALLBACK = 'Finished, but the result image could not be rendered.';
+
+function plainTextFromSendable(message: SendableMessage): string {
+	if (typeof message === 'string') {
+		const text = message.trim();
+		return text.length > 0 ? text.slice(0, 2000) : IMAGE_RENDER_FALLBACK;
+	}
+
+	let content: unknown;
+	if (
+		'message' in message &&
+		message.message &&
+		typeof message.message === 'object' &&
+		'content' in message.message
+	) {
+		content = message.message.content;
+	} else if ('content' in message) {
+		content = message.content;
+	}
+	if (typeof content === 'string') {
+		const text = content.trim();
+		if (text.length > 0) return text.slice(0, 2000);
+	}
+	return IMAGE_RENDER_FALLBACK;
+}
+
 export type AnyInteraction = IChatInputCommandInteraction | IButtonInteraction;
 type RawFor<T> = T extends IButtonInteraction
 	? APIMessageComponentInteraction
@@ -83,8 +109,16 @@ export class MInteraction<T extends AnyInteraction = AnyInteraction> extends Bas
 	async reply(message: SendableMessage): Promise<null> {
 		try {
 			await this.baseReply(message);
-		} catch (_err) {
-			this.client.emit('error', _err as Error);
+		} catch (err) {
+			this.client.emit('error', err as Error);
+			// A deferred interaction stays on "thinking" until something edits it.
+			// Building the bank image is inside the reply, so a failed or abandoned
+			// image must still complete the interaction with the text we already have.
+			try {
+				await this.baseEditReply({ content: plainTextFromSendable(message) });
+			} catch (fallbackErr) {
+				this.client.emit('error', fallbackErr as Error);
+			}
 			return null;
 		}
 		return null;

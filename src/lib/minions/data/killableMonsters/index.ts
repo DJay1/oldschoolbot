@@ -396,11 +396,6 @@ export const effectiveMonsters = [
 		id: EMonster.ZALCANO,
 		emoji: '<:Smolcano:604670895113633802>'
 	},
-	{
-		id: 46_274,
-		name: 'Nex',
-		aliases: ['nex']
-	},
 	{ name: 'TzTok-Jad', aliases: ['jad'], id: 3127, emoji: '<:Tzrekjad:324127379188613121>' },
 	{ name: 'Mimic', aliases: ['mimic'], id: 23_184, emoji: '<:Tangleroot:324127378978635778>' },
 	{ name: 'Hespori', aliases: ['hespori'], id: 8583, emoji: '<:Casket:365003978678730772>' },

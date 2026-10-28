@@ -1,7 +1,7 @@
 import { applyCustomItemEffects } from '@/lib/bso/canvas/customItemEffects.js';
 import { handleSlayerMaskGlow } from '@/lib/bso/skills/slayer/slayerMaskHelms.js';
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { formatItemStackQuantity, generateHexColorForCashStack } from '@oldschoolgg/toolkit';
 import {
@@ -15,7 +15,13 @@ import {
 
 import { CanvasModule } from '@/lib/canvas/CanvasModule.js';
 import type { CanvasSpritesheet, SpriteData } from '@/lib/canvas/CanvasSpritesheet.js';
-import { type CanvasImage, drawImageWithOutline, getClippedRegion, type IBgSprite } from '@/lib/canvas/canvasUtil.js';
+import {
+	type CanvasImage,
+	createCanvas,
+	drawImageWithOutline,
+	getClippedRegion,
+	type IBgSprite
+} from '@/lib/canvas/canvasUtil.js';
 import { type IconPackID, ItemIconPacks } from '@/lib/canvas/iconPacks.js';
 import { BitField, BOT_TYPE } from '@/lib/constants.js';
 
@@ -345,12 +351,51 @@ export class OSRSCanvas {
 		return null;
 	}
 
+	private static localIconInflight = new Map<number, Promise<Image | Canvas>>();
+	private static placeholderIcon: Canvas | null = null;
+	private static readonly iconFetchBudgetMs = 1500;
+
+	private static placeholderItemIcon(): Canvas {
+		if (OSRSCanvas.placeholderIcon) return OSRSCanvas.placeholderIcon;
+		const canvas = createCanvas(32, 32);
+		const ctx = canvas.getContext('2d');
+		ctx.fillStyle = '#3e3529';
+		ctx.fillRect(0, 0, 32, 32);
+		ctx.strokeStyle = '#ff981f';
+		ctx.strokeRect(0.5, 0.5, 31, 31);
+		OSRSCanvas.placeholderIcon = canvas;
+		return canvas;
+	}
+
+	/**
+	 * Resolve every icon before drawing. Spritesheet and disk hits return immediately.
+	 * Missing icons share one short deadline so a hung sprite host cannot pin the process
+	 * for one round-trip per unique item (mystery boxes are almost all unique).
+	 */
+	public static async prefetchItemImages(itemIDs: Iterable<number>, iconPackId?: IconPackID) {
+		const ids = [...new Set(itemIDs)];
+		if (ids.length === 0) return;
+		const deadline = Date.now() + OSRSCanvas.iconFetchBudgetMs;
+		let cursor = 0;
+		const workerCount = Math.min(24, ids.length);
+		const worker = async () => {
+			while (cursor < ids.length) {
+				const id = ids[cursor++];
+				const remaining = Math.max(0, deadline - Date.now());
+				await OSRSCanvas.getItemImage({ itemID: id, iconPackId, networkTimeoutMs: remaining });
+			}
+		};
+		await Promise.all(Array.from({ length: workerCount }, () => worker()));
+	}
+
 	public static async getItemImage({
 		itemID,
-		iconPackId
+		iconPackId,
+		networkTimeoutMs = OSRSCanvas.iconFetchBudgetMs
 	}: {
 		itemID: number;
 		iconPackId?: IconPackID;
+		networkTimeoutMs?: number;
 	}): Promise<Canvas | CanvasImage> {
 		// Custom item icon pack icons
 		if (iconPackId && ItemIconPacks[iconPackId].icons.has(itemID)) {
@@ -366,30 +411,77 @@ export class OSRSCanvas {
 			return getClippedRegion(itemSpriteData.getImage(), x, y, width, height);
 		}
 
-		return OSRSCanvas.loadLocalIcon(itemID);
+		return OSRSCanvas.loadLocalIcon(itemID, networkTimeoutMs);
 	}
 
-	// If the image isnt in the spritesheet, use a local image instead
-	private static async loadLocalIcon(itemID: number): Promise<Image> {
+	// If the image isnt in the spritesheet, use a local image instead.
+	// Network fetches are time-boxed. A missing or hung sprite becomes a placeholder
+	// instead of blocking the command (and the deferred Discord interaction) forever.
+	private static loadLocalIcon(itemID: number, networkTimeoutMs: number): Promise<Image | Canvas> {
+		const cached = OSRSCanvas.LOCAL_ICON_CACHE.get(itemID);
+		if (cached) return Promise.resolve(cached);
+		if (networkTimeoutMs <= 0) return OSRSCanvas.readLocalIcon(itemID);
+		const existing = OSRSCanvas.localIconInflight.get(itemID);
+		if (existing) return existing;
+		const promise = OSRSCanvas.readOrFetchLocalIcon(itemID, networkTimeoutMs).finally(() => {
+			OSRSCanvas.localIconInflight.delete(itemID);
+		});
+		OSRSCanvas.localIconInflight.set(itemID, promise);
+		return promise;
+	}
+
+	private static async readLocalIcon(itemID: number): Promise<Image | Canvas> {
 		const cached = OSRSCanvas.LOCAL_ICON_CACHE.get(itemID);
 		if (cached) return cached;
 		let onDisk = await readFile(path.join(OSRSCanvas.ITEM_ICON_CACHE_DIR, `${itemID}.png`)).catch(() => null);
-		// BSO only: Check if the image is in the bso_icons folder
 		if (!onDisk)
 			onDisk = await readFile(path.join(OSRSCanvas.ITEM_BSO_ICON_DIR, `${itemID}.png`)).catch(() => null);
-		if (onDisk) {
+		if (!onDisk) return OSRSCanvas.placeholderItemIcon();
+		try {
 			const image = await loadImage(onDisk);
 			OSRSCanvas.LOCAL_ICON_CACHE.set(itemID, image);
 			return image;
+		} catch {
+			return OSRSCanvas.placeholderItemIcon();
 		}
-		const imageBuffer = await fetch(`https://chisel.weirdgloop.org/static/img/osrs-sprite/${itemID}.png`).then(
-			result => result.arrayBuffer().then(Buffer.from)
-		);
+	}
 
-		await writeFile(path.join(OSRSCanvas.ITEM_ICON_CACHE_DIR, `${itemID}.png`), imageBuffer);
-		const image = await loadImage(imageBuffer);
-		OSRSCanvas.LOCAL_ICON_CACHE.set(itemID, image);
-		return image;
+	private static async readOrFetchLocalIcon(itemID: number, networkTimeoutMs: number): Promise<Image | Canvas> {
+		const local = await OSRSCanvas.readLocalIcon(itemID);
+		if (local !== OSRSCanvas.placeholderIcon) return local;
+
+		const controller = new AbortController();
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		try {
+			const imageBuffer = await Promise.race([
+				(async () => {
+					const response = await fetch(`https://chisel.weirdgloop.org/static/img/osrs-sprite/${itemID}.png`, {
+						signal: controller.signal
+					});
+					if (!response.ok) return null;
+					return Buffer.from(await response.arrayBuffer());
+				})(),
+				new Promise<never>((_, reject) => {
+					const fail = () => reject(new Error('icon fetch aborted'));
+					if (controller.signal.aborted) {
+						fail();
+						return;
+					}
+					controller.signal.addEventListener('abort', fail, { once: true });
+					timer = setTimeout(() => controller.abort(), networkTimeoutMs);
+				})
+			]);
+			if (!imageBuffer) return OSRSCanvas.placeholderItemIcon();
+			const image = await loadImage(imageBuffer);
+			await mkdir(OSRSCanvas.ITEM_ICON_CACHE_DIR, { recursive: true });
+			await writeFile(path.join(OSRSCanvas.ITEM_ICON_CACHE_DIR, `${itemID}.png`), imageBuffer).catch(() => null);
+			OSRSCanvas.LOCAL_ICON_CACHE.set(itemID, image);
+			return image;
+		} catch {
+			return OSRSCanvas.placeholderItemIcon();
+		} finally {
+			clearTimeout(timer);
+		}
 	}
 
 	async drawItemIDSprite({
@@ -403,7 +495,8 @@ export class OSRSCanvas {
 		glow,
 		user,
 		override_show_paints: show_paints,
-		effect
+		effect,
+		networkTimeoutMs = OSRSCanvas.iconFetchBudgetMs
 	}: {
 		itemID: number;
 		x: number;
@@ -420,8 +513,9 @@ export class OSRSCanvas {
 		user?: MUser | null | undefined;
 		override_show_paints?: boolean | undefined;
 		effect?: Image | undefined;
+		networkTimeoutMs?: number;
 	}) {
-		const itemIcon: Image | Canvas = await OSRSCanvas.getItemImage({ itemID, iconPackId });
+		const itemIcon: Image | Canvas = await OSRSCanvas.getItemImage({ itemID, iconPackId, networkTimeoutMs });
 		const destX = Math.floor(x + (this.itemSize.width - itemIcon.width) / 2);
 		const destY = Math.floor(y + (this.itemSize.height - itemIcon.height) / 2);
 		let customImage: Image | null = null;
