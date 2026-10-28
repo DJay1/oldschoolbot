@@ -18,7 +18,7 @@ import { getClueScoresFromOpenables } from '@/lib/clues/clueUtils.js';
 import { allCLItemsFiltered, calcCLDetails } from '@/lib/data/Collections.js';
 import { skillEmoji } from '@/lib/data/emojis.js';
 import { getBankBgById } from '@/lib/minions/data/bankBackgrounds.js';
-import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
+import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 import { RandomEvents } from '@/lib/randomEvents.js';
 import { RawSQL } from '@/lib/rawSql.js';
 import Agility from '@/lib/skilling/skills/agility.js';
@@ -535,7 +535,7 @@ GROUP BY type;`);
 			const dataPoints: [string, number][] = Object.entries(monsterScores)
 				.sort((a, b) => b[1] - a[1])
 				.slice(0, 30)
-				.map(i => [killableMonsters.find(mon => mon.id === Number(i))?.name ?? i[0].toString(), i[1]]);
+				.map(i => [effectiveMonsters.find(mon => mon.id === Number(i[0]))?.name ?? i[0].toString(), i[1]]);
 			return makeResponseForBuffer(
 				await createChart({
 					title: "Your Monster KC's",
@@ -993,7 +993,9 @@ GROUP BY "bankBackground";`);
 			str += Object.entries(totalBank)
 				.sort(([, qty1], [, qty2]) => qty2 - qty1)
 				.map(([monID, qty]) => {
-					return `${Monsters.get(Number.parseInt(monID, 10))?.name}: ${qty.toLocaleString()}`;
+					const id = Number.parseInt(monID, 10);
+					const name = Monsters.get(id)?.name ?? effectiveMonsters.find(mon => mon.id === id)?.name ?? monID;
+					return `${name}: ${qty.toLocaleString()}`;
 				})
 				.join('\n');
 

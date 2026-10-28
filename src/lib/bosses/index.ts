@@ -22,10 +22,21 @@
  *   src/lib/bso/monsters/nex.ts
  *   src/lib/bso/monsters/resourceDungeons.ts
  *   src/lib/bso/monsters/SunMoon.ts
- *   Register a new custom monster in src/lib/bso/monsters/customMonsters.ts (`BSOMonsters`).
+ *   Register a generic custom monster in src/lib/bso/monsters/customMonsters.ts (`BSOMonsters`).
+ *   Bosses with their own command stay out of `BSOMonsters` (that list is copied onto
+ *   the generic kill list). Wire those in `standaloneCustomBossLoot` below.
  *   `customBossLootFiles` is the file map. Named loot tables are re-exported below.
  */
+import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
+import { IgnecarusLootTable } from '@/lib/bso/monsters/bosses/Ignecarus.js';
+import { KalphiteKingMonster, kalphiteKingLootTable } from '@/lib/bso/monsters/bosses/KalphiteKing.js';
+import { KingGoldemarLootTable } from '@/lib/bso/monsters/bosses/KingGoldemar.js';
+import { KoscheiLootTable } from '@/lib/bso/monsters/bosses/Koschei.js';
+import { MoktangLootTable } from '@/lib/bso/monsters/bosses/Moktang.js';
+import { Naxxus, NaxxusLootTableFinishable } from '@/lib/bso/monsters/bosses/Naxxus.js';
+import { VasaMagusLootTable } from '@/lib/bso/monsters/bosses/VasaMagus.js';
 import { BSOMonsters } from '@/lib/bso/monsters/customMonsters.js';
+import { NexMonster, nexLootTable } from '@/lib/bso/monsters/nex.js';
 
 import type { LootTable } from 'oldschooljs';
 
@@ -39,6 +50,7 @@ export { AkumuLootTable } from '@/lib/bso/monsters/bosses/Akumu.js';
 export { IgnecarusLootTable } from '@/lib/bso/monsters/bosses/Ignecarus.js';
 export { kalphiteKingLootTable } from '@/lib/bso/monsters/bosses/KalphiteKing.js';
 export { KingGoldemarLootTable } from '@/lib/bso/monsters/bosses/KingGoldemar.js';
+export { KoscheiLootTable } from '@/lib/bso/monsters/bosses/Koschei.js';
 export { MoktangLootTable } from '@/lib/bso/monsters/bosses/Moktang.js';
 export { NaxxusLootTable, NaxxusLootTableFinishable } from '@/lib/bso/monsters/bosses/Naxxus.js';
 export { VasaMagusLootTable } from '@/lib/bso/monsters/bosses/VasaMagus.js';
@@ -103,22 +115,37 @@ export const stockBossLootIndex: BossLootEntry[] = bossKillables.map(boss => ({
 	table: boss.table
 }));
 
-/**
- * `id` is -1 when the monster is not on `BSOMonsters` (Moktang, Nex, Ignecarus,
- * and similar are still edited in `lootFile`).
- */
 const registeredCustomMonsters = new Map(
 	Object.values(BSOMonsters).map(monster => [monster.name.toLowerCase(), monster])
 );
 
+/**
+ * Dedicated-command bosses. They are not on `BSOMonsters` because that object is
+ * copied into the generic killable list (`bsoKillableMonsters`). These bosses are
+ * fought through their own commands (`/vasa`, Ignecarus mass/solo, Nex, and similar).
+ * `id` on the index is -1 only when a row is missing from both maps.
+ */
+const standaloneCustomBossLoot = new Map<string, { id: number; table: LootTable }>([
+	['ignecarus', { id: EBSOMonster.IGNECARUS, table: IgnecarusLootTable }],
+	['kalphite king', { id: KalphiteKingMonster.id, table: kalphiteKingLootTable }],
+	['king goldemar', { id: EBSOMonster.KING_GOLDEMAR, table: KingGoldemarLootTable }],
+	['koschei the deathless', { id: EBSOMonster.KOSCHEI, table: KoscheiLootTable }],
+	['moktang', { id: EBSOMonster.MOKTANG, table: MoktangLootTable }],
+	['naxxus', { id: Naxxus.id, table: NaxxusLootTableFinishable }],
+	['vasa magus', { id: EBSOMonster.VASA_MAGUS, table: VasaMagusLootTable }],
+	['nex', { id: NexMonster.id, table: nexLootTable }]
+]);
+
 export const customBossLootIndex: BossLootEntry[] = customBossLootFiles.map(boss => {
-	const registered = registeredCustomMonsters.get(boss.name.toLowerCase());
+	const key = boss.name.toLowerCase();
+	const registered = registeredCustomMonsters.get(key);
+	const standalone = standaloneCustomBossLoot.get(key);
 	return {
 		name: boss.name,
-		id: registered?.id ?? -1,
+		id: registered?.id ?? standalone?.id ?? -1,
 		kind: 'custom' as const,
 		lootFile: boss.lootFile,
-		table: registered?.table
+		table: registered?.table ?? standalone?.table
 	};
 });
 

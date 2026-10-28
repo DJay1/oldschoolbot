@@ -7,11 +7,11 @@ import {
 	torvaOutfit,
 	virtusOutfit
 } from '@/lib/bso/collection-log/main.js';
-import { makeKillTable } from '@/lib/bso/monsters/setCustomMonster.js';
+import { makeKillTable, setCustomMonster } from '@/lib/bso/monsters/setCustomMonster.js';
 
 import { GearStat } from '@oldschoolgg/gear';
 import { Time } from '@oldschoolgg/toolkit';
-import { Items, itemID, LootTable, RareDropTable } from 'oldschooljs';
+import { Items, itemID, LootTable, Monsters, RareDropTable } from 'oldschooljs';
 
 import type { KillableMonster } from '@/lib/minions/types.js';
 
@@ -71,3 +71,9 @@ export const NexMonster: KillableMonster = {
 };
 
 export const NEX_UNIQUE_DROPRATE = (numPlayers: number) => 80 + numPlayers * 2;
+
+setCustomMonster(NexMonster.id, 'Nex', nexLootTable, Monsters.GeneralGraardor, {
+	id: NexMonster.id,
+	name: 'Nex',
+	aliases: ['nex']
+});

@@ -1,6 +1,10 @@
 /**
  * Register custom monsters here. Loot tables are edited in the files this module
  * imports. The boss hub (`src/lib/bosses/index.ts`) lists those files.
+ *
+ * Bosses with a dedicated command (Vasa Magus, Ignecarus, Nex, and similar) stay
+ * out of this object. `bsoKillableMonsters` copies every entry onto the generic
+ * kill list. The hub attaches those bosses separately.
  */
 import { Akumu } from '@/lib/bso/monsters/bosses/Akumu.js';
 import { Venatrix } from '@/lib/bso/monsters/bosses/Venatrix.js';
