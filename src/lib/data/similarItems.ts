@@ -437,7 +437,16 @@ const source: [string, (string | number)[]][] = [
 	["Combatant's cape", ['Completionist cape', 'Completionist cape (t)']],
 	["Gatherer's cape", ['Completionist cape', 'Completionist cape (t)']],
 	['Support cape', ['Completionist cape', 'Completionist cape (t)']],
-	["Artisan's cape", ['Completionist cape', 'Completionist cape (t)']]
+	["Artisan's cape", ['Completionist cape', 'Completionist cape (t)']],
+
+	// First Age (max) pieces count as the base piece for the XP boost and outfit checks.
+	['First age tiara', ['First age tiara (max)']],
+	['First age amulet', ['First age amulet (max)']],
+	['First age cape', ['First age cape (max)']],
+	['First age bracelet', ['First age bracelet (max)']],
+	['First age ring', ['First age ring (max)']],
+	['First age robe top', ['First age robe top (max)']],
+	['First age robe bottom', ['First age robe bottom (max)']]
 ];
 
 // Build skill cape & master cape similar items. This also handles comp and comp(t) receiving all skillcape and master cape perks.

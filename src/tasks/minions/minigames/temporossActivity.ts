@@ -1,3 +1,5 @@
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+
 import { calcPerHour, increaseNumByPercent } from '@oldschoolgg/toolkit';
 
 import { getTemporossLoot } from '@/lib/simulation/tempoross.js';
@@ -24,8 +26,9 @@ export const temporossTask: MinionTask = {
 
 		// If they have the entire angler outfit, give an extra 0.5% xp bonus
 		if (
+			isAffinityActive(user.gearBank, 'angler') ||
 			user.gear.skilling.hasEquipped(
-				Fishing.anglerItems.map(i => i[1]),
+				Fishing.anglerItems.map(i => i[0]),
 				true
 			)
 		) {

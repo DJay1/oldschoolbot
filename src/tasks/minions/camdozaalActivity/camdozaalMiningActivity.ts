@@ -1,3 +1,5 @@
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+
 import { Bank, LootTable } from 'oldschooljs';
 
 import addSkillingClueToLoot from '@/lib/minions/functions/addSkillingClueToLoot.js';
@@ -55,6 +57,7 @@ export const camdozaalMiningTask: MinionTask = {
 
 		// If user has the entire prospector outfit, give an extra 2.5% xp bonus
 		if (
+			isAffinityActive(user.gearBank, 'prospector') ||
 			user.gear.skilling.hasEquipped(
 				Object.keys(Mining.prospectorItems).map(i => Number.parseInt(i)),
 				true

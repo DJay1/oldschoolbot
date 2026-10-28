@@ -47,6 +47,7 @@ const USER_DEFAULTS = {
 	unlocked_gear_templates: [],
 	unlocked_blueprints: [],
 	disabled_inventions: [],
+	first_age_affinities: [],
 	disabled_portent_ids: [],
 	magic_words_guessed: []
 } satisfies Partial<User>;
@@ -90,7 +91,8 @@ export class BaseUser {
 			minionName: this.minionName,
 
 			materials: this.ownedMaterials(),
-			pet: this.user.minion_equippedPet
+			pet: this.user.minion_equippedPet,
+			firstAgeAffinities: this.user.first_age_affinities ?? []
 		});
 	}
 

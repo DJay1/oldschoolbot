@@ -1,3 +1,5 @@
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+
 import { round } from '@oldschoolgg/toolkit';
 import type { RNGProvider } from 'node-rng';
 import { EItem } from 'oldschooljs';
@@ -117,6 +119,8 @@ function calcMinnowQuantityRange(gearBank: GearBank): [number, number] {
 }
 
 function calcAnglerBoostPercent(gearBank: GearBank) {
+	// Affinity replaces the outfit. Wearing both still returns the full 2.5% once.
+	if (isAffinityActive(gearBank, 'angler')) return 2.5;
 	const equippedPieces = anglerItemsArr.filter(item => gearBank.gear.skilling.hasEquipped(item.id));
 	if (equippedPieces.length === anglerItemsArr.length) {
 		return 2.5;

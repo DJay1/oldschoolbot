@@ -3,6 +3,7 @@ import { completionCommand } from '@/lib/bso/commands/completion.js';
 import { dgCommand } from '@/lib/bso/commands/dg.js';
 import { divinationCommand } from '@/lib/bso/commands/divination.js';
 import { dropRatesCommand } from '@/lib/bso/commands/droprates.js';
+import { firstAgeCommand } from '@/lib/bso/commands/firstage.js';
 import { icCommand } from '@/lib/bso/commands/ic.js';
 import { inventionCommand } from '@/lib/bso/commands/invention.js';
 import { kibbleCommand } from '@/lib/bso/commands/kibble.js';
@@ -176,7 +177,8 @@ export const allCommandsDONTIMPORT: AnyCommand[] = [
 	ratesCommand,
 	tamesCommand,
 	testerShopCommand,
-	bsoLeaguesCommand
+	bsoLeaguesCommand,
+	firstAgeCommand
 ];
 
 if (!globalConfig.isProduction && testPotatoCommand) {

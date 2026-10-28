@@ -1,5 +1,6 @@
 import { GLOBAL_BSO_XP_MULTIPLIER, MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 import { chargePortentIfHasCharges, PortentID } from '@/lib/bso/skills/divination.js';
 import { InventionID } from '@/lib/bso/skills/invention/inventions.js';
@@ -68,6 +69,7 @@ export function calculateMiningResult({
 
 	// Prospector outfit
 	if (
+		isAffinityActive(gearBank, 'prospector') ||
 		gearBank.gear.skilling.hasEquipped(
 			Object.keys(Mining.prospectorItems).map(i => Number.parseInt(i)),
 			true

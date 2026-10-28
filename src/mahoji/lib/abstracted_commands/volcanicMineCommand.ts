@@ -1,3 +1,5 @@
+import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+
 import { objectEntries, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -125,13 +127,19 @@ export async function volcanicMineCommand(user: MUser, channelId: string, gameQu
 		boosts.push(`30% boost for having a ${userSkillingGear.equippedWeapon()?.name ?? 'Dragon pickaxe'} equipped.`);
 	}
 
+	const prospectorAffinity = isAffinityActive(user.gearBank, 'prospector');
 	if (
+		prospectorAffinity ||
 		userSkillingGear.hasEquipped(
 			['Prospector helmet', 'Prospector jacket', 'Prospector legs', 'Prospector boots'],
 			true
 		)
 	) {
-		boosts.push('2.5% more Mining XP for having the Propector outfit equipped.');
+		boosts.push(
+			prospectorAffinity
+				? '2.5% more Mining XP from your First Age prospector affinity.'
+				: '2.5% more Mining XP for having the Propector outfit equipped.'
+		);
 	}
 
 	if (userSkillingGear.hasEquipped('Elysian spirit shield')) {
