@@ -109,6 +109,20 @@ describe('Open Command', async () => {
 		}
 	});
 
+	test('Open 255 tradeable mystery boxes finishes without a per-box stall', async () => {
+		mockMathRandom(0.1);
+		const user = await createTestUser();
+		await user.addItemsToBank({ items: new Bank().add('Tradeable Mystery Box', 255) });
+		const started = performance.now();
+		const result = await user.runCommand(openCommand, { name: 'tradeable mystery box', quantity: 255 });
+		expect(performance.now() - started).toBeLessThan(15_000);
+		expect(result).toMatchObject({
+			content: expect.stringContaining('255x Tradeable Mystery Box')
+		});
+		await user.bankAmountMatch('Tradeable Mystery Box', 0);
+		await user.openedBankMatch(new Bank().add('Tradeable Mystery Box', 255));
+	}, 20_000);
+
 	test('Rejects trying to open all with no openables', async () => {
 		const user = await createTestUser();
 		const res = await user.runCommand(openCommand, {
