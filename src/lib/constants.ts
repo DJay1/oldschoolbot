@@ -572,7 +572,7 @@ export const PATRON_ONLY_GEAR_SETUP =
 export const NMZ_STRATEGY = ['experience', 'points'] as const;
 export type NMZStrategy = (typeof NMZ_STRATEGY)[number];
 
-export const busyImmuneCommands = ['admin', 'rp'];
+export const busyImmuneCommands = ['admin', 'rp', 'qualitycheck'];
 
 const globalConfigSchema = z.object({
 	clientID: z.string().min(10).max(25),
