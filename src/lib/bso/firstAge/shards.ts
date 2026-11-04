@@ -74,17 +74,61 @@ export const FIRST_AGE_CHARGES_PER_ACTIVATION = firstAgeMaxUpgrades.length;
 
 const firstAgeMaxPieceIds = firstAgeMaxUpgrades.map(piece => piece.maxId);
 
-type MaxSetGear = {
+const originalFirstAgeKeys = new Set(['tiara', 'amulet', 'cape', 'bracelet', 'ring']);
+const robeFirstAgeKeys = new Set(['robe_top', 'robe_bottom']);
+
+type ExactEquipped = {
 	hasEquipped(item: number | string | (string | number)[], every?: boolean, includeSimilar?: boolean): boolean;
 };
 
 /**
+ * Gear, GearBank, and MUser all expose equipped items, but GearBank/MUser drop the
+ * `includeSimilar` argument. Always ask each setup for the exact item id.
+ */
+function eachEquippedSetup(source: ExactEquipped | { gear: Record<string, ExactEquipped> }): ExactEquipped[] {
+	if ('gear' in source && source.gear && typeof source.gear === 'object') {
+		return Object.values(source.gear);
+	}
+	return [source as ExactEquipped];
+}
+
+function setupHasExactItem(setup: ExactEquipped, id: number): boolean {
+	return setup.hasEquipped(id, false, false);
+}
+
+/**
  * True only when one gear setup has every First Age (max) piece.
  * Six pieces, or the base First Age pieces, do not count. Similar-items are ignored
- * so a base piece cannot stand in for its (max) piece.
+ * so a base piece, or a different cape, cannot stand in for a missing (max) piece.
  */
-export function isWearingFullFirstAgeMaxSet(gear: MaxSetGear): boolean {
-	return gear.hasEquipped(firstAgeMaxPieceIds, true, false);
+export function isWearingFullFirstAgeMaxSet(source: ExactEquipped | { gear: Record<string, ExactEquipped> }): boolean {
+	return eachEquippedSetup(source).some(setup => firstAgeMaxPieceIds.every(id => setupHasExactItem(setup, id)));
+}
+
+/**
+ * XP percent for the pieces worn together on one gear setup.
+ * Tiara, amulet, cape, bracelet and ring are 1% each, plus 1% when all five are worn.
+ * Robe top and robe bottom are 1.5% each, plus 1% when both are worn. A full set is 10%.
+ * A (max) piece counts as its base piece. Fire cape, Max cape, and the other pieces do not
+ * fill an empty slot. Setups are scored separately: a cape left on a different setup does
+ * not complete a set it was removed from. The highest setup is used.
+ */
+export function firstAgeXpBonusPercent(source: ExactEquipped | { gear: Record<string, ExactEquipped> }): number {
+	let best = 0;
+	for (const setup of eachEquippedSetup(source)) {
+		let originalPieces = 0;
+		let robePieces = 0;
+		for (const piece of firstAgeMaxUpgrades) {
+			if (!setupHasExactItem(setup, piece.baseId) && !setupHasExactItem(setup, piece.maxId)) continue;
+			if (originalFirstAgeKeys.has(piece.key)) originalPieces++;
+			else if (robeFirstAgeKeys.has(piece.key)) robePieces++;
+		}
+		let bonus = originalPieces + robePieces * 1.5;
+		if (originalPieces === originalFirstAgeKeys.size) bonus += 1;
+		if (robePieces === robeFirstAgeKeys.size) bonus += 1;
+		if (bonus > best) best = bonus;
+	}
+	return best;
 }
 
 /**

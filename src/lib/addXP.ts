@@ -6,7 +6,7 @@ import {
 	gorajanWarriorOutfit
 } from '@/lib/bso/collection-log/main.js';
 import { inventorOutfit } from '@/lib/bso/collection-log/minigames.js';
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+import { firstAgeXpBonusPercent, isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { bold } from '@oldschoolgg/discord';
 import { Events, formatOrdinal, increaseNumByPercent, notEmpty, Time, toTitleCase } from '@oldschoolgg/toolkit';
@@ -169,37 +169,12 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 		gorajanBoost = true;
 	}
 
-	let totalFirstAgeBonus = 0;
-	let originalFirstAgeEquipped = 0;
 	let totalStaticBoost = 0;
 	const staticBoostsApplied: string[] = [];
 	let outfitBoostPercent = 0;
-	for (const item of resolveItems([
-		'First age tiara',
-		'First age amulet',
-		'First age cape',
-		'First age bracelet',
-		'First age ring'
-	])) {
-		if (user.hasEquipped(item)) {
-			originalFirstAgeEquipped += 1;
-			totalFirstAgeBonus += 1;
-		}
-	}
-	if (originalFirstAgeEquipped === 5) {
-		totalFirstAgeBonus += 1;
-	}
-	let newFirstAgeEquipped = 0;
-	for (const item of resolveItems(['First age robe bottom', 'First age robe top'])) {
-		if (user.hasEquipped(item)) {
-			newFirstAgeEquipped += 1.5;
-			totalFirstAgeBonus += 1.5;
-		}
-	}
-	if (newFirstAgeEquipped === 3) {
-		totalFirstAgeBonus += 1;
-	}
-
+	// Score each gear setup on its own. user.hasEquipped() searches every setup, so a
+	// cape removed from the set still counted while a copy sat on another setup.
+	const totalFirstAgeBonus = firstAgeXpBonusPercent(user);
 	if (totalFirstAgeBonus > 0) params.amount = increaseNumByPercent(params.amount, totalFirstAgeBonus);
 
 	const boosts = staticXPBoosts.get(params.skillName);

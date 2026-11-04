@@ -6,6 +6,7 @@ import {
 	addUnchargedFirstAgeShards,
 	FIRST_AGE_CHARGES_PER_ACTIVATION,
 	firstAgeMaxUpgrades,
+	firstAgeXpBonusPercent,
 	formatMissingSacrifices,
 	getFirstAgeSacrificeSlots,
 	isWearingFullFirstAgeMaxSet,
@@ -17,13 +18,14 @@ import {
 import { mysteryBoxBlacklist } from '@/lib/bso/openables/mysteryBoxBlacklist.js';
 import { embTable, tmbTable, umbTable } from '@/lib/bso/openables/mysteryBoxes.js';
 
-import { Bank, ItemGroups, Items } from 'oldschooljs';
+import { Bank, ItemGroups, Items, itemID } from 'oldschooljs';
 import { expect, test } from 'vitest';
 
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { FIRST_AGE_MAX_PIECES_TRADEABLE, FirstAgeItem } from '@/lib/customItems/firstAge.js';
 import { allCollectionLogs } from '@/lib/data/Collections.js';
 import Createables from '@/lib/data/createables.js';
+import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { allOpenables } from '@/lib/openables.js';
 import { raimentBonus } from '@/lib/skilling/functions/calcsRunecrafting.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
@@ -34,6 +36,7 @@ import { rogueOutfitPercentBonus } from '@/lib/skilling/skills/thieving/thieving
 import { Gear } from '@/lib/structures/Gear.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
+import { wintertodtWarmPieceCount } from '@/mahoji/lib/abstracted_commands/wintertodtCommand.js';
 import { zealOutfitBoost } from '@/tasks/minions/PrayerActivity/offeringActivity.js';
 import { makeGearBank } from '../utils.js';
 
@@ -320,4 +323,84 @@ test('a max piece still counts as the base First Age piece', () => {
 	expect(gear.hasEquipped('First age tiara')).toEqual(true);
 	expect(gear.hasEquipped('First age tiara (max)')).toEqual(true);
 	expect(gear.hasEquipped('First age amulet')).toEqual(false);
+	expect(getSimilarItems(itemID('First age cape')).sort((a, b) => a - b)).toEqual(
+		[itemID('First age cape'), itemID('First age cape (max)')].sort((a, b) => a - b)
+	);
+});
+
+test('First Age XP scales per piece, and a missing cape is not filled in by another item', () => {
+	const full = new Gear();
+	equipMaxSet(full);
+	expect(firstAgeXpBonusPercent(full)).toEqual(10);
+
+	const noCape = new Gear();
+	equipMaxSet(noCape, 'First age cape (max)');
+	expect(noCape.hasEquipped('First age cape')).toEqual(false);
+	expect(noCape.hasEquipped('First age cape (max)')).toEqual(false);
+	// 4 jewelry pieces (4%) and both robes (1.5% + 1.5% + 1% set) = 8%. The 5-piece +1% is lost with the cape.
+	expect(firstAgeXpBonusPercent(noCape)).toEqual(8);
+	expect(isWearingFullFirstAgeMaxSet(noCape)).toEqual(false);
+
+	const fireCapeInstead = new Gear();
+	equipMaxSet(fireCapeInstead, 'First age cape (max)');
+	fireCapeInstead.equip('Fire cape');
+	expect(firstAgeXpBonusPercent(fireCapeInstead)).toEqual(8);
+
+	const maxCapeInstead = new Gear();
+	equipMaxSet(maxCapeInstead, 'First age cape (max)');
+	maxCapeInstead.equip('Max cape');
+	expect(firstAgeXpBonusPercent(maxCapeInstead)).toEqual(8);
+
+	const baseCape = new Gear();
+	equipMaxSet(baseCape, 'First age cape (max)');
+	baseCape.equip('First age cape');
+	expect(firstAgeXpBonusPercent(baseCape)).toEqual(10);
+
+	const sixOnMeleeCapeElsewhere = makeGearBank();
+	equipMaxSet(sixOnMeleeCapeElsewhere.gear.melee, 'First age cape (max)');
+	sixOnMeleeCapeElsewhere.gear.skilling.equip('First age cape (max)');
+	// The cape is still worn, but not with the other six, so it does not restore the 10%.
+	expect(firstAgeXpBonusPercent(sixOnMeleeCapeElsewhere)).toEqual(8);
+	expect(isWearingFullFirstAgeMaxSet(sixOnMeleeCapeElsewhere)).toEqual(false);
+
+	const gearBank = makeGearBank();
+	equipMaxSet(gearBank.gear.melee);
+	expect(firstAgeXpBonusPercent(gearBank)).toEqual(10);
+	expect(calcAnglerBoostPercent(gearBank)).toEqual(2.5);
+	expect(isWearingFullFirstAgeMaxSet(gearBank)).toEqual(true);
+
+	const onSkilling = makeGearBank();
+	equipMaxSet(onSkilling.gear.skilling);
+	expect(firstAgeXpBonusPercent(onSkilling)).toEqual(10);
+	expect(isWearingFullFirstAgeMaxSet(onSkilling)).toEqual(true);
+});
+
+test('the full max set grants each outfit boost once, including warmth, and six pieces grant none', () => {
+	const maxOnly = makeGearBank();
+	equipMaxSet(maxOnly.gear.melee);
+	const six = makeGearBank();
+	equipMaxSet(six.gear.melee, 'First age cape (max)');
+
+	expect(wintertodtWarmPieceCount(asUser(maxOnly))).toEqual(4);
+	expect(wintertodtWarmPieceCount(asUser(six))).toEqual(0);
+
+	const pyromancer = makeGearBank();
+	for (const piece of ['Pyromancer hood', 'Pyromancer garb', 'Pyromancer robe', 'Pyromancer boots']) {
+		pyromancer.gear.skilling.equip(piece);
+	}
+	expect(wintertodtWarmPieceCount(asUser(pyromancer))).toEqual(4);
+
+	const both = makeGearBank();
+	equipMaxSet(both.gear.melee);
+	for (const piece of ['Pyromancer hood', 'Pyromancer garb', 'Pyromancer robe', 'Pyromancer boots']) {
+		both.gear.skilling.equip(piece);
+	}
+	expect(wintertodtWarmPieceCount(asUser(both))).toEqual(4);
+
+	const twoWarm = makeGearBank();
+	twoWarm.gear.skilling.equip('Fire cape');
+	twoWarm.gear.skilling.equip('Pyromancer hood');
+	expect(wintertodtWarmPieceCount(asUser(twoWarm))).toEqual(2);
+	equipMaxSet(twoWarm.gear.melee);
+	expect(wintertodtWarmPieceCount(asUser(twoWarm))).toEqual(4);
 });
