@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { Emoji } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -58,23 +60,27 @@ export const titheFarmTask: MinionTask = {
 
 		let bonusXpMultiplier = 0;
 		let farmersPiecesCheck = 0;
-		if (user.hasEquippedOrInBank(["Farmer's strawhat"])) {
-			bonusXpMultiplier += 0.004;
-			farmersPiecesCheck += 1;
+		if (isWearingFullFirstAgeMaxSet(user)) {
+			bonusXpMultiplier = 0.025;
+		} else {
+			if (user.hasEquippedOrInBank(["Farmer's strawhat"])) {
+				bonusXpMultiplier += 0.004;
+				farmersPiecesCheck += 1;
+			}
+			if (user.hasEquippedOrInBank(["Farmer's jacket", "Farmer's shirt"], 'every')) {
+				bonusXpMultiplier += 0.008;
+				farmersPiecesCheck += 1;
+			}
+			if (user.hasEquippedOrInBank(["Farmer's boro trousers"])) {
+				bonusXpMultiplier += 0.006;
+				farmersPiecesCheck += 1;
+			}
+			if (user.hasEquippedOrInBank(["Farmer's boots"])) {
+				bonusXpMultiplier += 0.002;
+				farmersPiecesCheck += 1;
+			}
+			if (farmersPiecesCheck === 4) bonusXpMultiplier += 0.005;
 		}
-		if (user.hasEquippedOrInBank(["Farmer's jacket", "Farmer's shirt"], 'every')) {
-			bonusXpMultiplier += 0.008;
-			farmersPiecesCheck += 1;
-		}
-		if (user.hasEquippedOrInBank(["Farmer's boro trousers"])) {
-			bonusXpMultiplier += 0.006;
-			farmersPiecesCheck += 1;
-		}
-		if (user.hasEquippedOrInBank(["Farmer's boots"])) {
-			bonusXpMultiplier += 0.002;
-			farmersPiecesCheck += 1;
-		}
-		if (farmersPiecesCheck === 4) bonusXpMultiplier += 0.005;
 
 		const bonusXp = (harvestXp + depositXp) * bonusXpMultiplier;
 		const totalXp = farmingXp + bonusXp;

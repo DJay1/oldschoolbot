@@ -1,5 +1,6 @@
 import { BlacksmithOutfit } from '@/lib/bso/bsoConstants.js';
 import { dwarvenOutfit } from '@/lib/bso/collection-log/main.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { Bank } from 'oldschooljs';
 
@@ -16,7 +17,7 @@ export const smithingTask: MinionTask = {
 
 		let xpReceived = quantity * smithedItem.xp;
 
-		const hasBS = user.hasEquippedOrInBank(BlacksmithOutfit, 'every');
+		const hasBS = isWearingFullFirstAgeMaxSet(user) || user.hasEquippedOrInBank(BlacksmithOutfit, 'every');
 		if (hasBS) {
 			xpReceived *= 1.1;
 		}

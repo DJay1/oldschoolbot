@@ -1,3 +1,4 @@
+import { masterFarmerOutfit } from '@/lib/bso/bsoConstants.js';
 import { isGEUntradeable, isSuperUntradeable } from '@/lib/bso/bsoUtil.js';
 import { firstAgeCL } from '@/lib/bso/collection-log/firstAge.js';
 import { ElderClueTable } from '@/lib/bso/elderClue.js';
@@ -7,6 +8,7 @@ import {
 	firstAgeMaxUpgrades,
 	formatMissingSacrifices,
 	getFirstAgeSacrificeSlots,
+	isWearingFullFirstAgeMaxSet,
 	missingFirstAgeSacrifices,
 	planActivation,
 	planMaxUpgrade,
@@ -15,7 +17,7 @@ import {
 import { mysteryBoxBlacklist } from '@/lib/bso/openables/mysteryBoxBlacklist.js';
 import { embTable, tmbTable, umbTable } from '@/lib/bso/openables/mysteryBoxes.js';
 
-import { Bank, Items } from 'oldschooljs';
+import { Bank, ItemGroups, Items } from 'oldschooljs';
 import { expect, test } from 'vitest';
 
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
@@ -23,8 +25,17 @@ import { FIRST_AGE_MAX_PIECES_TRADEABLE, FirstAgeItem } from '@/lib/customItems/
 import { allCollectionLogs } from '@/lib/data/Collections.js';
 import Createables from '@/lib/data/createables.js';
 import { allOpenables } from '@/lib/openables.js';
+import { raimentBonus } from '@/lib/skilling/functions/calcsRunecrafting.js';
+import { Farming } from '@/lib/skilling/skills/farming/index.js';
+import { calcNumOfPatches } from '@/lib/skilling/skills/farming/utils/calcsFarming.js';
+import { calcAnglerBoostPercent } from '@/lib/skilling/skills/fishing/fishingUtil.js';
+import Runecraft from '@/lib/skilling/skills/runecraft.js';
+import { rogueOutfitPercentBonus } from '@/lib/skilling/skills/thieving/thievingUtils.js';
 import { Gear } from '@/lib/structures/Gear.js';
+import type { GearBank } from '@/lib/structures/GearBank.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
+import { zealOutfitBoost } from '@/tasks/minions/PrayerActivity/offeringActivity.js';
+import { makeGearBank } from '../utils.js';
 
 function sacrificedAll(exceptLabels: string[] = []): Bank {
 	const bank = new Bank();
@@ -188,6 +199,119 @@ test('the First Age collection log lists both shards and the seven max pieces', 
 	expect(new Set(firstAgeCL).size).toEqual(firstAgeCL.length);
 	const elderPage = allCollectionLogs.Clues?.activities?.['Elder Treasure Trails'];
 	expect(elderPage?.items).toContain(FirstAgeItem.UNCHARGED_SHARD);
+});
+
+function equipMaxSet(gear: Gear, skip?: string) {
+	for (const piece of firstAgeMaxUpgrades) {
+		if (piece.maxName === skip) continue;
+		gear.equip(piece.maxName);
+	}
+}
+
+function equipBaseSet(gear: Gear) {
+	for (const piece of firstAgeMaxUpgrades) {
+		gear.equip(piece.baseName);
+	}
+}
+
+function asUser(gearBank: GearBank): MUser {
+	return {
+		gear: gearBank.gear,
+		gearBank,
+		bank: gearBank.bank,
+		bitfield: [],
+		skillsAsLevels: gearBank.skillsAsLevels,
+		cl: new Bank(),
+		user: { finished_quest_ids: [] },
+		hasEquipped(item: number | string | (string | number)[], every = false) {
+			return gearBank.hasEquipped(item, every);
+		},
+		hasEquippedOrInBank(item: string | number | (string | number)[], type?: 'every' | 'one') {
+			return gearBank.hasEquippedOrInBank(item, type);
+		}
+	} as unknown as MUser;
+}
+
+test('the full First Age (max) set grants each outfit bonus once, and 6 of 7 grants none', () => {
+	const maxOnly = makeGearBank();
+	equipMaxSet(maxOnly.gear.melee);
+	expect(isWearingFullFirstAgeMaxSet(maxOnly)).toEqual(true);
+	expect(calcAnglerBoostPercent(maxOnly)).toEqual(2.5);
+
+	const six = makeGearBank();
+	equipMaxSet(six.gear.melee, 'First age robe bottom (max)');
+	expect(isWearingFullFirstAgeMaxSet(six)).toEqual(false);
+	expect(calcAnglerBoostPercent(six)).toEqual(0);
+
+	const basePieces = makeGearBank();
+	equipBaseSet(basePieces.gear.melee);
+	expect(isWearingFullFirstAgeMaxSet(basePieces)).toEqual(false);
+	expect(calcAnglerBoostPercent(basePieces)).toEqual(0);
+
+	const anglerOnly = makeGearBank();
+	for (const piece of ['Angler hat', 'Angler top', 'Angler waders', 'Angler boots']) {
+		anglerOnly.gear.skilling.equip(piece);
+	}
+	expect(calcAnglerBoostPercent(anglerOnly)).toEqual(2.5);
+
+	const both = makeGearBank();
+	equipMaxSet(both.gear.melee);
+	for (const piece of ['Angler hat', 'Angler top', 'Angler waders', 'Angler boots']) {
+		both.gear.skilling.equip(piece);
+	}
+	expect(calcAnglerBoostPercent(both)).toEqual(calcAnglerBoostPercent(anglerOnly));
+
+	const maxPlusOneAngler = makeGearBank();
+	equipMaxSet(maxPlusOneAngler.gear.melee);
+	maxPlusOneAngler.gear.skilling.equip('Angler hat');
+	expect(calcAnglerBoostPercent(maxPlusOneAngler)).toEqual(2.5);
+
+	const fullRogue = ItemGroups.rogueOutfit.length * 20;
+	const rogueOnly = makeGearBank();
+	for (const id of ItemGroups.rogueOutfit) rogueOnly.gear.skilling.equip(id);
+	expect(rogueOutfitPercentBonus(asUser(rogueOnly))).toEqual(fullRogue);
+	expect(rogueOutfitPercentBonus(asUser(maxOnly))).toEqual(fullRogue);
+	const rogueAndMax = makeGearBank();
+	equipMaxSet(rogueAndMax.gear.melee);
+	for (const id of ItemGroups.rogueOutfit) rogueAndMax.gear.skilling.equip(id);
+	expect(rogueOutfitPercentBonus(asUser(rogueAndMax))).toEqual(fullRogue);
+	expect(rogueOutfitPercentBonus(asUser(six))).toEqual(0);
+
+	const fullZeal = ItemGroups.zealOutfit.length * 1.25;
+	const zealOnly = makeGearBank();
+	for (const id of ItemGroups.zealOutfit) zealOnly.bank.add(id);
+	expect(zealOutfitBoost(asUser(zealOnly)).zealOutfitChance).toEqual(fullZeal);
+	expect(zealOutfitBoost(asUser(maxOnly)).zealOutfitChance).toEqual(fullZeal);
+	const zealAndMax = makeGearBank();
+	equipMaxSet(zealAndMax.gear.melee);
+	for (const id of ItemGroups.zealOutfit) zealAndMax.bank.add(id);
+	expect(zealOutfitBoost(asUser(zealAndMax)).zealOutfitChance).toEqual(fullZeal);
+	expect(zealOutfitBoost(asUser(six)).zealOutfitChance).toEqual(0);
+
+	const raimentIds = Object.keys(Runecraft.raimentsOfTheEyeItems).map(id => Number.parseInt(id));
+	const raimentsOnly = makeGearBank();
+	for (const id of raimentIds) raimentsOnly.bank.add(id);
+	expect(raimentBonus(asUser(raimentsOnly), 100)).toEqual(60);
+	expect(raimentBonus(asUser(maxOnly), 100)).toEqual(60);
+	const raimentsAndMax = makeGearBank();
+	equipMaxSet(raimentsAndMax.gear.melee);
+	for (const id of raimentIds) raimentsAndMax.bank.add(id);
+	expect(raimentBonus(asUser(raimentsAndMax), 100)).toEqual(60);
+	expect(raimentBonus(asUser(six), 100)).toEqual(0);
+
+	const herb = Farming.Plants.find(plant => plant.seedType === 'herb');
+	expect(herb).toBeTruthy();
+	const patches = (gearBank: GearBank) => calcNumOfPatches(herb!, asUser(gearBank), 0)[0];
+	const bare = makeGearBank();
+	const farmerOnly = makeGearBank();
+	for (const id of masterFarmerOutfit) farmerOnly.bank.add(id);
+	const farmerAndMax = makeGearBank();
+	equipMaxSet(farmerAndMax.gear.melee);
+	for (const id of masterFarmerOutfit) farmerAndMax.bank.add(id);
+	expect(patches(maxOnly) - patches(bare)).toEqual(3);
+	expect(patches(farmerOnly) - patches(bare)).toEqual(3);
+	expect(patches(farmerAndMax) - patches(bare)).toEqual(3);
+	expect(patches(six) - patches(bare)).toEqual(0);
 });
 
 test('a max piece still counts as the base First Age piece', () => {

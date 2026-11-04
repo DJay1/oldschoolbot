@@ -1,4 +1,5 @@
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { mutations } from '@/lib/bso/skills/farming/mutations.js';
 import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
@@ -195,20 +196,25 @@ function calculateEquipmentModifiers(user: MUser): {
 		}
 	};
 
-	if (user.hasEquippedOrInBank("Farmer's strawhat")) {
-		addFarmersBonus(0.004);
-	}
-	if (user.hasEquippedOrInBank("Farmer's jacket") || user.hasEquippedOrInBank("Farmer's shirt")) {
-		addFarmersBonus(0.008);
-	}
-	if (user.hasEquippedOrInBank("Farmer's boro trousers")) {
-		addFarmersBonus(0.006);
-	}
-	if (user.hasEquippedOrInBank("Farmer's boots")) {
-		addFarmersBonus(0.002);
-	}
-	if (farmersPiecesCheck === 4) {
-		addFarmersBonus(0.005, false);
+	if (isWearingFullFirstAgeMaxSet(user)) {
+		bonusXpMultiplier = 0.025;
+		farmersBonusPercent = 2.5;
+	} else {
+		if (user.hasEquippedOrInBank("Farmer's strawhat")) {
+			addFarmersBonus(0.004);
+		}
+		if (user.hasEquippedOrInBank("Farmer's jacket") || user.hasEquippedOrInBank("Farmer's shirt")) {
+			addFarmersBonus(0.008);
+		}
+		if (user.hasEquippedOrInBank("Farmer's boro trousers")) {
+			addFarmersBonus(0.006);
+		}
+		if (user.hasEquippedOrInBank("Farmer's boots")) {
+			addFarmersBonus(0.002);
+		}
+		if (farmersPiecesCheck === 4) {
+			addFarmersBonus(0.005, false);
+		}
 	}
 
 	if (farmersBonusPercent > 0) {

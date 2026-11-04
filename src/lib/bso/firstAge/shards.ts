@@ -72,6 +72,21 @@ export const firstAgeMaxUpgrades: readonly FirstAgeMaxUpgrade[] = [
 /** Charged shards given by one successful activation. One per (max) piece. */
 export const FIRST_AGE_CHARGES_PER_ACTIVATION = firstAgeMaxUpgrades.length;
 
+const firstAgeMaxPieceIds = firstAgeMaxUpgrades.map(piece => piece.maxId);
+
+type MaxSetGear = {
+	hasEquipped(item: number | string | (string | number)[], every?: boolean, includeSimilar?: boolean): boolean;
+};
+
+/**
+ * True only when one gear setup has every First Age (max) piece.
+ * Six pieces, or the base First Age pieces, do not count. Similar-items are ignored
+ * so a base piece cannot stand in for its (max) piece.
+ */
+export function isWearingFullFirstAgeMaxSet(gear: MaxSetGear): boolean {
+	return gear.hasEquipped(firstAgeMaxPieceIds, true, false);
+}
+
 /**
  * Skilling pieces that must already be in the sacrificed bank before a shard can be charged.
  * Each slot is filled by sacrificing any one of its items. Edit this list to change the requirement.

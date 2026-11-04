@@ -6,6 +6,7 @@ import {
 	gorajanWarriorOutfit
 } from '@/lib/bso/collection-log/main.js';
 import { inventorOutfit } from '@/lib/bso/collection-log/minigames.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { bold } from '@oldschoolgg/discord';
 import { Events, formatOrdinal, increaseNumByPercent, notEmpty, Time, toTitleCase } from '@oldschoolgg/toolkit';
@@ -214,9 +215,10 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 
 	const skillOutfit = skillingOutfitBoosts.find(i => i.skill === params.skillName);
 	if (!params.artificial && skillOutfit) {
-		const amountBoost = user.hasEquippedOrInBank(skillOutfit.outfit, 'every')
-			? skillOutfit.totalBoost
-			: skillOutfit.outfit.filter(i => user.hasEquippedOrInBank(i)).length * skillOutfit.individualBoost;
+		const amountBoost =
+			isWearingFullFirstAgeMaxSet(user) || user.hasEquippedOrInBank(skillOutfit.outfit, 'every')
+				? skillOutfit.totalBoost
+				: skillOutfit.outfit.filter(i => user.hasEquippedOrInBank(i)).length * skillOutfit.individualBoost;
 		outfitBoostPercent = amountBoost;
 		params.amount = increaseNumByPercent(params.amount, amountBoost);
 	}

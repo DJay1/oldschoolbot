@@ -1,9 +1,15 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { ItemGroups } from 'oldschooljs';
 
 import Prayer from '@/lib/skilling/skills/prayer.js';
 import type { OfferingActivityTaskOptions } from '@/lib/types/minions.js';
 
 export function zealOutfitBoost(user: MUser) {
+	if (isWearingFullFirstAgeMaxSet(user)) {
+		const zealOutfitAmount = ItemGroups.zealOutfit.length;
+		return { zealOutfitAmount, zealOutfitChance: zealOutfitAmount * 1.25 };
+	}
 	let zealOutfitAmount = 0;
 	for (const piece of ItemGroups.zealOutfit) {
 		if (user.hasEquippedOrInBank(piece)) {

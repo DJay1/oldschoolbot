@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { calcPercentOfNum } from '@oldschoolgg/toolkit';
 
 import { calcConBonusXP } from '@/lib/skilling/skills/construction/calcConBonusXP.js';
@@ -11,7 +13,8 @@ export const mahoganyHomesTask: MinionTask = {
 		await user.incrementMinigameScore('mahogany_homes', quantity);
 
 		let bonusXP = 0;
-		const outfitMultiplier = calcConBonusXP(user.gear.skilling.raw());
+		const carpenterPieces = calcConBonusXP(user.gear.skilling.raw());
+		const outfitMultiplier = isWearingFullFirstAgeMaxSet(user) ? Math.max(carpenterPieces, 2.5) : carpenterPieces;
 		if (outfitMultiplier > 0) {
 			bonusXP = calcPercentOfNum(outfitMultiplier, xp);
 		}

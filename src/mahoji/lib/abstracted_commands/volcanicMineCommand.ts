@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { objectEntries, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -126,6 +128,7 @@ export async function volcanicMineCommand(user: MUser, channelId: string, gameQu
 	}
 
 	if (
+		isWearingFullFirstAgeMaxSet(user) ||
 		userSkillingGear.hasEquipped(
 			['Prospector helmet', 'Prospector jacket', 'Prospector legs', 'Prospector boots'],
 			true

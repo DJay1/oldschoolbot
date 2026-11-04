@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { ItemGroups } from 'oldschooljs';
 
 export function rogueOutfitPercentBonus(user: MUser): number {
@@ -7,6 +9,9 @@ export function rogueOutfitPercentBonus(user: MUser): number {
 		if (skillingSetup.hasEquipped([id])) {
 			amountEquipped++;
 		}
+	}
+	if (isWearingFullFirstAgeMaxSet(user)) {
+		return Math.max(amountEquipped, ItemGroups.rogueOutfit.length) * 20;
 	}
 	return amountEquipped * 20;
 }
