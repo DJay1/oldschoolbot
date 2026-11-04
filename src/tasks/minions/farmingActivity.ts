@@ -1,4 +1,3 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
 import { type MaterialType, materialTypes } from '@/lib/bso/skills/invention/index.js';
 import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 
@@ -221,11 +220,8 @@ function buildCombinedAutoFarmMessage(user: MUser, summary: AutoFarmSummary): st
 		lines.push(`**XP gained:** ${xpParts.join(', ')}.`);
 	}
 	if (summary.totalBonusXP > 0) {
-		const bonusSource = isAffinityActive(user.gearBank, 'farmer')
-			? 'First Age farmer affinity'
-			: "farmer's outfit";
 		lines.push(
-			`You received an additional ${summary.totalBonusXP.toLocaleString()} bonus XP from your ${bonusSource}.`
+			`You received an additional ${summary.totalBonusXP.toLocaleString()} bonus XP from your farmer's outfit.`
 		);
 	}
 	const xpBoostMessages = [...new Set(summary.xpBoostMessages ?? [])];

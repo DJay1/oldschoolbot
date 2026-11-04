@@ -1,4 +1,4 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { round } from '@oldschoolgg/toolkit';
 import type { RNGProvider } from 'node-rng';
@@ -119,14 +119,17 @@ function calcMinnowQuantityRange(gearBank: GearBank): [number, number] {
 }
 
 function calcAnglerBoostPercent(gearBank: GearBank) {
-	// Affinity replaces the outfit. Wearing both still returns the full 2.5% once.
-	if (isAffinityActive(gearBank, 'angler')) return 2.5;
 	const equippedPieces = anglerItemsArr.filter(item => gearBank.gear.skilling.hasEquipped(item.id));
-	if (equippedPieces.length === anglerItemsArr.length) {
-		return 2.5;
-	}
-	const boostPercent = equippedPieces.reduce((total, item) => total + item.boost, 0);
-	return round(boostPercent, 1);
+	const piecePercent =
+		equippedPieces.length === anglerItemsArr.length
+			? 2.5
+			: round(
+					equippedPieces.reduce((total, item) => total + item.boost, 0),
+					1
+				);
+	// The full max set grants the full 2.5% once. It does not add on top of angler pieces.
+	if (isWearingFullFirstAgeMaxSet(gearBank)) return Math.max(piecePercent, 2.5);
+	return piecePercent;
 }
 
 type AnglerBonusRounding = 'none' | 'ceil' | 'floor';

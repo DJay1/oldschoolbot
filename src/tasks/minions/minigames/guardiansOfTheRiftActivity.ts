@@ -1,4 +1,4 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { stringMatches } from '@oldschoolgg/toolkit';
 import { Bank, EItem } from 'oldschooljs';
@@ -77,7 +77,7 @@ export const guardiansOfTheRiftTask: MinionTask = {
 		// If they have the entire Raiments of the Eye outfit, give an extra 20% quantity bonus (NO bonus XP)
 		let setBonus = 1;
 		if (
-			isAffinityActive(user.gearBank, 'raiments') ||
+			isWearingFullFirstAgeMaxSet(user) ||
 			user.hasEquippedOrInBank(
 				Object.keys(Runecraft.raimentsOfTheEyeItems).map(i => Number.parseInt(i)),
 				'every'

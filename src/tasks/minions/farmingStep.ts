@@ -1,5 +1,5 @@
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { mutations } from '@/lib/bso/skills/farming/mutations.js';
 import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
@@ -171,15 +171,12 @@ function calculateEquipmentModifiers(user: MUser): {
 	baseBonus: number;
 	bonusXpMultiplier: number;
 	boosts: string[];
-	farmerAffinity: boolean;
 } {
 	let baseBonus = 1;
 	let bonusXpMultiplier = 0;
 	let farmersPiecesCheck = 0;
 	let farmersBonusPercent = 0;
 	const boosts: string[] = [];
-	// Affinity replaces the outfit. Wearing both still uses the full 2.5% once.
-	const farmerAffinity = isAffinityActive(user.gearBank, 'farmer');
 
 	if (user.hasEquippedOrInBank('Magic secateurs')) {
 		baseBonus += 0.1;
@@ -199,9 +196,9 @@ function calculateEquipmentModifiers(user: MUser): {
 		}
 	};
 
-	if (farmerAffinity) {
+	if (isWearingFullFirstAgeMaxSet(user)) {
 		bonusXpMultiplier = 0.025;
-		boosts.push('First Age farmer affinity: +2.5% bonus XP');
+		farmersBonusPercent = 2.5;
 	} else {
 		if (user.hasEquippedOrInBank("Farmer's strawhat")) {
 			addFarmersBonus(0.004);
@@ -218,16 +215,16 @@ function calculateEquipmentModifiers(user: MUser): {
 		if (farmersPiecesCheck === 4) {
 			addFarmersBonus(0.005, false);
 		}
-
-		if (farmersBonusPercent > 0) {
-			const formattedBonus = Number.isInteger(farmersBonusPercent)
-				? farmersBonusPercent.toString()
-				: farmersBonusPercent.toFixed(1).replace(/\.0$/, '');
-			boosts.push(`Farmer's outfit: +${formattedBonus}% bonus XP`);
-		}
 	}
 
-	return { baseBonus, bonusXpMultiplier, boosts, farmerAffinity };
+	if (farmersBonusPercent > 0) {
+		const formattedBonus = Number.isInteger(farmersBonusPercent)
+			? farmersBonusPercent.toString()
+			: farmersBonusPercent.toFixed(1).replace(/\.0$/, '');
+		boosts.push(`Farmer's outfit: +${formattedBonus}% bonus XP`);
+	}
+
+	return { baseBonus, bonusXpMultiplier, boosts };
 }
 
 function calculatePatchSurvivalModifiers(patchType: PatchTypes.IPatchData): PatchSurvivalModifiers {
@@ -938,7 +935,7 @@ export async function executeFarmingStep({
 	const plant = Farming.Plants.find(plantItem => plantItem.name === plantsName)!;
 	assert(Boolean(plant));
 
-	const { baseBonus, bonusXpMultiplier, boosts, farmerAffinity } = calculateEquipmentModifiers(user);
+	const { baseBonus, bonusXpMultiplier, boosts } = calculateEquipmentModifiers(user);
 	const compostXp = getCompostXp(upgradeType ?? null);
 	const survivalModifiers = calculatePatchSurvivalModifiers(patchType);
 	const currentFarmingLevel = Math.min(99, user.skillsAsLevels.farming);
@@ -1066,11 +1063,7 @@ export async function executeFarmingStep({
 	);
 
 	if (bonusXP > 0) {
-		infoStr.push(
-			farmerAffinity
-				? `\nYou received an additional ${bonusXP.toLocaleString()} bonus XP from your First Age farmer affinity.`
-				: `\nYou received an additional ${bonusXP.toLocaleString()} bonus XP from your farmer's outfit.`
-		);
+		infoStr.push(`\nYou received an additional ${bonusXP.toLocaleString()} bonus XP from your farmer's outfit.`);
 	}
 
 	if (herbloreXp > 0) {

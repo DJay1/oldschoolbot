@@ -1,5 +1,5 @@
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { calcPerHour, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
@@ -69,7 +69,7 @@ export const wintertodtTask: MinionTask = {
 
 		// If they have the entire pyromancer outfit, give an extra 0.5% xp bonus
 		if (
-			isAffinityActive(user.gearBank, 'pyromancer') ||
+			isWearingFullFirstAgeMaxSet(user) ||
 			user.hasEquippedOrInBank(
 				Object.keys(Firemaking.pyromancerItems).map(i => Number.parseInt(i)),
 				'every'

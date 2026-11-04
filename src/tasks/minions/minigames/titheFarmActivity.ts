@@ -1,4 +1,4 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { Emoji } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
@@ -60,9 +60,7 @@ export const titheFarmTask: MinionTask = {
 
 		let bonusXpMultiplier = 0;
 		let farmersPiecesCheck = 0;
-		const farmerAffinity = isAffinityActive(user.gearBank, 'farmer');
-		// Affinity replaces the outfit. The jacket+shirt 'every' check stays as it was when affinity is off.
-		if (farmerAffinity) {
+		if (isWearingFullFirstAgeMaxSet(user)) {
 			bonusXpMultiplier = 0.025;
 		} else {
 			if (user.hasEquippedOrInBank(["Farmer's strawhat"])) {
@@ -89,9 +87,7 @@ export const titheFarmTask: MinionTask = {
 
 		let bonusXpStr = '';
 		if (bonusXp > 0) {
-			bonusXpStr = farmerAffinity
-				? `You received an additional ${Math.floor(bonusXp)} Bonus XP from your First Age farmer affinity.`
-				: `You received an additional ${Math.floor(bonusXp)} Bonus XP from your farmer's outfit pieces.`;
+			bonusXpStr = `You received an additional ${Math.floor(bonusXp)} Bonus XP from your farmer's outfit pieces.`;
 		}
 
 		const xpRes = await user.addXP({

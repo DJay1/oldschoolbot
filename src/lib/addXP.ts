@@ -6,7 +6,7 @@ import {
 	gorajanWarriorOutfit
 } from '@/lib/bso/collection-log/main.js';
 import { inventorOutfit } from '@/lib/bso/collection-log/minigames.js';
-import { type FirstAgeAffinityId, isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { bold } from '@oldschoolgg/discord';
 import { Events, formatOrdinal, increaseNumByPercent, notEmpty, Time, toTitleCase } from '@oldschoolgg/toolkit';
@@ -80,7 +80,6 @@ const staticXPBoosts = new Map<SkillNameType, StaticXPBoost[]>().set('firemaking
 const skillingOutfitBoosts = [
 	{
 		skill: 'fletching',
-		affinity: 'fletcher',
 		outfit: resolveItems([
 			"Fletcher's gloves",
 			"Fletcher's boots",
@@ -93,14 +92,12 @@ const skillingOutfitBoosts = [
 	},
 	{
 		skill: 'invention',
-		affinity: 'inventor',
 		outfit: inventorOutfit,
 		individualBoost: 0.5,
 		totalBoost: 4
 	},
 	{
 		skill: 'divination',
-		affinity: 'diviner',
 		outfit: divinersOutfit,
 		individualBoost: 0.5,
 		totalBoost: 4
@@ -177,7 +174,6 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 	let totalStaticBoost = 0;
 	const staticBoostsApplied: string[] = [];
 	let outfitBoostPercent = 0;
-	let outfitFromAffinity = false;
 	for (const item of resolveItems([
 		'First age tiara',
 		'First age amulet',
@@ -219,9 +215,8 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 
 	const skillOutfit = skillingOutfitBoosts.find(i => i.skill === params.skillName);
 	if (!params.artificial && skillOutfit) {
-		outfitFromAffinity = isAffinityActive(user.gearBank, skillOutfit.affinity as FirstAgeAffinityId);
 		const amountBoost =
-			outfitFromAffinity || user.hasEquippedOrInBank(skillOutfit.outfit, 'every')
+			isWearingFullFirstAgeMaxSet(user) || user.hasEquippedOrInBank(skillOutfit.outfit, 'every')
 				? skillOutfit.totalBoost
 				: skillOutfit.outfit.filter(i => user.hasEquippedOrInBank(i)).length * skillOutfit.individualBoost;
 		outfitBoostPercent = amountBoost;
@@ -414,9 +409,7 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 			str += ` You received ${totalFirstAgeBonus}% bonus XP for First age outfit items.`;
 		}
 		if (outfitBoostPercent > 0 && !params.minimal) {
-			str += outfitFromAffinity
-				? ` You received ${formatBonusPercent(outfitBoostPercent)}% bonus XP from your First Age affinity.`
-				: ` You received ${formatBonusPercent(outfitBoostPercent)}% bonus XP for ${name} outfit pieces.`;
+			str += ` You received ${formatBonusPercent(outfitBoostPercent)}% bonus XP for ${name} outfit pieces.`;
 		}
 		if (totalStaticBoost > 0 && !params.minimal) {
 			str += ` You received bonus XP from ${staticBoostsApplied.join(', ')}.`;

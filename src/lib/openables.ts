@@ -1,3 +1,4 @@
+import { addUnchargedFirstAgeShards } from '@/lib/bso/firstAge/shards.js';
 import { bsoOpenables } from '@/lib/bso/openables/bsoOpenables.js';
 
 import type { IFarmingContract } from '@oldschoolgg/schemas';
@@ -188,6 +189,9 @@ for (const clueTier of ClueTiers) {
 				targetBank: loot,
 				cl: user.cl
 			});
+			if (clueTier.name === 'Elder') {
+				addUnchargedFirstAgeShards(loot, quantity, rate => rng.roll(rate));
+			}
 			const extraClueRolls = totalRolls - quantity;
 
 			let mimicNumber = 0;

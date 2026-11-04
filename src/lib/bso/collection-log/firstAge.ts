@@ -1,14 +1,13 @@
-import { firstAgeAffinities, firstAgeMaxUpgrades } from '@/lib/bso/firstAge/affinities.js';
+import { firstAgeMaxUpgrades } from '@/lib/bso/firstAge/shards.js';
 
 import { FirstAgeItem } from '@/lib/customItems/firstAge.js';
 
 /**
- * First Age collection log: affinity shards, one token per outfit, the max seal,
+ * First Age collection log: the tradeable uncharged shard, the account-bound charged shard,
  * and the seven tradeable (max) pieces. Base First Age pieces stay on the clue logs.
  */
 export const firstAgeCL: number[] = [
-	FirstAgeItem.AFFINITY_SHARD,
-	...firstAgeAffinities.map(affinity => affinity.tokenId),
-	FirstAgeItem.MAX_SEAL,
+	FirstAgeItem.UNCHARGED_SHARD,
+	FirstAgeItem.CHARGED_SHARD,
 	...firstAgeMaxUpgrades.map(piece => piece.maxId)
 ];

@@ -1,4 +1,4 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { ItemGroups } from 'oldschooljs';
 
@@ -6,7 +6,7 @@ import Prayer from '@/lib/skilling/skills/prayer.js';
 import type { OfferingActivityTaskOptions } from '@/lib/types/minions.js';
 
 export function zealOutfitBoost(user: MUser) {
-	if (isAffinityActive(user.gearBank, 'zealot')) {
+	if (isWearingFullFirstAgeMaxSet(user)) {
 		const zealOutfitAmount = ItemGroups.zealOutfit.length;
 		return { zealOutfitAmount, zealOutfitChance: zealOutfitAmount * 1.25 };
 	}

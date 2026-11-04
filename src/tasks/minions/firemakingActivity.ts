@@ -1,4 +1,4 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import Firemaking from '@/lib/skilling/skills/firemaking.js';
 import type { FiremakingActivityTaskOptions } from '@/lib/types/minions.js';
@@ -15,7 +15,7 @@ export const firemakingTask: MinionTask = {
 
 		// If they have the entire pyromancer outfit, give an extra 0.5% xp bonus
 		if (
-			isAffinityActive(user.gearBank, 'pyromancer') ||
+			isWearingFullFirstAgeMaxSet(user) ||
 			user.hasEquippedOrInBank(
 				Object.keys(Firemaking.pyromancerItems).map(i => Number.parseInt(i)),
 				'every'

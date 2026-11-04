@@ -1,6 +1,6 @@
 import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 
 import { Time } from '@oldschoolgg/toolkit';
@@ -22,7 +22,7 @@ export const motherlodeMiningTask: MinionTask = {
 
 		// If they have the entire prospector outfit, give an extra 0.5% xp bonus
 		if (
-			isAffinityActive(user.gearBank, 'prospector') ||
+			isWearingFullFirstAgeMaxSet(user) ||
 			user.hasEquippedOrInBank(
 				Object.keys(Mining.prospectorItems).map(i => Number.parseInt(i)),
 				'every'

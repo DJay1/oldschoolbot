@@ -7,6 +7,7 @@ import { slayerMaskCreatables } from '@/lib/bso/creatables/slayerMasks.js';
 import { sunMoonCreatables } from '@/lib/bso/creatables/sunMoonCreatables.js';
 import { dyedItems } from '@/lib/bso/dyedItems.js';
 import { expertCapesSource } from '@/lib/bso/expertCapes.js';
+import { firstAgeMaxCreateCost, firstAgeMaxUpgrades } from '@/lib/bso/firstAge/shards.js';
 import { nexBrokenArmorDetails } from '@/lib/bso/monsters/nex.js';
 import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 import { tameCreatables } from '@/lib/bso/tames/tameCreatables.js';
@@ -1468,5 +1469,13 @@ for (const cape of Skillcapes) {
 		inputItems: new Bank().add(cape.masterCapeInverted),
 		outputItems: new Bank().add(cape.masterCape),
 		noCl: true
+	});
+}
+
+for (const piece of firstAgeMaxUpgrades) {
+	bsoCreatables.push({
+		name: piece.maxName,
+		inputItems: firstAgeMaxCreateCost(piece),
+		outputItems: new Bank().add(piece.maxId)
 	});
 }

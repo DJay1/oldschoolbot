@@ -1,6 +1,6 @@
 import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { objectEntries, perTimeUnitChance, Time } from '@oldschoolgg/toolkit';
 import { Bank, EItem, itemID } from 'oldschooljs';
@@ -229,7 +229,7 @@ export const woodcuttingTask: MinionTask = {
 
 		// If they have the entire lumberjack outfit, give an extra 0.5% xp bonus
 		if (
-			isAffinityActive(user.gearBank, 'lumberjack') ||
+			isWearingFullFirstAgeMaxSet(user) ||
 			user.hasEquippedOrInBank(
 				Object.keys(Woodcutting.lumberjackItems).map(i => Number.parseInt(i)),
 				'every'

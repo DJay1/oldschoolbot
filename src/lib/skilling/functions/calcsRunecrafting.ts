@@ -1,4 +1,4 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { Items } from 'oldschooljs';
 
@@ -33,7 +33,7 @@ export async function bloodEssence(rng: RNGProvider, user: MUser, quantity: numb
 export function raimentBonus(user: MUser, quantity: number): number {
 	let bonusQuantity = 0;
 	if (
-		isAffinityActive(user.gearBank, 'raiments') ||
+		isWearingFullFirstAgeMaxSet(user) ||
 		user.hasEquippedOrInBank(Object.keys(Runecraft.raimentsOfTheEyeItems).map(i => Number.parseInt(i)))
 	) {
 		const amountToAdd = Math.floor(quantity * (60 / 100));

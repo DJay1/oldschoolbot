@@ -1,4 +1,4 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { calcPerHour, increaseNumByPercent } from '@oldschoolgg/toolkit';
 
@@ -26,7 +26,7 @@ export const temporossTask: MinionTask = {
 
 		// If they have the entire angler outfit, give an extra 0.5% xp bonus
 		if (
-			isAffinityActive(user.gearBank, 'angler') ||
+			isWearingFullFirstAgeMaxSet(user) ||
 			user.gear.skilling.hasEquipped(
 				Fishing.anglerItems.map(i => i[0]),
 				true
