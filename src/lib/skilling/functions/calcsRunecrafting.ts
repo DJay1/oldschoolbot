@@ -1,5 +1,3 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
-
 import { Items } from 'oldschooljs';
 
 import { checkDegradeableItemCharges, degradeItem } from '@/lib/degradeableItems.js';
@@ -32,10 +30,7 @@ export async function bloodEssence(rng: RNGProvider, user: MUser, quantity: numb
 
 export function raimentBonus(user: MUser, quantity: number): number {
 	let bonusQuantity = 0;
-	if (
-		isAffinityActive(user.gearBank, 'raiments') ||
-		user.hasEquippedOrInBank(Object.keys(Runecraft.raimentsOfTheEyeItems).map(i => Number.parseInt(i)))
-	) {
+	if (user.hasEquippedOrInBank(Object.keys(Runecraft.raimentsOfTheEyeItems).map(i => Number.parseInt(i)))) {
 		const amountToAdd = Math.floor(quantity * (60 / 100));
 		bonusQuantity = amountToAdd;
 	} else {

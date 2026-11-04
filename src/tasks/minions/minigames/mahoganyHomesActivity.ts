@@ -1,5 +1,3 @@
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
-
 import { calcPercentOfNum } from '@oldschoolgg/toolkit';
 
 import { calcConBonusXP } from '@/lib/skilling/skills/construction/calcConBonusXP.js';
@@ -13,8 +11,7 @@ export const mahoganyHomesTask: MinionTask = {
 		await user.incrementMinigameScore('mahogany_homes', quantity);
 
 		let bonusXP = 0;
-		const carpenterAffinity = isAffinityActive(user.gearBank, 'carpenter');
-		const outfitMultiplier = carpenterAffinity ? 2.5 : calcConBonusXP(user.gear.skilling.raw());
+		const outfitMultiplier = calcConBonusXP(user.gear.skilling.raw());
 		if (outfitMultiplier > 0) {
 			bonusXP = calcPercentOfNum(outfitMultiplier, xp);
 		}
@@ -38,9 +35,7 @@ export const mahoganyHomesTask: MinionTask = {
 		let str = `${user}, ${user.minionName} finished doing ${quantity}x Mahogany Homes contracts, you received ${points} Carpenter points. ${xpRes} ${flappyRes.userMsg}`;
 
 		if (bonusXP > 0) {
-			str += carpenterAffinity
-				? `\nYou received ${bonusXP.toLocaleString()} bonus XP from your First Age carpenter affinity.`
-				: `\nYou received ${bonusXP.toLocaleString()} bonus XP from your Carpenter's outfit.`;
+			str += `\nYou received ${bonusXP.toLocaleString()} bonus XP from your Carpenter's outfit.`;
 		}
 
 		handleTripFinish({ user, channelId, message: str, data });

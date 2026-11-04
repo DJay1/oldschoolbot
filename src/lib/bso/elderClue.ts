@@ -3,6 +3,8 @@ import { LampTable } from '@/lib/bso/xpLamps.js';
 import { randArrItem, randInt, roll } from 'node-rng';
 import { Bank, LootTable, resolveItems } from 'oldschooljs';
 
+import { FirstAgeItem } from '@/lib/customItems/firstAge.js';
+
 const boxTable = new LootTable()
 	.add('Pet mystery box')
 	.add('Holiday mystery box')
@@ -73,7 +75,10 @@ const table = new LootTable()
 
 type LootTableRollOptions = { targetBank?: Bank; cl: Bank };
 export class ElderClue {
-	public allItems = resolveItems([...table.allItems, 'Clue bag', 'Inventors tools', 'Elder knowledge', 'Octo']);
+	public allItems = [
+		...resolveItems([...table.allItems, 'Clue bag', 'Inventors tools', 'Elder knowledge', 'Octo']),
+		FirstAgeItem.UNCHARGED_SHARD
+	];
 	roll(quantity: number, options: { targetBank?: undefined } & LootTableRollOptions): Bank;
 	roll(quantity: number, options: { targetBank: Bank } & LootTableRollOptions): null;
 	public roll(quantity: number, options: LootTableRollOptions): Bank | null {

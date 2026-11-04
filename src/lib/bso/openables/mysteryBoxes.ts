@@ -22,7 +22,11 @@ export const tmbTable: number[] = [];
 export const umbTable: number[] = [];
 export const embTable: number[] = [];
 for (const item of Items.values()) {
-	if ((item.id >= 40_000 && item.id <= 50_000) || mysteryBoxBlacklist.includes(item.id)) {
+	if (
+		(item.id >= 40_000 && item.id <= 50_000) ||
+		mysteryBoxBlacklist.includes(item.id) ||
+		item.customItemData?.cantDropFromMysteryBoxes === true
+	) {
 		continue;
 	}
 

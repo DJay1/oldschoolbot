@@ -44,7 +44,7 @@ import { cookingCL, craftingCL, creatablesCL, herbloreCL } from '@/lib/bso/colle
 import { discontinuedDyes, dyedItems } from '@/lib/bso/dyedItems.js';
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
 import { ElderClueTable } from '@/lib/bso/elderClue.js';
-import { firstAgeAffinities } from '@/lib/bso/firstAge/affinities.js';
+import { firstAgeSacrificeProgress } from '@/lib/bso/firstAge/shards.js';
 import { GrandmasterClueTable } from '@/lib/bso/grandmasterClue.js';
 import { keyCrates } from '@/lib/bso/keyCrates.js';
 import { kibbleCL } from '@/lib/bso/kibble.js';
@@ -1026,7 +1026,7 @@ export const allCollectionLogs: ICollection = {
 				kcActivity: {
 					Default: async (_, __, { openableScores }) => openableScores.amount(73_124)
 				},
-				items: cluesElderCL,
+				items: [...cluesElderCL, BSOItem.UNCHARGED_FIRST_AGE_SHARD],
 				isActivity: true,
 				fmtProg: clueProg(['Elder'])
 			},
@@ -1498,8 +1498,10 @@ export const allCollectionLogs: ICollection = {
 			'First Age': {
 				alias: ['firstage', 'first age'],
 				items: firstAgeCL,
-				fmtProg: ({ user }) =>
-					`${user.user.first_age_affinities?.length ?? 0}/${firstAgeAffinities.length} affinities unlocked`
+				fmtProg: ({ stats }) => {
+					const progress = firstAgeSacrificeProgress(stats.sacrificedBank);
+					return `${progress.done}/${progress.total} required sacrifices`;
+				}
 			}
 		}
 	},

@@ -1,6 +1,5 @@
 import { masterFarmerOutfit } from '@/lib/bso/bsoConstants.js';
 import { hasUnlockedAtlantis } from '@/lib/bso/bsoUtil.js';
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
 
 import { BitField } from '@/lib/constants.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
@@ -33,9 +32,7 @@ export function calcNumOfPatches(plant: Plant, user: MUser, qp: number): [number
 		}
 	}
 	if (user.bitfield.includes(BitField.HasScrollOfFarming)) numOfPatches += 2;
-	if (user.hasEquippedOrInBank(masterFarmerOutfit) || isAffinityActive(user.gearBank, 'master_farmer')) {
-		numOfPatches += 3;
-	}
+	if (user.hasEquippedOrInBank(masterFarmerOutfit)) numOfPatches += 3;
 
 	// Unlock extra patches in Atlantis
 	const atlantisPatches: Partial<Record<FarmingPatchName, number>> = {

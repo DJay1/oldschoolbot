@@ -1,6 +1,8 @@
 import '@/lib/items/index.js';
 import '../data/itemAliases.js';
 
+import { addUnchargedFirstAgeShards } from '@/lib/bso/firstAge/shards.js';
+
 import { MathRNG, randInt } from 'node-rng';
 import { Bank, EliteMimicTable, type ItemBank, MasterMimicTable } from 'oldschooljs';
 
@@ -20,6 +22,9 @@ export default async ({ clueTierID, quantity }: CasketWorkerArgs): Promise<[Item
 	}
 
 	const loot = clueTier.table.roll(quantity + bsoBonus, { cl: new Bank() });
+	if (clueTier.name === 'Elder') {
+		addUnchargedFirstAgeShards(loot, quantity, rate => MathRNG.roll(rate));
+	}
 
 	let mimicNumber = 0;
 	if (clueTier.mimicChance) {

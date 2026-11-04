@@ -1,3 +1,4 @@
+import { addUnchargedFirstAgeShards } from '@/lib/bso/firstAge/shards.js';
 import { handleCrateSpawns } from '@/lib/bso/handleCrateSpawns.js';
 import type { MTame } from '@/lib/bso/structures/MTame.js';
 import {
@@ -313,6 +314,9 @@ export async function runTameTask(activity: TameActivity, tame: MTame) {
 				loot.add(clueTier.id, activityData.quantity);
 			} else {
 				const openingLoot = clueTier.table.roll(actualOpenQuantityWithBonus, { cl: user.cl });
+				if (clueTier.name === 'Elder') {
+					addUnchargedFirstAgeShards(openingLoot, activityData.quantity, rate => roll(rate));
+				}
 
 				if (tame.hasEquipped('Abyssal jibwings') && clueTier !== ClueTiers[0]) {
 					const lowerTier = ClueTiers[ClueTiers.indexOf(clueTier) - 1];

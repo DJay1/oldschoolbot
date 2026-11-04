@@ -1,5 +1,4 @@
 import { calcBabyYagaHouseDroprate } from '@/lib/bso/bsoUtil.js';
-import { isAffinityActive } from '@/lib/bso/firstAge/affinities.js';
 
 import { calcPercentOfNum } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
@@ -15,9 +14,7 @@ export const constructionTask: MinionTask = {
 		const object = Construction.constructables.find(object => object.id === objectID)!;
 		const xpReceived = quantity * object.xp;
 		let bonusXP = 0;
-		const outfitMultiplier = isAffinityActive(user.gearBank, 'carpenter')
-			? 2.5
-			: Construction.util.calcConBonusXP(user.gear.skilling.raw());
+		const outfitMultiplier = Construction.util.calcConBonusXP(user.gear.skilling.raw());
 		if (outfitMultiplier > 0) {
 			bonusXP = calcPercentOfNum(outfitMultiplier, xpReceived);
 		}
