@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { calcWhatPercent, formatDuration, reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -6,6 +8,21 @@ import { warmGear } from '@/lib/data/filterables.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import type { MinigameActivityTaskOptionsWithNoChanges } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+
+/**
+ * Pyromancer pieces are warm clothing: up to 4 of them make Wintertodt faster and
+ * cheaper on food. The full First Age (max) set grants that same warmth once.
+ * It does not add on top of four warm items the player already has equipped.
+ */
+export function wintertodtWarmPieceCount(user: MUser): number {
+	let warmGearAmount = 0;
+	for (const piece of warmGear) {
+		if (user.gear.skilling.hasEquipped([piece])) warmGearAmount++;
+		if (warmGearAmount >= 4) break;
+	}
+	if (warmGearAmount < 4 && isWearingFullFirstAgeMaxSet(user)) return 4;
+	return warmGearAmount;
+}
 
 export async function wintertodtCommand(user: MUser, channelId: string, quantity?: number) {
 	const fmLevel = user.skillsAsLevels.firemaking;
@@ -34,14 +51,7 @@ export async function wintertodtCommand(user: MUser, channelId: string, quantity
 
 	const baseHealAmountNeeded = 20 * 8;
 	let healAmountNeeded = baseHealAmountNeeded;
-	let warmGearAmount = 0;
-
-	for (const piece of warmGear) {
-		if (user.gear.skilling.hasEquipped([piece])) {
-			warmGearAmount++;
-		}
-		if (warmGearAmount >= 4) break;
-	}
+	const warmGearAmount = wintertodtWarmPieceCount(user);
 
 	healAmountNeeded -= warmGearAmount * 15;
 	durationPerTodt = reduceNumByPercent(durationPerTodt, 5 * warmGearAmount);

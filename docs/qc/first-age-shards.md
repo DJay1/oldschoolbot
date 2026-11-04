@@ -84,3 +84,12 @@ Put it back:
 - [ ] Full max set: `/testpotato max`, then equip all 7 (max) pieces on melee. With no lumberjack in the bank, a woodcutting trip gets the lumberjack outfit XP bonus (2.5%) on top of the First Age piece XP.
 - [ ] 6 of 7: `/gear unequip gear_setup:melee item:First age robe bottom (max)`. The same woodcutting trip loses the lumberjack outfit bonus. The First Age piece XP for the pieces still worn can remain. Equip the robe bottom again and the lumberjack bonus returns.
 - [ ] No double boost: wear all 7 (max) pieces and leave 1 Lumberjack hat, 1 Lumberjack top, 1 Lumberjack legs, and 1 Lumberjack boots in the bank (do not equip them). Woodcutting XP and logs match the full max set with no lumberjack in the bank. The lumberjack 2.5% is not applied a second time.
+
+## Follow-up QC (icons, per-piece XP, outfit boosts)
+
+`/testpotato max`, then equip all 7 (max) pieces on **one** setup (melee is fine). Do the XP checks on a skill that is not already 200m, so the First Age line is visible.
+
+- [ ] Icons: `/gear view` (and the bank) show the tiara, amulet, cape, robe top, robe bottom, bracelet, and ring sitting in the middle of their slots. The two shard icons are centered in the bank too.
+- [ ] Full set: a woodcutting trip's XP line includes the First Age **10%** and the lumberjack **2.5%**. A Wintertodt trip is as fast, and uses as little food, as wearing the 4 pyromancer pieces (the warmth bonus), and the firemaking XP includes the pyromancer 2.5% on top of the First Age 10%.
+- [ ] Missing cape: `/gear unequip gear_setup:melee item:First age cape (max)`. Also unequip that cape from every other setup. The next trip says **8%** First Age XP (not 10%). The lumberjack / pyromancer / angler outfit bonus is gone. A First Age cape left only on a different setup does not put the 10% back.
+- [ ] No double: with all 7 (max) pieces equipped and the real lumberjack outfit in the bank, woodcutting XP matches the full max set with no lumberjack in the bank. Same idea for Wintertodt if the pyromancer outfit is already worn: warmth is not applied a second time.
