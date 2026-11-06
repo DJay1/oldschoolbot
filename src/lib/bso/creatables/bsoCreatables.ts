@@ -7,7 +7,12 @@ import { slayerMaskCreatables } from '@/lib/bso/creatables/slayerMasks.js';
 import { sunMoonCreatables } from '@/lib/bso/creatables/sunMoonCreatables.js';
 import { dyedItems } from '@/lib/bso/dyedItems.js';
 import { expertCapesSource } from '@/lib/bso/expertCapes.js';
-import { firstAgeMaxCreateCost, firstAgeMaxUpgrades } from '@/lib/bso/firstAge/shards.js';
+import {
+	FIRST_AGE_CHARGED_SHARD_GP_COST,
+	firstAgeMaxCreateCost,
+	firstAgeMaxUpgrades,
+	planChargedShardCreate
+} from '@/lib/bso/firstAge/shards.js';
 import { nexBrokenArmorDetails } from '@/lib/bso/monsters/nex.js';
 import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 import { tameCreatables } from '@/lib/bso/tames/tameCreatables.js';
@@ -16,6 +21,7 @@ import { seaMonkeyStaves } from '@/lib/bso/tames/tames.js';
 import { stringMatches } from '@oldschoolgg/toolkit';
 import { Bank, Items, itemID, resolveItems } from 'oldschooljs';
 
+import { FirstAgeItem } from '@/lib/customItems/firstAge.js';
 import type { Createable } from '@/lib/data/createables.js';
 import Skillcapes from '@/lib/skilling/skillcapes.js';
 import Prayer from '@/lib/skilling/skills/prayer.js';
@@ -1471,6 +1477,21 @@ for (const cape of Skillcapes) {
 		noCl: true
 	});
 }
+
+bsoCreatables.push({
+	name: 'Charged first age shard',
+	inputItems: new Bank().add(FirstAgeItem.UNCHARGED_SHARD).add('Coins', FIRST_AGE_CHARGED_SHARD_GP_COST),
+	outputItems: new Bank().add(FirstAgeItem.CHARGED_SHARD),
+	customReq: async user => {
+		const stats = await user.fetchMStats();
+		const plan = planChargedShardCreate({
+			sacrificed: stats.sacrificedBank,
+			unchargedOwned: user.bank.amount(FirstAgeItem.UNCHARGED_SHARD),
+			gp: Number(user.GP)
+		});
+		return plan.ok ? null : plan.message;
+	}
+});
 
 for (const piece of firstAgeMaxUpgrades) {
 	bsoCreatables.push({

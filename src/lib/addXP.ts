@@ -106,6 +106,28 @@ const skillingOutfitBoosts = [
 
 const formatBonusPercent = (value: number) => (Number.isInteger(value) ? value.toString() : value.toFixed(1));
 
+function xpBonusSentences(input: {
+	minimal: boolean | undefined;
+	totalFirstAgeBonus: number;
+	outfitBoostPercent: number;
+	outfitName: string;
+	totalStaticBoost: number;
+	staticBoostsApplied: string[];
+}): string {
+	if (input.minimal) return '';
+	let str = '';
+	if (input.totalFirstAgeBonus > 0) {
+		str += ` You received ${input.totalFirstAgeBonus}% bonus XP for First age outfit items.`;
+	}
+	if (input.outfitBoostPercent > 0) {
+		str += ` You received ${formatBonusPercent(input.outfitBoostPercent)}% bonus XP for ${input.outfitName} outfit pieces.`;
+	}
+	if (input.totalStaticBoost > 0) {
+		str += ` You received bonus XP from ${input.staticBoostsApplied.join(', ')}.`;
+	}
+	return str;
+}
+
 // Build list of all Master capes including combined capes.
 const allMasterCapes = Skillcapes.map(i => i.masterCape)
 	.map(msc => getSimilarItems(msc.id))
@@ -339,6 +361,15 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 		globalClient.emit(Events.ServerNotification, resultStr);
 	}
 
+	const bonusSentences = xpBonusSentences({
+		minimal: params.minimal,
+		totalFirstAgeBonus,
+		outfitBoostPercent,
+		outfitName: name,
+		totalStaticBoost,
+		staticBoostsApplied
+	});
+
 	if (currentXP >= MAX_XP) {
 		let xpStr = '';
 		if (params.duration && !params.minimal) {
@@ -347,8 +378,10 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 			let rawXPHr = (params.amount / (params.duration / Time.Minute)) * 60;
 			rawXPHr = Math.floor(rawXPHr / 1000) * 1000;
 			xpStr += ` (${toKMB(rawXPHr)}/Hr)`;
+			xpStr += bonusSentences;
 		} else {
 			xpStr += `🚫 ${params.amount.toLocaleString()} ${params.skillName} XP`;
+			if (!params.minimal) xpStr += bonusSentences;
 		}
 		return xpStr;
 	}
@@ -380,15 +413,7 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 		if (gorajanBoost && !params.minimal) {
 			str += ' (2x boost from Gorajan armor)';
 		}
-		if (totalFirstAgeBonus > 0 && !params.minimal) {
-			str += ` You received ${totalFirstAgeBonus}% bonus XP for First age outfit items.`;
-		}
-		if (outfitBoostPercent > 0 && !params.minimal) {
-			str += ` You received ${formatBonusPercent(outfitBoostPercent)}% bonus XP for ${name} outfit pieces.`;
-		}
-		if (totalStaticBoost > 0 && !params.minimal) {
-			str += ` You received bonus XP from ${staticBoostsApplied.join(', ')}.`;
-		}
+		str += bonusSentences;
 
 		if (params.duration) {
 			let rawXPHr = (params.amount / (params.duration / Time.Minute)) * 60;

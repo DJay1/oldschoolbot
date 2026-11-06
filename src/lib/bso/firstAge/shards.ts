@@ -69,8 +69,14 @@ export const firstAgeMaxUpgrades: readonly FirstAgeMaxUpgrade[] = [
 	}
 ];
 
-/** Charged shards given by one successful activation. One per (max) piece. */
-export const FIRST_AGE_CHARGES_PER_ACTIVATION = firstAgeMaxUpgrades.length;
+/** Coins spent, with one uncharged shard, to create one charged shard. */
+export const FIRST_AGE_CHARGED_SHARD_GP_COST = 100_000_000_000;
+
+/**
+ * 1/15. Zippy uses this same roll to double clue-trip loot.
+ * The First Age (max) set rolls it on its own, after Zippy, and doubles the caskets again.
+ */
+export const CLUE_CASKET_DOUBLE_RATE = 15;
 
 const firstAgeMaxPieceIds = firstAgeMaxUpgrades.map(piece => piece.maxId);
 
@@ -285,13 +291,13 @@ export function formatMissingSacrifices(missing: readonly ResolvedSacrificeSlot[
 	return [...byOutfit.entries()].map(([outfit, labels]) => `${outfit}: ${labels.join(', ')}`).join('\n');
 }
 
-export type ActivationPlan = { ok: true; charges: number } | { ok: false; message: string };
+export type ChargePlan = { ok: true } | { ok: false; message: string };
 
-export function planActivation(input: {
-	sacrificed: Bank;
-	unchargedOwned: number;
-	chargedOwned: number;
-}): ActivationPlan {
+/**
+ * One uncharged shard and 100b coins become one charged shard, after every required
+ * skilling outfit piece has been sacrificed. One charged shard upgrades one piece.
+ */
+export function planChargedShardCreate(input: { sacrificed: Bank; unchargedOwned: number; gp: number }): ChargePlan {
 	const missing = missingFirstAgeSacrifices(input.sacrificed);
 	if (missing.length > 0) {
 		const progress = firstAgeSacrificeProgress(input.sacrificed);
@@ -300,20 +306,36 @@ export function planActivation(input: {
 			message: `You have sacrificed ${progress.done}/${progress.total} required skilling pieces. Still missing:\n${formatMissingSacrifices(missing)}`
 		};
 	}
-	if (input.chargedOwned > 0) {
-		const noun = input.chargedOwned === 1 ? 'shard' : 'shards';
-		return {
-			ok: false,
-			message: `You already hold ${input.chargedOwned} Charged first age ${noun}. Spend them with /create before activating another shard.`
-		};
-	}
 	if (input.unchargedOwned < 1) {
 		return {
 			ok: false,
 			message: `Your sacrifices are complete, but you need an Uncharged first age shard (1/${UNCHARGED_FIRST_AGE_SHARD_DROP_RATE} from an Elder casket).`
 		};
 	}
-	return { ok: true, charges: FIRST_AGE_CHARGES_PER_ACTIVATION };
+	if (input.gp < FIRST_AGE_CHARGED_SHARD_GP_COST) {
+		return {
+			ok: false,
+			message: `You need ${FIRST_AGE_CHARGED_SHARD_GP_COST.toLocaleString()} coins to create a Charged first age shard.`
+		};
+	}
+	return { ok: true };
+}
+
+/** Trip-message line for an outfit XP bonus. The percent is applied once, not stacked. */
+export function namedOutfitXpLine(input: {
+	outfit: string;
+	percent: number | null;
+	xp: number;
+	fromMaxSet: boolean;
+}): string {
+	const via = input.fromMaxSet
+		? `your First Age (max) set, same as the ${input.outfit} outfit`
+		: `your ${input.outfit} outfit`;
+	if (input.percent == null) {
+		return `**${input.outfit} bonus:** ${input.xp.toLocaleString()} XP from ${via}.`;
+	}
+	const pct = Number.isInteger(input.percent) ? String(input.percent) : input.percent.toFixed(1);
+	return `**${input.outfit} bonus:** ${pct}% (${input.xp.toLocaleString()} XP) from ${via}.`;
 }
 
 export function firstAgeMaxCreateCost(upgrade: FirstAgeMaxUpgrade): Bank {
@@ -327,7 +349,7 @@ export function planMaxUpgrade(bank: Bank, pieceKey: string): UpgradePlan {
 	if (!upgrade) return { error: 'That is not a First Age piece.' };
 	if (bank.amount(FirstAgeItem.CHARGED_SHARD) < 1) {
 		return {
-			error: 'You need a Charged first age shard. Activate an Uncharged first age shard with /firstage activate.'
+			error: 'You need a Charged first age shard. Create one with /create item:Charged first age shard (1 uncharged shard and 100b coins, after every required sacrifice).'
 		};
 	}
 	if (bank.amount(upgrade.baseId) < 1) {
@@ -369,7 +391,7 @@ export function firstAgeStatus(input: {
 	const lines = [
 		`**First Age** sacrifices: ${progress.done}/${progress.total}.`,
 		`Uncharged first age shards: ${input.uncharged.toLocaleString()}. Charged first age shards: ${input.charged.toLocaleString()}.`,
-		`/firstage activate spends 1 uncharged shard and gives ${FIRST_AGE_CHARGES_PER_ACTIVATION} charged shards (one per (max) piece) after every required sacrifice. It is refused while you still hold any charged shard.`,
+		`/create item:Charged first age shard spends 1 uncharged shard and ${FIRST_AGE_CHARGED_SHARD_GP_COST.toLocaleString()} coins, after every required sacrifice. One charged shard upgrades one piece.`,
 		'/create spends 1 Charged first age shard and the matching base piece to make the tradeable (max) piece.',
 		input.ownedMaxNames.length > 0
 			? `Max pieces you have: ${input.ownedMaxNames.join(', ')}.`

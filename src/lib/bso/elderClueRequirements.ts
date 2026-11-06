@@ -26,7 +26,13 @@ export const elderRequiredClueCLItems = uniqueArr([
 	...cluesMediumCL,
 	...cluesHardCL,
 	...cluesMasterCL,
-	...cluesSharedCL
+	...cluesSharedCL,
+	// "Saradomin cloak" / "Zamorak cloak" resolve to the older duplicate ids (4041, 4042).
+	// The vestment cloaks on the clue log are 10446 and 10450. Require both.
+	4041,
+	4042,
+	10_446,
+	10_450
 ]);
 
 export const elderSherlockItems = deepResolveItems([

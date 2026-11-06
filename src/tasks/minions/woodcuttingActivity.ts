@@ -1,6 +1,6 @@
 import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
 
 import { objectEntries, perTimeUnitChance, Time } from '@oldschoolgg/toolkit';
 import { Bank, EItem, itemID } from 'oldschooljs';
@@ -199,7 +199,9 @@ export const woodcuttingTask: MinionTask = {
 		const twitchersEquipped = user.hasEquipped("twitcher's gloves");
 		let twitcherSetting: TwitcherGloves | undefined = 'egg';
 		let xpReceived = quantity * log.xp;
-		let bonusXP = 0;
+		let fellingBonusXP = 0;
+		let lumberjackBonusXP = 0;
+		let lumberjackFromMaxSet = false;
 		let rationUsed = 0;
 		let lostLogs = 0;
 		const loot = new Bank();
@@ -223,28 +225,26 @@ export const woodcuttingTask: MinionTask = {
 			}
 			const fellingXP = Math.floor(rationUsed * log.xp * 0.1);
 			xpReceived += fellingXP;
-			bonusXP += fellingXP;
+			fellingBonusXP += fellingXP;
 			itemsToRemove.add("Forester's ration", rationUsed);
 		}
 
-		// If they have the entire lumberjack outfit, give an extra 0.5% xp bonus
-		if (
-			isWearingFullFirstAgeMaxSet(user) ||
-			user.hasEquippedOrInBank(
-				Object.keys(Woodcutting.lumberjackItems).map(i => Number.parseInt(i)),
-				'every'
-			)
-		) {
+		const lumberjackIds = Object.keys(Woodcutting.lumberjackItems).map(i => Number.parseInt(i));
+		const hasFullLumberjack = user.hasEquippedOrInBank(lumberjackIds, 'every');
+		const wearingMaxSet = isWearingFullFirstAgeMaxSet(user);
+		// If they have the entire lumberjack outfit, give an extra 2.5% xp bonus. The max set grants it once.
+		if (wearingMaxSet || hasFullLumberjack) {
 			const amountToAdd = Math.floor(xpReceived * (2.5 / 100));
 			xpReceived += amountToAdd;
-			bonusXP += amountToAdd;
+			lumberjackBonusXP += amountToAdd;
+			lumberjackFromMaxSet = wearingMaxSet && !hasFullLumberjack;
 		} else {
 			// For each lumberjack item, check if they have it, give its XP boost if so
 			for (const [itemID, bonus] of Object.entries(Woodcutting.lumberjackItems)) {
 				if (user.hasEquippedOrInBank(Number.parseInt(itemID))) {
 					const amountToAdd = Math.floor(xpReceived * (bonus / 100));
 					xpReceived += amountToAdd;
-					bonusXP += amountToAdd;
+					lumberjackBonusXP += amountToAdd;
 				}
 			}
 		}
@@ -324,9 +324,17 @@ export const woodcuttingTask: MinionTask = {
 		}
 
 		// End of trip message
-		let str = `${user}, ${user.minionName} finished woodcutting. ${xpRes}${
-			bonusXP > 0 ? ` **Bonus XP:** ${bonusXP.toLocaleString()}` : ''
-		}\n`;
+		const lumberjackLine =
+			lumberjackBonusXP > 0
+				? ` ${namedOutfitXpLine({
+						outfit: 'Lumberjack',
+						percent: lumberjackFromMaxSet || hasFullLumberjack ? 2.5 : null,
+						xp: lumberjackBonusXP,
+						fromMaxSet: lumberjackFromMaxSet
+					})}`
+				: '';
+		const fellingLine = fellingBonusXP > 0 ? ` **Felling axe bonus:** ${fellingBonusXP.toLocaleString()} XP.` : '';
+		let str = `${user}, ${user.minionName} finished woodcutting. ${xpRes}${lumberjackLine}${fellingLine}\n`;
 
 		if (!log.clueNestsOnly) {
 			if (wcCapeNestBoost) {

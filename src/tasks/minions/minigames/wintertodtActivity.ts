@@ -1,5 +1,5 @@
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
 
 import { calcPerHour, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
@@ -124,7 +124,15 @@ export const wintertodtTask: MinionTask = {
 		let output = `${user}, ${user.minionName} finished subduing Wintertodt ${quantity}x times (${calcPerHour(quantity, data.duration).toFixed(1)}/hr), you now have ${newScore} KC. ${xpStr}, you cut ${numberOfRoots}x Bruma roots.`;
 
 		if (fmBonusXP > 0) {
-			output += `\n\n**Firemaking Bonus XP:** ${fmBonusXP.toLocaleString()}`;
+			const pieceIds = Object.keys(Firemaking.pyromancerItems).map(i => Number.parseInt(i));
+			const hasFull = user.hasEquippedOrInBank(pieceIds, 'every');
+			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
+			output += `\n\n${namedOutfitXpLine({
+				outfit: 'Pyromancer',
+				percent: hasFull || fromMaxSet ? 2.5 : null,
+				xp: fmBonusXP,
+				fromMaxSet
+			})}`;
 		}
 
 		if (hasMasterCape) {

@@ -1,4 +1,4 @@
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
 
 import Firemaking from '@/lib/skilling/skills/firemaking.js';
 import type { FiremakingActivityTaskOptions } from '@/lib/types/minions.js';
@@ -44,7 +44,15 @@ export const firemakingTask: MinionTask = {
 		let str = `${user}, ${user.minionName} finished lighting ${quantity} ${burnable.name}. ${xpRes}`;
 
 		if (bonusXP > 0) {
-			str += `\n\n**Bonus XP:** ${bonusXP.toLocaleString()}`;
+			const pieceIds = Object.keys(Firemaking.pyromancerItems).map(i => Number.parseInt(i));
+			const hasFull = user.hasEquippedOrInBank(pieceIds, 'every');
+			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
+			str += `\n\n${namedOutfitXpLine({
+				outfit: 'Pyromancer',
+				percent: hasFull || fromMaxSet ? 2.5 : null,
+				xp: bonusXP,
+				fromMaxSet
+			})}`;
 		}
 
 		handleTripFinish({ user, channelId, message: str, data });
