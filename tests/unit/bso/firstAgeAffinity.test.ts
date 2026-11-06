@@ -345,22 +345,23 @@ test('the full First Age (max) set grants each outfit bonus once, and 6 of 7 gra
 	expect(patches(six) - patches(bare)).toEqual(0);
 });
 
-test('the full max set doubles a clue casket at Zippy rate, and not again if Zippy already doubled', () => {
+test('the full max set doubles clue caskets at Zippy rate, after Zippy has already doubled them', () => {
 	expect(CLUE_CASKET_DOUBLE_RATE).toEqual(15);
-	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: true, zippyDoubledLoot: false })).toEqual({
-		extraCaskets: true,
+	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: true, casketsAlready: 1 })).toEqual({
+		extraCaskets: 1,
 		message: 'Your First Age (max) set doubled your clue casket!'
 	});
-	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: true, zippyDoubledLoot: true })).toEqual({
-		extraCaskets: false,
-		message: null
+	// Zippy turned 1 casket into 2. The set hit adds another 2, for 4.
+	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: true, casketsAlready: 2 })).toEqual({
+		extraCaskets: 2,
+		message: 'Your First Age (max) set doubled your clue casket!'
 	});
-	expect(
-		firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: false, zippyDoubledLoot: false }).extraCaskets
-	).toEqual(false);
-	expect(
-		firstAgeCasketDouble({ wearingFullMaxSet: false, rolledDouble: true, zippyDoubledLoot: false }).extraCaskets
-	).toEqual(false);
+	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: false, casketsAlready: 2 }).extraCaskets).toEqual(
+		0
+	);
+	expect(firstAgeCasketDouble({ wearingFullMaxSet: false, rolledDouble: true, casketsAlready: 2 }).extraCaskets).toEqual(
+		0
+	);
 	expect(namedOutfitXpLine({ outfit: 'Lumberjack', percent: 2.5, xp: 6435, fromMaxSet: true })).toContain('2.5%');
 	expect(namedOutfitXpLine({ outfit: 'Lumberjack', percent: 2.5, xp: 6435, fromMaxSet: true })).toContain(
 		'First Age (max) set'

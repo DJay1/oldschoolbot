@@ -74,7 +74,7 @@ export const FIRST_AGE_CHARGED_SHARD_GP_COST = 100_000_000_000;
 
 /**
  * 1/15. Zippy uses this same roll to double clue-trip loot.
- * The First Age (max) set rolls it on its own, and only doubles the trip's reward caskets.
+ * The First Age (max) set rolls it on its own, after Zippy, and doubles the caskets again.
  */
 export const CLUE_CASKET_DOUBLE_RATE = 15;
 

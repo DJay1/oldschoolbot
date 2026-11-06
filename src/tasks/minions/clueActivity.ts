@@ -12,18 +12,18 @@ export const FIRST_AGE_CASKET_DOUBLE_MESSAGE = 'Your First Age (max) set doubled
 
 /**
  * Zippy and the First Age (max) set each roll 1/15 on their own.
- * Zippy doubles the whole clue loot. The set adds one extra copy of this trip's reward caskets.
- * If Zippy already doubled the loot, the set does not add another copy (no 4x caskets).
+ * Zippy runs first and may double the whole clue loot. The set then doubles whatever
+ * reward caskets are already in the loot, so Zippy's 1 -> 2 becomes 4 when both hit.
  */
 export function firstAgeCasketDouble(input: {
 	wearingFullMaxSet: boolean;
 	rolledDouble: boolean;
-	zippyDoubledLoot: boolean;
-}): { extraCaskets: boolean; message: string | null } {
-	if (!input.wearingFullMaxSet || !input.rolledDouble || input.zippyDoubledLoot) {
-		return { extraCaskets: false, message: null };
+	casketsAlready: number;
+}): { extraCaskets: number; message: string | null } {
+	if (!input.wearingFullMaxSet || !input.rolledDouble || input.casketsAlready <= 0) {
+		return { extraCaskets: 0, message: null };
 	}
-	return { extraCaskets: true, message: FIRST_AGE_CASKET_DOUBLE_MESSAGE };
+	return { extraCaskets: input.casketsAlready, message: FIRST_AGE_CASKET_DOUBLE_MESSAGE };
 }
 
 const possibleFound = new LootTable()
@@ -59,7 +59,6 @@ export const clueTask: MinionTask = {
 		const loot = new Bank().add(clueTier.id, quantity);
 
 		const firstAgeRolledDouble = isWearingFullFirstAgeMaxSet(user) && roll(CLUE_CASKET_DOUBLE_RATE);
-		let zippyDoubledLoot = false;
 
 		if (user.usingPet('Zippy') && duration > Time.Minute * 5) {
 			const bonusLoot = new Bank();
@@ -80,7 +79,6 @@ export const clueTask: MinionTask = {
 				await ClientSettings.updateBankSetting('zippy_loot', loot);
 				await user.statsBankUpdate('loot_from_zippy_bank', loot);
 				loot.multiply(2);
-				zippyDoubledLoot = true;
 				str += '\nZippy has **doubled** your loot.';
 			}
 
@@ -90,10 +88,10 @@ export const clueTask: MinionTask = {
 		const firstAgeDouble = firstAgeCasketDouble({
 			wearingFullMaxSet: isWearingFullFirstAgeMaxSet(user),
 			rolledDouble: firstAgeRolledDouble,
-			zippyDoubledLoot
+			casketsAlready: loot.amount(clueTier.id)
 		});
-		if (firstAgeDouble.extraCaskets) {
-			loot.add(clueTier.id, quantity);
+		if (firstAgeDouble.extraCaskets > 0) {
+			loot.add(clueTier.id, firstAgeDouble.extraCaskets);
 			str += `\n${firstAgeDouble.message}`;
 		}
 
