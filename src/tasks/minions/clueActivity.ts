@@ -1,3 +1,4 @@
+import { CLUE_CASKET_DOUBLE_RATE, isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 import { incrementUserCounter } from '@/lib/bso/userCounter.js';
 
 import { Time } from '@oldschoolgg/toolkit';
@@ -6,6 +7,24 @@ import { Bank, LootTable } from 'oldschooljs';
 
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import type { ClueActivityTaskOptions } from '@/lib/types/minions.js';
+
+export const FIRST_AGE_CASKET_DOUBLE_MESSAGE = 'Your First Age (max) set doubled your clue casket!';
+
+/**
+ * Zippy and the First Age (max) set each roll 1/15 on their own.
+ * Zippy doubles the whole clue loot. The set adds one extra copy of this trip's reward caskets.
+ * If Zippy already doubled the loot, the set does not add another copy (no 4x caskets).
+ */
+export function firstAgeCasketDouble(input: {
+	wearingFullMaxSet: boolean;
+	rolledDouble: boolean;
+	zippyDoubledLoot: boolean;
+}): { extraCaskets: boolean; message: string | null } {
+	if (!input.wearingFullMaxSet || !input.rolledDouble || input.zippyDoubledLoot) {
+		return { extraCaskets: false, message: null };
+	}
+	return { extraCaskets: true, message: FIRST_AGE_CASKET_DOUBLE_MESSAGE };
+}
 
 const possibleFound = new LootTable()
 	.add('Reward casket (beginner)')
@@ -39,6 +58,9 @@ export const clueTask: MinionTask = {
 
 		const loot = new Bank().add(clueTier.id, quantity);
 
+		const firstAgeRolledDouble = isWearingFullFirstAgeMaxSet(user) && roll(CLUE_CASKET_DOUBLE_RATE);
+		let zippyDoubledLoot = false;
+
 		if (user.usingPet('Zippy') && duration > Time.Minute * 5) {
 			const bonusLoot = new Bank();
 			const numberOfMinutes = Math.floor(duration / Time.Minute);
@@ -54,14 +76,25 @@ export const clueTask: MinionTask = {
 
 			loot.add(bonusLoot);
 
-			if (roll(15)) {
+			if (roll(CLUE_CASKET_DOUBLE_RATE)) {
 				await ClientSettings.updateBankSetting('zippy_loot', loot);
 				await user.statsBankUpdate('loot_from_zippy_bank', loot);
 				loot.multiply(2);
+				zippyDoubledLoot = true;
 				str += '\nZippy has **doubled** your loot.';
 			}
 
 			str += `\n\nZippy has found these items for you: ${new Bank(bonusLoot)}`;
+		}
+
+		const firstAgeDouble = firstAgeCasketDouble({
+			wearingFullMaxSet: isWearingFullFirstAgeMaxSet(user),
+			rolledDouble: firstAgeRolledDouble,
+			zippyDoubledLoot
+		});
+		if (firstAgeDouble.extraCaskets) {
+			loot.add(clueTier.id, quantity);
+			str += `\n${firstAgeDouble.message}`;
 		}
 
 		await user.transactItems({

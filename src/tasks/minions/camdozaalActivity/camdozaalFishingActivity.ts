@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
+
 import { LootTable } from 'oldschooljs';
 
 import addSkillingClueToLoot from '@/lib/minions/functions/addSkillingClueToLoot.js';
@@ -46,7 +48,11 @@ export const camdozaalFishingTask: MinionTask = {
 			fishingXP += loot.amount(fish.id!) * fish.xp!;
 		}
 
-		const { totalXP: fishingXPWithAngler, bonusXP } = Fishing.util.calcAnglerBonusXP({
+		const {
+			totalXP: fishingXPWithAngler,
+			bonusXP,
+			percent: anglerPercent
+		} = Fishing.util.calcAnglerBonusXP({
 			gearBank: user.gearBank,
 			xp: fishingXP,
 			roundingMethod: 'ceil'
@@ -64,7 +70,15 @@ export const camdozaalFishingTask: MinionTask = {
 		// Trip finish message
 		let str = `${user}, ${user.minionName} finished fishing in Camdozaal! ${xpRes}`;
 		if (bonusXP > 0) {
-			str += `\n\n**Bonus XP:** ${bonusXP.toLocaleString()}`;
+			const pieceIds = Fishing.anglerItems.map(i => i[0]);
+			const hasFull = user.gear.skilling.hasEquipped(pieceIds, true);
+			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
+			str += `\n\n${namedOutfitXpLine({
+				outfit: 'Angler',
+				percent: anglerPercent,
+				xp: bonusXP,
+				fromMaxSet
+			})}`;
 		}
 
 		// Add clue scrolls

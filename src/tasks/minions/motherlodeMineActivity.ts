@@ -1,6 +1,6 @@
 import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 
 import { Time } from '@oldschoolgg/toolkit';
@@ -134,7 +134,15 @@ export const motherlodeMiningTask: MinionTask = {
 
 		str += `\n\nYou received: ${loot}.`;
 		if (bonusXP > 0) {
-			str += `\n\n**Bonus XP:** ${bonusXP.toLocaleString()}`;
+			const pieceIds = Object.keys(Mining.prospectorItems).map(i => Number.parseInt(i));
+			const hasFull = user.hasEquippedOrInBank(pieceIds, 'every');
+			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
+			str += `\n\n${namedOutfitXpLine({
+				outfit: 'Prospector',
+				percent: hasFull || fromMaxSet ? 2.5 : null,
+				xp: bonusXP,
+				fromMaxSet
+			})}`;
 		}
 
 		if (user.hasEquippedOrInBank('Mining master cape')) {

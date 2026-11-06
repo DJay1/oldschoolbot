@@ -1,4 +1,4 @@
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
 
 import { Bank, LootTable } from 'oldschooljs';
 
@@ -88,7 +88,15 @@ export const camdozaalMiningTask: MinionTask = {
 		// Trip finish message
 		let str = `${user}, ${user.minionName} finished mining in Camdozaal! ${xpRes}`;
 		if (bonusXP > 0) {
-			str += `\n\n**Bonus XP:** ${bonusXP.toLocaleString()}`;
+			const pieceIds = Object.keys(Mining.prospectorItems).map(i => Number.parseInt(i));
+			const hasFull = user.hasEquippedOrInBank(pieceIds, 'every');
+			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
+			str += `\n\n${namedOutfitXpLine({
+				outfit: 'Prospector',
+				percent: hasFull || fromMaxSet ? 2.5 : null,
+				xp: bonusXP,
+				fromMaxSet
+			})}`;
 		}
 
 		// Add clue scrolls

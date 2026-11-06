@@ -42,7 +42,13 @@ Full required set. Confirm the prompt. This sacrifices 1 of each required item a
 /sacrifice items:1 Lumberjack hat, 1 Lumberjack top, 1 Lumberjack legs, 1 Lumberjack boots, 1 Prospector helmet, 1 Prospector jacket, 1 Prospector legs, 1 Prospector boots, 1 Angler hat, 1 Angler top, 1 Angler waders, 1 Angler boots, 1 Pyromancer hood, 1 Pyromancer garb, 1 Pyromancer robe, 1 Pyromancer boots, 1 Farmer's strawhat, 1 Farmer's jacket, 1 Farmer's boro trousers, 1 Farmer's boots, 1 Master farmer hat, 1 Master farmer jacket, 1 Master farmer pants, 1 Master farmer gloves, 1 Master farmer boots, 1 Blacksmith helmet, 1 Blacksmith top, 1 Blacksmith apron, 1 Blacksmith gloves, 1 Blacksmith boots, 1 Fletcher's hat, 1 Fletcher's top, 1 Fletcher's legs, 1 Fletcher's boots, 1 Fletcher's gloves, 1 Inventors' helmet, 1 Inventors' torso, 1 Inventors' legs, 1 Inventors' gloves, 1 Inventors' boots, 1 Inventors' backpack, 1 Diviner's headwear, 1 Diviner's robe, 1 Diviner's legwear, 1 Diviner's handwear, 1 Diviner's footwear, 1 Rogue mask, 1 Rogue top, 1 Rogue trousers, 1 Rogue gloves, 1 Rogue boots, 1 Carpenter's helmet, 1 Carpenter's shirt, 1 Carpenter's trousers, 1 Carpenter's boots, 1 Hat of the eye, 1 Robe top of the eye, 1 Robe bottoms of the eye, 1 Boots of the eye, 1 Zealot's helm, 1 Zealot's robe top, 1 Zealot's robe bottom, 1 Zealot's boots
 ```
 
-Missing-list variant. Same list with `1 Pyromancer hood` removed. `/firstage activate` must list Pyromancer hood and must not consume a shard.
+Missing-list variant. Same list with `1 Pyromancer hood` removed. `/create item:Charged first age shard` must list Pyromancer hood and must not consume a shard or coins.
+
+Coins for one charge (100b). The bank parser accepts `100b`.
+
+```
+/testpotato spawn items:100b Coins
+```
 
 ```
 /sacrifice items:1 Lumberjack hat, 1 Lumberjack top, 1 Lumberjack legs, 1 Lumberjack boots, 1 Prospector helmet, 1 Prospector jacket, 1 Prospector legs, 1 Prospector boots, 1 Angler hat, 1 Angler top, 1 Angler waders, 1 Angler boots, 1 Pyromancer garb, 1 Pyromancer robe, 1 Pyromancer boots, 1 Farmer's strawhat, 1 Farmer's jacket, 1 Farmer's boro trousers, 1 Farmer's boots, 1 Master farmer hat, 1 Master farmer jacket, 1 Master farmer pants, 1 Master farmer gloves, 1 Master farmer boots, 1 Blacksmith helmet, 1 Blacksmith top, 1 Blacksmith apron, 1 Blacksmith gloves, 1 Blacksmith boots, 1 Fletcher's hat, 1 Fletcher's top, 1 Fletcher's legs, 1 Fletcher's boots, 1 Fletcher's gloves, 1 Inventors' helmet, 1 Inventors' torso, 1 Inventors' legs, 1 Inventors' gloves, 1 Inventors' boots, 1 Inventors' backpack, 1 Diviner's headwear, 1 Diviner's robe, 1 Diviner's legwear, 1 Diviner's handwear, 1 Diviner's footwear, 1 Rogue mask, 1 Rogue top, 1 Rogue trousers, 1 Rogue gloves, 1 Rogue boots, 1 Carpenter's helmet, 1 Carpenter's shirt, 1 Carpenter's trousers, 1 Carpenter's boots, 1 Hat of the eye, 1 Robe top of the eye, 1 Robe bottoms of the eye, 1 Boots of the eye, 1 Zealot's helm, 1 Zealot's robe top, 1 Zealot's robe bottom, 1 Zealot's boots
@@ -75,13 +81,14 @@ Put it back:
 ## QC checklist
 
 - [ ] Elder drop: `/casket name:Elder quantity:3000` (or as high as the sim limit allows) shows Uncharged first age shard at about 1/300. Or `/testpotato elder`, spawn `Reward casket (elder)`, then `/open` (open-until `Uncharged first age shard` works because it is on the casket's item list).
-- [ ] `/firstage` or `/firstage activate` with sacrifices missing lists what is left and does not consume a shard. The missing-list sacrifice command above should name Pyromancer hood.
-- [ ] With every required piece in the sacrificed bank and 1 uncharged shard, `/firstage activate` removes the uncharged shard and adds 7 Charged first age shards.
-- [ ] `/firstage activate` again, while any charged shard is still in the bank, is refused.
-- [ ] `/create item:First age tiara (max)` (and the other six names) consumes 1 charged shard and the matching base piece, and gives the (max) piece. Doing all seven leaves 0 charged shards.
+- [ ] `/firstage` shows sacrifice progress. There is no `/firstage activate`.
+- [ ] `/create item:Charged first age shard` with sacrifices missing lists what is left (the missing-list sacrifice above should name Pyromancer hood) and does not consume a shard or coins.
+- [ ] With every required piece sacrificed, 1 uncharged shard, and 100b coins, `/create item:Charged first age shard` removes 1 uncharged shard and 100b coins and adds 1 Charged first age shard. One charged shard upgrades one piece. The charged icon is the gold shard with purple flecks. The uncharged icon is the same shape in dull grey.
+- [ ] `/create item:First age tiara (max)` consumes 1 charged shard and the base tiara, and gives the (max) piece. Repeat for the other six names.
 - [ ] Charged shard: trade, gift, GE list, sacrifice, lottery, giveaway, and gamble are all refused.
 - [ ] Uncharged shard and the seven (max) pieces can be traded and listed on the GE.
-- [ ] Full max set: `/testpotato max`, then equip all 7 (max) pieces on melee. With no lumberjack in the bank, a woodcutting trip gets the lumberjack outfit XP bonus (2.5%) on top of the First Age piece XP.
+- [ ] Full max set: `/testpotato max`, then equip all 7 (max) pieces on melee. On a skill below 5b XP, the woodcutting trip says First Age **10%** and **Lumberjack bonus: 2.5%**. At 5b XP the same two lines still appear on the "no XP / tracked" message. A clue trip has a 1/15 chance (same roll as Zippy's loot double) to say `Your First Age (max) set doubled your clue casket!` and add one extra casket. If Zippy also doubles that trip, the caskets are not doubled a second time.
+- [ ] `/testpotato elder` collection log includes Saradomin cloak and Zamorak cloak (both the name-resolved ids and vestments 10446 and 10450).
 - [ ] 6 of 7: `/gear unequip gear_setup:melee item:First age robe bottom (max)`. The same woodcutting trip loses the lumberjack outfit bonus. The First Age piece XP for the pieces still worn can remain. Equip the robe bottom again and the lumberjack bonus returns.
 - [ ] No double boost: wear all 7 (max) pieces and leave 1 Lumberjack hat, 1 Lumberjack top, 1 Lumberjack legs, and 1 Lumberjack boots in the bank (do not equip them). Woodcutting XP and logs match the full max set with no lumberjack in the bank. The lumberjack 2.5% is not applied a second time.
 
@@ -89,7 +96,7 @@ Put it back:
 
 `/testpotato max`, then equip all 7 (max) pieces on **one** setup (melee is fine). Do the XP checks on a skill that is not already 200m, so the First Age line is visible.
 
-- [ ] Icons: `/gear view` (and the bank) show the tiara, amulet, cape, robe top, robe bottom, bracelet, and ring sitting in the middle of their slots. The two shard icons are centered in the bank too.
+- [ ] Icons: tiara, amulet, robe bottom, and bracelet sit in the middle of the head, neck, legs, and hands slots. Cape, robe top, and ring stay as they were. Uncharged shard is grey. Charged shard is the gold shard with purple flecks.
 - [ ] Full set: a woodcutting trip's XP line includes the First Age **10%** and the lumberjack **2.5%**. A Wintertodt trip is as fast, and uses as little food, as wearing the 4 pyromancer pieces (the warmth bonus), and the firemaking XP includes the pyromancer 2.5% on top of the First Age 10%.
 - [ ] Missing cape: `/gear unequip gear_setup:melee item:First age cape (max)`. Also unequip that cape from every other setup. The next trip says **8%** First Age XP (not 10%). The lumberjack / pyromancer / angler outfit bonus is gone. A First Age cape left only on a different setup does not put the 10% back.
 - [ ] No double: with all 7 (max) pieces equipped and the real lumberjack outfit in the bank, woodcutting XP matches the full max set with no lumberjack in the bank. Same idea for Wintertodt if the pyromancer outfit is already worn: warmth is not applied a second time.

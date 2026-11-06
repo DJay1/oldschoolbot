@@ -1,4 +1,4 @@
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
 
 import { calcPerHour, increaseNumByPercent } from '@oldschoolgg/toolkit';
 
@@ -70,7 +70,15 @@ export const temporossTask: MinionTask = {
 		} finished fighting Tempoross ${quantity}x times (${calcPerHour(quantity, data.duration).toFixed(1)}/hr), you now have ${newScore} KC. ${xpStr.toLocaleString()}`;
 
 		if (fBonusXP > 0) {
-			output += `\n\n**Fishing Bonus XP:** ${fBonusXP.toLocaleString()}`;
+			const pieceIds = Fishing.anglerItems.map(i => i[0]);
+			const hasFull = user.gear.skilling.hasEquipped(pieceIds, true);
+			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
+			output += `\n\n${namedOutfitXpLine({
+				outfit: 'Angler',
+				percent: hasFull || fromMaxSet ? 2.5 : null,
+				xp: fBonusXP,
+				fromMaxSet
+			})}`;
 		}
 
 		return handleTripFinish({

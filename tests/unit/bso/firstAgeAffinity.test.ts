@@ -2,16 +2,19 @@ import { masterFarmerOutfit } from '@/lib/bso/bsoConstants.js';
 import { isGEUntradeable, isSuperUntradeable } from '@/lib/bso/bsoUtil.js';
 import { firstAgeCL } from '@/lib/bso/collection-log/firstAge.js';
 import { ElderClueTable } from '@/lib/bso/elderClue.js';
+import { elderRequiredClueCLItems } from '@/lib/bso/elderClueRequirements.js';
 import {
 	addUnchargedFirstAgeShards,
-	FIRST_AGE_CHARGES_PER_ACTIVATION,
+	CLUE_CASKET_DOUBLE_RATE,
+	FIRST_AGE_CHARGED_SHARD_GP_COST,
 	firstAgeMaxUpgrades,
 	firstAgeXpBonusPercent,
 	formatMissingSacrifices,
 	getFirstAgeSacrificeSlots,
 	isWearingFullFirstAgeMaxSet,
 	missingFirstAgeSacrifices,
-	planActivation,
+	namedOutfitXpLine,
+	planChargedShardCreate,
 	planMaxUpgrade,
 	UNCHARGED_FIRST_AGE_SHARD_DROP_RATE
 } from '@/lib/bso/firstAge/shards.js';
@@ -37,6 +40,7 @@ import { Gear } from '@/lib/structures/Gear.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
 import { wintertodtWarmPieceCount } from '@/mahoji/lib/abstracted_commands/wintertodtCommand.js';
+import { firstAgeCasketDouble } from '@/tasks/minions/clueActivity.js';
 import { zealOutfitBoost } from '@/tasks/minions/PrayerActivity/offeringActivity.js';
 import { makeGearBank } from '../utils.js';
 
@@ -74,11 +78,15 @@ test('elder caskets roll the uncharged shard once per casket at 1/300', () => {
 	expect(casket?.allItems).toContain(FirstAgeItem.UNCHARGED_SHARD);
 });
 
-test('activation lists missing sacrifices, gives one charge per max piece, and blocks extra charges', () => {
-	expect(FIRST_AGE_CHARGES_PER_ACTIVATION).toEqual(7);
-	expect(firstAgeMaxUpgrades).toHaveLength(FIRST_AGE_CHARGES_PER_ACTIVATION);
+test('charging a shard needs every sacrifice, one uncharged shard, and 100b coins', () => {
+	expect(FIRST_AGE_CHARGED_SHARD_GP_COST).toEqual(100_000_000_000);
+	expect(firstAgeMaxUpgrades).toHaveLength(7);
 
-	const none = planActivation({ sacrificed: new Bank(), unchargedOwned: 1, chargedOwned: 0 });
+	const none = planChargedShardCreate({
+		sacrificed: new Bank(),
+		unchargedOwned: 1,
+		gp: FIRST_AGE_CHARGED_SHARD_GP_COST
+	});
 	expect(none.ok).toEqual(false);
 	if (!none.ok) {
 		expect(none.message).toContain('Lumberjack hat or Forestry hat');
@@ -92,7 +100,11 @@ test('activation lists missing sacrifices, gives one charge per max piece, and b
 	expect(formatMissingSacrifices(missing)).not.toContain('Lumberjack hat or Forestry hat');
 
 	const almost = sacrificedAll(['Pyromancer hood']);
-	const almostPlan = planActivation({ sacrificed: almost, unchargedOwned: 1, chargedOwned: 0 });
+	const almostPlan = planChargedShardCreate({
+		sacrificed: almost,
+		unchargedOwned: 1,
+		gp: FIRST_AGE_CHARGED_SHARD_GP_COST
+	});
 	expect(almostPlan.ok).toEqual(false);
 	if (!almostPlan.ok) {
 		expect(almostPlan.message).toContain('Pyromancer hood');
@@ -101,18 +113,34 @@ test('activation lists missing sacrifices, gives one charge per max piece, and b
 
 	const ready = sacrificedAll();
 	expect(missingFirstAgeSacrifices(ready)).toEqual([]);
-	const noShard = planActivation({ sacrificed: ready, unchargedOwned: 0, chargedOwned: 0 });
+	const noShard = planChargedShardCreate({
+		sacrificed: ready,
+		unchargedOwned: 0,
+		gp: FIRST_AGE_CHARGED_SHARD_GP_COST
+	});
 	expect(noShard.ok).toEqual(false);
 	if (!noShard.ok) expect(noShard.message).toContain('Uncharged first age shard');
 
-	const activated = planActivation({ sacrificed: ready, unchargedOwned: 1, chargedOwned: 0 });
-	expect(activated).toEqual({ ok: true, charges: 7 });
+	const noCoins = planChargedShardCreate({ sacrificed: ready, unchargedOwned: 1, gp: 0 });
+	expect(noCoins.ok).toEqual(false);
+	if (!noCoins.ok) expect(noCoins.message).toContain('100,000,000,000');
 
-	const stockpile = planActivation({ sacrificed: ready, unchargedOwned: 5, chargedOwned: 1 });
-	expect(stockpile.ok).toEqual(false);
-	if (!stockpile.ok) expect(stockpile.message).toContain('Charged first age');
-	const fullSet = planActivation({ sacrificed: ready, unchargedOwned: 1, chargedOwned: 7 });
-	expect(fullSet.ok).toEqual(false);
+	expect(
+		planChargedShardCreate({ sacrificed: ready, unchargedOwned: 1, gp: FIRST_AGE_CHARGED_SHARD_GP_COST })
+	).toEqual({
+		ok: true
+	});
+
+	const creatable = Createables.find(entry => entry.name === 'Charged first age shard');
+	expect(creatable).toBeTruthy();
+	const input = creatable!.inputItems;
+	const output = creatable!.outputItems;
+	if (!(input instanceof Bank) || !(output instanceof Bank)) {
+		throw new Error('Charged shard creatable cost must be a bank');
+	}
+	expect(input.amount(FirstAgeItem.UNCHARGED_SHARD)).toEqual(1);
+	expect(input.amount('Coins')).toEqual(FIRST_AGE_CHARGED_SHARD_GP_COST);
+	expect(output.amount(FirstAgeItem.CHARGED_SHARD)).toEqual(1);
 });
 
 test('creating a max piece consumes one charged shard and the base piece', () => {
@@ -315,6 +343,35 @@ test('the full First Age (max) set grants each outfit bonus once, and 6 of 7 gra
 	expect(patches(farmerOnly) - patches(bare)).toEqual(3);
 	expect(patches(farmerAndMax) - patches(bare)).toEqual(3);
 	expect(patches(six) - patches(bare)).toEqual(0);
+});
+
+test('the full max set doubles a clue casket at Zippy rate, and not again if Zippy already doubled', () => {
+	expect(CLUE_CASKET_DOUBLE_RATE).toEqual(15);
+	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: true, zippyDoubledLoot: false })).toEqual({
+		extraCaskets: true,
+		message: 'Your First Age (max) set doubled your clue casket!'
+	});
+	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: true, zippyDoubledLoot: true })).toEqual({
+		extraCaskets: false,
+		message: null
+	});
+	expect(
+		firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: false, zippyDoubledLoot: false }).extraCaskets
+	).toEqual(false);
+	expect(
+		firstAgeCasketDouble({ wearingFullMaxSet: false, rolledDouble: true, zippyDoubledLoot: false }).extraCaskets
+	).toEqual(false);
+	expect(namedOutfitXpLine({ outfit: 'Lumberjack', percent: 2.5, xp: 6435, fromMaxSet: true })).toContain('2.5%');
+	expect(namedOutfitXpLine({ outfit: 'Lumberjack', percent: 2.5, xp: 6435, fromMaxSet: true })).toContain(
+		'First Age (max) set'
+	);
+});
+
+test('elder clue requirements include both Saradomin and Zamorak cloak ids', () => {
+	expect(elderRequiredClueCLItems).toContain(10_446);
+	expect(elderRequiredClueCLItems).toContain(10_450);
+	expect(elderRequiredClueCLItems).toContain(itemID('Saradomin cloak'));
+	expect(elderRequiredClueCLItems).toContain(itemID('Zamorak cloak'));
 });
 
 test('a max piece still counts as the base First Age piece', () => {
