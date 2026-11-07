@@ -4,6 +4,10 @@ trivia-questions.json
 dist/
 icon_cache/
 .env
+.env.production
+.env.test
+/backups
+assets/emojis/application-emoji-ids.*.json
 /logs
 
 .yarn

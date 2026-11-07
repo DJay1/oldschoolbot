@@ -9,20 +9,31 @@ import { PrismaClient as RobochimpPrismaClient } from '@/prisma/clients/robochim
 import { PrismaClient } from '@/prisma/main.js';
 import { BOT_TYPE, globalConfig } from '@/lib/constants.js';
 
+function poolSize(name: string, fallback: number): number {
+	const raw = process.env[name];
+	if (!raw) return fallback;
+	const value = Number(raw);
+	return Number.isInteger(value) && value >= 0 ? value : fallback;
+}
+
 async function getAdapter(
 	type: typeof BOT_TYPE | 'robochimp'
 ): Promise<{ adapter: PrismaPg; pgLiteClient: PGlite | null }> {
-	const shouldUseRealPostgres = globalConfig.isProduction || process.env.USE_REAL_PG === '1';
+	const hostedEnv = process.env.BSC_ENV === 'prod' || process.env.BSC_ENV === 'test';
+	const useRealPg = process.env.USE_REAL_PG === '1' || process.env.USE_REAL_PG === 'true';
+	const shouldUseRealPostgres = globalConfig.isProduction || useRealPg || hostedEnv;
 	if (shouldUseRealPostgres) {
 		const connectionString = type === 'robochimp' ? process.env.ROBOCHIMP_DATABASE_URL : process.env.DATABASE_URL;
 		Logging.logDebug(`Using Real Postgres for ${type} database`);
+		const poolMax = poolSize('PG_POOL_MAX', 100);
+		const poolMin = poolSize('PG_POOL_MIN', 20);
 		return {
 			adapter: new PrismaPg(
 				{
 					connectionString,
 					idleTimeoutMillis: 60_000,
-					max: 100,
-					min: 20
+					max: poolMax,
+					min: Math.min(poolMin, poolMax)
 				},
 				{ onPoolError: Logging.logError, onConnectionError: Logging.logError }
 			),
@@ -34,7 +45,8 @@ async function getAdapter(
 	if (!existsSync('./.db')) {
 		mkdirSync('./.db');
 	}
-	const dataDir = `./.db/${type.toLowerCase()}${process.env.TEST ? '-test' : ''}`;
+	const envScope = process.env.BSC_ENV ? `-${process.env.BSC_ENV}` : '';
+	const dataDir = `./.db/${type.toLowerCase()}${envScope}${process.env.TEST ? '-test' : ''}`;
 	const pgLiteClient = new PGlite({ dataDir });
 	const createDbSQL = execSync(
 		`prisma migrate diff --from-empty --to-schema-datamodel ./prisma/${type === 'robochimp' ? 'robochimp' : 'schema'}.prisma --script`,

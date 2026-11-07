@@ -18,7 +18,12 @@ import { fileURLToPath } from 'node:url';
 const API = 'https://discord.com/api/v10';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const MANIFEST_PATH = join(ROOT, 'assets/emojis/manifest.json');
-const IDS_PATH = join(ROOT, 'assets/emojis/application-emoji-ids.json');
+function idsFilePath(): string {
+	const override = process.env.APPLICATION_EMOJI_IDS_FILE;
+	if (!override) return join(ROOT, 'assets/emojis/application-emoji-ids.json');
+	if (override.startsWith('/') || /^[A-Za-z]:[\\/]/.test(override)) return override;
+	return join(ROOT, override);
+}
 const MAX_BYTES = 256 * 1024;
 const NAME_RE = /^[A-Za-z0-9_]{2,32}$/;
 
@@ -96,7 +101,7 @@ function readEmojiList(body: unknown): DiscordEmoji[] {
 
 function writeIds(ids: Record<string, string>): void {
 	const sorted = Object.fromEntries(Object.entries(ids).sort(([a], [b]) => a.localeCompare(b)));
-	writeFileSync(IDS_PATH, `${JSON.stringify(sorted, null, 2)}\n`);
+	writeFileSync(idsFilePath(), `${JSON.stringify(sorted, null, 2)}\n`);
 }
 
 async function main(): Promise<void> {
@@ -182,8 +187,13 @@ async function main(): Promise<void> {
 	}
 
 	writeIds(ids);
-	console.log(`Wrote ${IDS_PATH}`);
-	console.log(`Reused ${reused}, uploaded ${created}. Commit application-emoji-ids.json and restart the bot.`);
+	console.log(`Wrote ${idsFilePath()}`);
+	console.log(`Reused ${reused}, uploaded ${created}.`);
+	if (process.env.APPLICATION_EMOJI_IDS_FILE) {
+		console.log('That id file belongs to this bot only. Restart this bot so it picks the new ids up.');
+	} else {
+		console.log('Commit application-emoji-ids.json and restart the bot.');
+	}
 	if (missingArt.length > 0) {
 		console.log(`${missingArt.length} name(s) have no image yet and were left on their text fallback.`);
 	}

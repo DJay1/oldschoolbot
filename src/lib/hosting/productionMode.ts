@@ -1,8 +1,8 @@
 /**
  * Single production-mode check for this bot.
  *
- * The release-prep work should import `isProductionMode` (or read `globalConfig.isProduction`,
- * which calls this) instead of parsing `PRODUCTION` or `NODE_ENV` on its own.
+ * `globalConfig.isProduction` calls `isProductionMode`. Do not parse `PRODUCTION` or `NODE_ENV` anywhere else.
+ * Instant trips, test commands, and admin-for-non-owners read this through `testingShortcutsEnabled()`.
  *
  * Precedence:
  * 1. `PRODUCTION`, when it is set to a recognised value
@@ -10,8 +10,6 @@
  *
  * Recognised true values: 1, true, yes, on. False: 0, false, no, off. A blank value is treated as unset.
  * Anything else throws, so a typo cannot silently boot the live bot in test mode.
- *
- * Merge note: if the other PR adds its own parser, delete that copy and import this module.
  */
 const TRUE_VALUES = new Set(['1', 'true', 'yes', 'on']);
 const FALSE_VALUES = new Set(['0', 'false', 'no', 'off']);

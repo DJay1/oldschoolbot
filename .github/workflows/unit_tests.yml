@@ -38,7 +38,7 @@ jobs:
         run: pnpm install --shamefully-hoist --frozen-lockfile
       - name: Copy Configuration
         run: |
-          cp .env.test .env
+          cp .env.integration .env
       - name: Build
         run: pnpm monorepo:build
       - name: Test
