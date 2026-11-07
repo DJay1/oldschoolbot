@@ -7,15 +7,22 @@ import { convertLVLtoXP } from 'oldschooljs';
 import * as z from 'zod';
 
 import { activity_type_enum } from '@/prisma/main/enums.js';
+import { isProductionMode, parseProductionFlag } from '@/lib/hosting/productionMode.js';
 import { SkillsArray } from '@/lib/skilling/types.js';
 
 export { PerkTier };
 
-dotenv.config({ path: path.resolve(process.cwd(), process.env.TEST ? '.env.test' : '.env') });
+// Does not override variables already set by `dotenv -e .env.production` / `.env.test`.
+// TEST=true is the automated suite and loads the committed .env.integration fixture.
+// The self-host test bot uses .env.test with PRODUCTION=false and must not set TEST=true.
+dotenv.config({
+	path: path.resolve(process.cwd(), process.env.TEST ? '.env.integration' : '.env'),
+	override: false
+});
 type BotType = 'OSB' | 'BSO';
 export const BOT_TYPE: BotType = 'BSO' as 'BSO' | 'OSB';
 export const BOT_TYPE_LOWERCASE: 'bso' | 'osb' = BOT_TYPE.toLowerCase() as 'bso' | 'osb';
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = isProductionMode();
 const GENERAL_CHANNEL_ID =
 	BOT_TYPE === 'OSB'
 		? isProduction
@@ -25,7 +32,10 @@ const GENERAL_CHANNEL_ID =
 			? '792691343284764693'
 			: (process.env.GENERAL_CHANNEL ?? '1154056119019393035');
 const OLDSCHOOLGG_TESTING_SERVER_ID = '940758552425955348';
-const TEST_SERVER_ID = process.env.TESTING_SERVER ?? OLDSCHOOLGG_TESTING_SERVER_ID;
+// SUPPORT_GUILD_ID is the self-host name. TESTING_SERVER and TESTING_SERVER_ID stay for older .env files.
+const configuredSupportGuild =
+	process.env.SUPPORT_GUILD_ID ?? process.env.TESTING_SERVER ?? process.env.TESTING_SERVER_ID;
+const TEST_SERVER_ID = configuredSupportGuild ?? OLDSCHOOLGG_TESTING_SERVER_ID;
 const TEST_SERVER_LOG_CHANNEL = process.env.TESTING_LOG_CHANNEL ?? '1042760447830536212';
 export const DELETED_USER_ID = '111111111111111111';
 export const BOT_AVATAR_HASH =
@@ -71,7 +81,22 @@ const TestChannelConfig: ChannelConfig = {
 	GeneralChannel: TEST_SERVER_LOG_CHANNEL
 };
 
-export const Channel = isProduction ? (BOT_TYPE === 'OSB' ? OSBChannelConfig : BSOChannelConfig) : TestChannelConfig;
+const logChannelOverride = process.env.LOG_CHANNEL_ID;
+export const Channel: ChannelConfig = logChannelOverride
+	? {
+			ServerGeneral: logChannelOverride,
+			Notifications: logChannelOverride,
+			GrandExchange: logChannelOverride,
+			EconomyLogs: logChannelOverride,
+			HelpAndSupport: logChannelOverride,
+			BotLogs: logChannelOverride,
+			GeneralChannel: process.env.GENERAL_CHANNEL ?? logChannelOverride
+		}
+	: isProduction
+		? BOT_TYPE === 'OSB'
+			? OSBChannelConfig
+			: BSOChannelConfig
+		: TestChannelConfig;
 
 export const Roles = {
 	Booster: '665908237152813057',
@@ -615,11 +640,24 @@ export const globalConfig = globalConfigSchema.parse({
 	timeZone: process.env.TZ,
 
 	moderatorLogsChannels: isProduction ? '830145040495411210' : GENERAL_CHANNEL_ID,
-	supportServerID: isProduction ? '342983479501389826' : TEST_SERVER_ID,
-	guildIdsToCache: [guildId.OldschoolGG, guildId.TestServer, TEST_SERVER_ID, ...emojiServers]
+	// Explicit SUPPORT_GUILD_ID is the self-host support server in both modes.
+	// Without it, production stays on the legacy Old School GG guild.
+	supportServerID: process.env.SUPPORT_GUILD_ID
+		? process.env.SUPPORT_GUILD_ID
+		: isProduction
+			? '342983479501389826'
+			: TEST_SERVER_ID,
+	guildIdsToCache: [
+		guildId.OldschoolGG,
+		guildId.TestServer,
+		TEST_SERVER_ID,
+		...(process.env.SUPPORT_GUILD_ID ? [process.env.SUPPORT_GUILD_ID] : []),
+		...emojiServers
+	]
 });
 
-if ((process.env.NODE_ENV === 'production') !== globalConfig.isProduction) {
+const explicitProduction = parseProductionFlag(process.env.PRODUCTION);
+if (explicitProduction === undefined && (process.env.NODE_ENV === 'production') !== globalConfig.isProduction) {
 	throw new Error('The NODE_ENV and isProduction variables must match');
 }
 
@@ -654,7 +692,7 @@ export const patronFeatures = {
 
 if (!process.env.TEST && isMainThread) {
 	console.log(
-		`Starting... Git[${gitHash}] ClientID[${globalConfig.clientID}] Production[${globalConfig.isProduction}]`
+		`Starting... Git[${gitHash}] ClientID[${globalConfig.clientID}] Production[${globalConfig.isProduction}] Env[${process.env.BSC_ENV ?? 'unset'}]`
 	);
 }
 

@@ -47,7 +47,7 @@ for (const [fontFamily, fontPath] of Object.entries(fonts)) {
 
 export class OSRSCanvas {
 	public static LOCAL_ICON_CACHE = new Map<number, CanvasImage>();
-	public static ITEM_ICON_CACHE_DIR = path.resolve('icon_cache');
+	public static ITEM_ICON_CACHE_DIR = path.resolve(process.env.ICON_CACHE_DIR ?? 'icon_cache');
 	public static ITEM_BSO_ICON_DIR = path.resolve('src/lib/resources/images/bso_icons');
 	public static Fonts = Fonts;
 	public static COLORS = {

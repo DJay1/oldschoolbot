@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 /**
  * Application emojis are uploaded to the bot itself (not a server), so Discord
  * renders them in every guild. IDs live in assets/emojis/application-emoji-ids.json,
- * which `pnpm emojis:sync` writes. Until an emoji is synced, callers get the
+ * or in APPLICATION_EMOJI_IDS_FILE when prod and test bots share a machine.
+ * `pnpm emojis:sync` writes that file. Until an emoji is synced, callers get the
  * manifest's unicode/text fallback and never the raw `:name:` form.
  */
 
@@ -93,7 +94,7 @@ function loadCache(): EmojiCache {
 		}
 	}
 	const ids: Record<string, string> = {};
-	const idsRaw = readJson('assets/emojis/application-emoji-ids.json');
+	const idsRaw = readJson(process.env.APPLICATION_EMOJI_IDS_FILE || 'assets/emojis/application-emoji-ids.json');
 	if (idsRaw && typeof idsRaw === 'object') {
 		for (const [key, value] of Object.entries(idsRaw)) {
 			if (typeof value === 'string' && SNOWFLAKE.test(value)) ids[key] = value;

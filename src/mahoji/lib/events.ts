@@ -22,14 +22,20 @@ export const onStartup = async () => {
 		globalConfig.isProduction ? Time.Second * 10 : 0
 	);
 
+	// Production publishes player commands globally and leaves /admin and /rp on the support guild.
+	// Test mode publishes the whole set to the support guild so QC sees updates immediately.
+	// A rate limit must not crash the process: the Windows launcher restarts on any exit.
+	try {
+		await bulkUpdateCommands();
+	} catch (err) {
+		Logging.logError(err as Error);
+	}
+
 	if (globalConfig.isProduction) {
 		globalClient
 			.sendMessage(Channel.GeneralChannel, {
 				content: `I have just turned on!\n\n${META_CONSTANTS.RENDERED_STR}`
 			})
 			.catch(err => Logging.logError(err));
-	} else {
-		// In development, always sync commands on startup.
-		await bulkUpdateCommands();
 	}
 };

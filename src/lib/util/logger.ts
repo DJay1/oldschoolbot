@@ -9,7 +9,11 @@ import { isPlainObject, UserError } from '@oldschoolgg/toolkit';
 import type { SystemLogsType } from '@/prisma/clients/main/enums.js';
 import { BOT_TYPE_LOWERCASE, globalConfig } from '@/lib/constants.js';
 
-const LOG_FOLDER = globalConfig.isProduction ? '../logs/' : './logs/';
+const LOG_FOLDER = process.env.LOG_DIR
+	? path.resolve(process.env.LOG_DIR)
+	: globalConfig.isProduction
+		? '../logs/'
+		: './logs/';
 
 const baseSonicBoomOptions = {
 	mkdir: true,

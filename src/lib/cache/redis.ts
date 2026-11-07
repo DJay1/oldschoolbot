@@ -53,17 +53,26 @@ type GuildUpdateInput = Partial<IGuild> & {
 	mega_duck_location?: MegaDuckLocation | Prisma.InputJsonValue;
 };
 
+function redisOptions() {
+	const port = Number(process.env.REDIS_PORT ?? 6379);
+	const db = Number(process.env.REDIS_DB ?? 0);
+	return {
+		host: process.env.REDIS_HOST ?? '127.0.0.1',
+		port: Number.isFinite(port) ? port : 6379,
+		db: Number.isFinite(db) ? db : 0,
+		keyPrefix: process.env.REDIS_KEY_PREFIX ?? ''
+	};
+}
+
 class CacheManager {
 	private client: Redis;
 
 	constructor() {
 		if (globalConfig.isProduction) {
-			this.client = new Redis();
+			this.client = new Redis(redisOptions());
 		} else {
 			try {
-				const host: string = process.env.REDIS_HOST ?? 'localhost';
-				const port: number = Number(process.env.REDIS_PORT ?? 6379);
-				const redis = new Redis({ host, port });
+				const redis = new Redis(redisOptions());
 				redis.on('error', () => {
 					redis.disconnect();
 					this.client = new MockedRedis() as any as Redis;

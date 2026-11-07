@@ -20,6 +20,9 @@
 LICENSE text
 AUTHORS text
 
+# cmd.exe treats LF-only batch files as one broken line.
+*.cmd text eol=crlf
+
 *.png binary
 *.jpg binary
 *.jpeg binary
