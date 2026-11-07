@@ -1,9 +1,10 @@
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 
-import { Emoji, Events, resolveEmojiText, truncateString } from '@oldschoolgg/toolkit';
+import { Emoji, Events, truncateString } from '@oldschoolgg/toolkit';
 import { Bank, type Item, type ItemBank, resolveItems, toKMB } from 'oldschooljs';
 
 import { filterOption } from '@/discord/index.js';
+import { MINION_ICON, renderStoredEmoji } from '@/lib/data/emojis.js';
 import { cats } from '@/lib/growablePets.js';
 import minionIcons from '@/lib/minions/data/minionIcons.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
@@ -79,7 +80,7 @@ export const sacrificeCommand = defineCommand({
 		if (!options.filter && !options.items && !options.search) {
 			return (
 				`${Emoji.Incinerator} **Your Sacrifice Stats** ${Emoji.Incinerator}\n\n` +
-				`**Current Minion Icon:** ${currentIcon === null ? Emoji.Minion : resolveEmojiText(currentIcon)}\n` +
+				`**Current Minion Icon:** ${currentIcon === null ? MINION_ICON : renderStoredEmoji(currentIcon)}\n` +
 				`**Sacrificed Value:** ${sacVal.toLocaleString()} GP\n` +
 				`**Unique Items Sacrificed:** ${sacUniqVal.toLocaleString()} item${sacUniqVal === 1 ? '' : 's'}`
 			);
@@ -184,7 +185,7 @@ export const sacrificeCommand = defineCommand({
 
 		// Ignores notifying the user/server if the user is using a custom icon.
 		// Stored icons may still be the old server emoji markup; compare the resolved form.
-		const resolvedIcon = currentIcon ? resolveEmojiText(currentIcon) : null;
+		const resolvedIcon = currentIcon ? renderStoredEmoji(currentIcon) : null;
 		if (!resolvedIcon || minionIcons.find(m => m.emoji === resolvedIcon)) {
 			for (const icon of minionIcons) {
 				if (newValue < icon.valueRequired) continue;

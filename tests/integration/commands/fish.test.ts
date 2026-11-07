@@ -1,8 +1,8 @@
-import { customEmoji } from '@oldschoolgg/toolkit';
 import { Bank, convertLVLtoXP, EItem, ItemGroups } from 'oldschooljs';
 import { describe, expect, it } from 'vitest';
 
 import { MAX_LEVEL } from '../../../src/lib/constants.js';
+import { MINION_ICON } from '../../../src/lib/data/emojis.js';
 import { formatSkillRequirements } from '../../../src/lib/util/smallUtils.js';
 import { fishCommand } from '../../../src/mahoji/commands/fish.js';
 import { createTestUser, mockClient } from '../util.js';
@@ -13,7 +13,7 @@ describe('Fish Command', async () => {
 	it('should handle insufficient fishing level', async () => {
 		const user = await createTestUser();
 		const res = await user.runCommand(fishCommand, { name: 'Trout/Salmon', quantity: 1 });
-		expect(res).toEqual(customEmoji('minion') + ' Your minion needs 20 Fishing to fish Trout/Salmon.');
+		expect(res).toEqual(MINION_ICON + ' Your minion needs 20 Fishing to fish Trout/Salmon.');
 	});
 
 	it('should handle insufficient QP', async () => {

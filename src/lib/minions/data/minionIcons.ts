@@ -1,28 +1,28 @@
-import { customEmoji } from '@oldschoolgg/toolkit';
+import { MINION_ICON } from '@/lib/data/emojis.js';
 
 const minionIcons = [
 	{
-		emoji: customEmoji('whiteMinion'),
+		emoji: MINION_ICON,
 		valueRequired: 10_000_000_000,
 		name: '3rd age'
 	},
 	{
-		emoji: customEmoji('sapphireMinion'),
+		emoji: MINION_ICON,
 		valueRequired: 5_000_000_000,
 		name: 'Sapphire'
 	},
 	{
-		emoji: customEmoji('amethystMinion'),
+		emoji: MINION_ICON,
 		valueRequired: 1_000_000_000,
 		name: 'Amethyst'
 	},
 	{
-		emoji: customEmoji('emeraldMinion'),
+		emoji: MINION_ICON,
 		valueRequired: 500_000_000,
 		name: 'Emerald'
 	},
 	{
-		emoji: customEmoji('yellowMinion'),
+		emoji: MINION_ICON,
 		valueRequired: 100_000_000,
 		name: 'Yellow'
 	}

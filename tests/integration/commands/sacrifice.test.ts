@@ -2,6 +2,7 @@ import { Emoji } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
+import { MINION_ICON } from '../../../src/lib/data/emojis.js';
 import { sacrificeCommand } from '../../../src/mahoji/commands/sacrifice.js';
 import { createTestUser, mockClient } from '../util.js';
 
@@ -15,7 +16,7 @@ describe('Sacrifice Command', async () => {
 		await user.runCommand(sacrificeCommand, { items: '1 trout, 10 coal' });
 		const result = await user.runCommand(sacrificeCommand, {});
 		expect(result).toEqual(
-			`${Emoji.Incinerator} **Your Sacrifice Stats** ${Emoji.Incinerator}\n\n**Current Minion Icon:** ${Emoji.Minion}\n**Sacrificed Value:** 1,590 GP\n**Unique Items Sacrificed:** 2 items`
+			`${Emoji.Incinerator} **Your Sacrifice Stats** ${Emoji.Incinerator}\n\n**Current Minion Icon:** ${MINION_ICON}\n**Sacrificed Value:** 1,590 GP\n**Unique Items Sacrificed:** 2 items`
 		);
 	});
 

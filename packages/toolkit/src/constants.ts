@@ -15,7 +15,6 @@ export type EmojiName =
 	| 'MoneyBag'
 	| 'OSBot'
 	| 'Joy'
-	| 'Bpaptu'
 	| 'Diamond'
 	| 'Dice'
 	| 'Fireworks'
@@ -92,7 +91,6 @@ export type EmojiName =
 	| 'GreenGem'
 	| 'PinkGem'
 	| 'OrangeGem'
-	| 'Minion'
 	| 'Spanner'
 	| 'DoubleSpanner'
 	| 'Hammer'
@@ -131,7 +129,6 @@ export const Emoji: { readonly [K in EmojiName]: string } = {
 	MoneyBag: customEmoji('MoneyBag'),
 	OSBot: customEmoji('OSBot'),
 	Joy: '😂',
-	Bpaptu: customEmoji('bpaptu'),
 	Diamond: '💎',
 	Dice: customEmoji('dice'),
 	Fireworks: '🎆',
@@ -208,7 +205,6 @@ export const Emoji: { readonly [K in EmojiName]: string } = {
 	GreenGem: customEmoji('greenGem'),
 	PinkGem: customEmoji('pinkGem'),
 	OrangeGem: customEmoji('orangeGem'),
-	Minion: customEmoji('minion'),
 	Spanner: customEmoji('spanner'),
 	DoubleSpanner: customEmoji('doubleSpanner'),
 	Hammer: customEmoji('hammer'),

@@ -54,19 +54,6 @@
 			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts", "tests/integration/MUser.test.ts"]
 		},
 		{
-			"name": "amethystMinion",
-			"uploadName": "amethystMinion",
-			"aliases": [],
-			"fallback": "🟣",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom minion recolour.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
-		},
-		{
 			"name": "Amulet_of_blood_fury",
 			"uploadName": "Amulet_of_blood_fury",
 			"aliases": [],
@@ -243,19 +230,6 @@
 			"wiki": "osrs",
 			"notes": null,
 			"usedIn": ["src/lib/data/emojis.ts"]
-		},
-		{
-			"name": "bpaptu",
-			"uploadName": "bpaptu",
-			"aliases": [],
-			"fallback": "🐾",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom pet.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
 			"name": "brock",
@@ -800,19 +774,6 @@
 			"wiki": "osrs",
 			"notes": null,
 			"usedIn": ["packages/toolkit/src/constants.ts"]
-		},
-		{
-			"name": "emeraldMinion",
-			"uploadName": "emeraldMinion",
-			"aliases": [],
-			"fallback": "🟢",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom minion recolour.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
 		},
 		{
 			"name": "farming",
@@ -1441,23 +1402,6 @@
 			"wiki": "osrs",
 			"notes": null,
 			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
-		},
-		{
-			"name": "minion",
-			"uploadName": "minion",
-			"aliases": [],
-			"fallback": "👤",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom minion portrait.",
-			"usedIn": [
-				"packages/toolkit/src/constants.ts",
-				"src/mahoji/lib/abstracted_commands/statCommand.ts",
-				"tests/integration/commands/fish.test.ts"
-			]
 		},
 		{
 			"name": "MithrilTrophy",
@@ -2238,19 +2182,6 @@
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
-			"name": "sapphireMinion",
-			"uploadName": "sapphireMinion",
-			"aliases": [],
-			"fallback": "🔵",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom minion recolour.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
-		},
-		{
 			"name": "Scorpias_offspring",
 			"uploadName": "Scorpias_offspring",
 			"aliases": [],
@@ -2775,19 +2706,6 @@
 			]
 		},
 		{
-			"name": "whiteMinion",
-			"uploadName": "whiteMinion",
-			"aliases": [],
-			"fallback": "⚪",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom minion recolour.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
-		},
-		{
 			"name": "wilvus",
 			"uploadName": "wilvus",
 			"aliases": [],
@@ -2872,19 +2790,6 @@
 			"wiki": "osrs",
 			"notes": null,
 			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
-		},
-		{
-			"name": "yellowMinion",
-			"uploadName": "yellowMinion",
-			"aliases": [],
-			"fallback": "🟡",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom minion recolour.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
 		},
 		{
 			"name": "Youngllef",

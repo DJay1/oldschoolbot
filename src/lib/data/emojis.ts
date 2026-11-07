@@ -1,4 +1,15 @@
-import { customEmoji, reactionEmoji } from '@oldschoolgg/toolkit';
+import { customEmoji, reactionEmoji, resolveEmojiText } from '@oldschoolgg/toolkit';
+
+/** Neutral stand-in for the old minion portrait until a new one is chosen. */
+export const MINION_ICON = '👤';
+
+const RETIRED_MINION_EMOJI =
+	/<a?:(?:minion|whiteMinion|sapphireMinion|amethystMinion|emeraldMinion|yellowMinion):\d{17,20}>/g;
+
+/** Resolve application emojis, and turn stored old minion portraits into {@link MINION_ICON}. */
+export function renderStoredEmoji(value: string): string {
+	return resolveEmojiText(value).replace(RETIRED_MINION_EMOJI, MINION_ICON);
+}
 
 export const skillEmoji = {
 	runecraft: customEmoji('runecraft'),
