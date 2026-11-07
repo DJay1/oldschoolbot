@@ -1,4 +1,4 @@
-import { calcPercentOfNum, ellipsize, reduceNumByPercent } from '@oldschoolgg/toolkit';
+import { calcPercentOfNum, customEmoji, ellipsize, reduceNumByPercent } from '@oldschoolgg/toolkit';
 import { Bank, type Item, type ItemBank, itemID, MAX_INT_JAVA, toKMB } from 'oldschooljs';
 import { clamp } from 'remeda';
 
@@ -341,7 +341,9 @@ export const sellCommand = defineCommand({
 				totalPrice
 			)})** (${taxRatePercent}% below market price). ${
 				hasSkipper
-					? '\n\n<:skipper:755853421801766912> Skipper has negotiated with the bank and you were charged less tax on the sale!'
+					? '\n\n' +
+						customEmoji('skipper') +
+						' Skipper has negotiated with the bank and you were charged less tax on the sale!'
 					: ''
 			}`
 		);

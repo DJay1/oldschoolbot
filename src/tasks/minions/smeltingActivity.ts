@@ -2,7 +2,7 @@ import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { Bank, EItem, itemID } from 'oldschooljs';
 
 import Smithing from '@/lib/skilling/skills/smithing/index.js';
@@ -66,7 +66,9 @@ export const smeltingTask: MinionTask = {
 			for (let i = 0; i < numMinutes; i++) {
 				if (rng.roll(petChance)) {
 					str +=
-						'\n\n<:zak:751035589952012298> While Smelting ores on Neitiznot, a Yak approaches you and says "Moooo". and is now following you around. You decide to name him \'Zak\'.';
+						'\n\n' +
+						customEmoji('zak') +
+						' While Smelting ores on Neitiznot, a Yak approaches you and says "Moooo". and is now following you around. You decide to name him \'Zak\'.';
 					loot.add('Zak');
 					break;
 				}

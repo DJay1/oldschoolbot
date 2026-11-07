@@ -1,4 +1,4 @@
-import { calcWhatPercent, formatDuration, reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
+import { calcWhatPercent, customEmoji, formatDuration, reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
 import { Bank, EMonster, itemID } from 'oldschooljs';
 
 import { newChatHeadImage } from '@/lib/canvas/chatHeadImage.js';
@@ -185,7 +185,8 @@ export async function fightCavesCommand({
 **Removed from your bank:** ${fightCavesCost}
 ${
 	hasToad
-		? '<:wintertoad:749945071230779493> The extreme cold of your Wintertoad counters the Fight Caves, allowing you to kill the creatures much faster!'
+		? customEmoji('wintertoad') +
+			' The extreme cold of your Wintertoad counters the Fight Caves, allowing you to kill the creatures much faster!'
 		: ''
 }`,
 		files: [

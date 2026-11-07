@@ -1,7 +1,7 @@
 import { CorporealBeastTable } from '@/lib/bso/Corp.js';
 
 import { GearStat } from '@oldschoolgg/gear';
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { Bank, deepResolveItems, itemID, Monsters, resolveItems, SimpleMonster } from 'oldschooljs';
 
 import { BitField } from '@/lib/constants.js';
@@ -17,7 +17,7 @@ export const miscBossKillables: KillableMonster[] = [
 		aliases: Monsters.GiantMole.aliases,
 		timeToFinish: Time.Minute * 1.6,
 		table: Monsters.GiantMole,
-		emoji: '<:Baby_mole:324127375858204672>',
+		emoji: customEmoji('Baby_mole'),
 		wildy: false,
 		difficultyRating: 3,
 		itemsRequired: resolveItems(["Dharok's helm", "Dharok's platebody", "Dharok's platelegs", "Dharok's greataxe"]),
@@ -48,7 +48,7 @@ export const miscBossKillables: KillableMonster[] = [
 		aliases: Monsters.Vorkath.aliases,
 		timeToFinish: Time.Minute * 3.85,
 		table: Monsters.Vorkath,
-		emoji: '<:Vorki:400713309252222977>',
+		emoji: customEmoji('Vorki'),
 		wildy: false,
 
 		difficultyRating: 8,
@@ -86,7 +86,7 @@ export const miscBossKillables: KillableMonster[] = [
 		aliases: Monsters.Zulrah.aliases,
 		timeToFinish: Time.Minute * 3.2,
 		table: Monsters.Zulrah,
-		emoji: '<:Pet_snakeling:324127377816944642>',
+		emoji: customEmoji('Pet_snakeling'),
 		wildy: false,
 
 		difficultyRating: 8,
@@ -161,7 +161,7 @@ export const miscBossKillables: KillableMonster[] = [
 		aliases: Monsters.KalphiteQueen.aliases,
 		timeToFinish: Time.Minute * 3.1,
 		table: Monsters.KalphiteQueen,
-		emoji: '<:Kalphite_princess_2nd_form:324127376915300352>',
+		emoji: customEmoji('Kalphite_princess_2nd_form'),
 		wildy: false,
 
 		difficultyRating: 7,
@@ -216,7 +216,7 @@ export const miscBossKillables: KillableMonster[] = [
 			aliases: ['corporeal beast', 'corp']
 		}),
 		timeToFinish: Time.Minute * 30,
-		emoji: '<:Pet_dark_core:324127377347313674>',
+		emoji: customEmoji('Pet_dark_core'),
 		wildy: false,
 
 		difficultyRating: 6,
@@ -317,7 +317,7 @@ export const miscBossKillables: KillableMonster[] = [
 		aliases: Monsters.Cerberus.aliases,
 		timeToFinish: Time.Minute * 2.65,
 		table: Monsters.Cerberus,
-		emoji: '<:Hellpuppy:324127376185491458>',
+		emoji: customEmoji('Hellpuppy'),
 		wildy: false,
 
 		difficultyRating: 7,
@@ -382,7 +382,7 @@ export const miscBossKillables: KillableMonster[] = [
 		aliases: Monsters.KingBlackDragon.aliases,
 		table: Monsters.KingBlackDragon,
 		timeToFinish: Time.Minute * 3.1,
-		emoji: '<:Prince_black_dragon:324127378538364928>',
+		emoji: customEmoji('Prince_black_dragon'),
 		wildy: true,
 
 		difficultyRating: 6,

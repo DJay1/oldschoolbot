@@ -1,6 +1,6 @@
 import { InventionID, inventionBoosts, inventionItemBoostRaw } from '@/lib/bso/skills/invention/inventions.js';
 
-import { sumArr } from '@oldschoolgg/toolkit';
+import { customEmoji, sumArr } from '@oldschoolgg/toolkit';
 import { percentChance } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
@@ -56,5 +56,5 @@ export function clueUpgraderEffect({
 	updateBank.itemLootBank.remove(removeBank);
 	updateBank.materialsCostBank.add(boostRes.materialCost!);
 	const totalCluesUpgraded = sumArr(upgradedClues.items().map(i => i[1]));
-	messages.push(`<:Clue_upgrader:986830303001722880> Upgraded ${totalCluesUpgraded} clues (${boostRes.messages})`);
+	messages.push(`${customEmoji('Clue_upgrader')} Upgraded ${totalCluesUpgraded} clues (${boostRes.messages})`);
 }

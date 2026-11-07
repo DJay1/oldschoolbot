@@ -1,6 +1,6 @@
 import { BSOItem } from '@/lib/bso/BSOItem.js';
 
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import type { RNGProvider } from 'node-rng';
 import { type Bank, Items } from 'oldschooljs';
 
@@ -31,12 +31,12 @@ export function summerFishingStartAdjustments(gearBank: GearBank, fishName: stri
 		if (isPatriciaLobsterBoost) {
 			speedMultiplier *= 3;
 			boosts.push(
-				`<:starfish:1515651612918677564> 3x faster for ${eclipsePetName} and Old crab cage while fishing Lobster`
+				`${customEmoji('starfish')} 3x faster for ${eclipsePetName} and Old crab cage while fishing Lobster`
 			);
 		} else {
 			speedMultiplier *= 2.15;
 			boosts.push(
-				`<:starfish:1515651612918677564> ${eclipsePetName} is your new best friend! You two become an expert fishing pair!`
+				`${customEmoji('starfish')} ${eclipsePetName} is your new best friend! You two become an expert fishing pair!`
 			);
 		}
 	}
@@ -148,7 +148,7 @@ function rollSummerFishingDrops({
 				if (rng.roll(24 * 60)) {
 					result.updateBank.itemLootBank.add(BSOItem.PARTYCRAB);
 					result.messages.push(
-						'<:partycrab:1507689107806097541> The old crab cage rattled, and a Partycrab climbed out like it had been waiting years for this moment.'
+						`${customEmoji('partycrab')} The old crab cage rattled, and a Partycrab climbed out like it had been waiting years for this moment.`
 					);
 					break;
 				}

@@ -2,6 +2,7 @@ import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 
+import { customEmoji } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
@@ -68,7 +69,9 @@ export const cookingTask: MinionTask = {
 				if (roll(dropRate)) {
 					loot.add('Remy');
 					str +=
-						"\n<:remy:748491189925183638> A small rat notices you cooking, and tells you you're cooking it all wrong! He crawls into your bank to help you with your cooking. You can equip Remy for a boost to your cooking skills.";
+						'\n' +
+						customEmoji('remy') +
+						" A small rat notices you cooking, and tells you you're cooking it all wrong! He crawls into your bank to help you with your cooking. You can equip Remy for a boost to your cooking skills.";
 					break;
 				}
 			}

@@ -1,9 +1,8 @@
 import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
 import type { IFarmingContract, IFarmingContractDifficultyLevel } from '@oldschoolgg/schemas';
-import { toTitleCase } from '@oldschoolgg/toolkit';
+import { buttonEmoji, toTitleCase } from '@oldschoolgg/toolkit';
 
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
-import { EmojiId } from '@/lib/data/emojis.js';
 import { Farming, plants } from '@/lib/skilling/skills/farming/index.js';
 import { getPlantToGrow } from '@/lib/skilling/skills/farming/utils/calcFarmingContracts.js';
 import type { ContractOption } from '@/lib/skilling/skills/farming/utils/types.js';
@@ -15,7 +14,7 @@ function makeEasierFarmingContractButton() {
 		.setCustomId('FARMING_CONTRACT_EASIER')
 		.setLabel('Ask for easier Contract')
 		.setStyle(ButtonStyle.Secondary)
-		.setEmoji({ id: EmojiId.Seedpack });
+		.setEmoji(buttonEmoji('Seedpack'));
 }
 
 const contractToFarmingLevel = {

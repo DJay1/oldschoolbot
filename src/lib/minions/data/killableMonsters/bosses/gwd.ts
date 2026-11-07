@@ -1,5 +1,5 @@
 import { GearStat } from '@oldschoolgg/gear';
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { deepResolveItems, itemID, Monsters, resolveItems } from 'oldschooljs';
 
 import { commanderZilyanaCL, generalGraardorCL, kreeArraCL, krilTsutsarothCL } from '@/lib/data/CollectionsExport.js';
@@ -12,7 +12,7 @@ export const gwdKillables: KillableMonster[] = [
 		aliases: Monsters.GeneralGraardor.aliases,
 		timeToFinish: Time.Minute * 5.1,
 		table: Monsters.GeneralGraardor,
-		emoji: '<:Pet_general_graardor:324127377376673792>',
+		emoji: customEmoji('Pet_general_graardor'),
 		wildy: false,
 
 		difficultyRating: 7,
@@ -54,7 +54,7 @@ export const gwdKillables: KillableMonster[] = [
 		aliases: Monsters.CommanderZilyana.aliases,
 		timeToFinish: Time.Minute * 5.1,
 		table: Monsters.CommanderZilyana,
-		emoji: '<:Pet_zilyana:324127378248957952>',
+		emoji: customEmoji('Pet_zilyana'),
 		wildy: false,
 
 		difficultyRating: 7,
@@ -109,7 +109,7 @@ export const gwdKillables: KillableMonster[] = [
 		aliases: Monsters.Kreearra.aliases,
 		timeToFinish: Time.Minute * 5.1,
 		table: Monsters.Kreearra,
-		emoji: '<:Pet_kreearra:324127377305239555>',
+		emoji: customEmoji('Pet_kreearra'),
 		wildy: false,
 
 		difficultyRating: 7,
@@ -161,7 +161,7 @@ export const gwdKillables: KillableMonster[] = [
 		aliases: Monsters.KrilTsutsaroth.aliases,
 		timeToFinish: Time.Minute * 5.1,
 		table: Monsters.KrilTsutsaroth,
-		emoji: '<:Pet_kril_tsutsaroth:324127377527406594>',
+		emoji: customEmoji('Pet_kril_tsutsaroth'),
 		wildy: false,
 
 		difficultyRating: 7,

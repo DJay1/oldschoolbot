@@ -1,5 +1,5 @@
 import type { GearSetupType, PrimaryGearSetupType } from '@oldschoolgg/gear';
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { MathRNG } from 'node-rng';
 import { Bank, type Item, Items, itemID, type Monster } from 'oldschooljs';
 
@@ -67,7 +67,7 @@ export const degradeableItems: DegradeableItem[] = [
 			cost: new Bank().add('Abyssal whip').freeze(),
 			charges: 10_000
 		},
-		emoji: '<:Abyssal_tentacle:1068551359755989033>'
+		emoji: customEmoji('Abyssal_tentacle')
 	},
 	{
 		item: Items.getOrThrow('Sanguinesti staff'),
@@ -100,7 +100,7 @@ export const degradeableItems: DegradeableItem[] = [
 		},
 		convertOnCharge: true,
 		unchargedItem: Items.getOrThrow('Void staff (u)'),
-		emoji: '<:Sanguinesti_staff_uncharged:455403545298993162>',
+		emoji: customEmoji('Sanguinesti_staff_uncharged'),
 		refundVariants: []
 	},
 	{
@@ -116,7 +116,7 @@ export const degradeableItems: DegradeableItem[] = [
 		},
 		unchargedItem: Items.getOrThrow('Celestial ring (uncharged)'),
 		convertOnCharge: true,
-		emoji: '<:Celestial_ring:1068551362587132084>'
+		emoji: customEmoji('Celestial_ring')
 	},
 	{
 		item: Items.getOrThrow('Ash sanctifier'),
@@ -130,7 +130,7 @@ export const degradeableItems: DegradeableItem[] = [
 			charges: 10
 		},
 		unchargedItem: Items.getOrThrow('Ash sanctifier'),
-		emoji: '<:Ash_sanctifier:1068551364168405032>'
+		emoji: customEmoji('Ash_sanctifier')
 	},
 	{
 		item: Items.getOrThrow('Serpentine helm'),
@@ -145,7 +145,7 @@ export const degradeableItems: DegradeableItem[] = [
 		},
 		unchargedItem: Items.getOrThrow('Serpentine helm (uncharged)'),
 		convertOnCharge: true,
-		emoji: '<:Serpentine_helm:1068491236123619379>'
+		emoji: customEmoji('Serpentine_helm')
 	},
 	{
 		item: Items.getOrThrow('Amulet of blood fury'),
@@ -160,7 +160,7 @@ export const degradeableItems: DegradeableItem[] = [
 		},
 		unchargedItem: Items.getOrThrow('Amulet of fury'),
 		convertOnCharge: true,
-		emoji: '<:Amulet_of_blood_fury:1068491286530752562>'
+		emoji: customEmoji('Amulet_of_blood_fury')
 	},
 	{
 		item: Items.getOrThrow("Tumeken's shadow"),
@@ -175,7 +175,7 @@ export const degradeableItems: DegradeableItem[] = [
 		},
 		unchargedItem: Items.getOrThrow("Tumeken's shadow (uncharged)"),
 		convertOnCharge: true,
-		emoji: '<:Tumekens_shadow:1068491239302901831>'
+		emoji: customEmoji('Tumekens_shadow')
 	},
 	{
 		item: Items.getOrThrow('Blood essence (active)'),

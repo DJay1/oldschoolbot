@@ -4,7 +4,7 @@ import { clueUpgraderEffect } from '@/lib/bso/skills/invention/effects/clueUpgra
 import { portableTannerEffect } from '@/lib/bso/skills/invention/effects/portableTannerEffect.js';
 import { slayerMaskHelms } from '@/lib/bso/skills/slayer/slayerMaskHelms.js';
 
-import { increaseNumByPercent, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, increaseNumByPercent, Time } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { type Bank, type ItemBank, MonsterAttribute, Monsters } from 'oldschooljs';
 
@@ -101,11 +101,11 @@ export function rollForBSOThings(args: MidPVMEffectArgs) {
 	}
 
 	if (updateBank.itemLootBank.has('Brock')) {
-		messages.push('<:brock:787310793183854594> On the way to Zulrah, you found a Badger that wants to join you.');
+		messages.push(customEmoji('brock') + ' On the way to Zulrah, you found a Badger that wants to join you.');
 	}
 
 	if (updateBank.itemLootBank.has('Klik')) {
-		messages.push('<:klik:749945070932721676> A small fairy dragon appears! Klik joins you on your adventures.');
+		messages.push(customEmoji('klik') + ' A small fairy dragon appears! Klik joins you on your adventures.');
 	}
 }
 

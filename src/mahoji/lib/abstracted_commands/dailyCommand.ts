@@ -53,7 +53,7 @@ async function reward(rng: RNGProvider, user: MUser, triviaCorrect: boolean): Pr
 
 	if (rng.roll(5000)) {
 		if (rng.roll(2)) {
-			bonuses.push(Emoji.Bpaptu);
+			bonuses.push('✨');
 		} else {
 			coinsToGive += 1_000_000_000;
 			bonuses.push(Emoji.Diamond);

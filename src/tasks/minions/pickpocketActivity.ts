@@ -3,7 +3,7 @@ import { chargePortentIfHasCharges, PortentID } from '@/lib/bso/skills/divinatio
 import { clueUpgraderEffect } from '@/lib/bso/skills/invention/effects/clueUpgraderEffect.js';
 import { forcefullyUnequipItem } from '@/lib/bso/util/forcefullyUnequipItem.js';
 
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { Items, resolveItems } from 'oldschooljs';
 
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
@@ -166,7 +166,8 @@ export const pickpocketTask: MinionTask = {
 
 		if (gotWil) {
 			str +=
-				'<:wilvus:787320791011164201> A raccoon saw you thieving and partners with you to help you steal more stuff!';
+				customEmoji('wilvus') +
+				' A raccoon saw you thieving and partners with you to help you steal more stuff!';
 		}
 
 		str += `\n${

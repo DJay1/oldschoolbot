@@ -10,7 +10,7 @@ import { RuneTable, WilvusTable, WoodTable } from '@/lib/bso/tables/seedTable.js
 import { DougTable, PekyTable } from '@/lib/bso/tables/sharedTables.js';
 
 import { type ButtonBuilder, bold } from '@oldschoolgg/discord';
-import { getNextUTCReset, notEmpty, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, getNextUTCReset, notEmpty, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, randArrItem, randInt, roll } from 'node-rng';
 import { cryptoRng } from 'node-rng/crypto';
 import { Bank, EItem, itemID, toKMB } from 'oldschooljs';
@@ -142,7 +142,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 				const otherLoot = new Bank().add(MysteryBoxes.roll());
 				const bonusLoot = new Bank().add(loot).add(otherLoot);
 
-				messages.push(`<:mysterybox:680783258488799277> **You received 2x loot and ${otherLoot}.**`);
+				messages.push(`${customEmoji('mysterybox')} **You received 2x loot and ${otherLoot}.**`);
 
 				await Promise.all([
 					await user.statsBankUpdate('doubled_loot_bank', bonusLoot),
@@ -172,7 +172,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 					}
 					await user.statsBankUpdate('peky_loot_bank', bonusLoot);
 					messages.push(
-						`<:peky:787028037031559168> Peky flew off and got you some seeds during this trip: ${bonusLoot}.`
+						`${customEmoji('peky')} Peky flew off and got you some seeds during this trip: ${bonusLoot}.`
 					);
 					break;
 				}
@@ -183,7 +183,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 					}
 					await user.statsBankUpdate('obis_loot_bank', bonusLoot);
 					messages.push(
-						`<:obis:787028036792614974> Obis did some runecrafting during this trip and got you: ${bonusLoot}.`
+						`${customEmoji('obis')} Obis did some runecrafting during this trip and got you: ${bonusLoot}.`
 					);
 					break;
 				}
@@ -194,7 +194,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 					}
 					await user.statsBankUpdate('brock_loot_bank', bonusLoot);
 					messages.push(
-						`<:brock:787310793183854594> Brock did some woodcutting during this trip and got you: ${bonusLoot}.`
+						`${customEmoji('brock')} Brock did some woodcutting during this trip and got you: ${bonusLoot}.`
 					);
 					break;
 				}
@@ -205,7 +205,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 					}
 					await user.statsBankUpdate('wilvus_loot_bank', bonusLoot);
 					messages.push(
-						`<:wilvus:787320791011164201> Wilvus did some pickpocketing during this trip and got you: ${bonusLoot}.`
+						`${customEmoji('wilvus')} Wilvus did some pickpocketing during this trip and got you: ${bonusLoot}.`
 					);
 					break;
 				}
@@ -218,7 +218,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 					await user.statsBankUpdate('smokey_loot_bank', bonusLoot);
 					if (bonusLoot.length > 0) {
 						messages.push(
-							`<:smokey:787333617037869139> Smokey did some walking around while you were on your trip and found you ${bonusLoot}.`
+							`${customEmoji('smokey')} Smokey did some walking around while you were on your trip and found you ${bonusLoot}.`
 						);
 					}
 					break;
@@ -236,7 +236,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 						bonusLoot.add('Banana', randInt(1, 3));
 					}
 					await user.statsBankUpdate('harry_loot_bank', bonusLoot);
-					messages.push(`<:harry:749945071104819292>: ${bonusLoot}.`);
+					messages.push(`${customEmoji('harry')}: ${bonusLoot}.`);
 					break;
 				}
 				default: {
@@ -273,11 +273,11 @@ const tripFinishEffects: TripFinishEffect[] = [
 				]);
 				const hasMasterCape = user.hasEquipped('Magic master cape');
 				messages.push(
-					`<:Voidling:886284972380545034> ${alchResult.maxCasts}x ${
+					`${customEmoji('Voidling')} ${alchResult.maxCasts}x ${
 						alchResult.itemToAlch.name
 					} ${toKMB(alchResult.bankToAdd.amount('Coins'))} GP ${
-						!voidlingEquipped && !hasMasterCape ? '<:bank:739459924693614653>⏬' : ''
-					}${hasMasterCape ? '<:Magicmastercape:1115026341314703492>⏫' : ''}`
+						!voidlingEquipped && !hasMasterCape ? customEmoji('bank') + '⏬' : ''
+					}${hasMasterCape ? customEmoji('Magicmastercape') + '⏫' : ''}`
 				);
 				return {
 					itemsToAddWithCL: alchResult.bankToAdd,
@@ -480,9 +480,9 @@ const tripFinishEffects: TripFinishEffect[] = [
 				}
 
 				if (cost.length > 0 && loot.length === 0) {
-					messages.push(`<:moonlightMutator:1220590471613513780> Mutated ${cost}, but all died`);
+					messages.push(`${customEmoji('moonlightMutator')} Mutated ${cost}, but all died`);
 				} else if (loot.length > 0) {
-					messages.push(`<:moonlightMutator:1220590471613513780> Mutated ${cost}; ${loot} survived`);
+					messages.push(`${customEmoji('moonlightMutator')} Mutated ${cost}; ${loot} survived`);
 				}
 
 				return {

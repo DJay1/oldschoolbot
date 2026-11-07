@@ -1,4 +1,4 @@
-import { increaseNumByPercent, reduceNumByPercent, stringMatches } from '@oldschoolgg/toolkit';
+import { customEmoji, increaseNumByPercent, reduceNumByPercent, stringMatches } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
 
 import { QuestID } from '@/lib/minions/data/quests.js';
@@ -308,7 +308,7 @@ export const mineCommand = defineCommand({
 		} to finish.`;
 
 		if (user.usingPet('Doug')) {
-			response += '\n<:doug:748892864813203591> Doug joins you on your mining trip!';
+			response += '\n' + customEmoji('doug') + ' Doug joins you on your mining trip!';
 		}
 
 		if (messages.length > 0) {

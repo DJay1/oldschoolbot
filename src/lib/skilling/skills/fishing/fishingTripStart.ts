@@ -1,6 +1,6 @@
 import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
 
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, type RNGProvider } from 'node-rng';
 import { Bank, EItem, Items } from 'oldschooljs';
 
@@ -371,7 +371,7 @@ export async function calcFishingTripStart({
 	const hasShelldonEquipped = gearBank.usingPet('Shelldon');
 	if (!summerFishing.suppressShelldon && hasShelldonEquipped) {
 		tripSpeedMultiplier *= 2;
-		boosts.push('<:shelldon:748496988407988244> Shelldon helps you fish!');
+		boosts.push(customEmoji('shelldon') + ' Shelldon helps you fish!');
 	}
 
 	if (gearBank.hasEquippedOrInBank('Shark tooth necklace')) {

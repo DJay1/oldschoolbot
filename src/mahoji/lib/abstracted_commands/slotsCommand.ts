@@ -1,5 +1,5 @@
 import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
-import { sleep } from '@oldschoolgg/toolkit';
+import { buttonEmoji, sleep } from '@oldschoolgg/toolkit';
 import { Bank, SimpleTable, toKMB } from 'oldschooljs';
 import { chunk } from 'remeda';
 
@@ -19,22 +19,22 @@ const buttonsData: Button[] = [
 	{
 		name: 'Peky',
 		mod: (qty: number) => qty * 2,
-		emoji: '886284972263084133'
+		emoji: 'peky'
 	},
 	{
 		name: 'Wintertoad',
 		mod: (qty: number) => qty * 3,
-		emoji: '886284972141457439'
+		emoji: 'wintertoad'
 	},
 	{
 		name: 'Flappy',
 		mod: (qty: number) => qty * 5,
-		emoji: '884799334737129513'
+		emoji: 'Flappy'
 	},
 	{
 		name: 'Smokey',
 		mod: (qty: number) => qty * 15,
-		emoji: '886284971914969149'
+		emoji: 'Smokey'
 	}
 ];
 
@@ -129,7 +129,7 @@ ${buttonsData.map(b => `${b.name}: ${b.mod(1)}x`).join('\n')}`;
 								? ButtonStyle.Success
 								: ButtonStyle.Secondary
 					)
-					.setEmoji(shouldShowThisButton ? { id: b.emoji } : { name: '❓' });
+					.setEmoji(shouldShowThisButton ? buttonEmoji(b.emoji) : { name: '❓' });
 			})
 		);
 	}

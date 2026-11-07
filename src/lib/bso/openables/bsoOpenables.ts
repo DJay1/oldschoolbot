@@ -17,6 +17,7 @@ import {
 	testerGiftTable
 } from '@/lib/bso/openables/tables.js';
 
+import { customEmoji } from '@oldschoolgg/toolkit';
 import { Bank, Items, itemID, LootTable } from 'oldschooljs';
 
 import { holidayOpenables } from '@/lib/events/openables.js';
@@ -99,7 +100,7 @@ export const bsoOpenables: UnifiedOpenable[] = [
 		openedItem: Items.getOrThrow('Monkey crate'),
 		aliases: ['monkey crate'],
 		output: MonkeyCrateTable,
-		emoji: '<:Monkey_crate:885774318041202708>',
+		emoji: customEmoji('Monkey_crate'),
 		allItems: MonkeyCrateTable.allItems,
 		smokeyApplies: true
 	},

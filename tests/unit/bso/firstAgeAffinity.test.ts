@@ -22,6 +22,7 @@ import { resolveSkillOutfitXp, skillXpBonusClauses } from '@/lib/bso/firstAge/sk
 import { mysteryBoxBlacklist } from '@/lib/bso/openables/mysteryBoxBlacklist.js';
 import { embTable, tmbTable, umbTable } from '@/lib/bso/openables/mysteryBoxes.js';
 
+import { customEmoji } from '@oldschoolgg/toolkit';
 import { Bank, ItemGroups, Items, itemID } from 'oldschooljs';
 import { expect, test } from 'vitest';
 
@@ -532,7 +533,9 @@ test('the full max set grants each skill outfit once, on fishing, mining, and fi
 
 	expect(
 		skillXpBonusClauses(
-			'You received 12,000 <:fishing:630911040091193356> XP. You received 10% bonus XP for First age outfit items. **Angler bonus:** 2.5% (250 XP) from your First Age (max) set, same as the Angler outfit. (1.5m/Hr)\n**Congratulations! Your Fishing level is now 50** 🎉'
+			'You received 12,000 ' +
+				customEmoji('fishing') +
+				' XP. You received 10% bonus XP for First age outfit items. **Angler bonus:** 2.5% (250 XP) from your First Age (max) set, same as the Angler outfit. (1.5m/Hr)\n**Congratulations! Your Fishing level is now 50** 🎉'
 		)
 	).toEqual(
 		'You received 10% bonus XP for First age outfit items. **Angler bonus:** 2.5% (250 XP) from your First Age (max) set, same as the Angler outfit.'
