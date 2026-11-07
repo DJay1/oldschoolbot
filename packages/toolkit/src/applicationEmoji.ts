@@ -17,7 +17,7 @@ export interface ApplicationEmojiEntry {
 	animated: boolean;
 	source: string | null;
 	image: string | null;
-	status: 'wiki' | 'missing';
+	status: 'wiki' | 'bsc' | 'missing';
 	wiki: 'osrs' | 'rs3' | null;
 	notes: string | null;
 	usedIn: readonly string[];

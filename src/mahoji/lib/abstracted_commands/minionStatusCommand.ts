@@ -8,7 +8,6 @@ import { buttonEmoji, stripNonAlphanumeric, toTitleCase } from '@oldschoolgg/too
 
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { BitField, PerkTier } from '@/lib/constants.js';
-import { MINION_ICON } from '@/lib/data/emojis.js';
 import { InteractionID } from '@/lib/InteractionID.js';
 import { minionBuyButton } from '@/lib/sharedComponents.js';
 import {
@@ -105,7 +104,7 @@ export async function minionStatusCommand(
 			new ButtonBuilder()
 				.setCustomId('CANCEL_TRIP')
 				.setLabel('Cancel Trip')
-				.setEmoji({ name: MINION_ICON })
+				.setEmoji(buttonEmoji('minion'))
 				.setStyle(ButtonStyle.Secondary)
 		);
 	}

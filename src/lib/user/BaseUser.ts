@@ -4,7 +4,7 @@ import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 import { escapeMarkdown, userMention } from '@oldschoolgg/discord';
 import { defaultGearSetup, type GearSetup } from '@oldschoolgg/gear';
 import { type ECombatOption, type IBlowpipeData, ZBlowpipeData } from '@oldschoolgg/schemas';
-import { cleanUsername, Emoji, sumArr, Time } from '@oldschoolgg/toolkit';
+import { cleanUsername, Emoji, resolveEmojiText, sumArr, Time } from '@oldschoolgg/toolkit';
 import { Bank, convertXPtoLVL, type Item, type ItemBank, Items, resolveItems } from 'oldschooljs';
 import { clone } from 'remeda';
 
@@ -14,7 +14,6 @@ import type { IconPackID } from '@/lib/canvas/iconPacks.js';
 import { type CATier, CombatAchievements } from '@/lib/combat_achievements/combatAchievements.js';
 import { BitField, globalConfig, MAX_LEVEL } from '@/lib/constants.js';
 import { allPetIDs } from '@/lib/data/CollectionsExport.js';
-import { MINION_ICON, renderStoredEmoji } from '@/lib/data/emojis.js';
 import { degradeableItems } from '@/lib/degradeableItems.js';
 import type { UserFullGearSetup } from '@/lib/gear/types.js';
 import type { AttackStyles } from '@/lib/minions/functions/index.js';
@@ -205,7 +204,7 @@ export class BaseUser {
 
 	get minionName() {
 		const prefix = this.isIronman ? Emoji.Ironman : '';
-		const icon = this.user.minion_icon ? renderStoredEmoji(this.user.minion_icon) : MINION_ICON;
+		const icon = this.user.minion_icon ? resolveEmojiText(this.user.minion_icon) : Emoji.Minion;
 
 		const strPrefix = prefix ? `${prefix} ` : '';
 

@@ -25,10 +25,6 @@ export type EmojiName =
 	| 'Gift'
 	| 'Sad'
 	| 'Happy'
-	| 'PeepoOSBot'
-	| 'PeepoSlayer'
-	| 'PeepoRanger'
-	| 'PeepoNoob'
 	| 'XP'
 	| 'GP'
 	| 'ThumbsUp'
@@ -91,6 +87,7 @@ export type EmojiName =
 	| 'GreenGem'
 	| 'PinkGem'
 	| 'OrangeGem'
+	| 'Minion'
 	| 'Spanner'
 	| 'DoubleSpanner'
 	| 'Hammer'
@@ -139,10 +136,6 @@ export const Emoji: { readonly [K in EmojiName]: string } = {
 	Gift: '🎁',
 	Sad: customEmoji('RSSad'),
 	Happy: customEmoji('RSHappy'),
-	PeepoOSBot: customEmoji('peepoOSBot'),
-	PeepoSlayer: customEmoji('peepoSlayer'),
-	PeepoRanger: customEmoji('peepoRanger'),
-	PeepoNoob: customEmoji('peepoNoob'),
 	XP: customEmoji('xp'),
 	GP: customEmoji('RSGP'),
 	ThumbsUp: '👍',
@@ -205,6 +198,7 @@ export const Emoji: { readonly [K in EmojiName]: string } = {
 	GreenGem: customEmoji('greenGem'),
 	PinkGem: customEmoji('pinkGem'),
 	OrangeGem: customEmoji('orangeGem'),
+	Minion: customEmoji('minion'),
 	Spanner: customEmoji('spanner'),
 	DoubleSpanner: customEmoji('doubleSpanner'),
 	Hammer: customEmoji('hammer'),

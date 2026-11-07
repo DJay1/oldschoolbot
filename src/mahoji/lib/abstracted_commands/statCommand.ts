@@ -9,14 +9,23 @@ import { getAllAlternateMonsters } from '@/lib/bso/skills/slayer/getAllAlternate
 import { slayerMaskHelms } from '@/lib/bso/skills/slayer/slayerMaskHelms.js';
 
 import { bold } from '@oldschoolgg/discord';
-import { Emoji, formatDuration, PerkTier, stringMatches, sumArr, Time, toTitleCase } from '@oldschoolgg/toolkit';
+import {
+	Emoji,
+	formatDuration,
+	PerkTier,
+	resolveEmojiText,
+	stringMatches,
+	sumArr,
+	Time,
+	toTitleCase
+} from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank, Items, Monsters, toKMB } from 'oldschooljs';
 
 import type { activity_type_enum, UserStats, xp_gains_skill_enum } from '@/prisma/main.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { getClueScoresFromOpenables } from '@/lib/clues/clueUtils.js';
 import { allCLItemsFiltered, calcCLDetails } from '@/lib/data/Collections.js';
-import { MINION_ICON, renderStoredEmoji, skillEmoji } from '@/lib/data/emojis.js';
+import { skillEmoji } from '@/lib/data/emojis.js';
 import { getBankBgById } from '@/lib/minions/data/bankBackgrounds.js';
 import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 import { RandomEvents } from '@/lib/randomEvents.js';
@@ -940,7 +949,7 @@ ${result
 				'SELECT "minion.icon" as icon, COUNT(*)::int as qty FROM users WHERE "minion.icon" is not null group by "minion.icon" order by qty asc;'
 			);
 			return `**Current minion tiers and their number of users:**\n${Object.values(result)
-				.map(row => `${row.icon ? renderStoredEmoji(row.icon) : MINION_ICON} : ${row.qty}`)
+				.map(row => `${row.icon ? resolveEmojiText(row.icon) : Emoji.Minion} : ${row.qty}`)
 				.join('\n')}`;
 		}
 	},

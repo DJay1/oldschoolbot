@@ -34,10 +34,10 @@
 			"fallback": "🏆",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "AdamantTrophy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Bingo trophy. No clean official sprite suitable as an emoji.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -52,6 +52,19 @@
 			"wiki": "osrs",
 			"notes": null,
 			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts", "tests/integration/MUser.test.ts"]
+		},
+		{
+			"name": "amethystMinion",
+			"uploadName": "amethystMinion",
+			"aliases": [],
+			"fallback": "👤",
+			"animated": false,
+			"source": null,
+			"image": "amethystMinion.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgi art.",
+			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
 		},
 		{
 			"name": "Amulet_of_blood_fury",
@@ -173,10 +186,10 @@
 			"fallback": "🔶",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "bigOrangeGem.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom sacrifice-badge gem.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -251,10 +264,10 @@
 			"fallback": "🏆",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "BronzeTrophy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Bingo trophy. No clean official sprite suitable as an emoji.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -277,10 +290,10 @@
 			"fallback": "🐺",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "BSO.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Bot School Old / fork brand mark.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -290,10 +303,10 @@
 			"fallback": "🐛",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "bug.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom bug-report badge.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -395,11 +408,11 @@
 			"aliases": [],
 			"fallback": "📒",
 			"animated": false,
-			"source": "https://oldschool.runescape.wiki/w/File:Collection_log_icon.png",
+			"source": null,
 			"image": "collectionLog.png",
-			"status": "wiki",
-			"wiki": "osrs",
-			"notes": null,
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -461,10 +474,10 @@
 			"fallback": "🦀",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "crab.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom crab badge.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -492,19 +505,6 @@
 			"wiki": "osrs",
 			"notes": null,
 			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
-		},
-		{
-			"name": "CrystalMathLabs",
-			"uploadName": "CrystalMathLabs",
-			"aliases": [],
-			"fallback": "📊",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "CrystalMathLabs logo. Third-party brand, not on the RuneScape wikis.",
-			"usedIn": ["src/lib/data/emojis.ts"]
 		},
 		{
 			"name": "deathCard",
@@ -610,10 +610,10 @@
 			"fallback": "🔧",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "doubleSpanner.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom badge.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -671,10 +671,10 @@
 			"fallback": "🏆",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "DragonTrophy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Bingo trophy. League trophy menu sprites are 13px scraps, not usable art.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -774,6 +774,19 @@
 			"wiki": "osrs",
 			"notes": null,
 			"usedIn": ["packages/toolkit/src/constants.ts"]
+		},
+		{
+			"name": "emeraldMinion",
+			"uploadName": "emeraldMinion",
+			"aliases": [],
+			"fallback": "👤",
+			"animated": false,
+			"source": null,
+			"image": "emeraldMinion.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgi art.",
+			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
 		},
 		{
 			"name": "farming",
@@ -921,10 +934,10 @@
 			"fallback": "🏆",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "goldTrophy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom trophy. No single official gold-trophy sprite.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -934,10 +947,10 @@
 			"fallback": "💚",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "greenGem.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom sacrifice-badge gem.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -947,10 +960,10 @@
 			"fallback": "🎃",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "hacktoberfest.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Hacktoberfest brand mark.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["src/lib/constants.ts"]
 		},
 		{
@@ -972,11 +985,11 @@
 			"aliases": [],
 			"fallback": "🔨",
 			"animated": false,
-			"source": "https://oldschool.runescape.wiki/w/File:Hammer.png",
+			"source": null,
 			"image": "hammer.png",
-			"status": "wiki",
-			"wiki": "osrs",
-			"notes": null,
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -1147,10 +1160,10 @@
 			"fallback": "🔥",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "incinerator.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom sacrifice badge.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -1186,10 +1199,10 @@
 			"fallback": "🏆",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "IronTrophy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Bingo trophy. No clean official sprite suitable as an emoji.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -1404,16 +1417,35 @@
 			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
 		},
 		{
+			"name": "minion",
+			"uploadName": "minion",
+			"aliases": [],
+			"fallback": "👤",
+			"animated": false,
+			"source": null,
+			"image": "minion.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgi art.",
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/user/BaseUser.ts",
+				"src/mahoji/commands/sacrifice.ts",
+				"src/mahoji/lib/abstracted_commands/minionStatusCommand.ts",
+				"src/mahoji/lib/abstracted_commands/statCommand.ts"
+			]
+		},
+		{
 			"name": "MithrilTrophy",
 			"uploadName": "MithrilTrophy",
 			"aliases": [],
 			"fallback": "🏆",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "MithrilTrophy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Bingo trophy. No clean official sprite suitable as an emoji.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -1553,10 +1585,10 @@
 			"fallback": "🧡",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "orangeGem.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom sacrifice-badge gem.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -1566,10 +1598,10 @@
 			"fallback": "🤖",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "OSBot.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Old School Bot mascot. No wiki equivalent.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -1584,58 +1616,6 @@
 			"wiki": null,
 			"notes": "Custom beach pet.",
 			"usedIn": ["src/tasks/minions/fishingActivity.ts"]
-		},
-		{
-			"name": "peepoNoob",
-			"uploadName": "peepoNoob",
-			"aliases": [],
-			"fallback": "😅",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom peepo meme art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
-		},
-		{
-			"name": "peepoOSBot",
-			"uploadName": "peepoOSBot",
-			"aliases": [],
-			"fallback": "🤖",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom peepo meme art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
-		},
-		{
-			"name": "peepoRanger",
-			"uploadName": "peepoRanger",
-			"aliases": [],
-			"fallback": "🏹",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom peepo meme art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
-		},
-		{
-			"name": "peepoSlayer",
-			"uploadName": "peepoSlayer",
-			"aliases": [],
-			"fallback": "😈",
-			"animated": false,
-			"source": null,
-			"image": null,
-			"status": "missing",
-			"wiki": null,
-			"notes": "Custom peepo meme art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
 			"name": "peky",
@@ -1897,10 +1877,10 @@
 			"fallback": "💗",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "pinkGem.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom sacrifice-badge gem.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -2084,10 +2064,10 @@
 			"fallback": "😃",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "RSHappy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Classic RS chat happy face is not published as a wiki file. Yes-emote art is a full player animation, not this face.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -2097,10 +2077,10 @@
 			"fallback": "😞",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "RSSad.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Classic RS chat sad face is not published as a wiki file. No-emote art is a full player animation, not this face.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -2136,10 +2116,10 @@
 			"fallback": "🏆",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "RuneTrophy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Bingo trophy. No clean official sprite suitable as an emoji.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -2180,6 +2160,19 @@
 			"wiki": "osrs",
 			"notes": null,
 			"usedIn": ["packages/toolkit/src/constants.ts"]
+		},
+		{
+			"name": "sapphireMinion",
+			"uploadName": "sapphireMinion",
+			"aliases": [],
+			"fallback": "👤",
+			"animated": false,
+			"source": null,
+			"image": "sapphireMinion.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgi art.",
+			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
 		},
 		{
 			"name": "Scorpias_offspring",
@@ -2236,10 +2229,10 @@
 			"fallback": "🔮",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "seer.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom pet.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -2278,10 +2271,10 @@
 			"fallback": "⭐",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "skiller.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom skiller badge.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -2421,10 +2414,10 @@
 			"fallback": "🏆",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "SOTWtrophy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Custom Skiller of the Week trophy.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -2433,11 +2426,11 @@
 			"aliases": [],
 			"fallback": "🔧",
 			"animated": false,
-			"source": "https://oldschool.runescape.wiki/w/File:Spanner.png",
+			"source": null,
 			"image": "spanner.png",
-			"status": "wiki",
-			"wiki": "osrs",
-			"notes": null,
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -2478,10 +2471,10 @@
 			"fallback": "🏆",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "SteelTrophy.png",
+			"status": "bsc",
 			"wiki": null,
-			"notes": "Bingo trophy. No clean official sprite suitable as an emoji.",
+			"notes": "Bark School Corgi art.",
 			"usedIn": ["packages/toolkit/src/constants.ts"]
 		},
 		{
@@ -2706,6 +2699,19 @@
 			]
 		},
 		{
+			"name": "whiteMinion",
+			"uploadName": "whiteMinion",
+			"aliases": [],
+			"fallback": "👤",
+			"animated": false,
+			"source": null,
+			"image": "whiteMinion.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgi art.",
+			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
+		},
+		{
 			"name": "wilvus",
 			"uploadName": "wilvus",
 			"aliases": [],
@@ -2790,6 +2796,19 @@
 			"wiki": "osrs",
 			"notes": null,
 			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+		},
+		{
+			"name": "yellowMinion",
+			"uploadName": "yellowMinion",
+			"aliases": [],
+			"fallback": "👤",
+			"animated": false,
+			"source": null,
+			"image": "yellowMinion.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgi art.",
+			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
 		},
 		{
 			"name": "Youngllef",
