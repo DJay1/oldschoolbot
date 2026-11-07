@@ -28,6 +28,8 @@ import Prayer from '@/lib/skilling/skills/prayer.js';
 import type { Bone } from '@/lib/skilling/types.js';
 import { assert } from '@/lib/util/logError.js';
 
+// Christmas dye, Spooky dye, Sun Scream, and the egg dyes are permanent.
+// Players can already own them, so these recipes are not behind the seasonal event toggle.
 const dyeCreatables: Createable[] = [];
 for (const { baseItem, dyedVersions } of dyedItems) {
 	for (const dyedVersion of dyedVersions) {

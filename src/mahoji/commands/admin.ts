@@ -18,7 +18,6 @@ import {
 	validateStoredLeaguesTasks,
 	verifyLeaguesTasksForUser
 } from '@/lib/bso/leagues/leagues.js';
-import { getLydiaQuote } from '@/lib/bso/summerDays.js';
 
 import { dateFm, EmbedBuilder } from '@oldschoolgg/discord';
 import type { GearSetup } from '@oldschoolgg/gear';
@@ -48,6 +47,9 @@ import {
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
 import { BadgesEnum, BitField, BitFieldData, badges, Channel, globalConfig, META_CONSTANTS } from '@/lib/constants.js';
+import { handleSeasonalEventAdmin } from '@/lib/events/admin.js';
+import { getLydiaQuote } from '@/lib/events/summer/summerDays.js';
+import { seasonalEventIds } from '@/lib/events/types.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { syncCustomPrices } from '@/lib/preStartup.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
@@ -1056,6 +1058,46 @@ export const adminCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'event',
+			description: 'List, enable, disable, or schedule a seasonal event.',
+			options: [
+				{
+					type: 'String',
+					name: 'action',
+					description: 'list, enable, disable, schedule, or reset.',
+					required: true,
+					choices: ['list', 'enable', 'disable', 'schedule', 'reset'].map(action => ({
+						name: action,
+						value: action
+					}))
+				},
+				{
+					type: 'String',
+					name: 'name',
+					description: 'The event.',
+					required: false,
+					autocomplete: async ({ value }: StringAutoComplete) => {
+						return seasonalEventIds
+							.filter(id => (!value ? true : id.includes(value.toLowerCase())))
+							.map(id => ({ name: id, value: id }));
+					}
+				},
+				{
+					type: 'String',
+					name: 'start',
+					description: 'Optional start, such as 2026-12-01 or an ISO timestamp.',
+					required: false
+				},
+				{
+					type: 'String',
+					name: 'end',
+					description: 'Optional end, such as 2026-12-31 or an ISO timestamp.',
+					required: false
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
 			name: 'fix_giveaways',
 			description: 'Re-add Join/Leave buttons to all active giveaways.'
 		}
@@ -1222,6 +1264,15 @@ ${META_CONSTANTS.RENDERED_STR}`
 		 */
 		if (!isAdmin) {
 			return rng.pick(gifs);
+		}
+
+		if (options.event) {
+			return handleSeasonalEventAdmin({
+				action: options.event.action,
+				name: options.event.name,
+				start: options.event.start,
+				end: options.event.end
+			});
 		}
 
 		if (options.sync_commands) {

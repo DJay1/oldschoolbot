@@ -2,6 +2,7 @@ import { calcPercentOfNum, calcWhatPercent, Time } from '@oldschoolgg/toolkit';
 
 import type { activity_type_enum } from '@/prisma/main.js';
 import { BitField, PerkTier } from '@/lib/constants.js';
+import { isEventActive } from '@/lib/events/registry.js';
 import { getCyrTripBonus, RobochimpBitfieldEnum } from '@/lib/perkTiers.js';
 
 export function patronMaxTripBonus(perkTier: PerkTier | 0) {
@@ -87,6 +88,7 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 			break;
 		}
 		case 'BeachCombing': {
+			if (!isEventActive('summer')) break;
 			if (user.usingPet('Patricia')) {
 				max *= 2;
 			}

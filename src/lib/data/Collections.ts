@@ -1,7 +1,6 @@
 import { BSOItem } from '@/lib/bso/BSOItem.js';
 import { OSB_VIRTUS_IDS } from '@/lib/bso/bsoConstants.js';
 import { firstAgeCL } from '@/lib/bso/collection-log/firstAge.js';
-import { allChristmasEvent2024Items, allChristmasEvent2025Items } from '@/lib/bso/collection-log/holiday.js';
 import {
 	abyssalDragonCL,
 	akumuCL,
@@ -64,7 +63,6 @@ import { pumpkinHeadUniqueTable } from '@/lib/bso/pumpkinHead.js';
 import { divinationEnergies, portents } from '@/lib/bso/skills/divination.js';
 import { inventionCL } from '@/lib/bso/skills/invention/inventions.js';
 import { slayerMasksHelmsCL } from '@/lib/bso/skills/slayer/slayerMaskHelms.js';
-import { beachOutfitTable } from '@/lib/bso/summerDays.js';
 import { getAllIgneTameKCs, tameKillableMonsters } from '@/lib/bso/tames/tames.js';
 
 import { calcWhatPercent, notEmpty, stringMatches, sumArr, uniqueArr } from '@oldschoolgg/toolkit';
@@ -209,6 +207,8 @@ import {
 	zalcanoCL,
 	zulrahCL
 } from '@/lib/data/CollectionsExport.js';
+import { allChristmasEvent2024Items, allChristmasEvent2025Items } from '@/lib/events/christmas/collectionLogItems.js';
+import { beachOutfitTable } from '@/lib/events/summer/summerDays.js';
 import { growablePetsCL } from '@/lib/growablePets.js';
 import { implingsCL } from '@/lib/implings.js';
 import killableMonsters, { NightmareMonster } from '@/lib/minions/data/killableMonsters/index.js';

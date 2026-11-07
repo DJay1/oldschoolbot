@@ -6,6 +6,7 @@ import { Bank, type ItemBank, Items, itemID } from 'oldschooljs';
 
 import Buyables from '@/lib/data/buyables/buyables.js';
 import { tripBuyables } from '@/lib/data/buyables/tripBuyables.js';
+import { seasonalBuyableHoldMessage } from '@/lib/events/buyables.js';
 import { quests } from '@/lib/minions/data/quests.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 import { Minigames } from '@/lib/settings/minigames.js';
@@ -68,6 +69,9 @@ export const buyCommand = defineCommand({
 		);
 
 		if (!buyable) return "That's not a valid item you can buy.";
+
+		const seasonalHold = seasonalBuyableHoldMessage(buyable.name);
+		if (seasonalHold) return seasonalHold;
 
 		// Leave quantity as null if it's undefined AND the item uses quantityPerHour
 		if (quantity === null && buyable.quantityPerHour === undefined) {
