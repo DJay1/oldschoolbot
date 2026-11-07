@@ -4,7 +4,6 @@ import { roll } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
 import { fishingTrawlerLoot } from '@/lib/simulation/fishingTrawler.js';
-import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 
@@ -29,13 +28,6 @@ export const trawlerTask: MinionTask = {
 			loot.add(_loot);
 		}
 
-		const { percent: xpBonusPercent, totalXP: totalXPWithAngler } = Fishing.util.calcAnglerBonusXP({
-			gearBank: user.gearBank,
-			xp: totalXP,
-			roundingMethod: 'ceil'
-		});
-		totalXP = totalXPWithAngler;
-
 		let str = `${user}, ${user.minionName} finished completing the Fishing Trawler ${quantity}x times.`;
 
 		if (user.usingPet('Shelldon')) {
@@ -49,10 +41,6 @@ export const trawlerTask: MinionTask = {
 			amount: totalXP,
 			duration: data.duration
 		});
-
-		if (xpBonusPercent > 0) {
-			str += ` ${xpBonusPercent}% Bonus XP for Angler outfit pieces.`;
-		}
 
 		if (hasEliteArdy) str += '\n\n50% Extra fish for Ardougne Elite diary';
 

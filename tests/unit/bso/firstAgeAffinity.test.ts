@@ -18,6 +18,7 @@ import {
 	planMaxUpgrade,
 	UNCHARGED_FIRST_AGE_SHARD_DROP_RATE
 } from '@/lib/bso/firstAge/shards.js';
+import { resolveSkillOutfitXp, skillXpBonusClauses } from '@/lib/bso/firstAge/skillOutfits.js';
 import { mysteryBoxBlacklist } from '@/lib/bso/openables/mysteryBoxBlacklist.js';
 import { embTable, tmbTable, umbTable } from '@/lib/bso/openables/mysteryBoxes.js';
 
@@ -40,7 +41,7 @@ import { Gear } from '@/lib/structures/Gear.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
 import { wintertodtWarmPieceCount } from '@/mahoji/lib/abstracted_commands/wintertodtCommand.js';
-import { firstAgeCasketDouble } from '@/tasks/minions/clueActivity.js';
+import { FIRST_AGE_CASKET_DOUBLE_MESSAGE, firstAgeCasketDouble } from '@/tasks/minions/clueActivity.js';
 import { zealOutfitBoost } from '@/tasks/minions/PrayerActivity/offeringActivity.js';
 import { makeGearBank } from '../utils.js';
 
@@ -345,26 +346,196 @@ test('the full First Age (max) set grants each outfit bonus once, and 6 of 7 gra
 	expect(patches(six) - patches(bare)).toEqual(0);
 });
 
-test('the full max set doubles clue caskets at Zippy rate, after Zippy has already doubled them', () => {
+test('the full max set doubles every clue tier casket at Zippy rate, after Zippy has already doubled them', () => {
 	expect(CLUE_CASKET_DOUBLE_RATE).toEqual(15);
-	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: true, casketsAlready: 1 })).toEqual({
-		extraCaskets: 1,
-		message: 'Your First Age (max) set doubled your clue casket!'
+	// Same markdown as `Zippy has **doubled** your loot.`
+	expect(FIRST_AGE_CASKET_DOUBLE_MESSAGE).toEqual('Your First Age (max) set **doubled** your clue casket!');
+
+	const elder = ClueTiers.find(tier => tier.name === 'Elder')!;
+	const easy = ClueTiers.find(tier => tier.name === 'Easy')!;
+
+	const elderOnly = firstAgeCasketDouble({
+		wearingFullMaxSet: true,
+		rolledDouble: true,
+		loot: new Bank().add(elder.id, 1)
 	});
-	// Zippy turned 1 casket into 2. The set hit adds another 2, for 4.
-	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: true, casketsAlready: 2 })).toEqual({
-		extraCaskets: 2,
-		message: 'Your First Age (max) set doubled your clue casket!'
+	expect(elderOnly.extraCaskets.amount(elder.id)).toEqual(1);
+	expect(elderOnly.extraCaskets.length).toEqual(1);
+	expect(elderOnly.message).toEqual(FIRST_AGE_CASKET_DOUBLE_MESSAGE);
+
+	// Zippy first: 1 elder casket becomes 2. The set then adds another 2, for 4.
+	const elderAfterZippy = new Bank().add(elder.id, 1);
+	elderAfterZippy.multiply(2);
+	const elderSet = firstAgeCasketDouble({
+		wearingFullMaxSet: true,
+		rolledDouble: true,
+		loot: elderAfterZippy
 	});
-	expect(firstAgeCasketDouble({ wearingFullMaxSet: true, rolledDouble: false, casketsAlready: 2 }).extraCaskets).toEqual(
-		0
-	);
-	expect(firstAgeCasketDouble({ wearingFullMaxSet: false, rolledDouble: true, casketsAlready: 2 }).extraCaskets).toEqual(
-		0
-	);
+	expect(elderSet.extraCaskets.amount(elder.id)).toEqual(2);
+	expect(elderSet.message).toEqual(FIRST_AGE_CASKET_DOUBLE_MESSAGE);
+	elderAfterZippy.add(elderSet.extraCaskets);
+	expect(elderAfterZippy.amount(elder.id)).toEqual(4);
+
+	// Same order on a non-elder tier.
+	const easyAfterZippy = new Bank().add(easy.id, 1);
+	easyAfterZippy.multiply(2);
+	const easySet = firstAgeCasketDouble({
+		wearingFullMaxSet: true,
+		rolledDouble: true,
+		loot: easyAfterZippy
+	});
+	expect(easySet.extraCaskets.amount(easy.id)).toEqual(2);
+	expect(easySet.message).toEqual(FIRST_AGE_CASKET_DOUBLE_MESSAGE);
+	easyAfterZippy.add(easySet.extraCaskets);
+	expect(easyAfterZippy.amount(easy.id)).toEqual(4);
+
+	const easyOnly = firstAgeCasketDouble({
+		wearingFullMaxSet: true,
+		rolledDouble: true,
+		loot: new Bank().add(easy.id, 5)
+	});
+	expect(easyOnly.extraCaskets.amount(easy.id)).toEqual(5);
+	expect(easyOnly.extraCaskets.amount(elder.id)).toEqual(0);
+	expect(easyOnly.message).toEqual(FIRST_AGE_CASKET_DOUBLE_MESSAGE);
+
+	for (const tier of ClueTiers) {
+		const result = firstAgeCasketDouble({
+			wearingFullMaxSet: true,
+			rolledDouble: true,
+			loot: new Bank().add(tier.id, 3)
+		});
+		expect(result.extraCaskets.amount(tier.id), tier.name).toEqual(3);
+		expect(result.extraCaskets.length, tier.name).toEqual(1);
+		expect(result.message, tier.name).toEqual(FIRST_AGE_CASKET_DOUBLE_MESSAGE);
+	}
+
+	// Zippy can put other tiers in the same loot, then double them. The set doubles those caskets too.
+	const mixed = new Bank().add(elder.id, 2).add(easy.id, 4).add('Coins', 50).add('Tradeable Mystery Box', 1);
+	const mixedResult = firstAgeCasketDouble({
+		wearingFullMaxSet: true,
+		rolledDouble: true,
+		loot: mixed
+	});
+	expect(mixedResult.extraCaskets.amount(elder.id)).toEqual(2);
+	expect(mixedResult.extraCaskets.amount(easy.id)).toEqual(4);
+	expect(mixedResult.extraCaskets.amount('Coins')).toEqual(0);
+	expect(mixedResult.extraCaskets.amount('Tradeable Mystery Box')).toEqual(0);
+	expect(mixedResult.message).toEqual(FIRST_AGE_CASKET_DOUBLE_MESSAGE);
+	expect(mixed.amount(elder.id)).toEqual(2);
+
+	expect(
+		firstAgeCasketDouble({
+			wearingFullMaxSet: true,
+			rolledDouble: false,
+			loot: new Bank().add(elder.id, 2)
+		}).extraCaskets.length
+	).toEqual(0);
+	expect(
+		firstAgeCasketDouble({
+			wearingFullMaxSet: false,
+			rolledDouble: true,
+			loot: new Bank().add(easy.id, 2)
+		}).extraCaskets.length
+	).toEqual(0);
+	expect(
+		firstAgeCasketDouble({
+			wearingFullMaxSet: true,
+			rolledDouble: true,
+			loot: new Bank().add('Coins', 10)
+		}).message
+	).toEqual(null);
+
 	expect(namedOutfitXpLine({ outfit: 'Lumberjack', percent: 2.5, xp: 6435, fromMaxSet: true })).toContain('2.5%');
 	expect(namedOutfitXpLine({ outfit: 'Lumberjack', percent: 2.5, xp: 6435, fromMaxSet: true })).toContain(
 		'First Age (max) set'
+	);
+});
+
+test('the full max set grants each skill outfit once, on fishing, mining, and firemaking', () => {
+	const maxOnly = makeGearBank();
+	equipMaxSet(maxOnly.gear.melee);
+	const angler = resolveSkillOutfitXp({
+		source: maxOnly,
+		skill: 'fishing',
+		baseXp: 10_000,
+		wearingFullMaxSet: true
+	});
+	expect(angler?.percent).toEqual(2.5);
+	expect(angler?.bonusXp).toEqual(250);
+	expect(angler?.fromMaxSet).toEqual(true);
+	expect(angler?.line).toEqual(
+		'**Angler bonus:** 2.5% (250 XP) from your First Age (max) set, same as the Angler outfit.'
+	);
+
+	const prospector = resolveSkillOutfitXp({
+		source: maxOnly,
+		skill: 'mining',
+		baseXp: 8_000,
+		wearingFullMaxSet: true
+	});
+	expect(prospector?.percent).toEqual(2.5);
+	expect(prospector?.bonusXp).toEqual(200);
+	expect(prospector?.line).toEqual(
+		'**Prospector bonus:** 2.5% (200 XP) from your First Age (max) set, same as the Prospector outfit.'
+	);
+
+	const pyromancer = resolveSkillOutfitXp({
+		source: maxOnly,
+		skill: 'firemaking',
+		baseXp: 4_000,
+		wearingFullMaxSet: true
+	});
+	expect(pyromancer?.percent).toEqual(2.5);
+	expect(pyromancer?.bonusXp).toEqual(100);
+	expect(pyromancer?.line).toContain('**Pyromancer bonus:** 2.5%');
+	expect(pyromancer?.line).toContain('from your First Age (max) set, same as the Pyromancer outfit.');
+
+	const partialAndSet = makeGearBank();
+	equipMaxSet(partialAndSet.gear.melee);
+	partialAndSet.gear.skilling.equip('Angler hat');
+	const partial = resolveSkillOutfitXp({
+		source: partialAndSet,
+		skill: 'fishing',
+		baseXp: 10_000,
+		wearingFullMaxSet: true
+	});
+	expect(partial?.percent).toEqual(2.5);
+	expect(partial?.bonusXp).toEqual(250);
+	expect(partial?.fromMaxSet).toEqual(true);
+
+	const both = makeGearBank();
+	equipMaxSet(both.gear.melee);
+	for (const piece of ['Angler hat', 'Angler top', 'Angler waders', 'Angler boots']) {
+		both.gear.skilling.equip(piece);
+	}
+	const stacked = resolveSkillOutfitXp({
+		source: both,
+		skill: 'fishing',
+		baseXp: 10_000,
+		wearingFullMaxSet: true
+	});
+	expect(stacked?.percent).toEqual(2.5);
+	expect(stacked?.bonusXp).toEqual(250);
+	expect(stacked?.fromMaxSet).toEqual(false);
+	expect(stacked?.line).toContain('from your Angler outfit.');
+
+	const hatOnly = makeGearBank();
+	hatOnly.gear.skilling.equip('Angler hat');
+	expect(
+		resolveSkillOutfitXp({
+			source: hatOnly,
+			skill: 'fishing',
+			baseXp: 10_000,
+			wearingFullMaxSet: false
+		})?.percent
+	).toEqual(0.4);
+
+	expect(
+		skillXpBonusClauses(
+			'You received 12,000 <:fishing:630911040091193356> XP. You received 10% bonus XP for First age outfit items. **Angler bonus:** 2.5% (250 XP) from your First Age (max) set, same as the Angler outfit. (1.5m/Hr)\n**Congratulations! Your Fishing level is now 50** 🎉'
+		)
+	).toEqual(
+		'You received 10% bonus XP for First age outfit items. **Angler bonus:** 2.5% (250 XP) from your First Age (max) set, same as the Angler outfit.'
 	);
 });
 

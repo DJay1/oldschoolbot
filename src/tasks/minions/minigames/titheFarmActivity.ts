@@ -1,5 +1,3 @@
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
-
 import { Emoji } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -58,41 +56,9 @@ export const titheFarmTask: MinionTask = {
 			titheFarmsCompleted + 1
 		}x times. You now have ${titheFarmPoints + determinePoints} points to spend.`;
 
-		let bonusXpMultiplier = 0;
-		let farmersPiecesCheck = 0;
-		if (isWearingFullFirstAgeMaxSet(user)) {
-			bonusXpMultiplier = 0.025;
-		} else {
-			if (user.hasEquippedOrInBank(["Farmer's strawhat"])) {
-				bonusXpMultiplier += 0.004;
-				farmersPiecesCheck += 1;
-			}
-			if (user.hasEquippedOrInBank(["Farmer's jacket", "Farmer's shirt"], 'every')) {
-				bonusXpMultiplier += 0.008;
-				farmersPiecesCheck += 1;
-			}
-			if (user.hasEquippedOrInBank(["Farmer's boro trousers"])) {
-				bonusXpMultiplier += 0.006;
-				farmersPiecesCheck += 1;
-			}
-			if (user.hasEquippedOrInBank(["Farmer's boots"])) {
-				bonusXpMultiplier += 0.002;
-				farmersPiecesCheck += 1;
-			}
-			if (farmersPiecesCheck === 4) bonusXpMultiplier += 0.005;
-		}
-
-		const bonusXp = (harvestXp + depositXp) * bonusXpMultiplier;
-		const totalXp = farmingXp + bonusXp;
-
-		let bonusXpStr = '';
-		if (bonusXp > 0) {
-			bonusXpStr = `You received an additional ${Math.floor(bonusXp)} Bonus XP from your farmer's outfit pieces.`;
-		}
-
 		const xpRes = await user.addXP({
 			skillName: 'farming',
-			amount: Math.floor(totalXp),
+			amount: Math.floor(farmingXp),
 			duration: data.duration
 		});
 
@@ -107,7 +73,7 @@ export const titheFarmTask: MinionTask = {
 			});
 		}
 
-		const message = `${harvestStr} ${xpRes} ${bonusXpStr}\n\n${completedStr}\n${flappyRes.userMsg}`;
+		const message = `${harvestStr} ${xpRes}\n\n${completedStr}\n${flappyRes.userMsg}`;
 
 		handleTripFinish({ user, channelId, message, data, loot });
 	}

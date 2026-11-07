@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { calcPercentOfNum, formatDuration, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank, Items } from 'oldschooljs';
 
@@ -59,6 +61,7 @@ export const smithCommand = defineCommand({
 		// If they have the entire Smiths' Uniform, give 100% chance save 1 tick each item
 		let setBonus = 0;
 		if (
+			isWearingFullFirstAgeMaxSet(user) ||
 			user.gear.skilling.hasEquipped(
 				Object.keys(Smithing.smithsUniformItems).map(i => Number.parseInt(i)),
 				true

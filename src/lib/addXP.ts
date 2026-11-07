@@ -1,16 +1,11 @@
 import { GLOBAL_BSO_XP_MULTIPLIER } from '@/lib/bso/bsoConstants.js';
-import {
-	divinersOutfit,
-	gorajanArcherOutfit,
-	gorajanOccultOutfit,
-	gorajanWarriorOutfit
-} from '@/lib/bso/collection-log/main.js';
-import { inventorOutfit } from '@/lib/bso/collection-log/minigames.js';
+import { gorajanArcherOutfit, gorajanOccultOutfit, gorajanWarriorOutfit } from '@/lib/bso/collection-log/main.js';
 import { firstAgeXpBonusPercent, isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+import { resolveSkillOutfitXp } from '@/lib/bso/firstAge/skillOutfits.js';
 
 import { bold } from '@oldschoolgg/discord';
 import { Events, formatOrdinal, increaseNumByPercent, notEmpty, Time, toTitleCase } from '@oldschoolgg/toolkit';
-import { convertLVLtoXP, convertXPtoLVL, type Item, Items, resolveItems, toKMB } from 'oldschooljs';
+import { convertLVLtoXP, convertXPtoLVL, type Item, Items, toKMB } from 'oldschooljs';
 
 import { type User, UserEventType } from '@/prisma/main.js';
 import { globalConfig, MAX_LEVEL, MAX_LEVEL_XP, MAX_TOTAL_LEVEL, MAX_XP } from '@/lib/constants.js';
@@ -77,40 +72,12 @@ const staticXPBoosts = new Map<SkillNameType, StaticXPBoost[]>().set('firemaking
 	}
 ]);
 
-const skillingOutfitBoosts = [
-	{
-		skill: 'fletching',
-		outfit: resolveItems([
-			"Fletcher's gloves",
-			"Fletcher's boots",
-			"Fletcher's legs",
-			"Fletcher's top",
-			"Fletcher's hat"
-		]),
-		individualBoost: 0.5,
-		totalBoost: 3
-	},
-	{
-		skill: 'invention',
-		outfit: inventorOutfit,
-		individualBoost: 0.5,
-		totalBoost: 4
-	},
-	{
-		skill: 'divination',
-		outfit: divinersOutfit,
-		individualBoost: 0.5,
-		totalBoost: 4
-	}
-] as const;
-
 const formatBonusPercent = (value: number) => (Number.isInteger(value) ? value.toString() : value.toFixed(1));
 
 function xpBonusSentences(input: {
 	minimal: boolean | undefined;
 	totalFirstAgeBonus: number;
-	outfitBoostPercent: number;
-	outfitName: string;
+	outfitBonusLine: string;
 	totalStaticBoost: number;
 	staticBoostsApplied: string[];
 }): string {
@@ -119,8 +86,8 @@ function xpBonusSentences(input: {
 	if (input.totalFirstAgeBonus > 0) {
 		str += ` You received ${input.totalFirstAgeBonus}% bonus XP for First age outfit items.`;
 	}
-	if (input.outfitBoostPercent > 0) {
-		str += ` You received ${formatBonusPercent(input.outfitBoostPercent)}% bonus XP for ${input.outfitName} outfit pieces.`;
+	if (input.outfitBonusLine) {
+		str += input.outfitBonusLine;
 	}
 	if (input.totalStaticBoost > 0) {
 		str += ` You received bonus XP from ${input.staticBoostsApplied.join(', ')}.`;
@@ -145,6 +112,19 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 	const currentLevel = user.skillLevel(params.skillName);
 	const currentTotalLevel = user.totalLevel;
 	const multiplier = params.multiplier !== false;
+	let outfitBonusLine = '';
+	if (!params.artificial) {
+		const outfit = resolveSkillOutfitXp({
+			source: user,
+			skill: params.skillName,
+			baseXp: params.amount,
+			wearingFullMaxSet: isWearingFullFirstAgeMaxSet(user)
+		});
+		if (outfit) {
+			params.amount += outfit.bonusXp;
+			outfitBonusLine = ` ${outfit.line}`;
+		}
+	}
 	if (multiplier) {
 		params.amount *= GLOBAL_BSO_XP_MULTIPLIER;
 	}
@@ -193,7 +173,6 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 
 	let totalStaticBoost = 0;
 	const staticBoostsApplied: string[] = [];
-	let outfitBoostPercent = 0;
 	// Score each gear setup on its own. user.hasEquipped() searches every setup, so a
 	// cape removed from the set still counted while a copy sat on another setup.
 	const totalFirstAgeBonus = firstAgeXpBonusPercent(user);
@@ -208,16 +187,6 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 				staticBoostsApplied.push(`${booster.item.name} (+${formatBonusPercent(booster.boostPercent)}%)`);
 			}
 		}
-	}
-
-	const skillOutfit = skillingOutfitBoosts.find(i => i.skill === params.skillName);
-	if (!params.artificial && skillOutfit) {
-		const amountBoost =
-			isWearingFullFirstAgeMaxSet(user) || user.hasEquippedOrInBank(skillOutfit.outfit, 'every')
-				? skillOutfit.totalBoost
-				: skillOutfit.outfit.filter(i => user.hasEquippedOrInBank(i)).length * skillOutfit.individualBoost;
-		outfitBoostPercent = amountBoost;
-		params.amount = increaseNumByPercent(params.amount, amountBoost);
 	}
 
 	params.amount = Math.floor(params.amount);
@@ -364,8 +333,7 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 	const bonusSentences = xpBonusSentences({
 		minimal: params.minimal,
 		totalFirstAgeBonus,
-		outfitBoostPercent,
-		outfitName: name,
+		outfitBonusLine,
 		totalStaticBoost,
 		staticBoostsApplied
 	});

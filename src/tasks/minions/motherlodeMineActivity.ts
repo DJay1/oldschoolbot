@@ -1,6 +1,5 @@
 import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 
 import { Time } from '@oldschoolgg/toolkit';
@@ -17,30 +16,7 @@ export const motherlodeMiningTask: MinionTask = {
 		const { quantity } = data;
 
 		let xpReceived = quantity * Mining.MotherlodeMine.xp;
-		let bonusXP = 0;
 		let cleaningXP = 0;
-
-		// If they have the entire prospector outfit, give an extra 0.5% xp bonus
-		if (
-			isWearingFullFirstAgeMaxSet(user) ||
-			user.hasEquippedOrInBank(
-				Object.keys(Mining.prospectorItems).map(i => Number.parseInt(i)),
-				'every'
-			)
-		) {
-			const amountToAdd = Math.floor(xpReceived * (2.5 / 100));
-			xpReceived += amountToAdd;
-			bonusXP += amountToAdd;
-		} else {
-			// For each prospector item, check if they have it, give its' XP boost if so.
-			for (const [itemID, bonus] of Object.entries(Mining.prospectorItems)) {
-				if (user.hasEquippedOrInBank(Number.parseInt(itemID))) {
-					const amountToAdd = Math.floor(xpReceived * (bonus / 100));
-					xpReceived += amountToAdd;
-					bonusXP += amountToAdd;
-				}
-			}
-		}
 
 		const currentLevel = user.skillsAsLevels.mining;
 
@@ -133,17 +109,6 @@ export const motherlodeMiningTask: MinionTask = {
 		}
 
 		str += `\n\nYou received: ${loot}.`;
-		if (bonusXP > 0) {
-			const pieceIds = Object.keys(Mining.prospectorItems).map(i => Number.parseInt(i));
-			const hasFull = user.hasEquippedOrInBank(pieceIds, 'every');
-			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
-			str += `\n\n${namedOutfitXpLine({
-				outfit: 'Prospector',
-				percent: hasFull || fromMaxSet ? 2.5 : null,
-				xp: bonusXP,
-				fromMaxSet
-			})}`;
-		}
 
 		if (user.hasEquippedOrInBank('Mining master cape')) {
 			str += '\n2x nuggets for Mining master cape.';

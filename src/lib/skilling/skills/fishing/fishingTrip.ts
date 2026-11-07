@@ -13,7 +13,6 @@ import type { GearBank } from '@/lib/structures/GearBank.js';
 import { UpdateBank } from '@/lib/structures/UpdateBank.js';
 import { skillingPetDropRate } from '@/lib/util.js';
 import {
-	calcAnglerBonusXP,
 	calcLeapingExpectedCookingXP,
 	calcMinnowQuantityRange,
 	type SharkLureQuantity,
@@ -137,21 +136,6 @@ export function calcFishingTripResult({
 				}
 			}
 		}
-	}
-
-	const {
-		percent: anglerBoost,
-		bonusXP: anglerBonusXP,
-		totalXP: fishingXPWithAngler
-	} = calcAnglerBonusXP({
-		gearBank,
-		xp: fishingXP
-	});
-	if (anglerBonusXP > 0) {
-		fishingXP = fishingXPWithAngler;
-		messages.push(
-			`**Bonus XP:** ${anglerBonusXP.toFixed(1)} (+${anglerBoost.toFixed(1)}%) XP for Angler outfit pieces`
-		);
 	}
 
 	if (blessingExtra > 0) {

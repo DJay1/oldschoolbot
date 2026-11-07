@@ -1,7 +1,5 @@
 import { calcBabyYagaHouseDroprate } from '@/lib/bso/bsoUtil.js';
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
-import { calcPercentOfNum } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import { Construction } from '@/lib/skilling/skills/construction/index.js';
@@ -14,15 +12,9 @@ export const constructionTask: MinionTask = {
 
 		const object = Construction.constructables.find(object => object.id === objectID)!;
 		const xpReceived = quantity * object.xp;
-		let bonusXP = 0;
-		const carpenterPieces = Construction.util.calcConBonusXP(user.gear.skilling.raw());
-		const outfitMultiplier = isWearingFullFirstAgeMaxSet(user) ? Math.max(carpenterPieces, 2.5) : carpenterPieces;
-		if (outfitMultiplier > 0) {
-			bonusXP = calcPercentOfNum(outfitMultiplier, xpReceived);
-		}
 		const xpRes = await user.addXP({
 			skillName: 'construction',
-			amount: xpReceived + bonusXP,
+			amount: xpReceived,
 			duration
 		});
 
@@ -40,10 +32,6 @@ export const constructionTask: MinionTask = {
 		if (loot.length > 0) {
 			await user.addItemsToBank({ items: loot, collectionLog: true });
 			str += `\nYou received: ${loot}`;
-		}
-
-		if (bonusXP > 0) {
-			str += `\nYou received ${bonusXP.toLocaleString()} bonus XP from your Carpenter's outfit.`;
 		}
 
 		handleTripFinish({ user, channelId, message: str, data });

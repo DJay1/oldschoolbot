@@ -96,7 +96,11 @@ function formatAutoFarmBoosts(summary: AutoFarmSummary): string {
 
 function extractXPBoostMessages(message: string | undefined): string[] {
 	if (!message) return [];
-	return message.match(/You received (?:\d+(?:\.\d+)?% bonus XP|bonus XP from)[^.]*\./g) ?? [];
+	return (
+		message.match(
+			/You received (?:\d+(?:\.\d+)?% bonus XP|bonus XP from)[^.]*\.|\*\*[^*]+ bonus:\*\*.*?outfit\./g
+		) ?? []
+	);
 }
 
 function updateAutoFarmSummary({

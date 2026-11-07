@@ -1,6 +1,6 @@
 import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+import { resolveSkillOutfitXp } from '@/lib/bso/firstAge/skillOutfits.js';
 
-import { round } from '@oldschoolgg/toolkit';
 import type { RNGProvider } from 'node-rng';
 import { EItem } from 'oldschooljs';
 
@@ -119,17 +119,15 @@ function calcMinnowQuantityRange(gearBank: GearBank): [number, number] {
 }
 
 function calcAnglerBoostPercent(gearBank: GearBank) {
-	const equippedPieces = anglerItemsArr.filter(item => gearBank.gear.skilling.hasEquipped(item.id));
-	const piecePercent =
-		equippedPieces.length === anglerItemsArr.length
-			? 2.5
-			: round(
-					equippedPieces.reduce((total, item) => total + item.boost, 0),
-					1
-				);
 	// The full max set grants the full 2.5% once. It does not add on top of angler pieces.
-	if (isWearingFullFirstAgeMaxSet(gearBank)) return Math.max(piecePercent, 2.5);
-	return piecePercent;
+	return (
+		resolveSkillOutfitXp({
+			source: gearBank,
+			skill: 'fishing',
+			baseXp: 10_000,
+			wearingFullMaxSet: isWearingFullFirstAgeMaxSet(gearBank)
+		})?.percent ?? 0
+	);
 }
 
 type AnglerBonusRounding = 'none' | 'ceil' | 'floor';

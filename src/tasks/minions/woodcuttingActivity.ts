@@ -1,6 +1,5 @@
 import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
 
 import { objectEntries, perTimeUnitChance, Time } from '@oldschoolgg/toolkit';
 import { Bank, EItem, itemID } from 'oldschooljs';
@@ -200,8 +199,6 @@ export const woodcuttingTask: MinionTask = {
 		let twitcherSetting: TwitcherGloves | undefined = 'egg';
 		let xpReceived = quantity * log.xp;
 		let fellingBonusXP = 0;
-		let lumberjackBonusXP = 0;
-		let lumberjackFromMaxSet = false;
 		let rationUsed = 0;
 		let lostLogs = 0;
 		const loot = new Bank();
@@ -229,26 +226,7 @@ export const woodcuttingTask: MinionTask = {
 			itemsToRemove.add("Forester's ration", rationUsed);
 		}
 
-		const lumberjackIds = Object.keys(Woodcutting.lumberjackItems).map(i => Number.parseInt(i));
-		const hasFullLumberjack = user.hasEquippedOrInBank(lumberjackIds, 'every');
-		const wearingMaxSet = isWearingFullFirstAgeMaxSet(user);
-		// If they have the entire lumberjack outfit, give an extra 2.5% xp bonus. The max set grants it once.
-		if (wearingMaxSet || hasFullLumberjack) {
-			const amountToAdd = Math.floor(xpReceived * (2.5 / 100));
-			xpReceived += amountToAdd;
-			lumberjackBonusXP += amountToAdd;
-			lumberjackFromMaxSet = wearingMaxSet && !hasFullLumberjack;
-		} else {
-			// For each lumberjack item, check if they have it, give its XP boost if so
-			for (const [itemID, bonus] of Object.entries(Woodcutting.lumberjackItems)) {
-				if (user.hasEquippedOrInBank(Number.parseInt(itemID))) {
-					const amountToAdd = Math.floor(xpReceived * (bonus / 100));
-					xpReceived += amountToAdd;
-					lumberjackBonusXP += amountToAdd;
-				}
-			}
-		}
-
+		// Lumberjack and the First Age percent are applied in addXP.
 		// Give the user xp
 		let xpRes = await user.addXP({
 			skillName: 'woodcutting',
@@ -323,18 +301,9 @@ export const woodcuttingTask: MinionTask = {
 			);
 		}
 
-		// End of trip message
-		const lumberjackLine =
-			lumberjackBonusXP > 0
-				? ` ${namedOutfitXpLine({
-						outfit: 'Lumberjack',
-						percent: lumberjackFromMaxSet || hasFullLumberjack ? 2.5 : null,
-						xp: lumberjackBonusXP,
-						fromMaxSet: lumberjackFromMaxSet
-					})}`
-				: '';
+		// End of trip message. The lumberjack line is part of xpRes.
 		const fellingLine = fellingBonusXP > 0 ? ` **Felling axe bonus:** ${fellingBonusXP.toLocaleString()} XP.` : '';
-		let str = `${user}, ${user.minionName} finished woodcutting. ${xpRes}${lumberjackLine}${fellingLine}\n`;
+		let str = `${user}, ${user.minionName} finished woodcutting. ${xpRes}${fellingLine}\n`;
 
 		if (!log.clueNestsOnly) {
 			if (wcCapeNestBoost) {

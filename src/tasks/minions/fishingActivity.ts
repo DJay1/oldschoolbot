@@ -1,4 +1,5 @@
 import { BSOItem } from '@/lib/bso/BSOItem.js';
+import { skillXpBonusClauses } from '@/lib/bso/firstAge/skillOutfits.js';
 import { convertMysteriousBottleToSeaWater, getEclipsePetName } from '@/lib/bso/summerDays.js';
 
 import { Emoji, Events, Time } from '@oldschoolgg/toolkit';
@@ -208,6 +209,8 @@ export const fishingTask: MinionTask = {
 			}
 		}
 		message += `You received ${result.updateBank.xpBank} (${perHourSegments.join(', ')}).`;
+		const bonusClauses = skillXpBonusClauses(xpMessage ?? '');
+		if (bonusClauses) message += ` ${bonusClauses}`;
 
 		if (xpMessage) {
 			const congratsLines = xpMessage

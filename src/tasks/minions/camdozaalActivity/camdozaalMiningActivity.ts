@@ -1,5 +1,3 @@
-import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
-
 import { Bank, LootTable } from 'oldschooljs';
 
 import addSkillingClueToLoot from '@/lib/minions/functions/addSkillingClueToLoot.js';
@@ -51,31 +49,8 @@ export const camdozaalMiningTask: MinionTask = {
 		}
 
 		// Add up the xp from the trip
-		let miningXpReceived =
+		const miningXpReceived =
 			barroniteShardMined * Mining.CamdozaalMine.xp + barroniteDepositMined * Mining.CamdozaalMine.xp * 2;
-		let bonusXP = 0;
-
-		// If user has the entire prospector outfit, give an extra 2.5% xp bonus
-		if (
-			isWearingFullFirstAgeMaxSet(user) ||
-			user.gear.skilling.hasEquipped(
-				Object.keys(Mining.prospectorItems).map(i => Number.parseInt(i)),
-				true
-			)
-		) {
-			const amountToAdd = Math.floor(miningXpReceived * (2.5 / 100));
-			miningXpReceived += amountToAdd;
-			bonusXP += amountToAdd;
-		} else {
-			// For each prospector item, check if they have it, give its' XP boost
-			for (const [itemID, bonus] of Object.entries(Mining.prospectorItems)) {
-				if (user.hasEquipped(Number.parseInt(itemID))) {
-					const amountToAdd = Math.floor(miningXpReceived * (bonus / 100));
-					miningXpReceived += amountToAdd;
-					bonusXP += amountToAdd;
-				}
-			}
-		}
 
 		// Add xp to user
 		const xpRes = await user.addXP({
@@ -86,18 +61,7 @@ export const camdozaalMiningTask: MinionTask = {
 		});
 
 		// Trip finish message
-		let str = `${user}, ${user.minionName} finished mining in Camdozaal! ${xpRes}`;
-		if (bonusXP > 0) {
-			const pieceIds = Object.keys(Mining.prospectorItems).map(i => Number.parseInt(i));
-			const hasFull = user.hasEquippedOrInBank(pieceIds, 'every');
-			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
-			str += `\n\n${namedOutfitXpLine({
-				outfit: 'Prospector',
-				percent: hasFull || fromMaxSet ? 2.5 : null,
-				xp: bonusXP,
-				fromMaxSet
-			})}`;
-		}
+		const str = `${user}, ${user.minionName} finished mining in Camdozaal! ${xpRes}`;
 
 		// Add clue scrolls
 		const clueScrollChance = Mining.CamdozaalMine.clueScrollChance!;

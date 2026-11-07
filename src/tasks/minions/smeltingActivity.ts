@@ -1,6 +1,5 @@
-import { BlacksmithOutfit, MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
+import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 
 import { Time } from '@oldschoolgg/toolkit';
@@ -18,7 +17,6 @@ export const smeltingTask: MinionTask = {
 
 		// If this bar has a chance of failing to smelt, calculate that here.
 		const masterCapeInEffect = bar.chanceOfFail > 0 && user.hasEquippedOrInBank('Smithing master cape');
-		const hasBS = isWearingFullFirstAgeMaxSet(user) || user.hasEquippedOrInBank(BlacksmithOutfit, 'every');
 		const oldQuantity = quantity;
 		if ((bar.chanceOfFail > 0 && bar.name !== 'Iron bar') || (!blastf && bar.name === 'Iron bar')) {
 			const chance = masterCapeInEffect ? bar.chanceOfFail / 2 : bar.chanceOfFail;
@@ -39,7 +37,7 @@ export const smeltingTask: MinionTask = {
 
 		const xpRes = await user.addXP({
 			skillName: 'smithing',
-			amount: xpReceived * (hasBS ? 1.1 : 1),
+			amount: xpReceived,
 			duration
 		});
 
@@ -53,10 +51,6 @@ export const smeltingTask: MinionTask = {
 			if (!(blastf && bar.id === itemID('Iron bar'))) {
 				str += '\n2x less likely to fail from Smithing master cape.';
 			}
-		}
-
-		if (hasBS) {
-			str += '\n10% more XP for owning the blacksmith outfit.';
 		}
 
 		const loot = new Bank().add(bar.id, quantity);
