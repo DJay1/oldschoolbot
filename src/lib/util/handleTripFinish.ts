@@ -1,4 +1,5 @@
 import { tearsOfGuthixIronmanReqs, tearsOfGuthixSkillReqs } from '@/lib/bso/commands/tearsOfGuthixCommand.js';
+import { consolidateSkillXpBonusLines } from '@/lib/bso/firstAge/skillOutfits.js';
 import { handleCrateSpawns } from '@/lib/bso/handleCrateSpawns.js';
 import { gods } from '@/lib/bso/minigames/divineDominion.js';
 import { mysteriousStepData } from '@/lib/bso/mysteryTrail.js';
@@ -754,6 +755,11 @@ export async function handleTripFinish(
 	message.addAllowedUserMentions([user.id]);
 	if ('users' in data) {
 		message.addAllowedUserMentions(data.users);
+	}
+
+	// Several addXP calls in one trip each append the same bonus. Show each bonus once, with the XP summed.
+	if (message.message.content) {
+		message.setContent(consolidateSkillXpBonusLines(message.message.content));
 	}
 
 	await globalClient.sendMessageOrWebhook(channelId, message);
