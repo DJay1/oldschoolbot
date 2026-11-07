@@ -1,12 +1,13 @@
 import { giveBoxResetTime, SPAWN_BOX_COOLDOWN, spawnLampResetTime } from '@/lib/bso/bsoConstants.js';
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
+import { buttonUserPicker } from '@/lib/bso/buttonUserPicker.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
 import { LampTable } from '@/lib/bso/xpLamps.js';
 
-import { bold, time, userMention } from '@oldschoolgg/discord';
+import { time, userMention } from '@oldschoolgg/discord';
 import { Emoji, formatDuration, PerkTier, Time } from '@oldschoolgg/toolkit';
-import { randInt, roll } from 'node-rng';
+import { MathRNG, randArrItem, randInt, roll } from 'node-rng';
 import { Bank, convertLVLtoXP, itemID } from 'oldschooljs';
 
 import { BitField, Channel, globalConfig } from '@/lib/constants.js';
@@ -34,13 +35,31 @@ export async function spawnLampIsReady(user: MUser, channelId: string): Promise<
 	return [true];
 }
 
-function generateXPLevelQuestion() {
+/**
+ * Four button choices. `answers[0]` is the real level; the picker shuffles them.
+ */
+export function generateXPLevelQuestion() {
 	const level = randInt(1, 120);
 	const xp = randInt(convertLVLtoXP(level), convertLVLtoXP(level + 1) - 1);
 
+	const chanceOfSwitching = randInt(1, 4);
+	const answers: string[] = [level.toString()];
+	const direction = MathRNG.shuffle(['plus', 'minus']);
+
+	while (answers.length < 4) {
+		const modifier = randArrItem([1, 1, 2, 2, 3, 4, 5, 5, 6, 7, 7, 8, 9, 10, 10]);
+		if (modifier === undefined) continue;
+		const action = roll(chanceOfSwitching) ? direction[0] : direction[1];
+		let potentialAnswer = action === 'plus' ? level + modifier : level - modifier;
+		if (potentialAnswer < 1) potentialAnswer = level + modifier;
+		else if (potentialAnswer > 120) potentialAnswer = level - modifier;
+		if (answers.includes(potentialAnswer.toString())) continue;
+		answers.push(potentialAnswer.toString());
+	}
+
 	return {
-		question: `What level would you be at with ${xp.toLocaleString()} XP?`,
-		answer: level.toString(),
+		question: `What level would you be at with **${xp.toLocaleString()}** XP?`,
+		answers,
 		explainAnswer: `${xp.toLocaleString()} is level ${level}!`
 	};
 }
@@ -64,20 +83,19 @@ export async function spawnLampCommand(user: MUser, interaction: MInteraction): 
 		}
 	});
 
-	const { answer, question, explainAnswer } = generateXPLevelQuestion();
+	const { answers, question, explainAnswer } = generateXPLevelQuestion();
 
-	await interaction.replyWithResponse({
-		content: `${BSOEmoji.HugeLamp} ${userMention(user.id)} spawned a Lamp: ${question}`,
-		withResponse: true
+	const winnerId = await buttonUserPicker({
+		interaction,
+		str: `${BSOEmoji.HugeLamp} ${userMention(user.id)} spawned a Lamp: ${question}`,
+		timer: Time.Minute,
+		ironmenAllowed: false,
+		answers,
+		creator: user.id,
+		creatorGetsTwoGuesses: true
 	});
-	const messages = await globalClient.awaitMessages({
-		channelId: interaction.channelId,
-		time: Time.Minute,
-		filter: m => m.content === answer
-	});
-
-	if (!messages[0]) return `Nobody got it. ${explainAnswer}`;
-	const winner = await mUserFetch(messages[0].author.id);
+	if (!winnerId) return `Nobody got it. ${explainAnswer}`;
+	const winner = await mUserFetch(winnerId);
 	const loot = LampTable.roll();
 	await winner.addItemsToBank({ items: loot, collectionLog: false });
 	return `${winner} got it, and won **${loot}**! ${explainAnswer}`;
@@ -100,22 +118,21 @@ export async function spawnBoxCommand(user: MUser, interaction: MInteraction): C
 	await user.update({
 		last_spawn_box_date: Date.now()
 	});
-	const { answer, question, explainAnswer } = generateXPLevelQuestion();
+	const { answers, question, explainAnswer } = generateXPLevelQuestion();
 	const timeToAnswer = Time.Minute;
 
-	await interaction.replyWithResponse({
-		content: `${Emoji.MysteryBox} ${userMention(user.id)} spawned a Mystery Box, answer within ${time(Math.floor((Date.now() + timeToAnswer) / 1000), 'R')} by replying to this message.
+	const winnerId = await buttonUserPicker({
+		interaction,
+		str: `${Emoji.MysteryBox} ${userMention(user.id)} spawned a Mystery Box. Answer within ${time(Math.floor((Date.now() + timeToAnswer) / 1000), 'R')}.
 
-${bold(question)}`,
-		withResponse: true
+${question}`,
+		timer: timeToAnswer,
+		ironmenAllowed: false,
+		answers,
+		creator: user.id
 	});
-	const messages = await globalClient.awaitMessages({
-		channelId: interaction.channelId,
-		time: timeToAnswer,
-		filter: m => m.content === answer
-	});
-	if (!messages[0]) return `Nobody got it. ${explainAnswer}`;
-	const winner = await mUserFetch(messages[0].author.id);
+	if (!winnerId) return `Nobody got it. ${explainAnswer}`;
+	const winner = await mUserFetch(winnerId);
 
 	const loot = new Bank().add(MysteryBoxes.roll());
 	await winner.addItemsToBank({ items: loot, collectionLog: false });
