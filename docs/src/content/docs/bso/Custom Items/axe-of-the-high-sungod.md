@@ -13,7 +13,7 @@ Create in this order with [[/create]]:
 
 [[Sun-god axe head]] is smithed at level 110 Smithing from 2 [[Sun-metal bar]] (requires 400 QP).
 
-## Known effects in current BSO content
+## Known effects in current Bark School Corgo content
 
 - [[Venatrix]]: +20% speed
 - [[Akumu]]: +20% speed

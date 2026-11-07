@@ -54,7 +54,7 @@ The Master Quest cape can be purchased with [[/buy name\:Master quest cape]] for
 
 ## Completionist Capes
 
-Completionist capes are prestigious items that require completing nearly all content in BSO. Use [[/completion check]] to view your progress toward the cape.
+Completionist capes are prestigious items that require completing nearly all content in Bark School Corgo. Use [[/completion check]] to view your progress toward the cape.
 
 - **Completionist cape**: Costs 100m gp and requires 100% untrimmed progress along with every master cape, the Master Quest cape and trimmed versions of the Achievement diary and Music capes.
 - **Completionist cape (t)**: Costs 250m gp and the untrimmed cape. Requires 100% trimmed progress.

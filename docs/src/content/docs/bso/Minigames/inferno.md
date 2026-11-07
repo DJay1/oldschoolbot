@@ -2,9 +2,9 @@
 title: "Inferno"
 ---
 
-See [OSB Wiki](https://wiki.oldschool.gg/bosses/inferno) for general information.
+See [Bark School Corgo Wiki](https://wiki.oldschool.gg/bosses/inferno) for general information.
 
-### BSO Specific Boosts
+### Bark School Corgo Specific Boosts
 
 Boosts for the Inferno are split into two categories: speed and death chance. Speed boosts decrease the time required to complete the Inferno, and death chance boosts decrease your odds of dying before or during the Zuk fight.
 
@@ -38,7 +38,7 @@ _Note: You can have only one spirit shield on in either mage or range, equipping
 
 ### Sample Gear Setups
 
-The setups listed below are merely examples. You should choose your gear depending on your goal and progress in the inferno. Also refer to the OSB Wiki guide for boosts that are not unique to BSO.
+The setups listed below are merely examples. You should choose your gear depending on your goal and progress in the inferno. Also refer to the wiki guide for boosts that are shared with the base game.
 
 _Note: It is impossible to complete the inferno in under 8 attempts. While under this number, you should prioritize speed over survivability._
 

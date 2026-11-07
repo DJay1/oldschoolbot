@@ -41,4 +41,4 @@ In order to change your bank background one of the first things you will need to
 - Swampman (Unavailable)
 - Karamja (Unavailable)
 - CoX (Discontinued promotion)
-- OSB (Discontinued promotion)
+- Bark School Corgo (Discontinued promotion)

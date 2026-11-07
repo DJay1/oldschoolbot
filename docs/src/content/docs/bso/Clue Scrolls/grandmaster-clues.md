@@ -17,7 +17,7 @@ Master clue scrolls can be created by Watson using [[/create item\:Master clue q
 
 ## Boosts
 
-- [Clue global boosts (OSB Wiki)](/osb/clues/#global-boosts)
+- [Clue global boosts (Bark School Corgo Wiki)](/osb/clues/#global-boosts)
 - [Clue Hunter Outfit](/bso/custom-items/#clue-hunter-outfit) – 2x speed
 - [Zippy](/bso/custom-items/pets/#miscellaneous-effects) – 1/15 chance to double; also boosts Beginner to Master caskets, UMB, and TMB (stacks with global double)
 - Clue score – up to 10% at ~60 clues completed

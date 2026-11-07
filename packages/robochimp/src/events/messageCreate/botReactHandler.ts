@@ -23,11 +23,9 @@ WHERE ((osb_cl_percent + bso_cl_percent) / 2) >= ${combinedCLPercent};`
 		await globalClient.replyToMessage(
 			msg,
 			`${await globalClient.fetchUserUsername(msg.author_id)}
-**OSB Total Level:** ${u.osbTotalLevel ?? 'Unknown'}
-**BSO Total Level:** ${u.bsoTotalLevel ?? 'Unknown'}
+**Bark School Corgo total level:** ${u.osbTotalLevel ?? 'Unknown'} / ${u.bsoTotalLevel ?? 'Unknown'}
 
-**OSB CL %:** ${u.osbClPercent ?? 'Unknown'}
-**BSO CL %:** ${u.bsoClPercent ?? 'Unknown'}
+**Bark School Corgo CL %:** ${u.osbClPercent ?? 'Unknown'} / ${u.bsoClPercent ?? 'Unknown'}
 
 **Combined CL%:** ${combinedCLPercent.toFixed(2)} (${generateRankMessage(clPercentRank)})`
 		);

@@ -14,7 +14,7 @@ To start any hunter trip, use [[/hunt name\:...]]
 
 **Note:** `hunter_potion:True` allows the use of hunter potions on your trip. See Boosts for more info.
 
-Each creature also has a leaderboard so you can see how you stack up against your fellow players. For example, to see the top black chinchompa hunters in OSB, you can [[/lb creatures black chinchompa]].
+Each creature also has a leaderboard so you can see how you stack up against your fellow players. For example, to see the top black chinchompa hunters in Bark School Corgo, you can [[/lb creatures black chinchompa]].
 
 ## Boosts
 

@@ -15,7 +15,7 @@ type Item = {
 
 const servers = [
 	{
-		name: 'Magnaboy BSO',
+		name: 'Bark School Corgo',
 		url: 'https://bso-server.magnaboy.com'
 	}
 ];

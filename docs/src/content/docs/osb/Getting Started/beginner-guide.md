@@ -4,7 +4,7 @@ sidebar:
   order: 1
 ---
 
-This guide is meant for players just starting with OSB. It does not include optimal training methods for skills, and it does not include a comprehensive list of what you can do in OSB. For more information about the bot and its features, feel free to look at the rest of this wiki, or ask in the #help-and-support channel of the [support server](https://discord.com/invite/ob).
+This guide is meant for players just starting with Bark School Corgo. It does not include optimal training methods for skills, and it does not include a comprehensive list of what you can do in Bark School Corgo. For more information about the bot and its features, feel free to look at the rest of this wiki, or ask in the #help-and-support channel of the [support server](https://discord.com/invite/ob).
 
 ### Part 1: Pre-PvM
 

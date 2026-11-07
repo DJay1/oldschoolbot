@@ -80,7 +80,7 @@ Yes. Clues can be juggled/stacked up to a combined limit of 100 in your bank.
 
 ### Why is the bot not responding?
 
-Try mentioning the bot (`@NEED TO REPLACE`), and check bot permissions.
+Try mentioning the bot (`@Bark School Corgo`), and check bot permissions.
 
 ### How do I create/deconstruct a Barrows set?
 
@@ -89,7 +89,7 @@ To unpack: [[/create item\:Unpack dharok's armour set]]
 
 ### The bot says it needs “Manage Messages” permission. How?
 
-Go to Server Settings → Roles → NEED TO REPLACE → Enable **Manage Messages**
+Go to Server Settings → Roles → Bark School Corgo → Enable **Manage Messages**
 
 ### How do I create an Ornate Jewellery Box?
 

@@ -2,7 +2,7 @@
 title: "Implings"
 ---
 
-On top of regular implings, BSO adds 5 custom implings:
+On top of regular implings, Bark School Corgo adds 5 custom implings:
 
 ## Infernal impling (jar)
 

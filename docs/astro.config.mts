@@ -90,7 +90,7 @@ export default defineConfig({
 		smartypants: false,
 		syntaxHighlight: false
 	},
-	// NEED TO REPLACE — docs site origin. Placeholder until a real host is set.
+	// TODO: docs site origin. Placeholder until a real host is set.
 	site: 'https://example.com',
 	integrations: [
 		starlight({
@@ -106,7 +106,7 @@ export default defineConfig({
 				Footer: './src/components/Footer.astro',
 				Header: './src/components/Header.astro'
 			},
-			title: 'NEED TO REPLACE',
+			title: 'Bark School Corgo',
 			favicon: 'favicon.ico',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/DJay1/oldschoolbot' }],
 			customCss: ['./src/styles/main.css', './src/fonts/font-face.css'],
@@ -133,12 +133,12 @@ window.onload = () => document.body.classList.add('bso-theme');
 					collapsed: false
 				},
 				{
-					label: 'NEED TO REPLACE',
+					label: 'Bark School Corgo',
 					autogenerate: { directory: 'osb', collapsed: true },
 					collapsed: false
 				},
 				{
-					label: 'NEED TO REPLACE custom',
+					label: 'Bark School Corgo custom',
 					autogenerate: { directory: 'bso', collapsed: true },
 					collapsed: false
 				}

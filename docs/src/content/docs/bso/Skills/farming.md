@@ -41,7 +41,7 @@ title: "Farming"
 | Korulsi    | 386,179       | 4,773,172        |
 
 
-## Mushroom & toxic spores (BSO)
+## Mushroom & toxic spores (Bark School Corgo)
 
 ### Mushroom spore
 
@@ -55,5 +55,5 @@ title: "Farming"
 
 ### Morchella mushroom spore
 
-- Dropped from BSO resource-dungeon monster tables (varies by dungeon, including 1/264 and 1/64 sources).
+- Dropped from Bark School Corgo resource-dungeon monster tables (varies by dungeon, including 1/264 and 1/64 sources).
 - Used to plant Morchella mushrooms in Farming.

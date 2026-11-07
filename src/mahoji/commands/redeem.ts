@@ -41,10 +41,10 @@ export const redeemCommand = defineCommand({
 			if (product.type === 'active') {
 				switch (product.id) {
 					case ProductID.OneHourDoubleLoot: {
-						return 'You cannot redeem this on NEED TO REPLACE.';
+						return 'You cannot redeem this on Bark School Corgo.';
 					}
 					case ProductID.ThreeHourDoubleLoot: {
-						return 'You cannot redeem this on NEED TO REPLACE.';
+						return 'You cannot redeem this on Bark School Corgo.';
 					}
 				}
 			}

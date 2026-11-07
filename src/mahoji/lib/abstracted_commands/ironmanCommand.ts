@@ -87,7 +87,7 @@ After becoming an ironman:
 	- You will no longer be able to receive GP from  \`/daily\`
 	- You will no longer be able to use \`/pay\`, \`/duel\`, \`/sellto\`, \`/sell\`, \`/dice\`, \`/gamble give_random_item\`
 	- You **cannot** de-iron, it is PERMANENT.
-    - Your entire BSO account, EVERYTHING, will be reset.
+    - Your entire Bark School Corgo account, EVERYTHING, will be reset.
 Type \`confirm permanent ironman\` if you understand the above information, and want to become an ironman now.`
 		);
 	}

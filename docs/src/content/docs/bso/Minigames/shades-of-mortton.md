@@ -1,9 +1,9 @@
 ---
 title: "Shades of Mort'ton"
-description: "BSO only content: Necromancer Kit, Shade Skull, Gary"
+description: "Bark School Corgo only content: Necromancer Kit, Shade Skull, Gary"
 ---
 
-[The OSB Shades of Mort'ton article](https://app.gitbook.com/s/-Mahgm23KyzkWDlt2oqz/minigames/shades-of-mortton) describes the minigame and standard content around it.
+[The Bark School Corgo Shades of Mort'ton article](https://app.gitbook.com/s/-Mahgm23KyzkWDlt2oqz/minigames/shades-of-mortton) describes the minigame and standard content around it.
 
 | **Item**                                                                  | **Source**                                                            |
 | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |

@@ -25,7 +25,7 @@ title: "Elder Clues"
 
 ## Boosts
 
-- [Clue global boosts (OSB Wiki)](/osb/clues/#global-boosts)
+- [Clue global boosts (Bark School Corgo Wiki)](/osb/clues/#global-boosts)
 - [Clue Hunter Outfit](/bso/custom-items/#clue-hunter-outfit) – 2x speed
 - [Zippy](/bso/custom-items/pets/#miscellaneous-effects) – 1/15 chance to double; also boosts lower tier caskets (stacks with global double)
 - Clue score – up to 10% at ~60 clues completed
@@ -67,7 +67,7 @@ Each casket rolls 4–7 times with additional tertiary chances:
 ## Exact creation and key rates
 
 - Elder clues are created with [[/create item\:Clue scroll (elder)]] using **3x [[Elder scroll piece]]**.
-- Confirmed elder-piece sources in BSO docs above include:
+- Confirmed elder-piece sources in Bark School Corgo docs above include:
   - [[Akumu]]: 1/85
   - [[Venatrix]]: 1/85
   - [[Shrimpling]]: 1/80

@@ -35,7 +35,7 @@ import { ownedMaterialOption } from '@/discord/presetCommandOptions.js';
 
 export const bsoMinigamesCommand = defineCommand({
 	name: 'bsominigames',
-	description: 'Send your minion to do various bso minigames.',
+	description: 'Send your minion to do various Bark School Corgo minigames.',
 	options: [
 		{
 			type: 'SubcommandGroup',

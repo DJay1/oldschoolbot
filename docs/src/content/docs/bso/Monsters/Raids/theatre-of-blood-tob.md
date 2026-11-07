@@ -2,7 +2,7 @@
 title: "Theatre of Blood (ToB)"
 ---
 
-See the [OSB wiki](https://wiki.oldschool.gg/osb/raids/tob) for general info.
+See the [Bark School Corgo wiki](https://wiki.oldschool.gg/osb/raids/tob) for general info.
 
 ## Boosts
 

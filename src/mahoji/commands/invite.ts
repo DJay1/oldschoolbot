@@ -3,6 +3,6 @@ export const inviteCommand = defineCommand({
 	description: 'Shows the invite link for the bot.',
 	options: [],
 	run: async () => {
-		return `**NEED TO REPLACE:** NEED TO REPLACE`;
+		return `**Bark School Corgo**\nTODO: Discord invite link is not set yet.`;
 	}
 });

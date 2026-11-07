@@ -24,9 +24,9 @@
  * Stable bounty keys for this campaign (thread snowflakes are stored on quality_check_bounty.thread_id
  * after /qualitycheck post or /qualitycheck sync, and printed by /qualitycheck post):
  *
- *   help-placeholder        title "Help placeholder"         marker [qc:help-placeholder]
- *   invite-placeholder       title "Invite placeholder"        marker [qc:invite-placeholder]
- *   minion-buy-placeholder   title "Minion buy placeholder"    marker [qc:minion-buy-placeholder]
+ *   help-placeholder        title "Help copy"                marker [qc:help-placeholder]
+ *   invite-placeholder       title "Invite copy"               marker [qc:invite-placeholder]
+ *   minion-buy-placeholder   title "Minion buy copy"           marker [qc:minion-buy-placeholder]
  *   item-hub                 title "Item hub"                  marker [qc:item-hub]
  *   boss-hub                 title "Boss hub"                  marker [qc:boss-hub]
  *   no-patreon-plugs         title "No Patreon plugs"          marker [qc:no-patreon-plugs]
@@ -115,23 +115,24 @@ export interface QualityCheckItem {
 export const qualityCheckCampaign = {
 	id: 'pr1-branding-hubs',
 	title: 'PR #1 branding and hubs',
-	summary: 'Smoke-check placeholder copy, the item hub, and the boss hub.',
+	summary: 'Smoke-check Bark School Corgo copy, the item hub, and the boss hub.',
 	items: [
 		{
 			id: 'help-placeholder',
-			label: 'Help placeholder',
-			instruction: 'Run /help. The reply should use NEED TO REPLACE and should not include a Patreon plug.'
+			label: 'Help copy',
+			instruction: 'Run /help. The reply should use Bark School Corgo and should not include a Patreon plug.'
 		},
 		{
 			id: 'invite-placeholder',
-			label: 'Invite placeholder',
-			instruction: 'Run /invite. The reply should be placeholder copy only (NEED TO REPLACE).'
+			label: 'Invite copy',
+			instruction:
+				'Run /invite. The reply should name Bark School Corgo and keep a TODO until a real invite link exists. It should not include a Patreon plug.'
 		},
 		{
 			id: 'minion-buy-placeholder',
-			label: 'Minion buy placeholder',
+			label: 'Minion buy copy',
 			instruction:
-				'Run /minion buy. The success reply should use NEED TO REPLACE and should not include a Patreon plug.'
+				'Run /minion buy. The success reply should use Bark School Corgo and should not include a Patreon plug.'
 		},
 		{
 			id: 'item-hub',

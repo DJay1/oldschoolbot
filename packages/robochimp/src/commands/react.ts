@@ -12,7 +12,7 @@ export const reactCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'emoji',
-					description: 'The emoji, must be SFW, in the OSB server, or a built-in emoji.',
+					description: 'The emoji, must be SFW, in the Bark School Corgo server, or a built-in emoji.',
 					required: true
 				}
 			]

@@ -1,8 +1,8 @@
-# NEED TO REPLACE
+# Bark School Corgo
 
-NEED TO REPLACE is a Discord bot based on [Old School RuneScape](https://oldschool.runescape.com/).
+Bark School Corgo (BSC) is a corgi-themed Discord bot based on [Old School RuneScape](https://oldschool.runescape.com/). Old school, on four legs.
 
-> NEED TO REPLACE is not affiliated with or endorsed by Jagex. Play Old School RuneScape for free at https://oldschool.runescape.com
+> Bark School Corgo is not affiliated with or endorsed by Jagex. Play Old School RuneScape for free at https://oldschool.runescape.com
 
 ## oldschooljs
 
@@ -16,7 +16,7 @@ To suggest a new feature, [click here](https://github.com/oldschoolgg/oldschoolb
 
 ## Quality checks
 
-Los Perros bounty-board defaults are in `src/lib/qualityChecks/config.ts` and `.env.example`.
+Bounty-board defaults are in `src/lib/qualityChecks/config.ts` and `.env.example`.
 The board channel is the Forum `#qc-bounties` (`1564459680997056604`).
 The old `#quality-checks` channel is an archive. Do not use it as the board channel.
 Guild, `#updates`, and the Quality Checkers role IDs are unchanged.

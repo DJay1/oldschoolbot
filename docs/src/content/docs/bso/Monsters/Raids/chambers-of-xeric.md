@@ -2,7 +2,7 @@
 title: "Chambers of Xeric (CoX)"
 ---
 
-See the [OSB wiki](https://wiki.oldschool.gg/osb/raids/cox/) for general info.
+See the [Bark School Corgo wiki](https://wiki.oldschool.gg/osb/raids/cox/) for general info.
 
 ### Boosts
 

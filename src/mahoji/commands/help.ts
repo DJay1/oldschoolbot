@@ -4,7 +4,7 @@ export const helpCommand = defineCommand({
 	options: [],
 	run: async () => {
 		return {
-			content: `Help for **NEED TO REPLACE**.
+			content: `Help for **Bark School Corgo**. Old school, on four legs.
 
 Use the slash commands to play. If you do not have a minion yet, run \`/minion buy\`.`
 		};

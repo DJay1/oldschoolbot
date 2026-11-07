@@ -78,7 +78,7 @@ export async function minionStatusCommand(
 	if (!user.hasMinion) {
 		return {
 			content:
-				"You haven't bought a minion yet! Click the button below to buy a minion and start playing NEED TO REPLACE.",
+				"You haven't bought a minion yet! Click the button below to buy a minion and start playing Bark School Corgo.",
 			components: [minionBuyButton]
 		};
 	}

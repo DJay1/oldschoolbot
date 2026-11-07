@@ -2,13 +2,13 @@
 title: "Raids"
 ---
 
-The OSB Wiki has most of the information on each raid, the purpose of this space is to highlight the BSO specific differences.
+The Bark School Corgo Wiki has most of the information on each raid, the purpose of this space is to highlight the Bark School Corgo specific differences.
 
-[OSB Chambers of Xeric (CoX)](https://wiki.oldschool.gg/osb/raids/cox)
+[Bark School Corgo Chambers of Xeric (CoX)](https://wiki.oldschool.gg/osb/raids/cox)
 
-[OSB Theatre of Blood (ToB)](https://wiki.oldschool.gg/osb/raids/tob)
+[Bark School Corgo Theatre of Blood (ToB)](https://wiki.oldschool.gg/osb/raids/tob)
 
-[OSB Tombs of Amascut (ToA)](https://wiki.oldschool.gg/osb/raids/toa)
+[Bark School Corgo Tombs of Amascut (ToA)](https://wiki.oldschool.gg/osb/raids/toa)
 
 ## How does 'BiS gear' work?
 

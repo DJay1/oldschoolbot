@@ -23,4 +23,4 @@ title: "Prayer"
 | ------------------------------ | ----------------- |
 | Offering Abyssal / Royal bones | 42,431,264        |
 
-**n.b.** Xp shown in the trip return message does not include the BSO 5x multiplier or any cape multipliers/first age.
+**n.b.** Xp shown in the trip return message does not include the Bark School Corgo 5x multiplier or any cape multipliers/first age.

@@ -50,7 +50,7 @@ You can reset your **entire** account 5 times, using /randomizer reset. You will
 - The ONLY mystery box is UMBs, the other mystery boxes cannot be opened or used - UMBs drop randomly from doing any trips, but nowhere else.
 - Coins and UMBs do not get randomized ever, and always stay the same.
 - Questing is hugely buffed.
-- All normal rules still apply (no alting/botting/etc). If you break a rule in randomizer, your OSB/BSO accounts will be punished too.
+- All normal rules still apply (no alting/botting/etc). If you break a rule in randomizer, your Bark School Corgo account will be punished too.
 - DTD's are disabled.
 
 ### Tips
@@ -60,4 +60,4 @@ You can reset your **entire** account 5 times, using /randomizer reset. You will
 - Save your "view mapping" unlocks for items you really need/want.
 - Train skills and figure out which skills are randomized to what.
 
-Based on your progress, you can earn a Trophy in OSB/BSO.
+Based on your progress, you can earn a Trophy in Bark School Corgo.

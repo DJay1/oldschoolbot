@@ -318,8 +318,8 @@ export const chimpCommand = defineCommand({
 			return {
 				content: "Here's the mischief reports!",
 				files: [
-					{ buffer: Buffer.from(osbResult), name: 'osb.txt' },
-					{ buffer: Buffer.from(bsoResult), name: 'bso.txt' }
+					{ buffer: Buffer.from(osbResult), name: 'bsc.txt' },
+					{ buffer: Buffer.from(bsoResult), name: 'bark-school-corgo.txt' }
 				]
 			};
 		}

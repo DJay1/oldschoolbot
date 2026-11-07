@@ -39,7 +39,7 @@ export async function minionBuyCommand(user: MUser, ironman: boolean): CommandRe
 	await fetchUserStats(user.id);
 
 	return {
-		content: `You have successfully got yourself a minion, and you're ready to use **NEED TO REPLACE** now!
+		content: `You have successfully got yourself a minion, and you're ready to use **Bark School Corgo** now! Every dog has its drop.
 
 You can make your new minion an Ironman by using the command: \`/minion ironman\`.
 

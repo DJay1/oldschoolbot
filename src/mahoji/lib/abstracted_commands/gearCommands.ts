@@ -322,7 +322,7 @@ export async function gearViewCommand(user: MUser, input: string, text: boolean)
 					),
 					name: 'gear.txt'
 				}
-			: { buffer: await user.generateGearImage({ setupType: 'all' }), name: 'osbot.png' };
+			: { buffer: await user.generateGearImage({ setupType: 'all' }), name: 'bsc-gear.png' };
 		return {
 			content: 'Here are all your gear setups',
 			files: [file]

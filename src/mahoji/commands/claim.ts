@@ -46,7 +46,7 @@ const claimables = [
 		name: independenceDay2Box,
 		hasRequirement: async (user: MUser): Promise<true | string> => {
 			if (BOT_TYPE !== 'BSO') {
-				return 'This can only be claimed on NEED TO REPLACE.';
+				return 'This can only be claimed on Bark School Corgo.';
 			}
 			if (Date.now() >= independenceDay2EndDate.getTime()) {
 				return 'This event is no longer claimable.';
@@ -80,7 +80,7 @@ const claimables = [
 			if (roboChimpUser.osb_total_level === 2277 && roboChimpUser.bso_total_level === MAX_TOTAL_LEVEL) {
 				return true;
 			}
-			return 'You need to be maxed on both NEED TO REPLACE accounts to claim this.';
+			return 'You need to be maxed on both Bark School Corgo accounts to claim this.';
 		},
 		action: async (user: MUser) => {
 			if (user.bitfield.includes(BitField.BothBotsMaxedFreeTierOnePerks)) {
@@ -94,7 +94,7 @@ const claimables = [
 					push: BitField.BothBotsMaxedFreeTierOnePerks
 				}
 			});
-			return 'You claimed free tier 1 perks on NEED TO REPLACE for being maxed on both accounts.';
+			return 'You claimed free tier 1 perks on Bark School Corgo for being maxed on both accounts.';
 		}
 	},
 	{
@@ -103,7 +103,7 @@ const claimables = [
 			const holdMessage = halloweenClaimHoldMessage();
 			if (holdMessage) return holdMessage;
 			if (BOT_TYPE === 'BSO') {
-				return 'This command is only for NEED TO REPLACE.';
+				return 'This command is only for Bark School Corgo.';
 			}
 			const messages: string[] = [];
 			const allItemsCanGet = [...HolidayItems.Halloween.halloweenItems];

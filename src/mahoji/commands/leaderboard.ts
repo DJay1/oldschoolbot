@@ -437,8 +437,7 @@ async function globalLb(interaction: MInteraction, type: GlobalLbType) {
 				bso: r.bso_xp_percent
 			})),
 			title: 'Global XP Leaderboard (% of the max XP)',
-			render: (u, username) =>
-				`**${username}:** ${u.osb.toFixed(2)}% NEED TO REPLACE, ${u.bso.toFixed(2)}% NEED TO REPLACE`
+			render: (u, username) => `**${username}:** ${u.osb.toFixed(2)}% BSC, ${u.bso.toFixed(2)}% BSC`
 		});
 	}
 	if (type === 'mastery') {

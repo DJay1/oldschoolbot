@@ -33,4 +33,4 @@ The spritesheet is a big image file containing most icons the bot uses for items
 - To update the spritesheet, use `pnpm spritesheet`. This will only have an effect if something has actually changed.
 - If new osrs items are being added, you first need to download [the new cache](https://github.com/runelite/static.runelite.net/archive/refs/heads/gh-pages.zip) and extract it so `/cache/item/icon` is in `tmp/icons` in the repo.
 - Must only be run on the master (osb) branch.
-- If new BSO items are added, the images should be put in the master branch in `src/lib/resources/images/bso_icons`, and the item names/ids in the `bso_items.json` file.
+- If new Bark School Corgo items are added, the images should be put in the master branch in `src/lib/resources/images/bso_icons`, and the item names/ids in the `bso_items.json` file.

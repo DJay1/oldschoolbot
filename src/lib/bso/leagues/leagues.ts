@@ -502,7 +502,7 @@ function buildDuplicateClaimCleanupReport(users: LeaguesDuplicateClaimCleanupUse
 			return [
 				`User ${user.userID}`,
 				`Removed ${user.duplicateEntriesRemoved} duplicate entries`,
-				`Deducted ${user.pointsToRemove.toLocaleString()} from NEED TO REPLACE balances and total`,
+				`Deducted ${user.pointsToRemove.toLocaleString()} from Bark School Corgo balances and total`,
 				`Tasks: ${taskSummary}`
 			].join(' | ');
 		})
@@ -799,7 +799,7 @@ export async function leaguesCheckUser(userID: string) {
 			ranking.tasksRanking
 		})
 **Total Points:** ${roboChimpUser.leagues_points_total.toLocaleString()} (Rank ${ranking.pointsRanking})
-**Points Balance:** ${roboChimpUser.leagues_points_balance_osb.toLocaleString()} OSB / ${roboChimpUser.leagues_points_balance_bso.toLocaleString()} BSO
+**Points Balance:** ${roboChimpUser.leagues_points_balance_osb.toLocaleString()} BSC / ${roboChimpUser.leagues_points_balance_bso.toLocaleString()} BSC
 ${resStr}`,
 		finished: [...finishedIDs, ...roboChimpUser.leagues_completed_tasks_ids]
 	};
@@ -943,7 +943,7 @@ export async function leaguesClaimCommand(user: MUser, finishedTaskIDs: number[]
 	const newTotal = newUser.leagues_points_total;
 
 	const response: Awaited<CommandResponse> = {
-		content: `You claimed ${newlyFinishedTasks.length} tasks, and received ${pointsToAward} points. You now have a balance of ${newUser.leagues_points_balance_osb} OSB points and ${newUser.leagues_points_balance_bso} BSO points, and ${newTotal} total points. You have completed a total of ${newUser.leagues_completed_tasks_ids.length} tasks.`
+		content: `You claimed ${newlyFinishedTasks.length} tasks, and received ${pointsToAward} points. You now have a balance of ${newUser.leagues_points_balance_osb} BSC points and ${newUser.leagues_points_balance_bso} BSC points, and ${newTotal} total points. You have completed a total of ${newUser.leagues_completed_tasks_ids.length} tasks.`
 	};
 
 	if (newlyFinishedTasks.length > 10) {

@@ -28,7 +28,7 @@ export default function Header() {
 			<div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
 				<nav className="flex items-center justify-between">
 					<a href="/">
-						<h1 className="text-5xl font-semibold">NEED TO REPLACE</h1>
+						<h1 className="text-5xl font-semibold">Bark School Corgo</h1>
 					</a>
 
 					<button

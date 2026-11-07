@@ -2,11 +2,11 @@
 title: "Tombs of Amascut (ToA)"
 ---
 
-See the [OSB wiki](https://wiki.oldschool.gg/osb/raids/toa) for general info.
+See the [Bark School Corgo wiki](https://wiki.oldschool.gg/osb/raids/toa) for general info.
 
 ## Boosts
 
-Boosts and best-in-slot gear differ between BSO and OSB. With higher kc, your death chance will reduce and your speed boost will increase. The maximum death chance reduction is received at 250+ **attempts** (not KC) and the maximum speed boost will be received at 350+ **attempts** (not KC).
+Boosts and best-in-slot gear on Bark School Corgo differ from the base game. With higher kc, your death chance will reduce and your speed boost will increase. The maximum death chance reduction is received at 250+ **attempts** (not KC) and the maximum speed boost will be received at 350+ **attempts** (not KC).
 
 ### Gear Score
 

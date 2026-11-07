@@ -1926,12 +1926,12 @@ export const allCollectionLogs: ICollection = {
 				items: allChristmasEvent2024Items.filter(i => i !== itemID('Snowflake amulet')),
 				counts: false
 			},
-			'BSO Birthday 2022': {
-				alias: ['bso birthday 2022'],
+			'Bark School Corgo Birthday 2022': {
+				alias: ['bark school corgo birthday 2022', 'bso birthday 2022'],
 				items: resolveItems(['Honey', 'Honeycomb', 'Beehive', 'Buzz']),
 				counts: false
 			},
-			'BSO Christmas 2025': {
+			'Bark School Corgo Christmas 2025': {
 				alias: ['xmas 2025', 'christmas 2025'],
 				items: allChristmasEvent2025Items,
 				counts: false
@@ -1957,7 +1957,7 @@ export const allCollectionLogs: ICollection = {
 				]),
 				counts: false
 			},
-			'BSO Birthday 2023': {
+			'Bark School Corgo Birthday 2023': {
 				alias: ['birthday 2023'],
 				items: resolveItems(['Buggy', 'Ban hammer', 'The Interrogator', 'Acrylic set', 'Golden cape shard']),
 				counts: false

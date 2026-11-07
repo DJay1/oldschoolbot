@@ -13,7 +13,7 @@ Double Loot is a global timed buff. If active, qualifying loot rolls are doubled
 ## Where it applies
 
 - Most monster/minion trips when trip duration is long enough.
-- Several BSO custom activities directly apply Double Loot internally.
+- Several Bark School Corgo custom activities directly apply Double Loot internally.
 
 ## Global trip doubler rules
 

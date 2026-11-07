@@ -1,6 +1,6 @@
 export const botServiceChoices = [
-	{ name: 'OSB', value: 'osb' },
-	{ name: 'BSO', value: 'bso' }
+	{ name: 'BSC', value: 'osb' },
+	{ name: 'Bark School Corgo', value: 'bso' }
 ] as const;
 
 export type BotService = (typeof botServiceChoices)[number]['value'];

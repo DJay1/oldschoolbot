@@ -3,10 +3,10 @@ import { ClientRouter } from "astro:transitions";
 import Header from "../components/astro/Header";
 import "../styles/global.css";
 
-const defaultTitle = "NEED TO REPLACE";
+const defaultTitle = "Bark School Corgo";
 
 const defaultDescription =
-	"NEED TO REPLACE is an Old School RuneScape (OSRS) Discord bot, with loot, clue, and other simulators.";
+	"Bark School Corgo is a corgi-themed Old School RuneScape (OSRS) Discord bot. Old school, on four legs.";
 
 const defaultKeywords = [
 	"runescape bot",
@@ -14,7 +14,8 @@ const defaultKeywords = [
 	"rs bot",
 	"discord",
 	"osrs",
-	"NEED TO REPLACE",
+	"bark school corgo",
+	"bsc",
 ];
 
 interface Props {
@@ -32,11 +33,11 @@ const { pageTitle, desc, keywords, image, url } = Astro.props;
 <html lang="en">
 	<head>
 		<title>
-			{pageTitle ? `${pageTitle} - NEED TO REPLACE` : defaultTitle}
+			{pageTitle ? `${pageTitle} - Bark School Corgo` : defaultTitle}
 		</title>
 		<meta
 			name="og:title"
-			content={pageTitle ? `${pageTitle} - NEED TO REPLACE` : defaultTitle}
+			content={pageTitle ? `${pageTitle} - Bark School Corgo` : defaultTitle}
 		/>
 		<meta name="description" content={desc || defaultDescription} />
 		<meta name="og:description" content={desc || defaultDescription} />

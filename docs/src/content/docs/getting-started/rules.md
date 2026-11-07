@@ -4,7 +4,7 @@ sidebar:
   order: 1
 ---
 
-These are the rules of NEED TO REPLACE
+These are the rules of Bark School Corgo
 
 _**Breaking these rules will get you banned (blacklisted) from the bot, or your bank/stats wiped.**_
 
