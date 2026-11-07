@@ -108,6 +108,9 @@ export interface DiscordClientEventsMap {
 	error: [error: Error];
 	messageCreate: [message: IMessage];
 	rawMessageCreate: [message: GatewayMessageCreateDispatchData];
+	guildMemberUpdate: [
+		member: { guild_id?: string | null; roles?: string[] | null; user?: { id?: string | null } | null }
+	];
 }
 
 export type UserUsernameFetcher = (userId: string) => Promise<string>;

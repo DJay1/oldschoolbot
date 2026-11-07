@@ -145,7 +145,8 @@ export class BaseUser {
 			this.user.badges,
 			this.isIronman,
 			this.bitfield.includes(BitField.BSCEarlySupporter),
-			this.bitfield.includes(BitField.LaunchFounder)
+			this.bitfield.includes(BitField.LaunchFounder),
+			this.bitfield
 		);
 
 		this.iconPackId = (this.user.icon_pack_id as IconPackID) ?? null;

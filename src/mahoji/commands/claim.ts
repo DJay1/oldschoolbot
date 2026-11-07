@@ -3,12 +3,13 @@ import { dateFm } from '@oldschoolgg/discord';
 import { stringMatches } from '@oldschoolgg/toolkit';
 import { Bank, Items } from 'oldschooljs';
 
+import { claimBscSupporterCosmetic } from '@/lib/bsc/patronSync.js';
 import { BitField, BOT_TYPE, Channel, MAX_TOTAL_LEVEL } from '@/lib/constants.js';
-import { LAUNCH_FOUNDER_BADGE } from '@/lib/events/launch/constants.js';
-import { isEventActive } from '@/lib/events/registry.js';
 import { calcCLDetails } from '@/lib/data/Collections.js';
 import { halloweenClaimHoldMessage } from '@/lib/events/halloween/claim.js';
 import { HolidayItems } from '@/lib/events/halloween/claimItems.js';
+import { LAUNCH_FOUNDER_BADGE } from '@/lib/events/launch/constants.js';
+import { isEventActive } from '@/lib/events/registry.js';
 import { getReclaimableItemsOfUser } from '@/lib/reclaimableItems.js';
 
 const independenceDay2Box = 'Independence Day 2 Box';
@@ -44,6 +45,11 @@ function maxIndy2Boxes(user: MUser): number {
 }
 
 const claimables = [
+	{
+		name: 'Supporter cosmetic',
+		hasRequirement: async () => true,
+		action: async (user: MUser) => claimBscSupporterCosmetic(user)
+	},
 	{
 		name: 'Founder',
 		hasRequirement: async (user: MUser): Promise<true | string> => {

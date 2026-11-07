@@ -80,3 +80,44 @@ The launch event is off until an admin turns it on. Dates are UTC.
 ```
 
 Founder titles already claimed still show when the event is off.
+
+## 7. Patron tiers
+
+Create three tiers on https://patreon.com/bscbot:
+
+| Tier | Price | In-game |
+| --- | --- | --- |
+| Pup | $3 | 🐾 on the name, +10% of the 30 minute base trip length |
+| Good Boy | $7 | Pup benefits, +20% trip length, the Good Boy bank background, daily cooldown at 75%, monthly cosmetic box |
+| Top Dog | $15 | Good Boy benefits, custom bank background color, 🐶 cosmetic pet, early-access role |
+
+No tier gives coins, tradeable items, XP lamps, or drop-rate boosts. The early supporter corgi (bit 199) is separate.
+
+In Patreon, enable the Discord integration and connect the three tiers to three roles in the support server. Enable the Server Members intent for the bot in the Discord developer portal. Then set:
+
+```
+SUPPORT_SERVER_ID=
+PATRON_ROLE_PUP=
+PATRON_ROLE_GOODBOY=
+PATRON_ROLE_TOPDOG=
+```
+
+The bot reads those roles on member updates and once an hour, and sets `PatronTier1`, `PatronTier2`, or `PatronTier3`. Losing the role clears the tier. An owner override is kept:
+
+```
+/admin patron user:@Player tier:2
+```
+
+`tier` is 0, 1, 2, or 3. Add `manual:false` to let the next role sync replace it.
+
+Optional API sync, if you would rather not rely only on roles:
+
+```
+PATREON_CREATOR_TOKEN=
+PATREON_CAMPAIGN_ID=
+PATREON_TIER_PUP_ID=
+PATREON_TIER_GOODBOY_ID=
+PATREON_TIER_TOPDOG_ID=
+```
+
+The old oldschoolgg Patreon and GitHub sponsor sync does not run.

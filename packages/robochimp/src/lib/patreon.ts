@@ -641,6 +641,13 @@ class PatreonTask {
 	}
 
 	async run() {
+		console.log(
+			'BSC: the oldschoolgg Patreon and GitHub sponsor sync is disabled. Patron tiers come from Discord roles.'
+		);
+		return [];
+	}
+
+	async runLegacy() {
 		if (!globalConfig.isProduction) {
 			console.log('Skipping patreon task run because not production');
 			return;
