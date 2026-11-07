@@ -20,7 +20,7 @@ function maxIndy2Boxes(user: MUser): number {
 	const legitTriggers = [
 		accountAge && accountAge >= 30,
 		user.totalLevel >= 300,
-		user.bitfield.includes(BitField.OriginalCyrSupporter),
+		user.bitfield.includes(BitField.BSCEarlySupporter),
 		user.bitfield.includes(BitField.BypassAgeRestriction),
 		user.perkTier >= 3
 	];

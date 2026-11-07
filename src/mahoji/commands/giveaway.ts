@@ -102,8 +102,8 @@ export const giveawayCommand = defineCommand({
 		if (user.isIronman) return 'You cannot do giveaways!';
 
 		let maxGiveaways = 10;
-		const cyrFan = user.bitfield.includes(BitField.OriginalCyrSupporter);
-		if (cyrFan) {
+		const isBSCEarlySupporter = user.bitfield.includes(BitField.BSCEarlySupporter);
+		if (isBSCEarlySupporter) {
 			if (user.perkTier >= 2) maxGiveaways += 5 * (user.perkTier - 1);
 		} else {
 			if (user.perkTier >= 3) maxGiveaways += 5 * (user.perkTier - 2);
@@ -116,7 +116,9 @@ export const giveawayCommand = defineCommand({
 				}
 			});
 			if (existingGiveaways.length >= maxGiveaways && !userHasUnlimitedGiveaways(user)) {
-				return `You cannot have more than ${cyrFan ? Emoji.EsbCorgi : ''} ${maxGiveaways} giveaways active at a time.`;
+				return `You cannot have more than ${
+					isBSCEarlySupporter ? Emoji.EsbCorgi : ''
+				} ${maxGiveaways} giveaways active at a time.`;
 			}
 
 			if (!guildId && !interaction.guildId) {

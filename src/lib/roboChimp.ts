@@ -37,10 +37,10 @@ const clKey: keyof User = BOT_TYPE === 'OSB' ? 'osb_cl_percent' : 'bso_cl_percen
 const levelKey: keyof User = BOT_TYPE === 'OSB' ? 'osb_total_level' : 'bso_total_level';
 const totalXPKey: keyof User = BOT_TYPE === 'OSB' ? 'osb_total_xp' : 'bso_total_xp';
 
-export async function syncOriginalCyrSupporterBit(user: MUser, roboChimpUser: RobochimpUser) {
+export async function syncBSCEarlySupporterBit(user: MUser, roboChimpUser: RobochimpUser) {
 	if (!roboChimpUser.bits.includes(RobochimpBitfieldEnum.CyrsOriginalPatrons)) return;
 
-	if (user.bitfield.includes(BitField.OriginalCyrSupporter)) return;
+	if (user.bitfield.includes(BitField.BSCEarlySupporter)) return;
 
 	await prisma.user.update({
 		where: {
@@ -48,7 +48,7 @@ export async function syncOriginalCyrSupporterBit(user: MUser, roboChimpUser: Ro
 		},
 		data: {
 			bitfield: {
-				push: BitField.OriginalCyrSupporter
+				push: BitField.BSCEarlySupporter
 			}
 		}
 	});
@@ -104,7 +104,7 @@ export async function roboChimpSyncData(user: MUser, newCL?: Bank) {
 	if (!isDeepEqual(newUser.store_bitfield, user.user.store_bitfield)) {
 		await user.update({ store_bitfield: newUser.store_bitfield });
 	}
-	await syncOriginalCyrSupporterBit(user, newUser);
+	await syncBSCEarlySupporterBit(user, newUser);
 	await Cache.setRoboChimpUser(user.id, newUser);
 	return newUser;
 }

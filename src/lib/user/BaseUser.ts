@@ -144,7 +144,7 @@ export class BaseUser {
 		this.badgesString = makeBadgeString(
 			this.user.badges,
 			this.isIronman,
-			this.bitfield.includes(BitField.OriginalCyrSupporter)
+			this.bitfield.includes(BitField.BSCEarlySupporter)
 		);
 
 		this.iconPackId = (this.user.icon_pack_id as IconPackID) ?? null;
