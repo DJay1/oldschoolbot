@@ -21,7 +21,7 @@ export const seasonalEvents: readonly SeasonalEventDefinition[] = [
 		id: 'summer',
 		name: 'Summer',
 		summary:
-			'Beach combing, trip crate spawns, and shoreline fishing finds. Crafting with owned summer items stays on.',
+			'Beach combing, trip crate spawns, and shoreline fishing finds. Owned Patricia, crab cage, and bottle effects stay on.',
 		enabled: false
 	},
 	{

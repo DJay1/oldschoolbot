@@ -1,7 +1,14 @@
-import { Items } from 'oldschooljs';
+import { BSOItem } from '@/lib/bso/BSOItem.js';
+import { isGEUntradeable } from '@/lib/bso/bsoUtil.js';
+import { findDisassemblyGroup } from '@/lib/bso/skills/invention/disassemble.js';
+
+import { Items, itemID } from 'oldschooljs';
 import { afterEach, expect, test } from 'vitest';
 
+import { IconPackID, ItemIconPacks } from '@/lib/canvas/iconPacks.js';
+import { allCLItems } from '@/lib/data/Collections.js';
 import Createables from '@/lib/data/createables.js';
+import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { easterUseTrollResponse } from '@/lib/events/easter/use.js';
 import {
 	clearSeasonalEventOverrides,
@@ -9,7 +16,14 @@ import {
 	setSeasonalEventOverride,
 	shouldRegisterSeasonalItemDefinitions
 } from '@/lib/events/registry.js';
+import { summerFishingStartAdjustments } from '@/lib/events/summer/fishing.js';
+import { growablePets } from '@/lib/growablePets.js';
+import backgroundImages from '@/lib/minions/data/bankBackgrounds.js';
 import Cooking from '@/lib/skilling/skills/cooking/cooking.js';
+import type { GearBank } from '@/lib/structures/GearBank.js';
+import { sacrificePriceOfItem } from '@/mahoji/commands/sacrifice.js';
+import { sellPriceOfItem } from '@/mahoji/commands/sell.js';
+import { pohWallkits } from '@/mahoji/lib/abstracted_commands/pohCommand.js';
 import { genericUsables } from '@/mahoji/lib/abstracted_commands/useCommand.js';
 
 afterEach(() => {
@@ -99,4 +113,77 @@ test('owned holiday items stay creatable and usable while every event is off', (
 	expect(hasUseCombo(['Christmas cake recipe', 'Doug'])).toBe(true);
 	expect(easterUseTrollResponse([Items.getOrThrow('Magnegg').id])).toEqual(expect.any(String));
 	expect(easterUseTrollResponse([Items.getOrThrow('Wabbit eggs').id])).toEqual(expect.any(String));
+});
+
+test('owned holiday items keep their benefits while every event is off', () => {
+	expect(isEventActive('summer')).toBe(false);
+	expect(isEventActive('christmas')).toBe(false);
+	expect(isEventActive('halloween')).toBe(false);
+	expect(isEventActive('easter')).toBe(false);
+	expect(isEventActive('birthday')).toBe(false);
+
+	const patricia = {
+		hasEquipped: () => false,
+		usingPet: (name: string, options?: { returnID?: boolean }) => {
+			if (name !== 'Patricia') return false;
+			return options?.returnID ? Items.getOrThrow('Patricia').id : true;
+		}
+	} as unknown as GearBank;
+	const withCage = {
+		hasEquipped: (id: number) => id === BSOItem.OLD_CRAB_CAGE,
+		usingPet: (name: string, options?: { returnID?: boolean }) => {
+			if (name !== 'Patricia') return false;
+			return options?.returnID ? Items.getOrThrow('Lydia').id : true;
+		}
+	} as unknown as GearBank;
+
+	const patriciaBoost = summerFishingStartAdjustments(patricia, 'Shark');
+	expect(patriciaBoost.speedMultiplier).toBeCloseTo(2.15);
+	expect(patriciaBoost.boosts.some(line => line.includes('expert fishing pair'))).toBe(true);
+
+	const lobsterBoost = summerFishingStartAdjustments(withCage, 'Lobster');
+	expect(lobsterBoost.speedMultiplier).toBe(3);
+	expect(lobsterBoost.extraMaxTripLength).toBeGreaterThan(0);
+	expect(lobsterBoost.boosts.some(line => line.includes('Lydia'))).toBe(true);
+
+	for (const name of [
+		'Christmas dye',
+		'Spooky dye',
+		'Sun Scream',
+		'Festive scarf',
+		'Birthday balloons',
+		'Patricia'
+	]) {
+		const item = Items.getOrThrow(name);
+		expect(item.customItemData?.cantBeSacrificed, name).toBeFalsy();
+	}
+	for (const name of ['Christmas dye', 'Spooky dye', 'Sun Scream', 'Festive scarf']) {
+		const item = Items.getOrThrow(name);
+		expect(sellPriceOfItem(item).basePrice, name).toBeGreaterThan(0);
+		expect(sacrificePriceOfItem(item, 1), name).toBeGreaterThan(0);
+	}
+
+	expect(isGEUntradeable(Items.getOrThrow('Christmas dye'))).toBe(false);
+	expect(isGEUntradeable(Items.getOrThrow('Spooky dye'))).toBe(false);
+	expect(Items.getOrThrow('Ho-ho hammer').equipment).toBeTruthy();
+	expect(Items.getOrThrow('Patricia').customItemData?.isPet).toBe(true);
+	expect(getSimilarItems(itemID('Patricia'))).toContain(itemID('Lydia'));
+
+	expect(findDisassemblyGroup(Items.getOrThrow('Festive jumper (2021)'))).toBeTruthy();
+	expect(allCLItems.has(itemID('Christmas dye'))).toBe(true);
+	expect(allCLItems.has(itemID('Patricia'))).toBe(true);
+	expect(allCLItems.has(itemID('Magnegg'))).toBe(true);
+	expect(allCLItems.has(itemID('Festive jumper (2021)'))).toBe(true);
+
+	expect(backgroundImages.some(background => background.name === 'Christmas' && background.available)).toBe(true);
+	expect(backgroundImages.some(background => background.name === 'Halloween Logo' && background.available)).toBe(
+		true
+	);
+	expect(backgroundImages.some(background => background.name === 'Halloween Manor' && background.available)).toBe(
+		true
+	);
+	expect(ItemIconPacks[IconPackID.Halloween].name).toBe('Halloween');
+	expect(pohWallkits.some(kit => kit.name === 'Halloween')).toBe(true);
+	expect(growablePets.some(pet => pet.stages.includes(itemID('Magnegg')))).toBe(true);
+	expect(growablePets.some(pet => pet.stages.includes(itemID('Saradomin egg')))).toBe(true);
 });

@@ -12,16 +12,12 @@ function speedMultiplierFromPercentReduction(percent: number) {
 	return 1 / (1 - percent / 100);
 }
 
+/**
+ * Speed and trip-length bonuses from Patricia, Lydia, Partycrab, and an equipped
+ * Old crab cage. These are effects of items the player already owns, so they
+ * stay on while the summer event is disabled.
+ */
 export function summerFishingStartAdjustments(gearBank: GearBank, fishName: string) {
-	if (!isEventActive('summer')) {
-		return {
-			speedMultiplier: 1,
-			extraMaxTripLength: 0,
-			boosts: [] as string[],
-			suppressShelldon: false
-		};
-	}
-
 	const boosts: string[] = [];
 	let speedMultiplier = 1;
 	let extraMaxTripLength = 0;
@@ -78,8 +74,28 @@ export async function applySummerFishingLoot({
 		messages: string[];
 	};
 }) {
-	if (!isEventActive('summer')) return;
+	if (isEventActive('summer')) {
+		rollSummerFishingDrops({ user, fish, duration, rng, result });
+	}
+	await convertEquippedMysteriousBottle(user, duration, rng, result);
+}
 
+function rollSummerFishingDrops({
+	user,
+	fish,
+	duration,
+	rng,
+	result
+}: {
+	user: MUser;
+	fish: { name: string; alias?: readonly string[] };
+	duration: number;
+	rng: RNGProvider;
+	result: {
+		updateBank: { itemLootBank: Bank };
+		messages: string[];
+	};
+}) {
 	let bottleRate = 500;
 	if (fish.name === 'Rocktail') bottleRate = 350;
 	if (fish.name === 'Manta ray') bottleRate = 250;
@@ -139,24 +155,30 @@ export async function applySummerFishingLoot({
 			}
 		}
 	}
+}
 
-	if (user.hasEquipped(BSOItem.MYSTERIOUS_BOTTLE)) {
-		const mysteriousBottleChance = hasPatriciaEquipped
-			? 500
-			: user.usingPet('Partycrab')
-				? 650
-				: user.usingPet('Shelldon')
-					? 750
-					: 1000;
-
-		for (let i = 0; i < minutes; i++) {
-			if (!rng.roll(mysteriousBottleChance)) continue;
-			if (await convertMysteriousBottleToSeaWater(user)) {
-				result.messages.push(
-					'🫙 A cold violet current swirled into your Mysterious bottle while fishing. It is now a **Bottle of sea water**'
-				);
-			}
-			break;
+async function convertEquippedMysteriousBottle(
+	user: MUser,
+	duration: number,
+	rng: RNGProvider,
+	result: { messages: string[] }
+) {
+	if (!user.hasEquipped(BSOItem.MYSTERIOUS_BOTTLE)) return;
+	const mysteriousBottleChance = user.usingPet('Patricia')
+		? 500
+		: user.usingPet('Partycrab')
+			? 650
+			: user.usingPet('Shelldon')
+				? 750
+				: 1000;
+	const minutes = Math.floor(duration / Time.Minute);
+	for (let i = 0; i < minutes; i++) {
+		if (!rng.roll(mysteriousBottleChance)) continue;
+		if (await convertMysteriousBottleToSeaWater(user)) {
+			result.messages.push(
+				'🫙 A cold violet current swirled into your Mysterious bottle while fishing. It is now a **Bottle of sea water**'
+			);
 		}
+		break;
 	}
 }

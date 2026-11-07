@@ -76,13 +76,11 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 			break;
 		}
 		case 'Fishing': {
-			if (isEventActive('summer')) {
-				if (user.usingPet('Patricia')) {
-					max *= 1.75;
-				}
-				if (user.usingPet('Partycrab')) {
-					max *= 1.6;
-				}
+			if (user.usingPet('Patricia')) {
+				max *= 1.75;
+			}
+			if (user.usingPet('Partycrab')) {
+				max *= 1.6;
 			}
 			if (user.usingPet('Shelldon')) {
 				max *= 1.25;
