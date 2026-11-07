@@ -534,7 +534,7 @@ export const BadgesEnum = {
 	TopGiveawayer: 14,
 	Farmer: 15,
 	Hacktoberfest: 16,
-	CyrEarlySupporter: 17,
+	BSCEarlySupporter: 17,
 	TopClueHunter: 18
 } as const;
 
@@ -556,7 +556,7 @@ export const badges: { [key: number]: string } = {
 	[BadgesEnum.TopGiveawayer]: Emoji.SantaHat,
 	[BadgesEnum.Farmer]: Emoji.Farming,
 	[BadgesEnum.Hacktoberfest]: customEmoji('hacktoberfest'),
-	[BadgesEnum.CyrEarlySupporter]: Emoji.Seer,
+	[BadgesEnum.BSCEarlySupporter]: Emoji.EsbCorgi,
 	[BadgesEnum.TopClueHunter]: Emoji.ClueScroll
 };
 

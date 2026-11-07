@@ -107,7 +107,7 @@ export type EmojiName =
 	| 'Invention'
 	| 'BSO'
 	| 'Kuro'
-	| 'Seer'
+	| 'EsbCorgi'
 	| 'SOTWTrophy'
 	| 'ClueScroll'
 	| 'DragonTrophy'
@@ -218,7 +218,7 @@ export const Emoji: { readonly [K in EmojiName]: string } = {
 	Invention: customEmoji('Invention'),
 	BSO: customEmoji('BSO'),
 	Kuro: customEmoji('kuro'),
-	Seer: customEmoji('seer'),
+	EsbCorgi: customEmoji('esbcorgi'),
 	SOTWTrophy: customEmoji('SOTWtrophy'),
 	ClueScroll: customEmoji('Clue_scroll'),
 	DragonTrophy: customEmoji('DragonTrophy'),

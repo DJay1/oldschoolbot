@@ -2223,13 +2223,13 @@
 			]
 		},
 		{
-			"name": "seer",
-			"uploadName": "seer",
+			"name": "esbcorgi",
+			"uploadName": "esbcorgi",
 			"aliases": [],
 			"fallback": "🔮",
 			"animated": false,
 			"source": null,
-			"image": "seer.png",
+			"image": "esbcorgi.png",
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
