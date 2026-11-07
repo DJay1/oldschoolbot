@@ -2,8 +2,7 @@ import { Hono } from 'hono';
 
 import { type HonoServerGeneric, httpErr } from '@/http/serverUtil.js';
 import { type GithubSponsorsWebhookData, verifyGithubSecret } from '@/lib/githubSponsor.js';
-import { parseStrToTier, patreonTask, verifyPatreonSecret } from '@/lib/patreon.js';
-import { RUser } from '@/structures/RUser.js';
+import { patreonTask, verifyPatreonSecret } from '@/lib/patreon.js';
 
 export const webhooksServer = new Hono<HonoServerGeneric>();
 
@@ -45,34 +44,6 @@ webhooksServer.post('/github', async c => {
 	const isVerified = verifyGithubSecret(JSON.stringify(parsed), sig);
 	if (!isVerified) return httpErr.BAD_REQUEST();
 
-	const data = parsed;
-	const user = await roboChimpClient.user.findFirst({
-		where: { github_id: Number(data.sender.id) }
-	});
-
-	switch (data.action) {
-		case 'created': {
-			const tier = parseStrToTier(data.sponsorship.tier.name);
-			if (!tier) break;
-			if (user) await patreonTask.changeTier(new RUser(user), tier);
-			break;
-		}
-		case 'tier_changed':
-		case 'pending_tier_change': {
-			const to = parseStrToTier(data.sponsorship.tier.name);
-			if (!to) break;
-			if (user) await patreonTask.changeTier(new RUser(user), to);
-			break;
-		}
-		case 'cancelled': {
-			const tier = parseStrToTier(data.sponsorship.tier.name);
-			if (!tier) break;
-			if (user) await patreonTask.removePerks(new RUser(user), 'Cancelled');
-			break;
-		}
-		default:
-			break;
-	}
-
+	console.log('BSC: GitHub sponsor sync is disabled. Patron tiers come from Discord roles.');
 	return c.text('OK');
 });

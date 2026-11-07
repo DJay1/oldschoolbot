@@ -4,6 +4,7 @@ import { Emoji, formatDuration, isWeekend, uniqueArr } from '@oldschoolgg/toolki
 import { Bank } from 'oldschooljs';
 
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import { bscDailyCooldownMs } from '@/lib/bsc/patronTiers.js';
 import { CONSTANTS } from '@/lib/constants.js';
 import { getRandomTriviaQuestions } from '@/lib/roboChimp.js';
 import dailyRoll from '@/lib/simulation/dailyTable.js';
@@ -18,8 +19,7 @@ export const DAILY_CONSOLATION_ITEMS = new Bank()
 	.add('Untradeable Mystery Box')
 	.add('Equippable mystery box')
 	.freeze();
-export const DAILY_CONSOLATION_LINE =
-	'✨ The sparkle fizzled, so Diango stuffed a smaller prize in the bag.';
+export const DAILY_CONSOLATION_LINE = '✨ The sparkle fizzled, so Diango stuffed a smaller prize in the bag.';
 
 export async function isUsersDailyReady(
 	user: MUser
@@ -29,8 +29,9 @@ export async function isUsersDailyReady(
 	const lastVoteDate = Number(stats.last_daily_timestamp);
 	const difference = currentDate - lastVoteDate;
 
-	if (difference < CONSTANTS.DAILY_COOLDOWN) {
-		const duration = Date.now() - (lastVoteDate + CONSTANTS.DAILY_COOLDOWN);
+	const dailyCooldown = bscDailyCooldownMs(user.bitfield, CONSTANTS.DAILY_COOLDOWN);
+	if (difference < dailyCooldown) {
+		const duration = Date.now() - (lastVoteDate + dailyCooldown);
 		return { isReady: false, durationUntilReady: duration };
 	}
 

@@ -18,18 +18,19 @@ import { clamp } from 'remeda';
 
 import type { activity_type_enum } from '@/prisma/main/enums.js';
 import { choicesOf, itemOption } from '@/discord/index.js';
+import { bscPatronLevelFromBits } from '@/lib/bsc/patronTiers.js';
 import { CanvasModule } from '@/lib/canvas/CanvasModule.js';
 import { gearImages } from '@/lib/canvas/gearImageData.js';
 import { ItemIconPacks } from '@/lib/canvas/iconPacks.js';
 import { BitField, BitFieldData } from '@/lib/constants.js';
 import { Eatables } from '@/lib/data/eatables.js';
 import { CombatOptionsArray } from '@/lib/minions/data/combatConstants.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { birdhouseSeeds } from '@/lib/skilling/skills/hunter/birdHouseTrapping.js';
 import { autoslayChoices, slayerMasterChoices } from '@/lib/slayer/constants.js';
 import { setDefaultAutoslay, setDefaultSlayerMaster } from '@/lib/slayer/slayerUtil.js';
 import { BankSortMethods, isValidBankSortMethod } from '@/lib/sorts.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
-import { withPatreonLink } from '@/lib/patreonLink.js';
 import { isValidNickname } from '@/lib/util/smallUtils.js';
 import { toggleBitfield } from '@/lib/util.js';
 
@@ -358,6 +359,10 @@ async function bgColorConfig(user: MUser, hex?: string) {
 					.setDescription(`Your current background color is \`${currentColor}\`.`)
 			]
 		};
+	}
+
+	if (bscPatronLevelFromBits(user.bitfield) < 3) {
+		return withPatreonLink('A custom bank background color is a Top Dog perk.');
 	}
 
 	hex = hex.toUpperCase();

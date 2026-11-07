@@ -668,6 +668,13 @@ const backgroundImages: BankBackground[] = [
 		image: null,
 		available: false,
 		owners: ['310150823986593803']
+	},
+	{
+		id: 1019,
+		name: 'Good Boy',
+		image: null,
+		available: true,
+		perkTierNeeded: PerkTier.Three
 	}
 ];
 

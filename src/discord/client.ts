@@ -3,6 +3,7 @@ import { ActivityType, GatewayIntentBits, PresenceUpdateStatus } from '@oldschoo
 import { onRawGuildCreate } from '@/discord/handlers/guildCreate.js';
 import { interactionHandler } from '@/discord/interactionHandler.js';
 import { OldSchoolBotClient } from '@/discord/OldSchoolBotClient.js';
+import { handleBscGuildMemberUpdate } from '@/lib/bsc/patronSync.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { onMessage } from '@/lib/events.js';
 import { onStartup } from '@/mahoji/lib/events.js';
@@ -10,6 +11,7 @@ import { onStartup } from '@/mahoji/lib/events.js';
 const client = new OldSchoolBotClient({
 	intents: [
 		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.GuildMessageReactions,
 		GatewayIntentBits.DirectMessages,
@@ -78,6 +80,9 @@ client.on('debug', async ({ message }) => {
 	Logging.logDebug(message);
 });
 
+client.on('guildMemberUpdate', member => {
+	handleBscGuildMemberUpdate(member).catch(err => Logging.logError(err as Error));
+});
 client.on('guildCreate', onRawGuildCreate);
 client.on('guildCreate', async guild => {
 	const [isUserBlacklisted, isGuildBlacklisted] = await Promise.all([

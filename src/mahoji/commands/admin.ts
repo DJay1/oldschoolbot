@@ -46,6 +46,7 @@ import {
 	getBitFieldData,
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
+import { setBscPatronOverride } from '@/lib/bsc/patronSync.js';
 import {
 	BadgesEnum,
 	BitField,
@@ -1107,6 +1108,33 @@ export const adminCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'patron',
+			description: 'Set a BSC patron tier. Manual overrides are kept by role sync.',
+			options: [
+				{
+					type: 'User',
+					name: 'user',
+					description: 'The player.',
+					required: true
+				},
+				{
+					type: 'Integer',
+					name: 'tier',
+					description: '0 none, 1 Pup, 2 Good Boy, 3 Top Dog.',
+					required: true,
+					min_value: 0,
+					max_value: 3
+				},
+				{
+					type: 'Boolean',
+					name: 'manual',
+					description: 'When true (default), role sync will not change this tier.',
+					required: false
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
 			name: 'fix_giveaways',
 			description: 'Re-add Join/Leave buttons to all active giveaways.'
 		}
@@ -1278,6 +1306,11 @@ ${META_CONSTANTS.RENDERED_STR}`
 		 */
 		if (!isAdmin) {
 			return rng.pick(gifs);
+		}
+
+		if (options.patron) {
+			const target = await mUserFetch(options.patron.user.user.id);
+			return setBscPatronOverride(target, options.patron.tier, options.patron.manual !== false);
 		}
 
 		if (options.event) {

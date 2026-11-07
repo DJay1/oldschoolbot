@@ -434,7 +434,8 @@ class CacheManager {
 					user.badges,
 					user.minion_ironman,
 					user.bitfield.includes(BitField.BSCEarlySupporter),
-					user.bitfield.includes(BitField.LaunchFounder)
+					user.bitfield.includes(BitField.LaunchFounder),
+					user.bitfield
 				)
 			: '';
 		const badgedUsername = `${badgesString} ${username}`.trim();

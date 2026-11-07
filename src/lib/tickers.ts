@@ -9,6 +9,7 @@ import { TimerManager } from '@sapphire/timer-manager';
 import type { User } from '@/prisma/main.js';
 import { resolveBotSendableMessage } from '@/discord/utils.js';
 import { analyticsTick } from '@/lib/analytics.js';
+import { syncBscPatrons } from '@/lib/bsc/patronSync.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { cacheGEPrices } from '@/lib/marketPrices.js';
@@ -337,6 +338,16 @@ LIMIT 10;`;
 		}
 	}
 ];
+
+tickers.push({
+	name: 'bsc_patron_sync',
+	startupWait: Time.Minute,
+	interval: Time.Hour,
+	timer: null,
+	cb: async () => {
+		await syncBscPatrons();
+	}
+});
 
 if (qualityCheckConfig.tickerIntervalMinutes > 0) {
 	tickers.push({
