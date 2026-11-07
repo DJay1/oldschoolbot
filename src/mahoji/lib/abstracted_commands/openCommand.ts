@@ -250,6 +250,9 @@ ${messages.join(', ')}`.trim()
 	return response;
 }
 
+// Opening is a synchronous loop per item; huge quantities freeze the whole bot.
+export const MAX_OPEN_PER_COMMAND = 10_000;
+
 export async function abstractedOpenCommand(
 	rng: RNGProvider,
 	interaction: MInteraction | null,
@@ -297,7 +300,10 @@ export async function abstractedOpenCommand(
 
 	for (const openable of openables) {
 		const { openedItem } = openable;
-		const quantity = typeof _quantity === 'string' ? user.bank.amount(openedItem.id) : _quantity;
+		const quantity = Math.min(
+			MAX_OPEN_PER_COMMAND,
+			typeof _quantity === 'string' ? user.bank.amount(openedItem.id) : _quantity
+		);
 		cost.add(openedItem.id, quantity);
 		if (openable.extraCostPerOpen) {
 			const extraCost = openable.extraCostPerOpen.clone().multiply(quantity);

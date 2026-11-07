@@ -5,6 +5,7 @@ import { allOpenables, allOpenablesIDs } from '@/lib/openables.js';
 import {
 	abstractedOpenCommand,
 	abstractedOpenUntilCommand,
+	MAX_OPEN_PER_COMMAND,
 	OpenUntilItems
 } from '@/mahoji/lib/abstracted_commands/openCommand.js';
 
@@ -80,7 +81,7 @@ export const openCommand = defineCommand({
 			return 'The quantity must be a positive integer.';
 		}
 
-		options.quantity = clamp(options.quantity ?? 1, { min: 1, max: 100_000_000 });
+		options.quantity = clamp(options.quantity ?? 1, { min: 1, max: MAX_OPEN_PER_COMMAND });
 
 		if (options.open_until) {
 			return abstractedOpenUntilCommand(
