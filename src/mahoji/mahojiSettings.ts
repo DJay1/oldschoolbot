@@ -1,9 +1,9 @@
-import { evalMathExpression } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank } from 'oldschooljs';
 
 import type { KillableMonster } from '@/lib/minions/types.js';
 import type { Rune } from '@/lib/skilling/skills/runecraft.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
+import { validateQuantity } from '@/lib/util/validateQuantity.js';
 
 export function mahojiParseNumber({
 	input,
@@ -15,12 +15,12 @@ export function mahojiParseNumber({
 	max?: number;
 }): number | null {
 	if (input === undefined || input === null) return null;
-	const parsed = typeof input === 'number' ? input : evalMathExpression(input);
-	if (parsed === null) return null;
-	if (min && parsed < min) return null;
-	if (max && parsed > max) return null;
-	if (Number.isNaN(parsed)) return null;
-	return parsed;
+	const parsed = validateQuantity(input, {
+		min: min ?? 0,
+		max: max ?? Number.MAX_SAFE_INTEGER,
+		label: 'Number'
+	});
+	return parsed.ok ? parsed.value : null;
 }
 
 export function resolveAvailableItemBoosts(gearBank: GearBank, monster: KillableMonster): Bank {

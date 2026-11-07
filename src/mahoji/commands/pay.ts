@@ -47,27 +47,25 @@ export const payCommand = defineCommand({
 
 		while (retries < MAX_RETRIES) {
 			try {
-				await prisma.$transaction(
-					[
-						prisma.user.update({
-							where: { id: user.id },
-							data: {
-								GP: { decrement: BigInt(amount) }
-							},
-							select: { id: true }
-						}),
-						prisma.user.update({
+				const paid = await prisma.$transaction(
+					async tx => {
+						const charged = await tx.user.updateMany({
+							where: { id: user.id, GP: { gte: BigInt(amount) } },
+							data: { GP: { decrement: BigInt(amount) } }
+						});
+						if (charged.count !== 1) return false;
+						await tx.user.update({
 							where: { id: recipient.id },
-							data: {
-								GP: { increment: BigInt(amount) }
-							},
+							data: { GP: { increment: BigInt(amount) } },
 							select: { id: true }
-						})
-					],
+						});
+						return true;
+					},
 					{
 						isolationLevel: 'RepeatableRead'
 					}
 				);
+				if (!paid) return "You don't have enough GP.";
 				await Promise.all([user.sync(), recipient.sync()]);
 				break;
 			} catch (error) {

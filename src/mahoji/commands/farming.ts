@@ -135,7 +135,8 @@ export const farmingCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity you want to plant.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				},
 				{
 					type: 'Boolean',
@@ -194,7 +195,8 @@ export const farmingCommand = defineCommand({
 					name: 'quantity',
 					description: 'The maximum number of patches to plant or replant.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				},
 				{
 					type: 'Boolean',
@@ -270,7 +272,8 @@ export const farmingCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity of this reward you want to buy.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -292,7 +295,8 @@ export const farmingCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity you want to put in.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},

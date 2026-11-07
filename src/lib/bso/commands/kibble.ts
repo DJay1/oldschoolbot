@@ -28,7 +28,8 @@ export const kibbleCommand = defineCommand({
 			name: 'quantity',
 			description: 'The quantity you want to make.',
 			required: true,
-			min_value: 1
+			min_value: 1,
+			max_value: 100_000
 		}
 	],
 	run: async ({ options, user, channelId }) => {

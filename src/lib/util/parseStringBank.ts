@@ -29,8 +29,10 @@ export function parseQuantityAndItem(str = '', inputBank?: Bank): [Item[], numbe
 		potentialQty = potentialQty.replace('#', inputBank.amount(lazyItemGet.id).toString());
 	}
 
-	let parsedQty: number | null = evalMathExpression(potentialQty.replace('x', ''));
-	if (parsedQty !== null && Number.isNaN(parsedQty)) parsedQty = null;
+	const parsedQty: number | null = evalMathExpression(potentialQty.replace('x', ''));
+	if (parsedQty !== null && (Number.isNaN(parsedQty) || !Number.isFinite(parsedQty) || parsedQty < 0)) {
+		return [];
+	}
 
 	const parsedName = parsedQty === null ? str : potentialName.join(' ');
 

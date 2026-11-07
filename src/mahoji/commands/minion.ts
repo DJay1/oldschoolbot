@@ -373,7 +373,9 @@ export const minionCommand = defineCommand({
 					type: 'Integer',
 					name: 'amount',
 					description: 'The amount you want to charge',
-					required: false
+					required: false,
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -433,7 +435,8 @@ export const minionCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity of darts/scales to add',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},

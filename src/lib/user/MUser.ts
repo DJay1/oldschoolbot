@@ -82,6 +82,7 @@ import { getKCByName } from '@/lib/util/getKCByName.js';
 import { hasMonsterRequirements } from '@/lib/util/hasMonsterRequirements.js';
 import { hasSkillReqsRaw } from '@/lib/util/smallUtils.js';
 import { type TransactItemsArgs, transactItemsFromBank } from '@/lib/util/transactItemsFromBank.js';
+import { applyBalanceDecrements, prepareNumericUpdate } from '@/lib/util/validateQuantity.js';
 import type { JsonKeys } from '@/lib/util.js';
 import { getParsedStashUnits } from '@/mahoji/lib/abstracted_commands/stashUnitsCommand.js';
 
@@ -112,25 +113,86 @@ export class MUserClass extends BaseUser {
 
 	async rawUpdate({
 		data,
-		gearUpdates
+		gearUpdates,
+		statsUpdate,
+		minigameUpdate
 	}: {
 		data: FullUserUpdateInput;
 		gearUpdates?: GearWithSetupType[];
-		_otherQueries?: any[];
+		statsUpdate?: Omit<Prisma.UserStatsUpdateInput, 'user_id'>;
+		minigameUpdate?: Omit<Prisma.MinigameUpdateInput, 'user_id' | 'id'>;
 	}): Promise<MUser> {
-		const secondaryQueries = [];
+		if (gearUpdates && gearUpdates.length > 0) {
+			Object.assign(data, this.getGearUpdateData(gearUpdates));
+		}
 
-		if ('collectionLogBank' in data && data.collectionLogBank) {
-			secondaryQueries.push(
-				prisma.jsonBank.upsert({
+		const userPrepared = prepareNumericUpdate(data as Record<string, unknown>);
+		const statsPrepared = statsUpdate ? prepareNumericUpdate(statsUpdate as Record<string, unknown>) : null;
+		const minigamePrepared = minigameUpdate
+			? prepareNumericUpdate(minigameUpdate as Record<string, unknown>)
+			: null;
+		const userId = this.id;
+		const statsId = BigInt(this.id);
+
+		const newUser = await prisma.$transaction(async tx => {
+			if (statsPrepared) {
+				await tx.userStats.upsert({
+					where: { user_id: statsId },
+					create: { user_id: statsId },
+					update: {},
+					select: { user_id: true }
+				});
+				await applyBalanceDecrements(
+					args => tx.userStats.updateMany(args as Prisma.UserStatsUpdateManyArgs),
+					{ user_id: statsId },
+					statsPrepared.decrements
+				);
+				if (Object.keys(statsPrepared.rest).length > 0) {
+					await tx.userStats.update({
+						where: { user_id: statsId },
+						data: statsPrepared.rest as Prisma.UserStatsUpdateInput,
+						select: { user_id: true }
+					});
+				}
+			}
+
+			if (minigamePrepared) {
+				await tx.minigame.upsert({
+					where: { user_id: userId },
+					create: { user_id: userId },
+					update: {},
+					select: { user_id: true }
+				});
+				await applyBalanceDecrements(
+					args => tx.minigame.updateMany(args as Prisma.MinigameUpdateManyArgs),
+					{ user_id: userId },
+					minigamePrepared.decrements
+				);
+				if (Object.keys(minigamePrepared.rest).length > 0) {
+					await tx.minigame.update({
+						where: { user_id: userId },
+						data: minigamePrepared.rest as Prisma.MinigameUpdateInput,
+						select: { user_id: true }
+					});
+				}
+			}
+
+			await applyBalanceDecrements(
+				args => tx.user.updateMany(args as Prisma.UserUpdateManyArgs),
+				{ id: userId },
+				userPrepared.decrements
+			);
+
+			if ('collectionLogBank' in data && data.collectionLogBank) {
+				await tx.jsonBank.upsert({
 					where: {
 						user_id_type: {
-							user_id: this.id,
+							user_id: userId,
 							type: 'CollectionLog'
 						}
 					},
 					create: {
-						user_id: this.id,
+						user_id: userId,
 						type: 'CollectionLog',
 						bank: data.collectionLogBank
 					},
@@ -138,26 +200,18 @@ export class MUserClass extends BaseUser {
 						bank: data.collectionLogBank
 					},
 					select: { user_id: true }
-				})
-			);
-		}
+				});
+			}
 
-		if (gearUpdates && gearUpdates.length > 0) {
-			const gearUpdateData = this.getGearUpdateData(gearUpdates);
-			Object.assign(data, gearUpdateData);
-		}
+			if (Object.keys(userPrepared.rest).length === 0) {
+				return tx.user.findUniqueOrThrow({ where: { id: userId } });
+			}
 
-		const [newUser] = await prisma.$transaction([
-			prisma.user.update({
-				where: {
-					id: this.id
-				},
-				data: {
-					...(data as Prisma.UserUpdateInput)
-				}
-			}),
-			...secondaryQueries
-		]);
+			return tx.user.update({
+				where: { id: userId },
+				data: userPrepared.rest as Prisma.UserUpdateInput
+			});
+		});
 		this._updateRawUser(newUser);
 		return this;
 	}
@@ -283,7 +337,9 @@ RETURNING (monster_scores->>'${monsterID}')::int AS new_kc;
 		filterLoot = true,
 		dontAddToTempCL = false,
 		neverUpdateHistory = false,
-		otherUpdates
+		otherUpdates,
+		statsUpdates,
+		minigameUpdates
 	}: {
 		items: Bank;
 		collectionLog?: boolean;
@@ -291,6 +347,8 @@ RETURNING (monster_scores->>'${monsterID}')::int AS new_kc;
 		dontAddToTempCL?: boolean;
 		neverUpdateHistory?: boolean;
 		otherUpdates?: TransactItemsArgs['otherUpdates'];
+		statsUpdates?: TransactItemsArgs['statsUpdates'];
+		minigameUpdates?: TransactItemsArgs['minigameUpdates'];
 	}) {
 		return this.transactItems({
 			collectionLog,
@@ -298,7 +356,9 @@ RETURNING (monster_scores->>'${monsterID}')::int AS new_kc;
 			filterLoot,
 			dontAddToTempCL,
 			neverUpdateHistory,
-			otherUpdates
+			otherUpdates,
+			statsUpdates,
+			minigameUpdates
 		});
 	}
 
@@ -343,6 +403,9 @@ RETURNING (monster_scores->>'${monsterID}')::int AS new_kc;
 	}
 
 	async incrementMinigameScore(minigame: MinigameName, amountToAdd: number) {
+		if (!Number.isSafeInteger(amountToAdd) || amountToAdd < 1) {
+			throw new UserError('Quantity must be a positive whole number.');
+		}
 		const result = await prisma.minigame.upsert({
 			where: { user_id: this.id },
 			update: { [minigame]: { increment: amountToAdd } },
@@ -807,8 +870,8 @@ Charge your items using ${globalClient.mentionCommand('minion', 'charge')}.`
 	}
 
 	async statsUpdate(data: Omit<Prisma.UserStatsUpdateInput, 'user_id'>): Promise<void> {
+		const prepared = prepareNumericUpdate(data as Record<string, unknown>);
 		const id = BigInt(this.id);
-		// TODO: Extra-safe check for now
 		const count = await prisma.userStats.count({
 			where: {
 				user_id: id
@@ -822,18 +885,27 @@ Charge your items using ${globalClient.mentionCommand('minion', 'charge')}.`
 				create: {
 					user_id: id
 				},
-				update: {}
+				update: {},
+				select: { user_id: true }
 			});
 		}
 
-		await prisma.userStats.update({
-			data,
-			where: {
-				user_id: id
-			},
-			select: {
-				user_id: true
-			}
+		await prisma.$transaction(async tx => {
+			await applyBalanceDecrements(
+				args => tx.userStats.updateMany(args as Prisma.UserStatsUpdateManyArgs),
+				{ user_id: id },
+				prepared.decrements
+			);
+			if (Object.keys(prepared.rest).length === 0) return;
+			await tx.userStats.update({
+				data: prepared.rest as Prisma.UserStatsUpdateInput,
+				where: {
+					user_id: id
+				},
+				select: {
+					user_id: true
+				}
+			});
 		});
 	}
 

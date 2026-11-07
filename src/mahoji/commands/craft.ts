@@ -35,7 +35,8 @@ export const craftCommand = defineCommand({
 			name: 'quantity',
 			description: 'The quantity you want to craft (optional).',
 			required: false,
-			min_value: 1
+			min_value: 1,
+			max_value: 100_000
 		}
 	],
 	run: async ({ options, user, channelId }) => {

@@ -68,7 +68,8 @@ export const killCommand = defineCommand({
 			name: 'quantity',
 			description: 'The quantity you want to simulate.',
 			required: true,
-			min_value: 1
+			min_value: 1,
+			max_value: 100_000
 		},
 		{
 			type: 'Boolean',

@@ -340,7 +340,7 @@ class GrandExchangeSingleton {
 			return { error: 'Invalid quantity, the quantity must be a number between 1 and 5m.' };
 		}
 
-		if (price * quantity > this.config.maxTotalPrice) {
+		if (!Number.isSafeInteger(price * quantity) || price * quantity > this.config.maxTotalPrice) {
 			return {
 				error: `You cannot make a listing with a total price of more than ${toKMB(this.config.maxTotalPrice)}.`
 			};

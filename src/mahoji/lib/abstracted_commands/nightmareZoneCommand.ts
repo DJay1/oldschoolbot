@@ -9,6 +9,7 @@ import type { Skills } from '@/lib/types/index.js';
 import type { NightmareZoneActivityTaskOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { hasSkillReqs } from '@/lib/util/smallUtils.js';
+import { MAX_SHOP_QUANTITY, requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 const itemBoosts = [
 	// Special weapons
@@ -419,8 +420,13 @@ export async function nightmareZoneShopCommand(
 			.join(', ')}`;
 	}
 
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
 	const costPerItem = shopItem.cost;
-	const cost = quantity * costPerItem;
+	const parsedCost = safePositiveProduct(costPerItem, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
 	if (cost > currentUserPoints) {
 		return `You don't have enough Nightmare Zone points to buy ${quantity.toLocaleString()}x ${
 			shopItem.name
@@ -460,7 +466,7 @@ export async function nightmareZoneImbueCommand(user: MUser, input = '') {
 	}
 	let imbueCost = item.points;
 	if (user.hasCompletedCATier('hard')) {
-		imbueCost /= 2;
+		imbueCost = Math.floor(imbueCost / 2);
 	}
 	const bal = user.user.nmz_points;
 	if (bal < imbueCost) {

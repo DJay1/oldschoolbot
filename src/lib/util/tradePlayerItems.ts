@@ -24,6 +24,9 @@ export async function tradePlayerItems(
 
 	const itemsToSend = _itemsToSend ? _itemsToSend.clone() : new Bank();
 	const itemsToReceive = _itemsToReceive ? _itemsToReceive.clone() : new Bank();
+	if (itemsToSend.validate().length > 0 || itemsToReceive.validate().length > 0) {
+		return { success: false, message: 'Invalid items.' };
+	}
 
 	// Queue the primary trade function:
 	return userQueueFn(sender.id, async () => {
@@ -53,6 +56,10 @@ export async function tradePlayerItems(
 					recipientGP -= receivedCoins;
 					itemsToReceive.remove('Coins', receivedCoins);
 					senderGP += receivedCoins;
+				}
+
+				if (senderGP < 0n || recipientGP < 0n) {
+					return { success: false, message: "You don't have enough GP." };
 				}
 
 				newSenderBank.remove(itemsToSend);

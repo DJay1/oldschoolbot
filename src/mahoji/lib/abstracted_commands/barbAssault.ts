@@ -9,6 +9,7 @@ import { HighGambleTable, LowGambleTable, MediumGambleTable } from '@/lib/simula
 import { maxOtherStats } from '@/lib/structures/Gear.js';
 import type { MinigameActivityTaskOptionsWithNoChanges } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 export const BarbBuyables = [
 	{
@@ -116,28 +117,33 @@ export async function barbAssaultBuyCommand(interaction: MInteraction, user: MUs
 		).join('\n')}.`;
 	}
 
-	if (!quantity) {
-		quantity = 1;
-	}
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: 1000 });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
 
-	const { item, cost } = buyable;
+	const { item, cost: unitCost } = buyable;
+	const parsedCost = safePositiveProduct(unitCost, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
 	const stats = await user.fetchStats();
 	const balance = stats.honour_points;
-	if (balance < cost * quantity) {
-		return `You don't have enough Honour Points to buy ${quantity.toLocaleString()}x ${item.name}. You need ${(cost * quantity).toLocaleString()}, but you have only ${balance.toLocaleString()}.`;
+	if (balance < cost) {
+		return `You don't have enough Honour Points to buy ${quantity.toLocaleString()}x ${item.name}. You need ${cost.toLocaleString()}, but you have only ${balance.toLocaleString()}.`;
 	}
 	await interaction.confirmation(
-		`Are you sure you want to buy ${quantity.toLocaleString()}x ${item.name}, for ${(cost * quantity).toLocaleString()} honour points?`
+		`Are you sure you want to buy ${quantity.toLocaleString()}x ${item.name}, for ${cost.toLocaleString()} honour points?`
 	);
-	await user.statsUpdate({
-		honour_points: {
-			decrement: cost * quantity
+	await user.addItemsToBank({
+		items: new Bank().add(item.id, quantity),
+		collectionLog: true,
+		statsUpdates: {
+			honour_points: {
+				decrement: cost
+			}
 		}
 	});
 
-	await user.addItemsToBank({ items: new Bank().add(item.id, quantity), collectionLog: true });
-
-	return `Successfully purchased ${quantity.toLocaleString()}x ${item.name} for ${(cost * quantity).toLocaleString()} Honour Points.`;
+	return `Successfully purchased ${quantity.toLocaleString()}x ${item.name} for ${cost.toLocaleString()} Honour Points.`;
 }
 
 export async function barbAssaultGambleCommand(interaction: MInteraction, user: MUser, tier: string, quantity = 1) {
@@ -145,29 +151,38 @@ export async function barbAssaultGambleCommand(interaction: MInteraction, user: 
 	if (!buyable) {
 		return 'You can gamble your points for the Low, Medium and High tiers. For example, `/minigames gamble low`.';
 	}
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: 1000 });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
 	const { honour_points: balance } = await user.fetchStats();
-	const { cost, name, table } = buyable;
-	if (balance < cost * quantity) {
-		return `You don't have enough Honour Points to do ${quantity.toLocaleString()}x ${name} gamble. You need ${(cost * quantity).toLocaleString()}, but you have only ${balance.toLocaleString()}.`;
+	const { cost: unitCost, name, table } = buyable;
+	const parsedCost = safePositiveProduct(unitCost, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
+	if (balance < cost) {
+		return `You don't have enough Honour Points to do ${quantity.toLocaleString()}x ${name} gamble. You need ${cost.toLocaleString()}, but you have only ${balance.toLocaleString()}.`;
 	}
 	await interaction.confirmation(
-		`Are you sure you want to do ${quantity.toLocaleString()}x ${name} gamble, using ${(cost * quantity).toLocaleString()} honour points?`
+		`Are you sure you want to do ${quantity.toLocaleString()}x ${name} gamble, using ${cost.toLocaleString()} honour points?`
 	);
-	await user.statsUpdate({
-		honour_points: {
-			decrement: cost * quantity
-		},
-		high_gambles:
-			name === 'High'
-				? {
-						increment: quantity
-					}
-				: undefined
-	});
 	const loot = new Bank().add(table.roll(quantity));
-	const { itemsAdded, previousCL } = await user.addItemsToBank({ items: loot, collectionLog: true });
+	const { itemsAdded, previousCL } = await user.addItemsToBank({
+		items: loot,
+		collectionLog: true,
+		statsUpdates: {
+			honour_points: {
+				decrement: cost
+			},
+			high_gambles:
+				name === 'High'
+					? {
+							increment: quantity
+						}
+					: undefined
+		}
+	});
 
-	const str = `You spent ${(cost * quantity).toLocaleString()} Honour Points for ${quantity.toLocaleString()}x ${name} Gamble, and received...`;
+	const str = `You spent ${cost.toLocaleString()} Honour Points for ${quantity.toLocaleString()}x ${name} Gamble, and received...`;
 
 	const perkTier = await user.fetchPerkTier();
 	const components: ButtonBuilder[] = buildClueButtons(loot, perkTier, user);

@@ -4,6 +4,7 @@ import { omit } from 'remeda';
 import type { Prisma } from '@/prisma/main.js';
 import type { ActivityTaskData, ActivityTaskOptions } from '@/lib/types/minions.js';
 import { isGroupActivity } from '@/lib/util/activityTypeCheck.js';
+import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 export type DatabaseStoredActivityData = Omit<
 	ActivityTaskOptions,
@@ -27,6 +28,11 @@ export default async function addSubTaskToActivityTask(taskToAdd: Omit<ActivityT
 				? 'One or more users have an existing activity already in progress.'
 				: 'You have an existing activity already in progress.'
 		);
+	}
+
+	if ('quantity' in taskToAdd && typeof taskToAdd.quantity === 'number') {
+		const parsedQuantity = validateQuantity(taskToAdd.quantity, { min: 1, max: MAX_QUANTITY });
+		if (!parsedQuantity.ok) throw new UserError(parsedQuantity.error);
 	}
 
 	const duration = Math.floor(taskToAdd.duration);

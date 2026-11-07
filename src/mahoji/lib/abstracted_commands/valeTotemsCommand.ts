@@ -7,6 +7,7 @@ import { claimValeOfferings } from '@/lib/minions/data/valeTotems.js';
 import type { ValeTotemsActivityTaskOptions } from '@/lib/types/minions.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { MAX_SHOP_QUANTITY, requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 interface TotemDecoration {
 	log: Item;
@@ -379,7 +380,12 @@ export async function valeTotemsBuyCommand(interaction: MInteraction, user: MUse
 		).join(', ')}`;
 	}
 
-	const cost = quantity * shopItem.valeResearchPoints;
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
+	const parsedCost = safePositiveProduct(shopItem.valeResearchPoints, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
 	if (cost > currentResearchPoints) {
 		return `${user.minionName} doesn't have enough Vale Research points to buy **${quantity.toLocaleString()}x ${shopItem.name}** (${
 			shopItem.valeResearchPoints
@@ -396,15 +402,15 @@ export async function valeTotemsBuyCommand(interaction: MInteraction, user: MUse
 		}**?`
 	);
 
-	await user.statsUpdate({
-		vale_research_points: {
-			decrement: cost
-		}
-	});
-
+	const loot = new Bank(shopItem.output).multiply(quantity);
 	await user.transactItems({
 		collectionLog: true,
-		itemsToAdd: new Bank(shopItem.output).multiply(quantity)
+		itemsToAdd: loot,
+		statsUpdates: {
+			vale_research_points: {
+				decrement: cost
+			}
+		}
 	});
 
 	return `${user.minionName} successfully bought **${quantity.toLocaleString()}x ${shopItem.name}** for ${(shopItem.valeResearchPoints * quantity).toLocaleString()} Vale Research points.\n${user.minionName} now has ${currentResearchPoints - cost} Vale Research points left.`;
@@ -435,6 +441,10 @@ export async function valeTotemsSellCommand(
 	const userBank = user.bank;
 	const itemOwned = userBank.amount(sellable);
 
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
+
 	if (itemOwned < quantity) {
 		return `${user.minionName} doesn't have enough ${shopItem.name} to sell.\n${
 			itemOwned < 1
@@ -447,20 +457,21 @@ export async function valeTotemsSellCommand(
 		return `${user.minionName} is not an ironman. Only Ironman can sell Greenman masks to Vale Research Exchange.`;
 	}
 
-	const gain = quantity * shopItem.valeResearchPoints;
+	const parsedGain = safePositiveProduct(shopItem.valeResearchPoints, quantity);
+	if (!parsedGain.ok) return parsedGain.error;
+	const gain = parsedGain.value;
 
 	await interaction.confirmation(
 		`Are you sure you want to sell **${quantity.toLocaleString()}x ${shopItem.name}** for **${gain.toLocaleString()}** Vale Research points?`
 	);
 
-	await user.statsUpdate({
-		vale_research_points: {
-			increment: gain
-		}
-	});
-
 	await user.transactItems({
-		itemsToRemove: shopItem.output.clone().multiply(quantity)
+		itemsToRemove: shopItem.output.clone().multiply(quantity),
+		statsUpdates: {
+			vale_research_points: {
+				increment: gain
+			}
+		}
 	});
 
 	return `${user.minionName} successfully sold **${quantity.toLocaleString()}x ${shopItem.name}** for ${(shopItem.valeResearchPoints * quantity).toLocaleString()} Vale Research points.`;

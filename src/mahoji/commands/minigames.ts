@@ -165,7 +165,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'The amount of gambles to do.',
 							required: true,
-							min_value: 1
+							min_value: 1,
+							max_value: 1000
 						}
 					]
 				},
@@ -736,7 +737,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'Quantity.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -777,7 +779,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'The amount of games to do.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -802,7 +805,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'Quantity.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -828,7 +832,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'Amount of brimhaven agility course laps you want to do.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -849,7 +854,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'Quantity.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -907,7 +913,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'The amount of weapons to make.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -932,7 +939,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'Quantity.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -1003,7 +1011,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'Quantity.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -1082,7 +1091,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'How many logs to oil.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				}
@@ -1139,7 +1149,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'Quantity.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -1160,7 +1171,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'Quantity.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				},
@@ -1174,7 +1186,8 @@ export const minigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'Quantity.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						},
 						{
 							type: 'Boolean',

@@ -3,6 +3,12 @@ import { Bank, Items } from 'oldschooljs';
 
 import type { MinigameActivityTaskOptionsWithNoChanges } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import {
+	MAX_SHOP_QUANTITY,
+	requirePositiveQuantity,
+	safePositiveProduct,
+	validateQuantity
+} from '@/lib/util/validateQuantity.js';
 
 export const soulWarsBuyables = [
 	{
@@ -151,16 +157,20 @@ export async function soulWarsStartCommand(rng: RNGProvider, user: MUser, channe
 }
 
 export async function soulWarsBuyCommand(user: MUser, input = '', quantity?: number) {
-	const possibleItemName = input.split(' ');
-
-	if (!quantity) {
-		quantity = 1;
+	const possibleItemName = input.split(' ').filter(part => part.length > 0);
+	let qty = quantity;
+	const leadingToken = possibleItemName[0];
+	if (leadingToken && /^-?\d/.test(leadingToken)) {
+		const parsedToken = validateQuantity(leadingToken, { min: 1, max: MAX_SHOP_QUANTITY });
+		if (!parsedToken.ok) return parsedToken.error;
+		qty = parsedToken.value;
+		possibleItemName.shift();
 	}
-	if (!Number.isNaN(Number.parseInt(possibleItemName[0]))) {
-		quantity = Number(possibleItemName.shift());
-	}
-
 	input = possibleItemName.join(' ');
+
+	const parsedQuantity = requirePositiveQuantity(qty, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
 
 	const item = soulWarsBuyables.find(i => stringMatches(input, i.item.name));
 	if (!item) {
@@ -168,19 +178,23 @@ export async function soulWarsBuyCommand(user: MUser, input = '', quantity?: num
 			.map(i => i.item.name)
 			.join(', ')}.`;
 	}
+	const parsedCost = safePositiveProduct(item.tokens, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
 	const bal = user.user.zeal_tokens;
-	if (bal < item.tokens * quantity) {
-		return `You don't have enough Zeal Tokens to buy ${quantity} ${item.item.name}. You have ${bal} but need ${
-			item.tokens * quantity
-		}.`;
+	if (bal < cost) {
+		return `You don't have enough Zeal Tokens to buy ${quantity} ${item.item.name}. You have ${bal} but need ${cost}.`;
 	}
-	await user.update({
-		zeal_tokens: {
-			decrement: item.tokens * quantity
+	await user.transactItems({
+		itemsToAdd: new Bank().add(item.item.id, quantity),
+		collectionLog: true,
+		otherUpdates: {
+			zeal_tokens: {
+				decrement: cost
+			}
 		}
 	});
-	await user.addItemsToBank({ items: new Bank().add(item.item.id, quantity), collectionLog: true });
-	return `Added ${quantity}x ${item.item.name} to your bank, removed ${item.tokens * quantity}x Zeal Tokens.`;
+	return `Added ${quantity}x ${item.item.name} to your bank, removed ${cost}x Zeal Tokens.`;
 }
 
 export async function soulWarsImbueCommand(user: MUser, input = '') {
@@ -194,7 +208,7 @@ export async function soulWarsImbueCommand(user: MUser, input = '') {
 	}
 	let imbueCost = item.tokens;
 	if (user.hasCompletedCATier('hard')) {
-		imbueCost /= 2;
+		imbueCost = Math.floor(imbueCost / 2);
 	}
 	const bal = user.user.zeal_tokens;
 	if (bal < imbueCost) {

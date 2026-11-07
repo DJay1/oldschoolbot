@@ -3,6 +3,7 @@ import { Bank } from 'oldschooljs';
 
 import TitheFarmBuyables from '@/lib/data/buyables/titheFarmBuyables.js';
 import type { TitheFarmActivityTaskOptions } from '@/lib/types/minions.js';
+import { MAX_SHOP_QUANTITY, requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 async function determineDuration(user: MUser): Promise<[number, string[]]> {
 	let baseTime = Time.Second * 1500;
@@ -70,10 +71,14 @@ export async function titheFarmShopCommand(
 		)}.`;
 	}
 
-	const quantity = _quantity ?? 1;
+	const parsedQuantity = requirePositiveQuantity(_quantity, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	const quantity = parsedQuantity.value;
+	const parsedCost = safePositiveProduct(buyable.titheFarmPoints, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
 
 	const loot = new Bank(buyable.outputItems).multiply(quantity);
-	const cost = buyable.titheFarmPoints * quantity;
 
 	const { tithe_farm_points: titheFarmPoints } = await user.fetchStats();
 
@@ -84,15 +89,14 @@ export async function titheFarmShopCommand(
 	const purchaseMsg = `${loot} for ${cost} Tithe Farm points`;
 
 	await interaction.confirmation(`${user}, please confirm that you want to purchase ${purchaseMsg}.`);
-	await user.statsUpdate({
-		tithe_farm_points: {
-			decrement: cost
-		}
-	});
-
 	await user.transactItems({
 		collectionLog: true,
-		itemsToAdd: loot
+		itemsToAdd: loot,
+		statsUpdates: {
+			tithe_farm_points: {
+				decrement: cost
+			}
+		}
 	});
 
 	return `You purchased ${loot} for ${cost} Tithe Farm points.`;

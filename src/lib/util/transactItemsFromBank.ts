@@ -1,5 +1,6 @@
 import { Bank, type ItemBank } from 'oldschooljs';
 
+import type { Prisma } from '@/prisma/main.js';
 import { handleNewCLItems } from '@/lib/handleNewCLItems.js';
 import { filterLootReplace } from '@/lib/slayer/slayerUtil.js';
 import type { SafeUserUpdateInput } from '@/lib/user/update.js';
@@ -17,6 +18,9 @@ export interface TransactItemsArgs {
 	neverUpdateHistory?: boolean;
 	otherUpdates?: SafeUserUpdateInput | ((user: MUser) => SafeUserUpdateInput | Promise<SafeUserUpdateInput>);
 	gearUpdates?: GearWithSetupType[];
+	/** Applied in the same transaction as the bank update. */
+	statsUpdates?: Omit<Prisma.UserStatsUpdateInput, 'user_id'>;
+	minigameUpdates?: Omit<Prisma.MinigameUpdateInput, 'user_id' | 'id'>;
 }
 
 export async function unqueuedTransactItems({
@@ -27,6 +31,8 @@ export async function unqueuedTransactItems({
 	filterLoot,
 	neverUpdateHistory,
 	gearUpdates,
+	statsUpdates,
+	minigameUpdates,
 	...options
 }: TransactItemsArgs) {
 	let itemsToAdd = options.itemsToAdd ? options.itemsToAdd.clone() : undefined;
@@ -124,7 +130,12 @@ export async function unqueuedTransactItems({
 		...clUpdates,
 		...resolvedOtherUpdates
 	} as const;
-	const newUser = await user.rawUpdate({ data: updateData, gearUpdates });
+	const newUser = await user.rawUpdate({
+		data: updateData,
+		gearUpdates,
+		statsUpdate: statsUpdates,
+		minigameUpdate: minigameUpdates
+	});
 
 	const itemsAdded = new Bank(itemsToAdd);
 	if (itemsAdded && gpUpdate && gpUpdate.increment > 0) {

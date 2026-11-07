@@ -399,7 +399,8 @@ export const bingoCommand = defineCommand({
 					name: 'ticket_price',
 					description: 'The ticket price.',
 					required: true,
-					min_value: 1
+					min_value: 1,
+					max_value: 1_000_000_000
 				},
 				{
 					type: 'Integer',

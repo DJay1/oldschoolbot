@@ -2,6 +2,7 @@ import { truncateString } from '@oldschoolgg/toolkit';
 import { clamp } from 'remeda';
 
 import { allOpenables, allOpenablesIDs } from '@/lib/openables.js';
+import { validateQuantity } from '@/lib/util/validateQuantity.js';
 import {
 	abstractedOpenCommand,
 	abstractedOpenUntilCommand,
@@ -59,7 +60,9 @@ export const openCommand = defineCommand({
 			type: 'Integer',
 			name: 'result_quantity',
 			description: 'The quantity of the result item to open until.',
-			required: false
+			required: false,
+			min_value: 1,
+			max_value: 100_000
 		},
 		{
 			type: 'Boolean',
@@ -77,8 +80,22 @@ export const openCommand = defineCommand({
 			)}.`;
 		}
 
-		if (options.quantity !== undefined && (!Number.isInteger(options.quantity) || options.quantity < 1)) {
-			return 'The quantity must be a positive integer.';
+		if (options.quantity !== undefined) {
+			const parsedQuantity = validateQuantity(options.quantity, {
+				min: 1,
+				max: MAX_OPEN_PER_COMMAND
+			});
+			if (!parsedQuantity.ok) return parsedQuantity.error;
+			options.quantity = parsedQuantity.value;
+		}
+		if (options.result_quantity !== undefined) {
+			const parsedResultQuantity = validateQuantity(options.result_quantity, {
+				min: 1,
+				max: 100_000,
+				label: 'Result quantity'
+			});
+			if (!parsedResultQuantity.ok) return parsedResultQuantity.error;
+			options.result_quantity = parsedResultQuantity.value;
 		}
 
 		// A missing quantity used to become 1 before open_until ran, so the command

@@ -7,6 +7,7 @@ import Prayer from '@/lib/skilling/skills/prayer.js';
 import type { OfferingActivityTaskOptions } from '@/lib/types/minions.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 const specialBones = [
 	{
@@ -71,7 +72,8 @@ export const offerCommand = defineCommand({
 			name: 'quantity',
 			description: 'The quantity you want to offer (optional).',
 			required: false,
-			min_value: 1
+			min_value: 1,
+			max_value: 100_000
 		}
 	],
 	run: async ({ options, user, channelId, interaction, rng }) => {
@@ -79,6 +81,11 @@ export const offerCommand = defineCommand({
 
 		await interaction.defer();
 		let { quantity } = options;
+		if (quantity !== undefined) {
+			const parsedQuantity = validateQuantity(quantity, { min: 1, max: MAX_QUANTITY });
+			if (!parsedQuantity.ok) return parsedQuantity.error;
+			quantity = parsedQuantity.value;
+		}
 		const whichOfferable = Offerables.find(
 			item =>
 				stringMatches(options.name, item.name) ||

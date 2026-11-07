@@ -17,6 +17,7 @@ import type { MonsterActivityTaskOptions } from '@/lib/types/minions.js';
 import findMonster from '@/lib/util/findMonster.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { generateDailyPeakIntervals } from '@/lib/util/peaks.js';
+import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
 import { newMinionKillCommand } from '@/mahoji/lib/abstracted_commands/minionKill/newMinionKill.js';
 import { nexCommand } from '@/mahoji/lib/abstracted_commands/nexCommand.js';
 import { nightmareCommand } from '@/mahoji/lib/abstracted_commands/nightmareCommand.js';
@@ -39,7 +40,11 @@ export async function minionKillCommand(
 	_solo: boolean | undefined,
 	onTask: boolean | undefined
 ): CommandResponse {
-	if (inputQuantity !== undefined && inputQuantity < 1) return 'Quantity must be greater than 0.';
+	if (inputQuantity !== undefined) {
+		const parsedQuantity = validateQuantity(inputQuantity, { min: 1, max: MAX_QUANTITY });
+		if (!parsedQuantity.ok) return parsedQuantity.error;
+		inputQuantity = parsedQuantity.value;
+	}
 	if (await user.minionIsBusy()) {
 		return 'Your minion is busy.';
 	}

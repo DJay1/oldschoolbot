@@ -24,6 +24,7 @@ import { Bank } from 'oldschooljs';
 
 import type { MakePartyOptions } from '@/lib/types/index.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
+import { MAX_SHOP_QUANTITY, requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 // Max people in a party:
 const maxTeamSize = 20;
@@ -177,12 +178,14 @@ async function buyCommand(user: MUser, name?: string, quantity?: number) {
 		return msg;
 	}
 
-	if (!quantity) {
-		quantity = 1;
-	}
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
 
 	const { item, cost } = buyable;
-	const overallCost = cost * quantity;
+	const parsedCost = safePositiveProduct(cost, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const overallCost = parsedCost.value;
 	const balance = user.user.dungeoneering_tokens;
 	if (balance < overallCost) {
 		return `You don't have enough Dungeoneering tokens to buy the ${quantity}x ${
@@ -190,10 +193,13 @@ async function buyCommand(user: MUser, name?: string, quantity?: number) {
 		}. You need ${overallCost}, but you have only ${balance.toLocaleString()}.`;
 	}
 
-	await user.addItemsToBank({ items: new Bank().add(item.id, quantity), collectionLog: true });
-	await user.update({
-		dungeoneering_tokens: {
-			decrement: overallCost
+	await user.transactItems({
+		itemsToAdd: new Bank().add(item.id, quantity),
+		collectionLog: true,
+		otherUpdates: {
+			dungeoneering_tokens: {
+				decrement: overallCost
+			}
 		}
 	});
 
@@ -257,7 +263,8 @@ export const dgCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity you wish to buy.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		}

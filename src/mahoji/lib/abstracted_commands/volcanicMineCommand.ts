@@ -6,6 +6,7 @@ import { Bank } from 'oldschooljs';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { formatSkillRequirements, hasSkillReqs } from '@/lib/util/smallUtils.js';
+import { MAX_SHOP_QUANTITY, requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 const skillReqs = {
 	prayer: 70,
@@ -191,7 +192,12 @@ export async function volcanicMineShopCommand(interaction: MInteraction, user: M
 			v => v.name
 		).join(', ')}`;
 	}
-	const cost = quantity * shopItem.cost;
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
+	const parsedCost = safePositiveProduct(shopItem.cost, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
 	if (cost > currentUserPoints) {
 		return `You don't have enough points to buy ${quantity.toLocaleString()}x ${shopItem.name}. ${
 			currentUserPoints < shopItem.cost

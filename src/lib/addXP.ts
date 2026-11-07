@@ -4,7 +4,15 @@ import { firstAgeXpBonusPercent, isWearingFullFirstAgeMaxSet } from '@/lib/bso/f
 import { resolveSkillOutfitXp } from '@/lib/bso/firstAge/skillOutfits.js';
 
 import { bold } from '@oldschoolgg/discord';
-import { Events, formatOrdinal, increaseNumByPercent, notEmpty, Time, toTitleCase } from '@oldschoolgg/toolkit';
+import {
+	Events,
+	formatOrdinal,
+	increaseNumByPercent,
+	notEmpty,
+	Time,
+	toTitleCase,
+	UserError
+} from '@oldschoolgg/toolkit';
 import { convertLVLtoXP, convertXPtoLVL, type Item, Items, toKMB } from 'oldschooljs';
 
 import { type User, UserEventType } from '@/prisma/main.js';
@@ -112,6 +120,9 @@ function getEquippedCapes(user: MUser): number[] {
 }
 
 export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
+	if (!Number.isFinite(params.amount) || params.amount < 0) {
+		throw new UserError('Invalid XP amount.');
+	}
 	const currentXP = Number(user.user[`skills_${params.skillName}`]);
 	const currentLevel = user.skillLevel(params.skillName);
 	const currentTotalLevel = user.totalLevel;

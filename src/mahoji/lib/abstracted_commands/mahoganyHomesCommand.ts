@@ -4,6 +4,7 @@ import { Bank, Items } from 'oldschooljs';
 import { Plank } from '@/lib/skilling/skills/construction/constructables.js';
 import type { MahoganyHomesActivityTaskOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { MAX_SHOP_QUANTITY, requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 interface IContract {
 	name: string;
@@ -111,16 +112,17 @@ export async function mahoganyHomesBuyCommand(user: MUser, input = '', quantity?
 			.join('\n')}.`;
 	}
 
-	if (!quantity) {
-		quantity = 1;
-	}
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
 
-	const { item, cost } = buyable;
+	const { item, cost: unitCost } = buyable;
+	const parsedCost = safePositiveProduct(unitCost, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
 	const balance = user.user.carpenter_points;
-	if (balance < cost * quantity) {
-		return `You don't have enough Carpenter Points to buy ${quantity.toLocaleString()}x ${item.name}. You need ${
-			cost * quantity
-		}, but you have only ${balance}.`;
+	if (balance < cost) {
+		return `You don't have enough Carpenter Points to buy ${quantity.toLocaleString()}x ${item.name}. You need ${cost}, but you have only ${balance}.`;
 	}
 	const loot = new Bank().add(item.id, quantity);
 	await user.transactItems({
@@ -128,12 +130,12 @@ export async function mahoganyHomesBuyCommand(user: MUser, input = '', quantity?
 		collectionLog: true,
 		otherUpdates: {
 			carpenter_points: {
-				decrement: cost * quantity
+				decrement: cost
 			}
 		}
 	});
 
-	return `Successfully purchased ${loot} for ${cost * quantity} Carpenter Points.`;
+	return `Successfully purchased ${loot} for ${cost} Carpenter Points.`;
 }
 
 export async function mahoganyHomesPointsCommand(user: MUser) {

@@ -42,7 +42,8 @@ export const raidCommand = defineCommand({
 							name: 'max_team_size',
 							description: 'Choose a max size for your team.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 15
 						},
 						{
 							type: 'Integer',
@@ -88,7 +89,8 @@ export const raidCommand = defineCommand({
 							name: 'max_team_size',
 							description: 'Choose a max size for your team.',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 5
 						},
 						{
 							type: 'Integer',

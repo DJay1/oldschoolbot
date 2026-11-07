@@ -43,7 +43,8 @@ export const tksCommand = defineCommand({
 					description: 'The quantity you want to purchase.',
 					type: 'Integer',
 					required: true,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -70,7 +71,8 @@ export const tksCommand = defineCommand({
 					description: 'The quantity you want to sell.',
 					type: 'Integer',
 					required: true,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		}

@@ -153,6 +153,7 @@ export const simulateCommand = defineCommand({
 					name: 'quantity',
 					description: 'The amount of raids to simulate.',
 					min_value: 1,
+					max_value: 1000,
 					required: true
 				},
 				{
@@ -168,6 +169,7 @@ export const simulateCommand = defineCommand({
 					name: 'team_size',
 					description: 'The size of your team (default 4).',
 					min_value: 1,
+					max_value: 15,
 					required: false
 				},
 				{

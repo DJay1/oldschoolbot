@@ -1,7 +1,7 @@
 import { isGEUntradeable } from '@/lib/bso/bsoUtil.js';
 
 import { dateFm } from '@oldschoolgg/discord';
-import { evalMathExpression, formatDuration, sumArr, uniqueArr } from '@oldschoolgg/toolkit';
+import { formatDuration, sumArr, uniqueArr } from '@oldschoolgg/toolkit';
 import { Items, toKMB } from 'oldschooljs';
 
 import type { GEListing, GETransaction } from '@/prisma/main.js';
@@ -13,6 +13,7 @@ import { PerkTier } from '@/lib/constants.js';
 import { createGECancelButton, GrandExchange } from '@/lib/grandExchange.js';
 import { createChart } from '@/lib/util/chart.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
+import { validateQuantity } from '@/lib/util/validateQuantity.js';
 import { cancelGEListingCommand } from '@/mahoji/lib/abstracted_commands/cancelGEListingCommand.js';
 
 export type GEListingWithTransactions = GEListing & {
@@ -21,10 +22,9 @@ export type GEListingWithTransactions = GEListing & {
 };
 
 function parseNumber(str: string) {
-	if (typeof str === 'number') str = `${str}`;
-	const number = evalMathExpression(str);
-	if (!number) return -1;
-	return number;
+	const parsed = validateQuantity(str, { min: 1, max: Number.MAX_SAFE_INTEGER, label: 'Number' });
+	if (!parsed.ok) return -1;
+	return parsed.value;
 }
 
 function geListingToString(
