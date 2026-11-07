@@ -1,4 +1,5 @@
 import type { IBlowpipeData } from '@oldschoolgg/schemas';
+import { customEmoji } from '@oldschoolgg/toolkit';
 import { Bank, EItem, Items } from 'oldschooljs';
 
 const defaultBlowpipe: IBlowpipeData = {
@@ -54,7 +55,7 @@ export async function blowpipeCommand(
 
 		return `Your blowpipe got corrupted somehow, this shouldn't happen! It's a bug. Your blowpipe was reset.`;
 	}
-	let str = `**Toxic Blowpipe** <:Toxic_blowpipe:887011870068838450>
+	let str = `**Toxic Blowpipe** ${customEmoji('Toxic_blowpipe')}
 
 Zulrah's scales: ${rawBlowpipeData.scales.toLocaleString()}x
 `;

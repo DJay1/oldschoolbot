@@ -13,7 +13,7 @@ import {
 	Routes
 } from '@oldschoolgg/discord';
 import type { IChannel, IMessage, IUserLog, IWebhook } from '@oldschoolgg/schemas';
-import { Time } from '@oldschoolgg/toolkit';
+import { buttonEmoji, Time } from '@oldschoolgg/toolkit';
 import { DiscordSnowflake } from '@sapphire/snowflake';
 import { omit } from 'remeda';
 
@@ -258,7 +258,7 @@ export class OldSchoolBotClient extends DiscordClient {
 					.setCustomId(`${CUSTOM_ID_PREFIX}${opt.id}`)
 					.setStyle(ButtonStyle.Secondary);
 				if (opt.emoji) {
-					button.setEmoji({ id: opt.emoji });
+					button.setEmoji(/^\d{17,20}$/.test(opt.emoji) ? { id: opt.emoji } : buttonEmoji(opt.emoji));
 				}
 				if (opt.label) {
 					button.setLabel(opt.label);

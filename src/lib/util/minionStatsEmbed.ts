@@ -1,7 +1,7 @@
 import { MALEDICT_MORTIMER_ID } from '@/lib/bso/maledictMortimer.js';
 
 import { EmbedBuilder } from '@oldschoolgg/discord';
-import { sumArr, toTitleCase } from '@oldschoolgg/toolkit';
+import { customEmoji, sumArr, toTitleCase } from '@oldschoolgg/toolkit';
 import { MathRNG } from 'node-rng';
 import { Bank, convertXPtoLVL, type ItemBank, toKMB } from 'oldschooljs';
 import type { SkillsScore } from 'oldschooljs/hiscores';
@@ -104,7 +104,7 @@ export async function minionStatsEmbed({
 		name: `${skillEmoji.total} Overall`,
 		value: `**Level:** ${totalLevel}
 **XP:** ${xp.toLocaleString()}
-**QP** ${QP}
+${customEmoji('questIcon')} **QP** ${QP}
 **CL Completion:** ${percent.toFixed(1)}%`,
 		inline: true
 	});
@@ -113,7 +113,7 @@ export async function minionStatsEmbed({
 	const clueEntries = openableScores.items();
 	if (clueEntries.length > 0) {
 		embed.addFields({
-			name: '<:Clue_scroll:365003979840552960> Clue Scores',
+			name: customEmoji('Clue_scroll') + ' Clue Scores',
 			value: clueEntries
 				.map(([item, qty]) => {
 					const clueTier = ClueTiers.find(t => t.id === item.id)!;
@@ -126,7 +126,7 @@ export async function minionStatsEmbed({
 
 	if (minigameScores.length > 0) {
 		embed.addFields({
-			name: '<:minigameIcon:630400565070921761> Minigames',
+			name: customEmoji('minigameIcon') + ' Minigames',
 			value: minigameScores
 				.slice(0, 4)
 				.map(minigame => {

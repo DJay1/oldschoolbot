@@ -1,3 +1,5 @@
+import { customEmoji } from './applicationEmoji.js';
+
 export enum Events {
 	Error = 'error',
 	Log = 'log',
@@ -9,117 +11,234 @@ export enum Events {
 	EconomyLog = 'economyLog'
 }
 
-export enum Emoji {
-	MoneyBag = '<:MoneyBag:493286312854683654>',
-	OSBot = '<:OSBot:601768469905801226>',
-	Joy = '😂',
-	Bpaptu = '<:bpaptu:660333438292983818>',
-	Diamond = '💎',
-	Dice = '<:dice:660128887111548957>',
-	Fireworks = '🎆',
-	Tick = '✅',
-	RedX = '❌',
-	Search = '🔎',
-	FancyLoveheart = '💝',
-	Gift = '🎁',
-	Sad = '<:RSSad:380915244652036097>',
-	Happy = '<:RSHappy:380915244760825857>',
-	PeepoOSBot = '<:peepoOSBot:601695641088950282>',
-	PeepoSlayer = '<:peepoSlayer:644411576425775104>',
-	PeepoRanger = '<:peepoRanger:663096705746731089>',
-	PeepoNoob = '<:peepoNoob:660712001500086282>',
-	XP = '<:xp:630911040510623745>',
-	GP = '<:RSGP:369349580040437770>',
-	ThumbsUp = '👍',
-	ThumbsDown = '👎',
-	Casket = '<:Casket:365003978678730772>',
-	Agility = '<:agility:630911040355565568>',
-	Cooking = '<:cooking:630911040426868756>',
-	Fishing = '<:fishing:630911040091193356>',
-	Mining = '<:mining:630911040128811010>',
-	Smithing = '<:smithing:630911040452034590>',
-	Woodcutting = '<:woodcutting:630911040099450892>',
-	Runecraft = '<:runecraft:630911040435257364>',
-	Prayer = '<:prayer:630911040426868746>',
-	Construction = '<:construction:630911040493715476>',
-	Diango = '<:diangoChatHead:678146375300415508>',
-	MysteryBox = '<:mysterybox:680783258488799277>',
-	QuestIcon = '<:questIcon:690191385907036179>',
-	MinigameIcon = '<:minigameIcon:630400565070921761>',
-	Warning = '⚠️',
-	Ironman = '<:ironman:626647335900020746>',
-	Firemaking = '<:firemaking:630911040175210518>',
-	Crafting = '<:crafting:630911040460161047>',
-	EasterEgg = '<:easterEgg:695473553314938920>',
-	TzRekJad = '<:Tzrekjad:324127379188613121>',
-	Phoenix = '<:Phoenix:324127378223792129>',
-	TinyTempor = '<:TinyTempor:824483631694217277>',
-	AnimatedFireCape = '<a:FireCape:394692985184583690>',
-	Fletching = '<:fletching:630911040544309258>',
-	Farming = '<:farming:630911040355565599>',
-	Tangleroot = '<:tangleroot:324127378978635778>',
-	Herblore = '<:herblore:630911040535658496>',
-	Purple = '🟪',
-	Green = '🟩',
-	Blue = '🟦',
-	Orange = '🟧',
-	Thieving = '<:thieving:630910829352452123>',
-	Hunter = '<:hunter:630911040166559784>',
-	Ely = '<:ely:784453586033049630>',
-	Timer = '<:ehpclock:352323705210142721>',
-	ChristmasCracker = '<:cracker:785389969962958858>',
-	SantaHat = '<:santaHat:785874868905181195>',
-	RottenPotato = '<:rottenPotato:791498767051915275>',
-	Magic = '<:magic:630911040334331917>',
-	Hitpoints = '<:hitpoints:630911040460292108>',
-	Strength = '<:strength:630911040481263617>',
-	Attack = '<:attack:630911039969427467>',
-	Defence = '<:defence:630911040393052180>',
-	Ranged = '<:ranged:630911040258834473>',
-	Dungeoneering = '<:dungeoneering:828683755198873623>',
-	Gear = '<:gear:835314891950129202>',
-	Slayer = '<:slayer:630911040560824330>',
-	SlayerMasterCape = '<:slayerMasterCape:869497600284459008>',
-	RunecraftMasterCape = '<:runecraftMasterCape:869497600997470258>',
-	Flappy = '<:Flappy:884799334737129513>',
-	CombatAchievements = '<:combatAchievements:1145015804040065184>',
-	Stopwatch = '⏱️',
-	Smokey = '<:Smokey:886284971914969149>',
-	ItemContract = '<:Item_contract:988422348434718812>',
-	// Badges,
-	BigOrangeGem = '<:bigOrangeGem:778418736188489770>',
-	GreenGem = '<:greenGem:778418736495067166>',
-	PinkGem = '<:pinkGem:778418736276963349>',
-	OrangeGem = '<:orangeGem:778418736474095616>',
-	Minion = '<:minion:778418736180494347>',
-	Spanner = '<:spanner:778418736621158410>',
-	DoubleSpanner = '<:doubleSpanner:778418736327688194>',
-	Hammer = '<:hammer:778418736595206184>',
-	Bug = '<:bug:778418736330833951>',
-	Trophy = '<:goldTrophy:778418736561782794>',
-	Crab = '<:crab:778418736432021505>',
-	Snake = '🐍',
-	Skiller = '<:skiller:802136963775463435>',
-	Incinerator = '<:incinerator:802136963674275882>',
-	CollectionLog = '<:collectionLog:802136964027121684>',
-	Bank = '<:bank:739459924693614653>',
-	Minigames = '<:minigameIcon:630400565070921761>',
-	Skull = '<:Skull:802136963926065165>',
-	CombatSword = '<:combat:802136963956080650>',
-	SOTW = '<:SOTWtrophy:842938096097820693>',
-	OSRSSkull = '<:skull:863392427040440320>',
-	Invention = '<:Invention:936219232146980874>',
-	BSO = '<:BSO:863823820435619890>',
-	Kuro = '<:kuro:1032277900579319888>',
-	Seer = '<:seer:924198628191531030>',
-	SOTWTrophy = '<:SOTWtrophy:842938096097820693>',
-	ClueScroll = '<:Clue_scroll:365003979840552960>',
+export type EmojiName =
+	| 'MoneyBag'
+	| 'OSBot'
+	| 'Joy'
+	| 'Bpaptu'
+	| 'Diamond'
+	| 'Dice'
+	| 'Fireworks'
+	| 'Tick'
+	| 'RedX'
+	| 'Search'
+	| 'FancyLoveheart'
+	| 'Gift'
+	| 'Sad'
+	| 'Happy'
+	| 'PeepoOSBot'
+	| 'PeepoSlayer'
+	| 'PeepoRanger'
+	| 'PeepoNoob'
+	| 'XP'
+	| 'GP'
+	| 'ThumbsUp'
+	| 'ThumbsDown'
+	| 'Casket'
+	| 'Agility'
+	| 'Cooking'
+	| 'Fishing'
+	| 'Mining'
+	| 'Smithing'
+	| 'Woodcutting'
+	| 'Runecraft'
+	| 'Prayer'
+	| 'Construction'
+	| 'Diango'
+	| 'MysteryBox'
+	| 'QuestIcon'
+	| 'MinigameIcon'
+	| 'Warning'
+	| 'Ironman'
+	| 'Firemaking'
+	| 'Crafting'
+	| 'EasterEgg'
+	| 'TzRekJad'
+	| 'Phoenix'
+	| 'TinyTempor'
+	| 'AnimatedFireCape'
+	| 'Fletching'
+	| 'Farming'
+	| 'Tangleroot'
+	| 'Herblore'
+	| 'Purple'
+	| 'Green'
+	| 'Blue'
+	| 'Orange'
+	| 'Thieving'
+	| 'Hunter'
+	| 'Ely'
+	| 'Timer'
+	| 'ChristmasCracker'
+	| 'SantaHat'
+	| 'RottenPotato'
+	| 'Magic'
+	| 'Hitpoints'
+	| 'Strength'
+	| 'Attack'
+	| 'Defence'
+	| 'Ranged'
+	| 'Dungeoneering'
+	| 'Gear'
+	| 'Slayer'
+	| 'SlayerMasterCape'
+	| 'RunecraftMasterCape'
+	| 'Flappy'
+	| 'CombatAchievements'
+	| 'Stopwatch'
+	| 'Smokey'
+	| 'ItemContract'
+	| 'BigOrangeGem'
+	| 'GreenGem'
+	| 'PinkGem'
+	| 'OrangeGem'
+	| 'Minion'
+	| 'Spanner'
+	| 'DoubleSpanner'
+	| 'Hammer'
+	| 'Bug'
+	| 'Trophy'
+	| 'Crab'
+	| 'Snake'
+	| 'Skiller'
+	| 'Incinerator'
+	| 'CollectionLog'
+	| 'Bank'
+	| 'Minigames'
+	| 'Skull'
+	| 'CombatSword'
+	| 'SOTW'
+	| 'OSRSSkull'
+	| 'Invention'
+	| 'BSO'
+	| 'Kuro'
+	| 'Seer'
+	| 'SOTWTrophy'
+	| 'ClueScroll'
+	| 'DragonTrophy'
+	| 'RuneTrophy'
+	| 'AdamantTrophy'
+	| 'MithrilTrophy'
+	| 'SteelTrophy'
+	| 'IronTrophy'
+	| 'BronzeTrophy';
 
-	DragonTrophy = '<:DragonTrophy:1152881074259624007>',
-	RuneTrophy = '<:RuneTrophy:1152881071445254164>',
-	AdamantTrophy = '<:AdamantTrophy:1152881069281001472>',
-	MithrilTrophy = '<:MithrilTrophy:1152881066353373236>',
-	SteelTrophy = '<:SteelTrophy:1152881062846939206>',
-	IronTrophy = '<:IronTrophy:1152881060972085279>',
-	BronzeTrophy = '<:BronzeTrophy:1152881057788592188>'
-}
+/**
+ * Logical emoji names. Custom ones render as application emojis after
+ * `pnpm emojis:sync`, and as a unicode fallback until then.
+ */
+export const Emoji: { readonly [K in EmojiName]: string } = {
+	MoneyBag: customEmoji('MoneyBag'),
+	OSBot: customEmoji('OSBot'),
+	Joy: '😂',
+	Bpaptu: customEmoji('bpaptu'),
+	Diamond: '💎',
+	Dice: customEmoji('dice'),
+	Fireworks: '🎆',
+	Tick: '✅',
+	RedX: '❌',
+	Search: '🔎',
+	FancyLoveheart: '💝',
+	Gift: '🎁',
+	Sad: customEmoji('RSSad'),
+	Happy: customEmoji('RSHappy'),
+	PeepoOSBot: customEmoji('peepoOSBot'),
+	PeepoSlayer: customEmoji('peepoSlayer'),
+	PeepoRanger: customEmoji('peepoRanger'),
+	PeepoNoob: customEmoji('peepoNoob'),
+	XP: customEmoji('xp'),
+	GP: customEmoji('RSGP'),
+	ThumbsUp: '👍',
+	ThumbsDown: '👎',
+	Casket: customEmoji('Casket'),
+	Agility: customEmoji('agility'),
+	Cooking: customEmoji('cooking'),
+	Fishing: customEmoji('fishing'),
+	Mining: customEmoji('mining'),
+	Smithing: customEmoji('smithing'),
+	Woodcutting: customEmoji('woodcutting'),
+	Runecraft: customEmoji('runecraft'),
+	Prayer: customEmoji('prayer'),
+	Construction: customEmoji('construction'),
+	Diango: customEmoji('diangoChatHead'),
+	MysteryBox: customEmoji('mysterybox'),
+	QuestIcon: customEmoji('questIcon'),
+	MinigameIcon: customEmoji('minigameIcon'),
+	Warning: '⚠️',
+	Ironman: customEmoji('ironman'),
+	Firemaking: customEmoji('firemaking'),
+	Crafting: customEmoji('crafting'),
+	EasterEgg: customEmoji('easterEgg'),
+	TzRekJad: customEmoji('Tzrekjad'),
+	Phoenix: customEmoji('Phoenix'),
+	TinyTempor: customEmoji('TinyTempor'),
+	AnimatedFireCape: customEmoji('FireCape'),
+	Fletching: customEmoji('fletching'),
+	Farming: customEmoji('farming'),
+	Tangleroot: customEmoji('tangleroot'),
+	Herblore: customEmoji('herblore'),
+	Purple: '🟪',
+	Green: '🟩',
+	Blue: '🟦',
+	Orange: '🟧',
+	Thieving: customEmoji('thieving'),
+	Hunter: customEmoji('hunter'),
+	Ely: customEmoji('ely'),
+	Timer: customEmoji('ehpclock'),
+	ChristmasCracker: customEmoji('cracker'),
+	SantaHat: customEmoji('santaHat'),
+	RottenPotato: customEmoji('rottenPotato'),
+	Magic: customEmoji('magic'),
+	Hitpoints: customEmoji('hitpoints'),
+	Strength: customEmoji('strength'),
+	Attack: customEmoji('attack'),
+	Defence: customEmoji('defence'),
+	Ranged: customEmoji('ranged'),
+	Dungeoneering: customEmoji('dungeoneering'),
+	Gear: customEmoji('gear'),
+	Slayer: customEmoji('slayer'),
+	SlayerMasterCape: customEmoji('slayerMasterCape'),
+	RunecraftMasterCape: customEmoji('runecraftMasterCape'),
+	Flappy: customEmoji('Flappy'),
+	CombatAchievements: customEmoji('combatAchievements'),
+	Stopwatch: '⏱️',
+	Smokey: customEmoji('Smokey'),
+	ItemContract: customEmoji('Item_contract'),
+	BigOrangeGem: customEmoji('bigOrangeGem'),
+	GreenGem: customEmoji('greenGem'),
+	PinkGem: customEmoji('pinkGem'),
+	OrangeGem: customEmoji('orangeGem'),
+	Minion: customEmoji('minion'),
+	Spanner: customEmoji('spanner'),
+	DoubleSpanner: customEmoji('doubleSpanner'),
+	Hammer: customEmoji('hammer'),
+	Bug: customEmoji('bug'),
+	Trophy: customEmoji('goldTrophy'),
+	Crab: customEmoji('crab'),
+	Snake: '🐍',
+	Skiller: customEmoji('skiller'),
+	Incinerator: customEmoji('incinerator'),
+	CollectionLog: customEmoji('collectionLog'),
+	Bank: customEmoji('bank'),
+	Minigames: customEmoji('minigameIcon'),
+	Skull: customEmoji('Skull'),
+	CombatSword: customEmoji('combat'),
+	SOTW: customEmoji('SOTWtrophy'),
+	OSRSSkull: customEmoji('skull'),
+	Invention: customEmoji('Invention'),
+	BSO: customEmoji('BSO'),
+	Kuro: customEmoji('kuro'),
+	Seer: customEmoji('seer'),
+	SOTWTrophy: customEmoji('SOTWtrophy'),
+	ClueScroll: customEmoji('Clue_scroll'),
+	DragonTrophy: customEmoji('DragonTrophy'),
+	RuneTrophy: customEmoji('RuneTrophy'),
+	AdamantTrophy: customEmoji('AdamantTrophy'),
+	MithrilTrophy: customEmoji('MithrilTrophy'),
+	SteelTrophy: customEmoji('SteelTrophy'),
+	IronTrophy: customEmoji('IronTrophy'),
+	BronzeTrophy: customEmoji('BronzeTrophy')
+};
+
+/** String form of {@link Emoji}. Values are application-emoji markup or a unicode fallback. */
+export type Emoji = (typeof Emoji)[keyof typeof Emoji];

@@ -2,7 +2,7 @@ import { addUnchargedFirstAgeShards } from '@/lib/bso/firstAge/shards.js';
 import { bsoOpenables } from '@/lib/bso/openables/bsoOpenables.js';
 
 import type { IFarmingContract } from '@oldschoolgg/schemas';
-import { Emoji, Events, formatOrdinal } from '@oldschoolgg/toolkit';
+import { customEmoji, Emoji, Events, formatOrdinal } from '@oldschoolgg/toolkit';
 import { percentChance, randInt } from 'node-rng';
 import {
 	Bank,
@@ -507,7 +507,7 @@ export const allOpenables: UnifiedOpenable[] = [
 		openedItem: Items.getOrThrow(11_918),
 		aliases: ['present', 'birthday present'],
 		output: new LootTable().oneIn(10, 'War ship').every('Slice of birthday cake'),
-		emoji: '<:birthdayPresent:680041979710668880>',
+		emoji: customEmoji('birthdayPresent'),
 		allItems: resolveItems(['War ship', 'Slice of birthday cake'])
 	},
 	{

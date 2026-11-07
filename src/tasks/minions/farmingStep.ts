@@ -4,7 +4,7 @@ import { mutations } from '@/lib/bso/skills/farming/mutations.js';
 import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
 
 import type { IFarmingContract } from '@oldschoolgg/schemas';
-import { Emoji, Events, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Emoji, Events, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, type RNGProvider } from 'node-rng';
 import { Bank, Items, increaseBankQuantitesByPercent, itemID, Monsters } from 'oldschooljs';
 
@@ -783,7 +783,7 @@ async function applyBSOPostHarvestLoot(options: {
 	if (loot.has('Plopper')) {
 		loot.set('Plopper', 1);
 		infoStr.push(
-			'<:plopper:787310793321349120> You found a pig on a farm and have adopted it to help you with farming.'
+			customEmoji('plopper') + ' You found a pig on a farm and have adopted it to help you with farming.'
 		);
 	}
 

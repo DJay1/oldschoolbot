@@ -1,7 +1,7 @@
 import { BSOItem } from '@/lib/bso/BSOItem.js';
 import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
 
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, type RNGProvider } from 'node-rng';
 import { Bank, EItem, Items } from 'oldschooljs';
 
@@ -374,17 +374,17 @@ export async function calcFishingTripStart({
 		if (isPatriciaLobsterBoost) {
 			tripSpeedMultiplier *= 3;
 			boosts.push(
-				`<:starfish:1515651612918677564> 3x faster for ${eclipsePetName} and Old crab cage while fishing Lobster`
+				`${customEmoji('starfish')} 3x faster for ${eclipsePetName} and Old crab cage while fishing Lobster`
 			);
 		} else {
 			tripSpeedMultiplier *= 2.15;
 			boosts.push(
-				`<:starfish:1515651612918677564> ${eclipsePetName} is your new best friend! You two become an expert fishing pair!`
+				`${customEmoji('starfish')} ${eclipsePetName} is your new best friend! You two become an expert fishing pair!`
 			);
 		}
 	} else if (hasShelldonEquipped) {
 		tripSpeedMultiplier *= 2;
-		boosts.push('<:shelldon:748496988407988244> Shelldon helps you fish!');
+		boosts.push(customEmoji('shelldon') + ' Shelldon helps you fish!');
 	}
 
 	if (hasOldCrabCageEquipped) {

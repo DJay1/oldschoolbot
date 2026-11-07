@@ -1,6 +1,7 @@
 import { BSOItem } from '@/lib/bso/BSOItem.js';
 
 import type { GearSetup, GearSetupType } from '@oldschoolgg/gear';
+import { customEmoji } from '@oldschoolgg/toolkit';
 import { randArrItem } from 'node-rng';
 import { Bank, Items, LootTable } from 'oldschooljs';
 
@@ -19,12 +20,12 @@ export const beachOutfitTable = new LootTable()
 export const BEACH_COMBING_PET = {
 	itemID: BSOItem.PATRICIA,
 	name: 'Patricia',
-	emoji: '<:starfish:1515651612918677564>',
+	emoji: customEmoji('starfish'),
 	baseRate: 6_000,
 	clIncreaseMultiplier: 2
 } as const;
 
-export const SUMMER_CRATE_S9_EMOJI = '<:s9chest:1515787545970081843>';
+export const SUMMER_CRATE_S9_EMOJI = customEmoji('s9chest');
 export const LYDIA_QUOTES = [
 	'The ocean is deep. So is my disappointment',
 	'I found myself. I put myself back',

@@ -4,11 +4,10 @@ import { getUsersFishingContestDetails } from '@/lib/bso/minigames/fishingContes
 import { shortTameTripDesc, tameLastFinishedActivity } from '@/lib/bso/tames/tameUtil.js';
 
 import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
-import { stripNonAlphanumeric, toTitleCase } from '@oldschoolgg/toolkit';
+import { buttonEmoji, stripNonAlphanumeric, toTitleCase } from '@oldschoolgg/toolkit';
 
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { BitField, PerkTier } from '@/lib/constants.js';
-import { EmojiId } from '@/lib/data/emojis.js';
 import { InteractionID } from '@/lib/InteractionID.js';
 import { minionBuyButton } from '@/lib/sharedComponents.js';
 import {
@@ -39,7 +38,7 @@ async function fetchFavoriteGearPresets(userID: string) {
 			.setStyle(ButtonStyle.Secondary)
 			.setCustomId(`GPE_${i.pinned_setup}_${stripNonAlphanumeric(i.name)}`)
 			.setLabel(`Equip '${toTitleCase(i.name).replace(/_/g, ' ')}' to ${i.pinned_setup}`)
-			.setEmoji({ id: EmojiId.Gear })
+			.setEmoji(buttonEmoji('gear'))
 	);
 }
 
@@ -105,7 +104,7 @@ export async function minionStatusCommand(
 			new ButtonBuilder()
 				.setCustomId('CANCEL_TRIP')
 				.setLabel('Cancel Trip')
-				.setEmoji({ id: EmojiId.Minion })
+				.setEmoji(buttonEmoji('minion'))
 				.setStyle(ButtonStyle.Secondary)
 		);
 	}
@@ -118,7 +117,7 @@ export async function minionStatusCommand(
 		new ButtonBuilder()
 			.setCustomId('CHECK_PATCHES')
 			.setLabel('Check Patches')
-			.setEmoji({ id: EmojiId.Farming })
+			.setEmoji(buttonEmoji('farming'))
 			.setStyle(ButtonStyle.Secondary)
 	);
 
@@ -149,7 +148,7 @@ export async function minionStatusCommand(
 				new ButtonBuilder()
 					.setCustomId(`DO_${tier.name.toUpperCase()}_CLUE`)
 					.setLabel(`Do ${tier.name} Clue`)
-					.setEmoji({ id: EmojiId.ClueScroll })
+					.setEmoji(buttonEmoji('Clue_scroll'))
 					.setStyle(ButtonStyle.Secondary)
 			);
 		}
@@ -164,7 +163,7 @@ export async function minionStatusCommand(
 					new ButtonBuilder()
 						.setCustomId(InteractionID.Commands.RepeatTameTrip)
 						.setLabel(`Repeat ${shortTameTripDesc(lastTameAct)}`)
-						.setEmoji({ id: species!.emojiID })
+						.setEmoji(buttonEmoji(species!.emojiName))
 						.setStyle(ButtonStyle.Secondary)
 				);
 			}

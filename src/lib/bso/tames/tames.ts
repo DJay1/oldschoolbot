@@ -3,7 +3,7 @@ import { handleSpecialCoxLoot } from '@/lib/bso/handleSpecialCoxLoot.js';
 import type { MTame } from '@/lib/bso/structures/MTame.js';
 import type { handleFinish } from '@/lib/bso/tames/tameTasks.js';
 
-import { objectEntries, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, objectEntries, Time } from '@oldschoolgg/toolkit';
 import {
 	Bank,
 	ChambersOfXeric,
@@ -242,7 +242,7 @@ export const tameKillableMonsters: TameKillableMonster[] = [
 		name: 'Chambers of Xeric',
 		aliases: ['cox', 'chambers of xeric'],
 		timeToFinish: Time.Minute * 90,
-		emoji: '<:Dharoks_helm:403038864199122947>',
+		emoji: customEmoji('Dharoks_helm'),
 		wildy: false,
 		difficultyRating: 4,
 		itemsRequired: resolveItems([]),
@@ -526,8 +526,8 @@ export const tameSpecies: Species[] = [
 			.add('Elder rune', 100)
 			.add('Astral rune', 600)
 			.add('Coins', 10_000_000),
-		emoji: '<:dragonEgg:858948148641660948>',
-		emojiID: '858948148641660948'
+		emoji: customEmoji('dragonEgg'),
+		emojiName: 'dragonEgg'
 	},
 	{
 		id: TameSpeciesID.Monkey,
@@ -543,8 +543,8 @@ export const tameSpecies: Species[] = [
 		relevantLevelCategory: 'gatherer',
 		hatchTime: Time.Hour * 4.5,
 		egg: Items.getOrThrow('Monkey egg'),
-		emoji: '<:monkey_egg:883326001445224488>',
-		emojiID: '883326001445224488',
+		emoji: customEmoji('monkey_egg'),
+		emojiName: 'monkey_egg',
 		mergingCost: new Bank()
 			.add('Banana', 3000)
 			.add('Magic banana', 50)
@@ -568,8 +568,8 @@ export const tameSpecies: Species[] = [
 		relevantLevelCategory: 'support',
 		hatchTime: Time.Hour * 4.5,
 		egg: Items.getOrThrow('Eagle egg'),
-		emoji: '<:EagleEgg:1201712371371085894>',
-		emojiID: '1201712371371085894',
+		emoji: customEmoji('EagleEgg'),
+		emojiName: 'EagleEgg',
 		mergingCost: new Bank()
 			.add('Solite', 150)
 			.add('Soul rune', 2500)
@@ -607,7 +607,7 @@ export interface Species {
 	egg: Item;
 	mergingCost: Bank;
 	emoji: string;
-	emojiID: string;
+	emojiName: string;
 }
 
 export async function createTameTask({

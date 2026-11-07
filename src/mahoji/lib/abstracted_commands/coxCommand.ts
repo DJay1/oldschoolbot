@@ -5,7 +5,7 @@ import {
 	inventionItemBoost
 } from '@/lib/bso/skills/invention/inventions.js';
 
-import { calcWhatPercent, Emoji, sumArr } from '@oldschoolgg/toolkit';
+import { calcWhatPercent, customEmoji, Emoji, sumArr } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import {
@@ -52,7 +52,7 @@ export async function coxStatsCommand(user: MUser) {
 	const normalTeam = await calcCoxDuration(Array(2).fill(user), false);
 	const cmSolo = await calcCoxDuration([user], true);
 	const cmTeam = await calcCoxDuration(Array(2).fill(user), true);
-	return `<:Twisted_bow:403018312402862081> Chambers of Xeric <:Olmlet:324127376873357316>
+	return `${customEmoji('Twisted_bow')} Chambers of Xeric ${customEmoji('Olmlet')}
 **Normal:** ${minigameScores.raids} KC (Solo: ${Emoji.Skull} ${(await createTeam([user], false))[0].deathChance.toFixed(
 		1
 	)}% ${Emoji.CombatSword} ${calcWhatPercent(normalSolo.reductions[user.id], normalSolo.maxUserReduction).toFixed(
@@ -70,9 +70,9 @@ export async function coxStatsCommand(user: MUser) {
 **Total Uniques:** ${totalUniques} ${
 		totalUniques > 0 ? `(1 unique per ${Math.floor(totalPoints / totalUniques).toLocaleString()} pts)` : ''
 	}\n
-**Melee:** <:Elder_maul:403018312247803906> ${melee.toFixed(1)}%
-**Range:** <:Twisted_bow:403018312402862081> ${range.toFixed(1)}%
-**Mage:** <:Kodai_insignia:403018312264712193> ${mage.toFixed(1)}%
+**Melee:** ${customEmoji('Elder_maul')} ${melee.toFixed(1)}%
+**Range:** ${customEmoji('Twisted_bow')} ${range.toFixed(1)}%
+**Mage:** ${customEmoji('Kodai_insignia')} ${mage.toFixed(1)}%
 **Total Gear Score:** ${Emoji.Gear} ${total.toFixed(1)}%`;
 }
 

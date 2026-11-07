@@ -1,5 +1,5 @@
 import { GearStat } from '@oldschoolgg/gear';
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { Bank, deepResolveItems, EMonster, itemID, Monsters, resolveItems } from 'oldschooljs';
 
 import { QuestID } from '@/lib/minions/data/quests.js';
@@ -360,7 +360,7 @@ export const chaeldarMonsters: KillableMonster[] = [
 		aliases: Monsters.Lizardman.aliases,
 		timeToFinish: Time.Second * 13,
 		table: Monsters.Lizardman,
-		emoji: '<:Xerics_talisman_inert:456176488669249539>',
+		emoji: customEmoji('Xerics_talisman_inert'),
 		wildy: false,
 
 		difficultyRating: 3,
@@ -378,7 +378,7 @@ export const chaeldarMonsters: KillableMonster[] = [
 		aliases: Monsters.LizardmanBrute.aliases,
 		timeToFinish: Time.Second * 16,
 		table: Monsters.LizardmanBrute,
-		emoji: '<:Xerics_talisman_inert:456176488669249539>',
+		emoji: customEmoji('Xerics_talisman_inert'),
 		wildy: false,
 
 		difficultyRating: 3,
@@ -396,7 +396,7 @@ export const chaeldarMonsters: KillableMonster[] = [
 		aliases: Monsters.LizardmanShaman.aliases,
 		timeToFinish: Time.Second * 52,
 		table: Monsters.LizardmanShaman,
-		emoji: '<:Dragon_warhammer:405998717154623488>',
+		emoji: customEmoji('Dragon_warhammer'),
 		wildy: false,
 
 		difficultyRating: 6,

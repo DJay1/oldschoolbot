@@ -1,5 +1,5 @@
 import { EmbedBuilder } from '@oldschoolgg/discord';
-import { toTitleCase } from '@oldschoolgg/toolkit';
+import { customEmoji, toTitleCase } from '@oldschoolgg/toolkit';
 import type { CluesScore, Player, SkillScore, SkillsScore } from 'oldschooljs/hiscores';
 
 import { badges } from '@/lib/constants.js';
@@ -68,7 +68,7 @@ AND CARDINALITY(badges) > 0;`;
 				inline: true
 			})
 			.addFields({
-				name: '<:minigame_icon:630400565070921761> Minigame Scores',
+				name: customEmoji('minigame_icon') + ' Minigame Scores',
 				value: `**BH:** ${player.minigames.bountyHunter.score.toLocaleString()}
 **BH-Rogue:** ${player.minigames.bountyHunterRogue.score.toLocaleString()}
 **LMS:** ${player.minigames.LMS.score.toLocaleString()}
@@ -76,7 +76,7 @@ AND CARDINALITY(badges) > 0;`;
 				inline: true
 			})
 			.addFields({
-				name: '<:Clue_scroll:365003979840552960> Clue Scores',
+				name: customEmoji('Clue_scroll') + ' Clue Scores',
 				value: Object.keys(player.clues)
 					.slice(1)
 					.map(

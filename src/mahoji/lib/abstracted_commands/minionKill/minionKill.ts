@@ -6,7 +6,7 @@ import { naxxusCommand } from '@/lib/bso/commands/naxxusCommand.js';
 import { vasaCommand } from '@/lib/bso/commands/vasaCommand.js';
 import { handleDTD } from '@/lib/bso/handleDTD.js';
 
-import { stringMatches, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Monsters } from 'oldschooljs';
 
 import { colosseumCommand } from '@/lib/colosseum.js';
@@ -183,7 +183,7 @@ export async function minionKillCommand(
 		onTask: slayerInfo.assignedTask !== null
 	});
 
-	let response = `${minionName} is now killing ${result.quantity}x ${monster.name}, ${dtdResult ? `using a <:deathtouched_dart:822674661967265843> **Deathtouched dart**, it'll take around ${formatTripDuration(user, Time.Second * 5)}` : `It'll take around ${formatTripDuration(user, result.duration)} to finish`}. Attack styles used: ${result.attackStyles.join(', ')}.`;
+	let response = `${minionName} is now killing ${result.quantity}x ${monster.name}, ${dtdResult ? `using a ${customEmoji('deathtouched_dart')} **Deathtouched dart**, it'll take around ${formatTripDuration(user, Time.Second * 5)}` : `It'll take around ${formatTripDuration(user, result.duration)} to finish`}. Attack styles used: ${result.attackStyles.join(', ')}.`;
 
 	if (result.messages.length > 0) {
 		response += `\n\n${result.messages.join(', ')}`;

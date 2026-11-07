@@ -2,7 +2,7 @@ import { BSOItem } from '@/lib/bso/BSOItem.js';
 import { skillXpBonusClauses } from '@/lib/bso/firstAge/skillOutfits.js';
 import { convertMysteriousBottleToSeaWater, getEclipsePetName } from '@/lib/bso/summerDays.js';
 
-import { Emoji, Events, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Emoji, Events, Time } from '@oldschoolgg/toolkit';
 import { EItem } from 'oldschooljs';
 
 import { QuestID } from '@/lib/minions/data/quests.js';
@@ -160,7 +160,8 @@ export const fishingTask: MinionTask = {
 					if (rng.roll(24 * 60)) {
 						result.updateBank.itemLootBank.add(BSOItem.PARTYCRAB);
 						result.messages.push(
-							'<:partycrab:1507689107806097541> The old crab cage rattled, and a Partycrab climbed out like it had been waiting years for this moment.'
+							customEmoji('partycrab') +
+								' The old crab cage rattled, and a Partycrab climbed out like it had been waiting years for this moment.'
 						);
 						break;
 					}

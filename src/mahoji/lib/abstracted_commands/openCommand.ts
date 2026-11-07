@@ -1,7 +1,7 @@
 import { checkElderClueRequirements } from '@/lib/bso/elderClueRequirements.js';
 
 import type { ButtonBuilder } from '@oldschoolgg/discord';
-import { Emoji, notEmpty, stringMatches, uniqueArr } from '@oldschoolgg/toolkit';
+import { customEmoji, Emoji, notEmpty, stringMatches, uniqueArr } from '@oldschoolgg/toolkit';
 import { percentChance } from 'node-rng';
 import { cryptoRng } from 'node-rng/crypto';
 import { Bank, Items, itemID, resolveItems } from 'oldschooljs';
@@ -206,7 +206,7 @@ async function finalizeOpening({
 		}
 		smokeyMsg =
 			bonuses.length > 0
-				? `${hasSmokey ? Emoji.Smokey : '<:Octo:1227526833776492554>'} Bonus Rolls: ${bonuses.join(', ')}`
+				? `${hasSmokey ? Emoji.Smokey : customEmoji('Octo')} Bonus Rolls: ${bonuses.join(', ')}`
 				: null;
 	}
 	if (smokeyMsg) messages.push(smokeyMsg);

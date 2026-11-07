@@ -1,7 +1,7 @@
 import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
 
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { Bank, EItem } from 'oldschooljs';
 
@@ -69,7 +69,9 @@ export const runecraftTask: MinionTask = {
 			const droprate = clAdjustedDroprate(user, 'Obis', Math.floor(5000 / minutes), 1.5);
 			if (roll(droprate)) {
 				str +=
-					'\n**<:obis:787028036792614974> An enchantment guardian takes note of your prowess in runecrafting and elects to join you.**';
+					'\n**' +
+					customEmoji('obis') +
+					' An enchantment guardian takes note of your prowess in runecrafting and elects to join you.**';
 				loot.add('Obis');
 			}
 		}

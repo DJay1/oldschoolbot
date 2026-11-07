@@ -1,4 +1,4 @@
-import { formatDuration, stringMatches, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, formatDuration, stringMatches, Time } from '@oldschoolgg/toolkit';
 
 import { Fletchables } from '@/lib/skilling/skills/fletching/fletchables/index.js';
 import Fletching from '@/lib/skilling/skills/fletching/index.js';
@@ -79,7 +79,8 @@ export const fletchCommand = defineCommand({
 		if (user.usingPet('Scruffy')) {
 			boost += 1;
 			boostMsg.push(
-				'<:scruffy:749945071146762301> To help out, Scruffy is fetching items from the bank for you - making your training much faster! Good boy! (+100% for Scruffy)'
+				customEmoji('scruffy') +
+					' To help out, Scruffy is fetching items from the bank for you - making your training much faster! Good boy! (+100% for Scruffy)'
 			);
 		}
 

@@ -9,7 +9,16 @@ import { getAllAlternateMonsters } from '@/lib/bso/skills/slayer/getAllAlternate
 import { slayerMaskHelms } from '@/lib/bso/skills/slayer/slayerMaskHelms.js';
 
 import { bold } from '@oldschoolgg/discord';
-import { Emoji, formatDuration, PerkTier, stringMatches, sumArr, Time, toTitleCase } from '@oldschoolgg/toolkit';
+import {
+	customEmoji,
+	Emoji,
+	formatDuration,
+	PerkTier,
+	stringMatches,
+	sumArr,
+	Time,
+	toTitleCase
+} from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank, Items, Monsters, toKMB } from 'oldschooljs';
 
 import type { activity_type_enum, UserStats, xp_gains_skill_enum } from '@/prisma/main.js';
@@ -940,7 +949,7 @@ ${result
 				'SELECT "minion.icon" as icon, COUNT(*)::int as qty FROM users WHERE "minion.icon" is not null group by "minion.icon" order by qty asc;'
 			);
 			return `**Current minion tiers and their number of users:**\n${Object.values(result)
-				.map(row => `${row.icon ?? '<:minion:763743627092164658>'} : ${row.qty}`)
+				.map(row => `${row.icon ?? customEmoji('minion')} : ${row.qty}`)
 				.join('\n')}`;
 		}
 	},

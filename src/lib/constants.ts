@@ -1,7 +1,7 @@
 ﻿import path from 'node:path';
 import { isMainThread } from 'node:worker_threads';
 import { dateFm } from '@oldschoolgg/discord';
-import { Emoji, PerkTier, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Emoji, PerkTier, Time } from '@oldschoolgg/toolkit';
 import * as dotenv from 'dotenv';
 import { convertLVLtoXP } from 'oldschooljs';
 import * as z from 'zod';
@@ -555,7 +555,7 @@ export const badges: { [key: number]: string } = {
 	[BadgesEnum.Slayer]: Emoji.Slayer,
 	[BadgesEnum.TopGiveawayer]: Emoji.SantaHat,
 	[BadgesEnum.Farmer]: Emoji.Farming,
-	[BadgesEnum.Hacktoberfest]: '<:hacktoberfest:1304259875634942082>',
+	[BadgesEnum.Hacktoberfest]: customEmoji('hacktoberfest'),
 	[BadgesEnum.CyrEarlySupporter]: Emoji.Seer,
 	[BadgesEnum.TopClueHunter]: Emoji.ClueScroll
 };

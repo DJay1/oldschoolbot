@@ -1,7 +1,7 @@
 import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
 
-import { objectEntries, perTimeUnitChance, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, objectEntries, perTimeUnitChance, Time } from '@oldschoolgg/toolkit';
 import { Bank, EItem, itemID } from 'oldschooljs';
 
 import { MAX_LEVEL } from '@/lib/constants.js';
@@ -334,7 +334,9 @@ export const woodcuttingTask: MinionTask = {
 			if (rng.roll(droprate)) {
 				loot.add('Peky');
 				str +=
-					'\n<:peky:787028037031559168> A small pigeon has taken a liking to you, and hides itself in your bank.';
+					'\n' +
+					customEmoji('peky') +
+					' A small pigeon has taken a liking to you, and hides itself in your bank.';
 			}
 		}
 

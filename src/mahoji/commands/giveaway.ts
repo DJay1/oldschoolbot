@@ -1,7 +1,7 @@
 import { isSuperUntradeable } from '@/lib/bso/bsoUtil.js';
 
 import { ButtonBuilder, ButtonStyle, EmbedBuilder, messageLink, time } from '@oldschoolgg/discord';
-import { Emoji, Time } from '@oldschoolgg/toolkit';
+import { buttonEmoji, Emoji, Time } from '@oldschoolgg/toolkit';
 import { Duration } from '@sapphire/time-utilities';
 import { Bank, type ItemBank, toKMB } from 'oldschooljs';
 import { chunk } from 'remeda';
@@ -9,7 +9,6 @@ import { chunk } from 'remeda';
 import type { Giveaway } from '@/prisma/main.js';
 import { giveawayCache } from '@/lib/cache.js';
 import { BitField, patronFeatures } from '@/lib/constants.js';
-import { EmojiId } from '@/lib/data/emojis.js';
 import { baseFilters, filterableTypes } from '@/lib/data/filterables.js';
 import { marketPriceOfBank } from '@/lib/marketPrices.js';
 import { generateGiveawayContent } from '@/lib/util/giveaway.js';
@@ -38,7 +37,7 @@ function makeGiveawayRepeatButton(giveawayID: number) {
 	return new ButtonBuilder()
 		.setCustomId(`GIVEAWAY_REPEAT_${giveawayID}`)
 		.setLabel('Repeat This Giveaway')
-		.setEmoji({ id: EmojiId.MoneyBag })
+		.setEmoji(buttonEmoji('MoneyBag'))
 		.setStyle(ButtonStyle.Danger);
 }
 

@@ -1,8 +1,8 @@
 import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
+import { buttonEmoji } from '@oldschoolgg/toolkit';
 import { Bank, toKMB } from 'oldschooljs';
 import { chunk } from 'remeda';
 
-import { EmojiId } from '@/lib/data/emojis.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
 const buttons: Button[] = [
@@ -68,7 +68,7 @@ function getCurrentButtons({
 				button.setLabel(b.name);
 			}
 			if (!showTrueNames) {
-				button.setEmoji({ id: EmojiId.MysteryBox });
+				button.setEmoji(buttonEmoji('mysterybox'));
 			}
 			if (b.name === '10x' && !b.picked && showTrueNames) {
 				button.setStyle(ButtonStyle.Primary);
@@ -143,7 +143,7 @@ export async function luckyPickCommand(
 
 	const selectionResult = await globalClient.pickStringWithButtons({
 		interaction,
-		options: buttons.map(_b => ({ label: '', id: _b.id, emoji: EmojiId.MysteryBox })),
+		options: buttons.map(_b => ({ label: '', id: _b.id, emoji: 'mysterybox' })),
 		content: `${user}, Pick *one* button!`
 	});
 	if (!selectionResult) {

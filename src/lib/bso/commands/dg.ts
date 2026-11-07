@@ -12,7 +12,14 @@ import {
 	numberOfGorajanOutfitsEquipped
 } from '@/lib/bso/skills/dungoneering/dungDbFunctions.js';
 
-import { formatDuration, formatOrdinal, reduceNumByPercent, stringMatches, Time } from '@oldschoolgg/toolkit';
+import {
+	customEmoji,
+	formatDuration,
+	formatOrdinal,
+	reduceNumByPercent,
+	stringMatches,
+	Time
+} from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import type { MakePartyOptions } from '@/lib/types/index.js';
@@ -259,7 +266,7 @@ export const dgCommand = defineCommand({
 		if (interaction) await interaction.defer();
 		if (options.start) return startCommand(interaction, channelId, user, options.start.floor, options.start.solo);
 		if (options.buy) return buyCommand(user, options.buy.item, options.buy.quantity);
-		let str = `<:dungeoneeringToken:829004684685606912> **Dungeoneering Tokens:** ${user.user.dungeoneering_tokens.toLocaleString()}
+		let str = `${customEmoji('dungeoneeringToken')} **Dungeoneering Tokens:** ${user.user.dungeoneering_tokens.toLocaleString()}
 **Max floor:** ${calcMaxFloorUserCanDo(user)}`;
 		const { boosts } = calcUserGorajanShardChance(user);
 		if (boosts.length > 0) {

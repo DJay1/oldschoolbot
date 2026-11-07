@@ -1,3 +1,4 @@
+export * from './applicationEmoji.js';
 export * from './constants.js';
 export * from './lib/GeneralBank.js';
 export * from './regex.js';

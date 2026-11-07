@@ -1,4 +1,4 @@
-import { formatDuration, stringMatches, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, formatDuration, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank, itemID } from 'oldschooljs';
 
 import Cooking, { Cookables } from '@/lib/skilling/skills/cooking/cooking.js';
@@ -165,7 +165,7 @@ export const cookCommand = defineCommand({
 			duration
 		)} to finish.${
 			hasRemy
-				? "\n<:remy:748491189925183638> Remy jumps on your minions' head to help them with their cooking!"
+				? '\n' + customEmoji('remy') + " Remy jumps on your minions' head to help them with their cooking!"
 				: ''
 		}${boosts.length > 0 ? `\n\nBoosts: ${boosts.join(', ')}` : ''}`;
 	}

@@ -1,7 +1,7 @@
 import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
+import { buttonEmoji } from '@oldschoolgg/toolkit';
 
 import type { ClueTier } from '@/lib/clues/clueTiers.js';
-import { EmojiId } from '@/lib/data/emojis.js';
 import { InteractionID } from '@/lib/InteractionID.js';
 
 export function makeOpenCasketButton(tier: ClueTier) {
@@ -11,7 +11,7 @@ export function makeOpenCasketButton(tier: ClueTier) {
 		.setCustomId(id)
 		.setLabel(`Open ${tier.name} Casket`)
 		.setStyle(ButtonStyle.Secondary)
-		.setEmoji({ id: EmojiId.Casket });
+		.setEmoji(buttonEmoji('Casket'));
 }
 
 export function makeOpenSeedPackButton() {
@@ -19,7 +19,7 @@ export function makeOpenSeedPackButton() {
 		.setCustomId(InteractionID.Open.SeedPack)
 		.setLabel('Open Seed Pack')
 		.setStyle(ButtonStyle.Secondary)
-		.setEmoji({ id: EmojiId.Seedpack });
+		.setEmoji(buttonEmoji('Seedpack'));
 }
 
 export function makeAutoContractButton() {
@@ -27,7 +27,7 @@ export function makeAutoContractButton() {
 		.setCustomId(InteractionID.Commands.AutoFarmingContract)
 		.setLabel('Auto Farming Contract')
 		.setStyle(ButtonStyle.Secondary)
-		.setEmoji({ id: EmojiId.Seedpack });
+		.setEmoji(buttonEmoji('Seedpack'));
 }
 
 export function makeAutoFarmButton() {
@@ -35,7 +35,7 @@ export function makeAutoFarmButton() {
 		.setCustomId(InteractionID.Commands.AutoFarm)
 		.setLabel('Auto Farm')
 		.setStyle(ButtonStyle.Secondary)
-		.setEmoji({ id: EmojiId.Farming });
+		.setEmoji(buttonEmoji('farming'));
 }
 
 export function makeRepeatTripButton() {
@@ -67,14 +67,14 @@ export function makeBirdHouseTripButton() {
 		.setCustomId(InteractionID.Commands.DoBirdHouseRun)
 		.setLabel('Birdhouse Run')
 		.setStyle(ButtonStyle.Secondary)
-		.setEmoji({ id: EmojiId.BirdsNest });
+		.setEmoji(buttonEmoji('BirdsNest'));
 }
 
 export function makeAutoSlayButton() {
 	return new ButtonBuilder()
 		.setCustomId(InteractionID.Slayer.AutoSlay)
 		.setLabel('Auto Slay')
-		.setEmoji({ id: EmojiId.Slayer })
+		.setEmoji(buttonEmoji('slayer'))
 		.setStyle(ButtonStyle.Secondary);
 }
 
@@ -83,7 +83,7 @@ export function makeClaimDailyButton() {
 		.setCustomId(InteractionID.Commands.ClaimDaily)
 		.setLabel('Minion Daily')
 		.setStyle(ButtonStyle.Secondary)
-		.setEmoji({ id: EmojiId.MoneyBag });
+		.setEmoji(buttonEmoji('MoneyBag'));
 }
 
 export function makeNewSlayerTaskButton() {
@@ -91,7 +91,7 @@ export function makeNewSlayerTaskButton() {
 		.setCustomId(InteractionID.Commands.NewSlayerTask)
 		.setLabel('New Slayer Task')
 		.setStyle(ButtonStyle.Secondary)
-		.setEmoji({ id: EmojiId.Slayer });
+		.setEmoji(buttonEmoji('slayer'));
 }
 
 export function makeShootingStarButton(size: number) {
@@ -113,7 +113,7 @@ export function makeDonateIcButton(userId: string) {
 	return new ButtonBuilder()
 		.setStyle(ButtonStyle.Primary)
 		.setLabel('Donate IC')
-		.setEmoji({ id: EmojiId.ItemContract })
+		.setEmoji(buttonEmoji('Item_contract'))
 		.setCustomId(`DONATE_IC_${userId}`);
 }
 
@@ -121,7 +121,7 @@ export function makeSendICButton(itemName: string) {
 	return new ButtonBuilder()
 		.setCustomId(InteractionID.Commands.SendItemContract)
 		.setLabel(`IC: ${itemName.slice(0, 20)}`)
-		.setEmoji({ id: EmojiId.ItemContract })
+		.setEmoji(buttonEmoji('Item_contract'))
 		.setStyle(ButtonStyle.Secondary);
 }
 
@@ -129,7 +129,7 @@ export function makeSpawnLampButton() {
 	return new ButtonBuilder()
 		.setCustomId(InteractionID.Commands.SpawnLamp)
 		.setLabel('Spawn Lamp')
-		.setEmoji({ id: EmojiId.HugeXPLamp })
+		.setEmoji(buttonEmoji('Huge_lamp'))
 		.setStyle(ButtonStyle.Secondary);
 }
 
@@ -137,6 +137,6 @@ export function makeFishingContestButton() {
 	return new ButtonBuilder()
 		.setCustomId(InteractionID.Commands.DoFishingContest)
 		.setLabel('Fishing Contest')
-		.setEmoji({ id: EmojiId.Fishing })
+		.setEmoji(buttonEmoji('fishing'))
 		.setStyle(ButtonStyle.Secondary);
 }

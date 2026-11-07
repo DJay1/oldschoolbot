@@ -8,7 +8,7 @@ import {
 	numberOfGorajanOutfitsEquipped
 } from '@/lib/bso/skills/dungoneering/dungDbFunctions.js';
 
-import { reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
 import { randomVariation, roll } from 'node-rng';
 import { Bank, toKMB } from 'oldschooljs';
 
@@ -90,7 +90,7 @@ export const dungeoneeringTask: MinionTask = {
 	async run(data: DungeoneeringOptions, { user, handleTripFinish }) {
 		const { channelId, duration, floor, quantity, users } = data;
 
-		let str = `<:dungeoneering:828683755198873623> ${user}, your party finished ${quantity}x Floor ${floor} dungeons.\n\n`;
+		let str = `${customEmoji('dungeoneering')} ${user}, your party finished ${quantity}x Floor ${floor} dungeons.\n\n`;
 
 		for (const id of users) {
 			const u = await mUserFetch(id);
@@ -142,7 +142,7 @@ export const dungeoneeringTask: MinionTask = {
 					portentResult.portent.charges_remaining
 				} charges remaining)`;
 			} else {
-				str += `${u} received: ${xpStr} and <:dungeoneeringToken:829004684685606912> ${tokens.toLocaleString()} Dungeoneering tokens${
+				str += `${u} received: ${xpStr} and ${customEmoji('dungeoneeringToken')} ${tokens.toLocaleString()} Dungeoneering tokens${
 					loot.length > 0 ? ` and **${loot}**.` : '.'
 				}`;
 			}

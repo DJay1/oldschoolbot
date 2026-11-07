@@ -4,7 +4,7 @@ import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 import { escapeMarkdown, userMention } from '@oldschoolgg/discord';
 import { defaultGearSetup, type GearSetup } from '@oldschoolgg/gear';
 import { type ECombatOption, type IBlowpipeData, ZBlowpipeData } from '@oldschoolgg/schemas';
-import { cleanUsername, Emoji, sumArr, Time } from '@oldschoolgg/toolkit';
+import { cleanUsername, Emoji, resolveEmojiText, sumArr, Time } from '@oldschoolgg/toolkit';
 import { Bank, convertXPtoLVL, type Item, type ItemBank, Items, resolveItems } from 'oldschooljs';
 import { clone } from 'remeda';
 
@@ -204,7 +204,7 @@ export class BaseUser {
 
 	get minionName() {
 		const prefix = this.isIronman ? Emoji.Ironman : '';
-		const icon = this.user.minion_icon ?? Emoji.Minion;
+		const icon = resolveEmojiText(this.user.minion_icon ?? Emoji.Minion);
 
 		const strPrefix = prefix ? `${prefix} ` : '';
 

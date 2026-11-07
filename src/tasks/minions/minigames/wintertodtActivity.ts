@@ -1,6 +1,6 @@
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
 
-import { calcPerHour, Time } from '@oldschoolgg/toolkit';
+import { calcPerHour, customEmoji, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import { trackLoot } from '@/lib/lootTrack.js';
@@ -103,7 +103,7 @@ export const wintertodtTask: MinionTask = {
 		}
 
 		if (gotToad) {
-			output += '\n\n<:wintertoad:749945071230779493> A Wintertoad sneakily hops into your bank!';
+			output += '\n\n' + customEmoji('wintertoad') + ' A Wintertoad sneakily hops into your bank!';
 		}
 		if (flappyRes.shouldGiveBoost) output += `\n${flappyRes.userMsg}`;
 

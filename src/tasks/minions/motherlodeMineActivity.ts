@@ -2,7 +2,7 @@ import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { Bank, LootTable } from 'oldschooljs';
 
 import Mining from '@/lib/skilling/skills/mining.js';
@@ -102,7 +102,9 @@ export const motherlodeMiningTask: MinionTask = {
 				if (rng.roll(droprate)) {
 					loot.add('Doug');
 					str +=
-						"\n<:doug:748892864813203591> A pink-colored mole emerges from where you're mining, and decides to join you on your adventures after seeing your groundbreaking new methods of mining.";
+						'\n' +
+						customEmoji('doug') +
+						" A pink-colored mole emerges from where you're mining, and decides to join you on your adventures after seeing your groundbreaking new methods of mining.";
 					break;
 				}
 			}

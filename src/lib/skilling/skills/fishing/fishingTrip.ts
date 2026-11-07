@@ -2,7 +2,7 @@ import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { type Bank, EItem, toKMB } from 'oldschooljs';
 
@@ -215,9 +215,7 @@ export function calcFishingTripResult({
 			updateBank.itemLootBank.add(cookedFish.id, quantity);
 		}
 
-		messages.push(
-			'<:klik:749945070932721676> Klik breathes an incredibly hot fire breath, and cooks all your fish!'
-		);
+		messages.push(customEmoji('klik') + ' Klik breathes an incredibly hot fire breath, and cooks all your fish!');
 	}
 
 	if (duration >= MIN_LENGTH_FOR_PET) {
@@ -232,7 +230,8 @@ export function calcFishingTripResult({
 			if (roll(petChance)) {
 				updateBank.itemLootBank.add('Shelldon');
 				messages.push(
-					'<:shelldon:748496988407988244> A crab steals your fish just as you catch it! After some talking, the crab, called shelldon, decides to join you on your fishing adventures. You can equip Shelldon and he will help you fish!'
+					customEmoji('shelldon') +
+						' A crab steals your fish just as you catch it! After some talking, the crab, called shelldon, decides to join you on your fishing adventures. You can equip Shelldon and he will help you fish!'
 				);
 				break;
 			}

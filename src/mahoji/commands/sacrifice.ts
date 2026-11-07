@@ -1,6 +1,6 @@
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 
-import { Emoji, Events, truncateString } from '@oldschoolgg/toolkit';
+import { Emoji, Events, resolveEmojiText, truncateString } from '@oldschoolgg/toolkit';
 import { Bank, type Item, type ItemBank, resolveItems, toKMB } from 'oldschooljs';
 
 import { filterOption } from '@/discord/index.js';
@@ -79,7 +79,7 @@ export const sacrificeCommand = defineCommand({
 		if (!options.filter && !options.items && !options.search) {
 			return (
 				`${Emoji.Incinerator} **Your Sacrifice Stats** ${Emoji.Incinerator}\n\n` +
-				`**Current Minion Icon:** ${currentIcon === null ? Emoji.Minion : currentIcon}\n` +
+				`**Current Minion Icon:** ${currentIcon === null ? Emoji.Minion : resolveEmojiText(currentIcon)}\n` +
 				`**Sacrificed Value:** ${sacVal.toLocaleString()} GP\n` +
 				`**Unique Items Sacrificed:** ${sacUniqVal.toLocaleString()} item${sacUniqVal === 1 ? '' : 's'}`
 			);
@@ -182,12 +182,14 @@ export const sacrificeCommand = defineCommand({
 
 		await trackSacBank(user, bankToSac);
 
-		// Ignores notifying the user/server if the user is using a custom icon
-		if (!currentIcon || minionIcons.find(m => m.emoji === currentIcon)) {
+		// Ignores notifying the user/server if the user is using a custom icon.
+		// Stored icons may still be the old server emoji markup; compare the resolved form.
+		const resolvedIcon = currentIcon ? resolveEmojiText(currentIcon) : null;
+		if (!resolvedIcon || minionIcons.find(m => m.emoji === resolvedIcon)) {
 			for (const icon of minionIcons) {
 				if (newValue < icon.valueRequired) continue;
 				if (newValue >= icon.valueRequired) {
-					if (currentIcon === icon.emoji) break;
+					if (resolvedIcon === icon.emoji) break;
 					await user.update({ minion_icon: icon.emoji });
 					messages.push(`You have now unlocked the **${icon.name}** minion icon!`);
 					globalClient.emit(
