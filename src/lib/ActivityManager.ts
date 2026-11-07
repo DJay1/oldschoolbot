@@ -1,7 +1,7 @@
 import { cryptoRng } from 'node-rng/crypto';
 
 import type { Activity, activity_type_enum } from '@/prisma/main.js';
-import { globalConfig } from '@/lib/constants.js';
+import { testingShortcutsEnabled } from '@/lib/constants.js';
 import { onMinionActivityFinish } from '@/lib/events.js';
 import type { OSInteraction } from '@/lib/structures/OSInteraction.js';
 import { allTasks } from '@/lib/Task.js';
@@ -94,9 +94,9 @@ class SActivityManager {
 	}
 
 	async processPendingActivities(): Promise<void> {
-		const activities: Activity[] = globalConfig.isProduction
-			? await prisma.$queryRaw`SELECT * FROM activity WHERE completed = false AND finish_date < NOW() LIMIT 5;`
-			: await prisma.$queryRaw`SELECT * FROM activity WHERE completed = false;`;
+		const activities: Activity[] = testingShortcutsEnabled()
+			? await prisma.$queryRaw`SELECT * FROM activity WHERE completed = false;`
+			: await prisma.$queryRaw`SELECT * FROM activity WHERE completed = false AND finish_date < NOW() LIMIT 5;`;
 
 		if (activities.length > 0) {
 			await prisma.activity.updateMany({

@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { formatDuration, reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -22,7 +24,8 @@ export async function driftNetCommand(
 
 	if (
 		!user.hasEquipped(['Graceful gloves', 'Graceful top', 'Graceful legs']) &&
-		!user.hasEquippedOrInBank(['Agility master cape'])
+		!user.hasEquippedOrInBank(['Agility master cape']) &&
+		!isWearingFullFirstAgeMaxSet(user)
 	) {
 		return 'You need Graceful top, legs and gloves equipped to do Drift net fishing.';
 	}

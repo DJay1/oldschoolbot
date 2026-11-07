@@ -1,4 +1,4 @@
-export const seasonalEventIds = ['summer', 'christmas', 'halloween', 'easter', 'birthday'] as const;
+export const seasonalEventIds = ['summer', 'christmas', 'halloween', 'easter', 'birthday', 'launch'] as const;
 
 export type SeasonalEventId = (typeof seasonalEventIds)[number];
 

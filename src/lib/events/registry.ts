@@ -48,6 +48,13 @@ export const seasonalEvents: readonly SeasonalEventDefinition[] = [
 		name: 'Birthday',
 		summary: 'Birthday crate keys. The old birthday trips are already retired.',
 		enabled: false
+	},
+	{
+		id: 'launch',
+		name: 'Launch',
+		summary:
+			'Launch week: +25% XP, a claimable Founder title, and one-time first-to-99 and first-to-max announcements. Owned Founder titles stay visible while this is on hold.',
+		enabled: false
 	}
 ];
 

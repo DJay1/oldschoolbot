@@ -3,7 +3,7 @@ import type { Bank } from 'oldschooljs';
 import { isDeepEqual } from 'remeda';
 
 import type { TriviaQuestion, User } from '@/prisma/clients/robochimp/client.js';
-import { BitField, BOT_TYPE, globalConfig, masteryKey } from '@/lib/constants.js';
+import { BitField, BOT_TYPE, masteryKey, testingShortcutsEnabled } from '@/lib/constants.js';
 import { getTotalCl } from '@/lib/data/Collections.js';
 import { calculateMastery } from '@/lib/mastery.js';
 import { MUserStats } from '@/lib/structures/MUserStats.js';
@@ -12,7 +12,7 @@ import { RobochimpBitfieldEnum } from './perkTiers.js';
 export type RobochimpUser = User;
 
 export async function getRandomTriviaQuestions(): Promise<TriviaQuestion[]> {
-	if (!globalConfig.isProduction) {
+	if (testingShortcutsEnabled()) {
 		return [
 			{
 				id: 1,

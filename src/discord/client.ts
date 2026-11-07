@@ -3,7 +3,7 @@ import { ActivityType, GatewayIntentBits, PresenceUpdateStatus } from '@oldschoo
 import { onRawGuildCreate } from '@/discord/handlers/guildCreate.js';
 import { interactionHandler } from '@/discord/interactionHandler.js';
 import { OldSchoolBotClient } from '@/discord/OldSchoolBotClient.js';
-import { Channel, globalConfig } from '@/lib/constants.js';
+import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { onMessage } from '@/lib/events.js';
 import { onStartup } from '@/mahoji/lib/events.js';
 
@@ -24,7 +24,7 @@ const client = new OldSchoolBotClient({
 		status: PresenceUpdateStatus.DoNotDisturb
 	},
 	token: globalConfig.botToken,
-	isProduction: globalConfig.isProduction,
+	isProduction: !testingShortcutsEnabled(),
 	mainServerId: globalConfig.supportServerID,
 	userUsernameFetcher: async userId => Cache.getBadgedUsername(userId)
 });

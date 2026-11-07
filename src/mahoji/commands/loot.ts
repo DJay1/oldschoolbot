@@ -1,4 +1,5 @@
 import { PerkTier } from '@/lib/constants.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { getAllTrackedLootForUser, getDetailsOfSingleTrackedLoot } from '@/lib/lootTrack.js';
 
 export const lootCommand = defineCommand({
@@ -59,7 +60,9 @@ export const lootCommand = defineCommand({
 					user_id: BigInt(user.id)
 				}
 			});
-			return `You need to be a Tier 3 Patron to use this feature. You have ${res}x loot trackers stored currently.`;
+			return withPatreonLink(
+				`You need to be a Tier 3 Patron to use this feature. You have ${res}x loot trackers stored currently.`
+			);
 		}
 
 		const trackedLoot = await prisma.lootTrack

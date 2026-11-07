@@ -45,7 +45,7 @@ export const openCommand = defineCommand({
 		{
 			type: 'String',
 			name: 'open_until',
-			description: 'Keep opening items until you get this item.',
+			description: 'Keep opening until this item drops. No quantity opens up to 10,000.',
 			required: false,
 			autocomplete: async ({ value }: StringAutoComplete) => {
 				if (!value) return OpenUntilItems.map(i => ({ name: i.name, value: i.name }));
@@ -81,19 +81,25 @@ export const openCommand = defineCommand({
 			return 'The quantity must be a positive integer.';
 		}
 
-		options.quantity = clamp(options.quantity ?? 1, { min: 1, max: MAX_OPEN_PER_COMMAND });
-
+		// A missing quantity used to become 1 before open_until ran, so the command
+		// opened a single casket. With no quantity, open until the item, the supply, or the cap.
 		if (options.open_until) {
+			const quantity =
+				options.quantity === undefined
+					? undefined
+					: clamp(options.quantity, { min: 1, max: MAX_OPEN_PER_COMMAND });
 			return abstractedOpenUntilCommand(
 				rng,
 				user,
 				options.name,
 				options.open_until,
-				options.quantity,
+				quantity,
 				options.result_quantity,
 				options.disable_pets
 			);
 		}
+
+		options.quantity = clamp(options.quantity ?? 1, { min: 1, max: MAX_OPEN_PER_COMMAND });
 
 		if (options.name.toLowerCase() === 'all') {
 			return abstractedOpenCommand(rng, interaction, user, ['all'], 'auto', false);

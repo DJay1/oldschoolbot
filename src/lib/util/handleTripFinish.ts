@@ -21,6 +21,8 @@ import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { buildClueButtons } from '@/lib/clues/clueUtils.js';
 import { combatAchievementTripEffect } from '@/lib/combat_achievements/combatAchievements.js';
 import { BitField, CONSTANTS, PerkTier } from '@/lib/constants.js';
+import { LAUNCH_XP_BONUS_SENTENCE } from '@/lib/events/launch/constants.js';
+import { isEventActive } from '@/lib/events/registry.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
 import { handleGrowablePetGrowth } from '@/lib/growablePets.js';
 import { handlePassiveImplings } from '@/lib/implings.js';
@@ -759,7 +761,15 @@ export async function handleTripFinish(
 
 	// Several addXP calls in one trip each append the same bonus. Show each bonus once, with the XP summed.
 	if (message.message.content) {
-		message.setContent(consolidateSkillXpBonusLines(message.message.content));
+		let content = consolidateSkillXpBonusLines(message.message.content);
+		if (
+			isEventActive('launch') &&
+			/\bXP\b/.test(content) &&
+			!content.includes('Launch event')
+		) {
+			content += `\n${LAUNCH_XP_BONUS_SENTENCE}`;
+		}
+		message.setContent(content);
 	}
 
 	await globalClient.sendMessageOrWebhook(channelId, message);

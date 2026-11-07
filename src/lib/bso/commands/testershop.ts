@@ -1,6 +1,7 @@
 import { Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
+import { testingShortcutsEnabled } from '@/lib/constants.js';
 import { premiumPatronTime } from '@/lib/premiumPatronTime.js';
 
 const shop = [
@@ -41,6 +42,9 @@ export const testerShopCommand = defineCommand({
 		}
 	],
 	run: async ({ options, user }) => {
+		if (!testingShortcutsEnabled()) {
+			return 'The tester shop is not available on the live bot.';
+		}
 		const robochimpUser = await user.fetchRobochimpUser();
 		const item = shop.find(i => i.name === options.name);
 		if (!item) return 'Invalid item.';

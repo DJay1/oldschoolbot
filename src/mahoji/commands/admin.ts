@@ -46,7 +46,16 @@ import {
 	getBitFieldData,
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
-import { BadgesEnum, BitField, BitFieldData, badges, Channel, globalConfig, META_CONSTANTS } from '@/lib/constants.js';
+import {
+	BadgesEnum,
+	BitField,
+	BitFieldData,
+	badges,
+	Channel,
+	globalConfig,
+	META_CONSTANTS,
+	testingShortcutsEnabled
+} from '@/lib/constants.js';
 import { handleSeasonalEventAdmin } from '@/lib/events/admin.js';
 import { getLydiaQuote } from '@/lib/events/summer/summerDays.js';
 import { seasonalEventIds } from '@/lib/events/types.js';
@@ -1108,6 +1117,9 @@ export const adminCommand = defineCommand({
 		const adminUser = await mUserFetch(userId);
 		const isAdmin = adminUser.isAdmin();
 		const isMod = isAdmin || adminUser.isMod();
+		if (!testingShortcutsEnabled() && !isAdmin) {
+			return rng.pick(gifs);
+		}
 		if (!guildId || !isMod || (globalConfig.isProduction && guildId.toString() !== globalConfig.supportServerID)) {
 			return rng.pick(gifs);
 		}

@@ -120,12 +120,14 @@ export const qualityCheckCampaign = {
 		{
 			id: 'help-placeholder',
 			label: 'Help placeholder',
-			instruction: 'Run /help. The reply should use NEED TO REPLACE and should not include a Patreon plug.'
+			instruction:
+				'Run /help. The reply should use NEED TO REPLACE. The only Patreon link is https://patreon.com/bscbot.'
 		},
 		{
 			id: 'invite-placeholder',
 			label: 'Invite placeholder',
-			instruction: 'Run /invite. The reply should be placeholder copy only (NEED TO REPLACE).'
+			instruction:
+				'Run /invite. The reply should keep the NEED TO REPLACE placeholder. The only Patreon link is https://patreon.com/bscbot.'
 		},
 		{
 			id: 'minion-buy-placeholder',
@@ -146,7 +148,8 @@ export const qualityCheckCampaign = {
 		{
 			id: 'no-patreon-plugs',
 			label: 'No Patreon plugs',
-			instruction: 'Read the /help, /invite, and minion buy replies. None of them should include a Patreon plug.'
+			instruction:
+				'Read /help, /invite, /patreon, and /minion buy. Any Patreon link must be https://patreon.com/bscbot. There must be no oldschoolgg or magnaboy Patreon link. /minion buy stays placeholder copy.'
 		}
 	]
 } as const satisfies {

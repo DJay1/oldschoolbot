@@ -60,6 +60,7 @@ import Bars from '@/lib/skilling/skills/smithing/smeltables.js';
 import { assert } from '@/lib/util/logError.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { parseStringBank } from '@/lib/util/parseStringBank.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { getItemCostFromConsumables } from '@/mahoji/lib/abstracted_commands/minionKill/handleConsumables.js';
 import { collectables } from '@/mahoji/lib/collectables.js';
@@ -1434,7 +1435,7 @@ async function viewCommand(interaction: MInteraction, user: MUser, tameID: numbe
 			.join(', ')}`;
 	}
 	if (!isTierThree) {
-		content += '\nYou need to be a Tier 3 patron to see all the loot your tame has collected.';
+		content += `\n${withPatreonLink('You need to be a Tier 3 patron to see all the loot your tame has collected.')}`;
 	}
 	return {
 		content,
@@ -2000,7 +2001,7 @@ export const tamesCommand = defineCommand({
 		}
 		if (options.set_custom_image) {
 			if ((await user.fetchPerkTier()) < PerkTier.Four) {
-				return 'You need to be a Tier 3 patron to set a custom image for your tame.';
+				return withPatreonLink('You need to be a Tier 3 patron to set a custom image for your tame.');
 			}
 
 			// Handle resetting the custom image:

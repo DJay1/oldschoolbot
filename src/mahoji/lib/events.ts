@@ -5,7 +5,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { TimerManager } from '@sapphire/timer-manager';
 
 import { bulkUpdateCommands } from '@/discord/utils.js';
-import { Channel, globalConfig, META_CONSTANTS } from '@/lib/constants.js';
+import { Channel, globalConfig, META_CONSTANTS, testingShortcutsEnabled } from '@/lib/constants.js';
 import { loadSeasonalEventOverrides } from '@/lib/events/store.js';
 import { initTickers } from '@/lib/tickers.js';
 
@@ -19,7 +19,7 @@ export const onStartup = async () => {
 		() => {
 			initTickers();
 		},
-		globalConfig.isProduction ? Time.Second * 10 : 0
+		testingShortcutsEnabled() ? 0 : Time.Second * 10
 	);
 
 	if (globalConfig.isProduction) {

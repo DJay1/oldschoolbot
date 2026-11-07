@@ -5,6 +5,7 @@ import { Items } from 'oldschooljs';
 import { allEquippableItems, choicesOf, defineOption, gearPresetOption, gearSetupOption } from '@/discord/index.js';
 import { globalPresets } from '@/lib/gear/gearPresets.js';
 import { Gear } from '@/lib/structures/Gear.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { isValidNickname } from '@/lib/util/smallUtils.js';
 import { gearEquipCommand } from '@/mahoji/lib/abstracted_commands/gearCommands.js';
 
@@ -57,7 +58,9 @@ export async function createOrEditGearSetup(
 
 	const max = await user.calcMaxGearPresets();
 	if (userPresets.length >= max && !isUpdating) {
-		return `The maximum amount of gear presets you can have is ${max}, you can unlock more slots by becoming a patron!`;
+		return withPatreonLink(
+			`The maximum amount of gear presets you can have is ${max}, you can unlock more slots by becoming a patron!`
+		);
 	}
 
 	const { gear: parsedInputGear, remove: forceRemove } = parseInputGear(gearInput);

@@ -5,6 +5,7 @@ import { Bank, Items } from 'oldschooljs';
 
 import type { GearPreset } from '@/prisma/main.js';
 import { PATRON_ONLY_GEAR_SETUP } from '@/lib/constants.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { globalPresets } from '@/lib/gear/gearPresets.js';
 import getUserBestGearFromBank from '@/lib/minions/functions/getUserBestGearFromBank.js';
@@ -193,7 +194,7 @@ export async function gearEquipCommand(args: {
 		return gearEquipMultiCommand(user, setup, items);
 	}
 	if (setup === 'other' && (await user.fetchPerkTier()) < PerkTier.Four) {
-		return PATRON_ONLY_GEAR_SETUP;
+		return withPatreonLink(PATRON_ONLY_GEAR_SETUP);
 	}
 	if (preset) {
 		return gearPresetEquipCommand(user, setup, preset);
@@ -262,7 +263,7 @@ export async function gearUnequipCommand(
 
 async function autoEquipCommand(user: MUser, gearSetup: GearSetupType, equipmentType: string): CommandResponse {
 	if (gearSetup === 'other' && (await user.fetchPerkTier()) < PerkTier.Four) {
-		return PATRON_ONLY_GEAR_SETUP;
+		return withPatreonLink(PATRON_ONLY_GEAR_SETUP);
 	}
 
 	if (!isValidGearStat(equipmentType)) {
@@ -403,7 +404,7 @@ export async function gearSwapCommand(
 	}
 
 	if ([first, second].includes('other') && (await user.fetchPerkTier()) < PerkTier.Four) {
-		return PATRON_ONLY_GEAR_SETUP;
+		return withPatreonLink(PATRON_ONLY_GEAR_SETUP);
 	}
 
 	await user.updateGear([

@@ -2,7 +2,7 @@
 title: "Guardians of the Rift"
 ---
 
-Guardians of the Rift is played entirely solo. It is a requirement to have [[runecraft:27]] to play the minigame. Each game will take 10 minutes, and Tier 3+ Patreon will allow you to do 4 games per trip.
+Guardians of the Rift is played entirely solo. It is a requirement to have [[runecraft:27]] to play the minigame. Each game will take 10 minutes, and [Tier 3+ Patreon](https://patreon.com/bscbot) will allow you to do 4 games per trip.
 
 To start a game, use [[/minigames gotr start]].
 

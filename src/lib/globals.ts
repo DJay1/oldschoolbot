@@ -7,12 +7,13 @@ import { PrismaPGlite } from 'pglite-prisma-adapter';
 
 import { PrismaClient as RobochimpPrismaClient } from '@/prisma/clients/robochimp/client.js';
 import { PrismaClient } from '@/prisma/main.js';
-import { BOT_TYPE, globalConfig } from '@/lib/constants.js';
+import { BOT_TYPE, globalConfig, isBotEnvProduction } from '@/lib/constants.js';
 
 async function getAdapter(
 	type: typeof BOT_TYPE | 'robochimp'
 ): Promise<{ adapter: PrismaPg; pgLiteClient: PGlite | null }> {
-	const shouldUseRealPostgres = globalConfig.isProduction || process.env.USE_REAL_PG === '1';
+	const shouldUseRealPostgres =
+		globalConfig.isProduction || process.env.USE_REAL_PG === '1' || isBotEnvProduction();
 	if (shouldUseRealPostgres) {
 		const connectionString = type === 'robochimp' ? process.env.ROBOCHIMP_DATABASE_URL : process.env.DATABASE_URL;
 		Logging.logDebug(`Using Real Postgres for ${type} database`);

@@ -9,7 +9,7 @@ import { TimerManager } from '@sapphire/timer-manager';
 import type { User } from '@/prisma/main.js';
 import { resolveBotSendableMessage } from '@/discord/utils.js';
 import { analyticsTick } from '@/lib/analytics.js';
-import { Channel, globalConfig } from '@/lib/constants.js';
+import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { cacheGEPrices } from '@/lib/marketPrices.js';
 import { collectMetrics } from '@/lib/metrics.js';
@@ -82,7 +82,7 @@ export const tickers: {
 			if (!settings.shutdown) return;
 			await ClientSettings.update({ shutdown: false });
 
-			const adminUser = await mUserFetch(globalConfig.adminUserIDs[1]);
+			const adminUser = await mUserFetch(globalConfig.adminUserIDs[1] ?? globalConfig.adminUserIDs[0]);
 			const interaction = {
 				user: adminUser,
 				userId: adminUser.id,
@@ -111,9 +111,9 @@ export const tickers: {
 	},
 	{
 		name: 'minion_activities',
-		startupWait: globalConfig.isProduction ? Time.Second * 10 : 4,
+		startupWait: testingShortcutsEnabled() ? 4 : Time.Second * 10,
 		timer: null,
-		interval: globalConfig.isProduction ? Time.Second * 5 : 500,
+		interval: testingShortcutsEnabled() ? 500 : Time.Second * 5,
 		cb: async () => {
 			await ActivityManager.processPendingActivities();
 		}
@@ -235,11 +235,11 @@ LIMIT 10;`);
 		cb: async () => {
 			const tameTasks = await prisma.tameActivity.findMany({
 				where: {
-					finish_date: globalConfig.isProduction
-						? {
+					finish_date: testingShortcutsEnabled()
+						? undefined
+						: {
 								lt: new Date()
-							}
-						: undefined,
+							},
 					completed: false
 				},
 				include: {

@@ -34,6 +34,7 @@ import Agility from '@/lib/skilling/skills/agility.js';
 import { Castables } from '@/lib/skilling/skills/magic/castables.js';
 import { ForestryEvents } from '@/lib/skilling/skills/woodcutting/forestry.js';
 import { SkillsArray } from '@/lib/skilling/types.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { getCommonTaskName, getSlayerTaskStats } from '@/lib/slayer/slayerUtil.js';
 import { sorts } from '@/lib/sorts.js';
 import type { InfernoOptions } from '@/lib/types/minions.js';
@@ -1585,7 +1586,7 @@ export async function statsCommand(user: MUser, type: string): Promise<SendableM
 	if (!dataPoint) return 'Invalid stat name.';
 	const { perkTierNeeded } = dataPoint;
 	if (perkTierNeeded !== null && (await user.fetchPerkTier()) < perkTierNeeded) {
-		return `Sorry, you need to be a Tier ${perkTierNeeded - 1} Patron to see this stat.`;
+		return withPatreonLink(`Sorry, you need to be a Tier ${perkTierNeeded - 1} Patron to see this stat.`);
 	}
 	const userStats = await fetchUserStats(user.id);
 	return dataPoint.run(user, userStats);

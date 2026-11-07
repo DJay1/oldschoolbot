@@ -16,6 +16,36 @@ type BotType = 'OSB' | 'BSO';
 export const BOT_TYPE: BotType = 'BSO' as 'BSO' | 'OSB';
 export const BOT_TYPE_LOWERCASE: 'bso' | 'osb' = BOT_TYPE.toLowerCase() as 'bso' | 'osb';
 const isProduction = process.env.NODE_ENV === 'production';
+
+/**
+ * BOT_ENV=production is the live-play lock for this instance.
+ * It does not switch channel IDs to the official Old School Bot servers.
+ * NODE_ENV=production still does that, and also counts as live play.
+ */
+export function isBotEnvProduction(): boolean {
+	const value = (process.env.BOT_ENV ?? '').trim().toLowerCase();
+	return value === 'production';
+}
+
+/** Dev/test shortcuts: instant trips, test commands, open bitfield edits. Off for either production flag. */
+export function testingShortcutsEnabled(): boolean {
+	return !isProduction && !isBotEnvProduction();
+}
+
+/** Comma-separated Discord user ids. Unset keeps the historical default. */
+export function parseAdminUserIds(raw: string | undefined): string[] {
+	const fallback = ['290167629966999552'];
+	if (!raw?.trim()) return [...fallback];
+	const ids = [
+		...new Set(
+			raw
+				.split(/[,\s]+/)
+				.map(part => part.trim())
+				.filter(part => /^\d{15,20}$/.test(part))
+		)
+	];
+	return ids.length > 0 ? ids : [...fallback];
+}
 const GENERAL_CHANNEL_ID =
 	BOT_TYPE === 'OSB'
 		? isProduction
@@ -211,6 +241,7 @@ export enum BitField {
 	HasHalloweenWallkit = 234,
 	HasEarnedRiftGuardianFromStar = 235,
 	DisablePaints = 236,
+	LaunchFounder = 237,
 	DisableGlowEffects = 238
 }
 
@@ -509,6 +540,11 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 		protected: false,
 		userConfigurable: true
 	},
+	[BitField.LaunchFounder]: {
+		name: 'Launch Founder',
+		protected: true,
+		userConfigurable: false
+	},
 	[BitField.DisableGlowEffects]: {
 		name: 'Disable Glow Effects',
 		protected: false,
@@ -579,7 +615,7 @@ const globalConfigSchema = z.object({
 	isCI: z.coerce.boolean().default(false),
 	isProduction: z.boolean(),
 	timeZone: z.literal('UTC'),
-	adminUserIDs: z.array(z.string()).default(['290167629966999552']),
+	adminUserIDs: z.array(z.string()).min(1),
 	maxingMessage: z.string().default('Congratulations on maxing!'),
 	moderatorLogsChannels: z.string().default(''),
 	supportServerID: z.string(),
@@ -613,6 +649,7 @@ export const globalConfig = globalConfigSchema.parse({
 	isCI: process.env.CI,
 	isProduction,
 	timeZone: process.env.TZ,
+	adminUserIDs: parseAdminUserIds(process.env.ADMIN_USER_IDS),
 
 	moderatorLogsChannels: isProduction ? '830145040495411210' : GENERAL_CHANNEL_ID,
 	supportServerID: isProduction ? '342983479501389826' : TEST_SERVER_ID,

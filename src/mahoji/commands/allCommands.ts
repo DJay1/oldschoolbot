@@ -16,7 +16,7 @@ import { ratesCommand } from '@/lib/bso/commands/rates.js';
 import { tamesCommand } from '@/lib/bso/commands/tames.js';
 import { testerShopCommand } from '@/lib/bso/commands/testershop.js';
 
-import { globalConfig } from '@/lib/constants.js';
+import { testingShortcutsEnabled } from '@/lib/constants.js';
 import { activitiesCommand } from '@/mahoji/commands/activities.js';
 import { adminCommand } from '@/mahoji/commands/admin.js';
 import { askCommand } from '@/mahoji/commands/ask.js';
@@ -68,6 +68,7 @@ import { offerCommand } from '@/mahoji/commands/offer.js';
 import { openCommand } from '@/mahoji/commands/open.js';
 import { payCommand } from '@/mahoji/commands/pay.js';
 import { pohCommand } from '@/mahoji/commands/poh.js';
+import { patreonCommand } from '@/mahoji/commands/patreon.js';
 import { pollCommand } from '@/mahoji/commands/poll.js';
 import { priceCommand } from '@/mahoji/commands/price.js';
 import { qualityCheckCommand } from '@/mahoji/commands/qualitycheck.js';
@@ -138,6 +139,7 @@ export const allCommandsDONTIMPORT: AnyCommand[] = [
 	pollCommand,
 	qualityCheckCommand,
 	pohCommand,
+	patreonCommand,
 	priceCommand,
 	openCommand,
 	offerCommand,
@@ -181,8 +183,17 @@ export const allCommandsDONTIMPORT: AnyCommand[] = [
 	firstAgeCommand
 ];
 
-if (!globalConfig.isProduction && testPotatoCommand) {
+if (testPotatoCommand) {
 	allCommandsDONTIMPORT.push(testPotatoCommand);
+}
+
+const devOnlyCommandNames = new Set(['qualitycheck', 'testershop', 'testpotato']);
+if (!testingShortcutsEnabled()) {
+	for (let i = allCommandsDONTIMPORT.length - 1; i >= 0; i--) {
+		if (devOnlyCommandNames.has(allCommandsDONTIMPORT[i].name)) {
+			allCommandsDONTIMPORT.splice(i, 1);
+		}
+	}
 }
 
 const names = new Set<string>();

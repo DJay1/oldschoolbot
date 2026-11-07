@@ -44,6 +44,40 @@ export const OpenUntilItems = uniqueArr(allOpenables.map(i => i.allItems).flat(2
 		return 0;
 	});
 
+export function openUntilOpenCount(maxOpenQuantity: number | undefined, owned: number): number {
+	const requested = maxOpenQuantity ?? MAX_OPEN_PER_COMMAND;
+	return Math.min(MAX_OPEN_PER_COMMAND, owned, requested);
+}
+
+export function openUntilResultMessage({
+	amountOpened,
+	openedName,
+	targetCount,
+	targetQuantity,
+	targetName
+}: {
+	amountOpened: number;
+	openedName: string;
+	targetCount: number;
+	targetQuantity: number;
+	targetName: string;
+}): string {
+	const hitCap = amountOpened >= MAX_OPEN_PER_COMMAND && targetCount < targetQuantity;
+	const cap = MAX_OPEN_PER_COMMAND.toLocaleString();
+	if (targetCount === 0) {
+		return hitCap
+			? `You opened ${amountOpened}x ${openedName} and hit the ${cap} open cap, but you didn't get a ${targetName}!`
+			: `You opened ${amountOpened}x ${openedName} but you didn't get a ${targetName}!`;
+	}
+	if (targetCount >= targetQuantity) {
+		return `You opened ${amountOpened}x ${openedName} and successfully obtained ${targetCount}x ${targetName}.`;
+	}
+	if (hitCap) {
+		return `You opened ${amountOpened}x ${openedName} and hit the ${cap} open cap, but only received ${targetCount}/${targetQuantity}x ${targetName}.`;
+	}
+	return `You opened ${amountOpened}x ${openedName} but only received ${targetCount}/${targetQuantity}x ${targetName}.`;
+}
+
 export async function abstractedOpenUntilCommand(
 	rng: RNGProvider,
 	user: MUser,
@@ -61,10 +95,6 @@ export async function abstractedOpenUntilCommand(
 		return 'The quantity must be a positive integer.';
 	}
 
-	const perkTier = await user.fetchPerkTier();
-	if (maxOpenQuantity === undefined && perkTier < PerkTier.Three) {
-		return patronMsg(PerkTier.Three);
-	}
 	name = name.replace(regex, '$1');
 	const openableItem = allOpenables.find(o => o.aliases.some(alias => stringMatches(alias, name)));
 	if (!openableItem) return "That's not a valid item.";
@@ -95,10 +125,15 @@ export async function abstractedOpenUntilCommand(
 	const loot = new Bank();
 	let amountOpened = 0;
 	let targetCount = 0;
-	const maxOpenLimit = maxOpenQuantity ?? amountOfThisOpenableOwned;
-	const max = Math.min(10000, amountOfThisOpenableOwned, maxOpenLimit);
+	const max = openUntilOpenCount(maxOpenQuantity, amountOfThisOpenableOwned);
 	const totalLeaguesPoints = (await Cache.getRoboChimpUser(user.id)).leagues_points_total;
 	for (let i = 0; i < max; i++) {
+		// The loop is awaited per open, but a sync loot roll still holds the process. Let other work run.
+		if (i > 0 && i % 250 === 0) {
+			await new Promise<void>(resolve => {
+				setImmediate(resolve);
+			});
+		}
 		cost.add(openable.openedItem.id);
 		const thisLoot = await getOpenableLoot({ openable, quantity: 1, user, rng, totalLeaguesPoints });
 		loot.add(thisLoot.bank);
@@ -117,13 +152,13 @@ export async function abstractedOpenUntilCommand(
 		cost,
 		loot,
 		messages: [
-			`You opened ${amountOpened}x ${openable.openedItem.name} ${
-				targetCount === 0
-					? `but you didn't get a ${openUntil.name}!`
-					: targetCount >= targetQuantity
-						? `and successfully obtained ${targetCount}x ${openUntil.name}.`
-						: `but only received ${targetCount}/${targetQuantity}x ${openUntil.name}.`
-			}`
+			openUntilResultMessage({
+				amountOpened,
+				openedName: openable.openedItem.name,
+				targetCount,
+				targetQuantity,
+				targetName: openUntil.name
+			})
 		],
 		openables: [openable],
 		kcBank: new Bank().add(openable.openedItem.id, amountOpened),

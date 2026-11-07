@@ -206,6 +206,7 @@ export function resolveSkillOutfitXp(input: {
 }
 
 const FIRST_AGE_BONUS_PATTERN = /You received (\d+(?:\.\d+)?)% bonus XP for First age outfit items\./g;
+const LAUNCH_XP_BONUS_PATTERN = /You received \d+% bonus XP from the Launch event\./g;
 const OUTFIT_PERCENT_PATTERN = /\*\*([^*]+?) bonus:\*\* (\d+(?:\.\d+)?)% \(([^)]+) XP\) from (your .+? outfit)\./g;
 const OUTFIT_FLAT_PATTERN = /\*\*([^*]+?) bonus:\*\* ([^(\n]+?) XP from (your .+? outfit)\./g;
 const BONUS_CLAUSE_PATTERN =
@@ -278,6 +279,15 @@ export function consolidateSkillXpBonusLines(message: string): string {
 	if (!message) return message;
 
 	const edits: { start: number; end: number; text: string }[] = [];
+	const launchHits: TextSpan[] = [];
+	for (const match of message.matchAll(LAUNCH_XP_BONUS_PATTERN)) {
+		const index = match.index;
+		if (index === undefined) continue;
+		launchHits.push({ start: index, end: index + match[0].length });
+	}
+	for (const span of launchHits.slice(1)) {
+		edits.push({ ...removalSpan(message, span.start, span.end), text: '' });
+	}
 	const firstAgeGroups = new Map<string, TextSpan[]>();
 	for (const match of message.matchAll(FIRST_AGE_BONUS_PATTERN)) {
 		const index = match.index;

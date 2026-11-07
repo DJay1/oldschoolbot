@@ -36,6 +36,7 @@ test('seasonal events are on hold by default', () => {
 	expect(isEventActive('halloween')).toBe(false);
 	expect(isEventActive('easter')).toBe(false);
 	expect(isEventActive('birthday')).toBe(false);
+	expect(isEventActive('launch')).toBe(false);
 });
 
 test('an enabled event is active only inside its window', () => {
@@ -92,6 +93,7 @@ test('owned holiday items stay creatable and usable while every event is off', (
 	expect(isEventActive('halloween')).toBe(false);
 	expect(isEventActive('easter')).toBe(false);
 	expect(isEventActive('birthday')).toBe(false);
+	expect(isEventActive('launch')).toBe(false);
 
 	creatableUses('Ho-ho hammer', 'Christmas dye');
 	creatableUses('Dwarven pumpkinsmasher', 'Spooky dye');
@@ -121,6 +123,7 @@ test('owned holiday items keep their benefits while every event is off', () => {
 	expect(isEventActive('halloween')).toBe(false);
 	expect(isEventActive('easter')).toBe(false);
 	expect(isEventActive('birthday')).toBe(false);
+	expect(isEventActive('launch')).toBe(false);
 
 	const patricia = {
 		hasEquipped: () => false,

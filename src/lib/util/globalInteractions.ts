@@ -10,6 +10,7 @@ import type { Giveaway } from '@/prisma/main.js';
 import { giveawayCache } from '@/lib/cache.js';
 import type { ClueTier } from '@/lib/clues/clueTiers.js';
 import { BitField } from '@/lib/constants.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { InteractionID } from '@/lib/InteractionID.js';
 import { toggleAutoRummage } from '@/lib/minions/data/valeTotems.js';
 import { handleQualityCheckButton } from '@/lib/qualityChecks/buttons.js';
@@ -362,7 +363,7 @@ async function globalButtonInteractionHandler({
 	if (id === 'DO_FISHING_CONTEST') {
 		if ((await user.fetchPerkTier()) < PerkTier.Four) {
 			return {
-				content: 'You need to be a Tier 3 patron to use this button.',
+				content: withPatreonLink('You need to be a Tier 3 patron to use this button.'),
 				ephemeral: true
 			};
 		}

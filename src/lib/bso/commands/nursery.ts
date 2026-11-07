@@ -5,7 +5,7 @@ import { MathRNG, randArrItem, roll } from 'node-rng';
 import { Bank, Items } from 'oldschooljs';
 
 import { tame_growth } from '@/prisma/main.js';
-import { globalConfig } from '@/lib/constants.js';
+import { testingShortcutsEnabled } from '@/lib/constants.js';
 
 function makeTameNickname(species: Species) {
 	switch (species.id) {
@@ -83,7 +83,7 @@ async function view(user: MUser) {
 		diff += specie.hatchTime / 2;
 	}
 	const timeRemaining = Math.max(0, specie.hatchTime - diff);
-	if (diff >= specie.hatchTime || !globalConfig.isProduction) {
+	if (diff >= specie.hatchTime || testingShortcutsEnabled()) {
 		const newNursery: NonNullable<Nursery> = {
 			egg: null,
 			eggsHatched: nursery.eggsHatched + 1,
