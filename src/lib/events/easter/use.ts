@@ -1,8 +1,6 @@
 import { randArrItem } from 'node-rng';
 import { Items } from 'oldschooljs';
 
-import { isEventActive } from '@/lib/events/registry.js';
-
 const easterUseTrollItemIDs = new Set([Items.getOrThrow('Magnegg').id, Items.getOrThrow('Wabbit eggs').id]);
 
 const easterUseTrollMessages = [
@@ -21,7 +19,6 @@ const easterUseTrollMessages = [
 ] as const;
 
 export function easterUseTrollResponse(itemIds: number[]): string | null {
-	if (!isEventActive('easter')) return null;
 	if (!itemIds.some(id => easterUseTrollItemIDs.has(id))) return null;
 	return randArrItem(easterUseTrollMessages) ?? easterUseTrollMessages[0];
 }

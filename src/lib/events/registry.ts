@@ -11,6 +11,7 @@ import {
  *
  * Item definitions are a separate switch. They stay registered by default so
  * banks, collection logs, and icons keep resolving items people already own.
+ * Creating, dyeing, cooking, and using items players already own is not gated.
  * Set LOS_PERROS_REGISTER_EVENT_ITEMS=0 before boot to skip registration.
  * That flag is read once at startup. It is not the activity toggle, and turning
  * it off makes owned event items stop resolving.
@@ -19,25 +20,27 @@ export const seasonalEvents: readonly SeasonalEventDefinition[] = [
 	{
 		id: 'summer',
 		name: 'Summer',
-		summary: 'Beach combing, trip crate spawns, shoreline fishing finds, and Sun Scream crafting.',
+		summary:
+			'Beach combing, trip crate spawns, and shoreline fishing finds. Crafting with owned summer items stays on.',
 		enabled: false
 	},
 	{
 		id: 'christmas',
 		name: 'Christmas',
-		summary: 'Festive present shop, seasonal crate keys, and Christmas crafting.',
+		summary:
+			'Festive present shop and seasonal crate key sales. Dyeing, cooking, and /use of owned Christmas items stay on.',
 		enabled: false
 	},
 	{
 		id: 'halloween',
 		name: 'Halloween',
-		summary: 'Halloween item claims, seasonal crate keys, and pumpkin or mumpkin crafting.',
+		summary: 'Halloween item claims and seasonal crate key sales. Spooky dye and owned-item combines stay on.',
 		enabled: false
 	},
 	{
 		id: 'easter',
 		name: 'Easter',
-		summary: 'Easter crate keys and the egg use reactions.',
+		summary: 'Easter crate key sales. Using owned Easter items stays on.',
 		enabled: false
 	},
 	{
