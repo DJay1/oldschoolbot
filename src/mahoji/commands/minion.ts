@@ -30,6 +30,7 @@ import { getAllKillCounts, getKCByName } from '@/lib/util/getKCByName.js';
 import { minionStatsEmbed } from '@/lib/util/minionStatsEmbed.js';
 import { getPeakTimesString } from '@/lib/util/peaks.js';
 import { refreshUserCache } from '@/lib/util/refreshCache.js';
+import { patreonUrl } from '@/lib/patreonLink.js';
 import { isValidNickname, patronMsg } from '@/lib/util/smallUtils.js';
 import {
 	achievementDiaryCommand,
@@ -118,6 +119,7 @@ export async function getUserInfo(user: MUser) {
 		everythingString: `${user.badgedUsername}[${user.id}]
 **Current Trip:** ${taskText}
 **Perk Tier:** ${perkTierDisplay}
+**Perks:** ${patreonUrl()}
 **Blacklisted:** ${result.isBlacklisted}
 **Badges:** ${result.badges}
 **Ironman:** ${result.isIronman}

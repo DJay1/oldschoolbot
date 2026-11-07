@@ -22,6 +22,7 @@ import { Minigames } from '@/lib/settings/minigames.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
 import { isGroupActivity, isNexActivity, isRaidsActivity, isTOBOrTOAActivity } from '@/lib/util/activityTypeCheck.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { asyncGzip, parseStaticTimeInterval, patronMsg, staticTimeIntervals } from '@/lib/util/smallUtils.js';
 import {
 	stashUnitBuildAllCommand,
@@ -775,7 +776,7 @@ export const PATRON_DOUBLE_LOOT_COOLDOWN = Time.Day * 31;
 async function patronTriggerDoubleLoot(user: MUser) {
 	const perkTier = await user.fetchPerkTier();
 	if (perkTier < PerkTier.Five) {
-		return 'Only T4, T5 or T6 patrons can use this command.';
+		return withPatreonLink('Only T4, T5 or T6 patrons can use this command.');
 	}
 
 	const lastTime = user.user.last_patron_double_time_trigger;

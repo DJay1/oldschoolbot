@@ -2,6 +2,7 @@ import { PerkTier } from '@oldschoolgg/toolkit';
 
 import type { InhibitorResult } from '@/discord/preCommand.js';
 import { BadgesEnum, Channel, globalConfig } from '@/lib/constants.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { minionBuyButton } from '@/lib/sharedComponents.js';
 
 type InhibitorRunOptions = {
@@ -82,7 +83,7 @@ const inhibitors: Inhibitor[] = [
 				return false;
 			}
 
-			return { content: "You cannot use commands in the general channel unless you're a patron" };
+			return { content: withPatreonLink("You cannot use commands in the general channel unless you're a patron.") };
 		},
 		silent: true
 	},

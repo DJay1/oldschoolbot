@@ -6,7 +6,7 @@ Slayer is a skill where you're assigned to kill a certain amount of a certain mo
 
 So, in very simple terms to train Slayer, all you need to do is: **Get a task** [[/slayer new_task]], then **Kill that monster** [[/k name\:monster]]
 
-If you are a Tier 1 patron or higher, you will see an **Auto Slay** button at the end of your trips. Clicking this will assign you a new task from your saved Slayer master or send a trip of your current task (based on your settings). This cannot be disabled.
+If you are a [Tier 1 patron](https://patreon.com/bscbot) or higher, you will see an **Auto Slay** button at the end of your trips. Clicking this will assign you a new task from your saved Slayer master or send a trip of your current task (based on your settings). This cannot be disabled.
 
 ## Commands
 

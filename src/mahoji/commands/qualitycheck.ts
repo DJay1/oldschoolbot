@@ -1,3 +1,4 @@
+import { testingShortcutsEnabled } from '@/lib/constants.js';
 import { qualityCheckItemChoices } from '@/lib/qualityChecks/config.js';
 import { QualityCheckBoardError } from '@/lib/qualityChecks/forum.js';
 import {
@@ -83,6 +84,9 @@ export const qualityCheckCommand = defineCommand({
 		}
 	],
 	run: async ({ options, user, guildId, interaction }) => {
+		if (!testingShortcutsEnabled()) {
+			return { content: 'Quality checks are not available on the live bot.', ephemeral: true };
+		}
 		const denied = qualityCheckStaffDenial(user, guildId);
 		if (denied) return { content: denied, ephemeral: true };
 		await interaction.defer();

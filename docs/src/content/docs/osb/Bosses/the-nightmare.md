@@ -52,7 +52,7 @@ Having an [[Elysian spirit shield]] equipped in your melee setup will also reduc
 ## Phosani's Nightmare
 
 Phosani's Nightmare is a more difficult, solo-only version of The Nightmare of Ashihama. It drops the same items as the normal Nightmare, as well as the [[Parasitic egg]] and the [[Slepey tablet]].  
-While unique items are rarer from Phosani's Nightmare than from the regular Nightmare, Phosani's Nightmare can be killed significantly faster, capping out at 2 KC per trip (4 KC if Patreon).
+While unique items are rarer from Phosani's Nightmare than from the regular Nightmare, Phosani's Nightmare can be killed significantly faster, capping out at 2 KC per trip (4 KC if [Patreon](https://patreon.com/bscbot)).
 
 To kill Phosani's Nightmare, use [[/k name\:Phosani's Nightmare]].
 

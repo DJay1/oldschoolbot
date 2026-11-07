@@ -1,7 +1,7 @@
 import { removeFromArr, uniqueArr } from '@oldschoolgg/toolkit';
 import { MathRNG } from 'node-rng';
 
-import { type BitField, BitFieldData, globalConfig, type IBitFieldData } from '@/lib/constants.js';
+import { type BitField, BitFieldData, type IBitFieldData, testingShortcutsEnabled } from '@/lib/constants.js';
 import { isValidBitField } from '@/lib/util/smallUtils.js';
 import { gifs } from '@/mahoji/commands/admin.js';
 
@@ -51,7 +51,7 @@ export function bitfieldCanUserManipulate<T extends IBitFieldData = IBitFieldDat
 	if (bit.data.protected) {
 		return 'OOK! OOK!You cannot modify this bit -- ook ook';
 	}
-	if (!globalConfig.isProduction || user.isMod()) return true;
+	if (testingShortcutsEnabled() || user.isMod()) return true;
 	if (target) {
 		return MathRNG.pick(gifs);
 	}

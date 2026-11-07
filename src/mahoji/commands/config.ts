@@ -29,6 +29,7 @@ import { autoslayChoices, slayerMasterChoices } from '@/lib/slayer/constants.js'
 import { setDefaultAutoslay, setDefaultSlayerMaster } from '@/lib/slayer/slayerUtil.js';
 import { BankSortMethods, isValidBankSortMethod } from '@/lib/sorts.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { isValidNickname } from '@/lib/util/smallUtils.js';
 import { toggleBitfield } from '@/lib/util.js';
 
@@ -528,7 +529,9 @@ export async function pinTripCommand(user: MUser, tripId: string | undefined, cu
 	const limit = pinnedTripLimit(await user.fetchPerkTier());
 	const currentPinnedTripsCount = await prisma.pinnedTrip.count({ where: { user_id: user.id } });
 	if (currentPinnedTripsCount >= limit) {
-		return `You cannot have more than ${limit}x pinned trips, unpin one first. Your limit is ${limit}, you can get up to 4 by being a patron.`;
+		return withPatreonLink(
+			`You cannot have more than ${limit}x pinned trips, unpin one first. Your limit is ${limit}, you can get up to 4 by being a patron.`
+		);
 	}
 
 	await prisma.pinnedTrip.create({

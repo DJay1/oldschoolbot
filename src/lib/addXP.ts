@@ -9,6 +9,9 @@ import { convertLVLtoXP, convertXPtoLVL, type Item, Items, toKMB } from 'oldscho
 
 import { type User, UserEventType } from '@/prisma/main.js';
 import { globalConfig, MAX_LEVEL, MAX_LEVEL_XP, MAX_TOTAL_LEVEL, MAX_XP } from '@/lib/constants.js';
+import { LAUNCH_XP_BONUS_SENTENCE, LAUNCH_XP_BOOST_PERCENT } from '@/lib/events/launch/constants.js';
+import { maybeAnnounceLaunchFirst99, maybeAnnounceLaunchFirstMax } from '@/lib/events/launch/milestones.js';
+import { isEventActive } from '@/lib/events/registry.js';
 import { skillEmoji } from '@/lib/data/emojis.js';
 import { getSimilarItems } from '@/lib/data/similarItems.js';
 import type { AddXpParams } from '@/lib/minions/types.js';
@@ -52,6 +55,7 @@ async function onMax(user: MUser) {
 	globalClient.sendMessage(globalConfig.supportServerID, { content: str });
 	const clientSettings = await ClientSettings.fetch({ maxing_message: true });
 	globalClient.sendDm(user.id, clientSettings.maxing_message);
+	await maybeAnnounceLaunchFirstMax(user, normies).catch(err => Logging.logError(err as Error));
 }
 
 interface StaticXPBoost {
@@ -128,6 +132,11 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 	if (multiplier) {
 		params.amount *= GLOBAL_BSO_XP_MULTIPLIER;
 	}
+	const launchBoostApplied = multiplier && isEventActive('launch');
+	if (launchBoostApplied) {
+		params.amount = increaseNumByPercent(params.amount, LAUNCH_XP_BOOST_PERCENT);
+	}
+	const launchSentence = launchBoostApplied ? ` ${LAUNCH_XP_BONUS_SENTENCE}` : '';
 
 	// Look for Mastery skill cape:
 	let matchingCapeID: number | undefined;
@@ -246,6 +255,10 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 		}
 	}
 
+	if (currentLevel < 99 && newLevel >= 99) {
+		await maybeAnnounceLaunchFirst99(user, params.skillName).catch(err => Logging.logError(err as Error));
+	}
+
 	// // If they just reached 99, send a server notification.
 	// if (currentLevel < 99 && newLevel >= 99) {
 	// 	const skillNameCased = toTitleCase(params.skillName);
@@ -347,9 +360,11 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 			rawXPHr = Math.floor(rawXPHr / 1000) * 1000;
 			xpStr += ` (${toKMB(rawXPHr)}/Hr)`;
 			xpStr += bonusSentences;
+			xpStr += launchSentence;
 		} else {
 			xpStr += `🚫 ${params.amount.toLocaleString()} ${params.skillName} XP`;
 			if (!params.minimal) xpStr += bonusSentences;
+			xpStr += launchSentence;
 		}
 		return xpStr;
 	}
@@ -382,6 +397,7 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 			str += ' (2x boost from Gorajan armor)';
 		}
 		str += bonusSentences;
+		str += launchSentence;
 
 		if (params.duration) {
 			let rawXPHr = (params.amount / (params.duration / Time.Minute)) * 60;

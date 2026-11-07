@@ -1,7 +1,7 @@
 import { ApplicationCommandType, type RESTPostAPIApplicationGuildCommandsJSONBody, Routes } from '@oldschoolgg/discord';
 
 import { convertCommandOptionToAPIOption } from '@/discord/index.js';
-import { globalConfig } from '@/lib/constants.js';
+import { globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 
 export async function resolveBotSendableMessage(rawMessage: SendableMessage): Promise<BaseSendableMessage> {
 	if (typeof rawMessage === 'string') {
@@ -35,28 +35,46 @@ export function mentionCommand(name: string, subCommand?: string, subSubCommand?
 	return `</${name}:${apiCommand.id}>`;
 }
 
-function convertCommandToAPICommand(
-	cmd: AnyCommand
-): RESTPostAPIApplicationGuildCommandsJSONBody & { description: string } {
-	return {
+type RegisteredCommandBody = RESTPostAPIApplicationGuildCommandsJSONBody & {
+	description: string;
+	dm_permission?: boolean;
+	contexts?: number[];
+};
+
+function convertCommandToAPICommand(cmd: AnyCommand, allowDms: boolean): RegisteredCommandBody {
+	const body: RegisteredCommandBody = {
 		type: ApplicationCommandType.ChatInput,
 		name: cmd.name,
 		description: cmd.description,
 		options: cmd.options.map(convertCommandOptionToAPIOption)
 	};
+	if (!allowDms) return body;
+	if (cmd.guildId) {
+		body.dm_permission = false;
+		body.contexts = [0];
+		return body;
+	}
+	// Guild, bot DMs, and group DMs. Guild-only test registration does not set these.
+	body.dm_permission = true;
+	body.contexts = [0, 1, 2];
+	return body;
 }
 
 export async function bulkUpdateCommands() {
-	if (!globalConfig.isProduction) {
-		const body = globalClient.allCommands.map(convertCommandToAPICommand);
+	if (testingShortcutsEnabled()) {
+		const body = globalClient.allCommands.map(cmd => convertCommandToAPICommand(cmd, false));
 		return globalClient.rest.put(globalClient.apiCommandsRoute(), {
 			body
 		});
 	}
 
-	// Sync commands globally
-	const globalCommands = globalClient.allCommands.filter(i => !i.guildId).map(convertCommandToAPICommand);
-	const guildCommands = globalClient.allCommands.filter(i => Boolean(i.guildId)).map(convertCommandToAPICommand);
+	// Live bots register global commands so they can be used in DMs, and keep guild-only commands on the support server.
+	const globalCommands = globalClient.allCommands
+		.filter(i => !i.guildId)
+		.map(cmd => convertCommandToAPICommand(cmd, true));
+	const guildCommands = globalClient.allCommands
+		.filter(i => Boolean(i.guildId))
+		.map(cmd => convertCommandToAPICommand(cmd, true));
 
 	return Promise.all([
 		globalClient.rest.put(Routes.applicationCommands(globalClient.applicationId), { body: globalCommands }),

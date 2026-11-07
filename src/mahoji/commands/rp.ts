@@ -9,7 +9,7 @@ import { Bank, type Item, type ItemBank } from 'oldschooljs';
 import { UserEventType, xp_gains_skill_enum } from '@/prisma/main/enums.js';
 import { choicesOf, gearSetupOption } from '@/discord/index.js';
 import { marketPricemap } from '@/lib/cache.js';
-import { Channel, globalConfig } from '@/lib/constants.js';
+import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { allCollectionLogsFlat } from '@/lib/data/Collections.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { unEquipAllCommand } from '@/lib/minions/functions/unequipAllCommand.js';
@@ -416,6 +416,9 @@ export const rpCommand = defineCommand({
 		await interaction.defer();
 		const isAdmin = adminUser.isAdmin();
 		const isMod = isAdmin || adminUser.isMod();
+		if (!testingShortcutsEnabled() && !isAdmin) {
+			return rng.pick(gifs);
+		}
 		if (!guildId || (globalConfig.isProduction && guildId.toString() !== globalConfig.supportServerID)) {
 			return rng.pick(gifs);
 		}

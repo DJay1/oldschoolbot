@@ -1,11 +1,25 @@
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 
 import { Emoji, formatDuration, isWeekend, uniqueArr } from '@oldschoolgg/toolkit';
+import { Bank } from 'oldschooljs';
 
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
 import { CONSTANTS } from '@/lib/constants.js';
 import { getRandomTriviaQuestions } from '@/lib/roboChimp.js';
 import dailyRoll from '@/lib/simulation/dailyTable.js';
+
+/** 1 in this many dailies hits the rare roll. Half of those rolls pay the jackpot. */
+export const DAILY_RARE_ROLL = 1_000;
+export const DAILY_JACKPOT_GP = 1_000_000_000;
+/** The other half of the rare roll. About a tenth of the jackpot, plus a few boxes. */
+export const DAILY_CONSOLATION_GP = 100_000_000;
+export const DAILY_CONSOLATION_ITEMS = new Bank()
+	.add('Tradeable Mystery Box')
+	.add('Untradeable Mystery Box')
+	.add('Equippable mystery box')
+	.freeze();
+export const DAILY_CONSOLATION_LINE =
+	'✨ The sparkle fizzled, so Diango stuffed a smaller prize in the bag.';
 
 export async function isUsersDailyReady(
 	user: MUser
@@ -51,11 +65,13 @@ async function reward(rng: RNGProvider, user: MUser, triviaCorrect: boolean): Pr
 		bonuses.push(Emoji.Joy);
 	}
 
-	if (rng.roll(5000)) {
+	if (rng.roll(DAILY_RARE_ROLL)) {
 		if (rng.roll(2)) {
-			bonuses.push('✨');
+			coinsToGive += DAILY_CONSOLATION_GP;
+			loot.add(DAILY_CONSOLATION_ITEMS);
+			bonuses.push(DAILY_CONSOLATION_LINE);
 		} else {
-			coinsToGive += 1_000_000_000;
+			coinsToGive += DAILY_JACKPOT_GP;
 			bonuses.push(Emoji.Diamond);
 		}
 	}

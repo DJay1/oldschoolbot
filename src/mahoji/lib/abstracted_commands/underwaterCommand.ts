@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { formatDuration, reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -27,7 +29,10 @@ export async function underwaterAgilityThievingCommand({
 		minutes = Math.floor(maxTripLength / Time.Minute);
 	}
 
-	if (!user.hasEquipped(['Graceful gloves', 'Graceful top', 'Graceful legs'])) {
+	if (
+		!user.hasEquipped(['Graceful gloves', 'Graceful top', 'Graceful legs']) &&
+		!isWearingFullFirstAgeMaxSet(user)
+	) {
 		return 'You need Graceful top, legs and gloves to do Underwater Agility and Thieving.';
 	}
 

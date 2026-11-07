@@ -1,12 +1,18 @@
 # Bark School Corgo
 
-Bark School Corgo (BSC) is a corgi-themed Discord bot based on [Old School RuneScape](https://oldschool.runescape.com/). Old school, on four legs.
+Bark School Corgo (BSC) is a Discord bot based on [Old School RuneScape](https://oldschool.runescape.com/). Old school, on four legs.
 
 > Bark School Corgo is not affiliated with or endorsed by Jagex. Play Old School RuneScape for free at https://oldschool.runescape.com
 
 ## oldschooljs
 
 This codebase uses the `oldschooljs` package for OSRS-related features such as simulating monster kills, simulating clues, fetching the hiscores, and checking worlds.
+
+## Perks
+
+Perk tiers are on Patreon: https://patreon.com/bscbot
+
+The bot reads that page from `PATREON_URL` in `src/lib/patreonLink.ts`. Set the env var to override it. There is no oldschoolgg or magnaboy Patreon link.
 
 ## Suggestions & Bug Reports
 

@@ -6,6 +6,7 @@ import { type ArrayItemsResolved, type Bank, Items } from 'oldschooljs';
 import { clamp } from 'remeda';
 
 import { type BitField, BitFieldData } from '@/lib/constants.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { skillEmoji } from '@/lib/data/emojis.js';
 import { type SkillNameType, SkillsArray } from '@/lib/skilling/types.js';
 import type { SkillRequirements, Skills } from '@/lib/types/index.js';
@@ -143,7 +144,7 @@ export function perHourChance(
 	}
 }
 export function patronMsg(tierNeeded: number) {
-	return `You need to be a Tier ${tierNeeded - 1} perk holder to use this command.`;
+	return withPatreonLink(`You need to be a Tier ${tierNeeded - 1} perk holder to use this command.`);
 }
 
 export function isValidBitField(bit: number): bit is BitField {

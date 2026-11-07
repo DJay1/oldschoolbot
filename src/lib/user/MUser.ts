@@ -1,4 +1,5 @@
 import { type UsingPetFunction, usingPet } from '@/lib/bso/bsoUtil.js';
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 import type { GodFavourBank, GodName } from '@/lib/bso/minigames/divineDominion.js';
 import { mysteriousStepData, mysteriousTrailTracks } from '@/lib/bso/mysteryTrail.js';
 import type { IMaterialBank } from '@/lib/bso/skills/invention/index.js';
@@ -782,6 +783,8 @@ Charge your items using ${globalClient.mentionCommand('minion', 'charge')}.`
 	}
 
 	hasGracefulEquipped(): boolean {
+		// The full First Age (max) set counts as Graceful once. Real Graceful does not stack on top.
+		if (isWearingFullFirstAgeMaxSet(this)) return true;
 		for (const gear of Object.values(this.gear)) {
 			if (
 				gear.hasEquipped('Agility master cape') ||

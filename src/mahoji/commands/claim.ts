@@ -4,6 +4,8 @@ import { stringMatches } from '@oldschoolgg/toolkit';
 import { Bank, Items } from 'oldschooljs';
 
 import { BitField, BOT_TYPE, Channel, MAX_TOTAL_LEVEL } from '@/lib/constants.js';
+import { LAUNCH_FOUNDER_BADGE } from '@/lib/events/launch/constants.js';
+import { isEventActive } from '@/lib/events/registry.js';
 import { calcCLDetails } from '@/lib/data/Collections.js';
 import { halloweenClaimHoldMessage } from '@/lib/events/halloween/claim.js';
 import { HolidayItems } from '@/lib/events/halloween/claimItems.js';
@@ -42,6 +44,27 @@ function maxIndy2Boxes(user: MUser): number {
 }
 
 const claimables = [
+	{
+		name: 'Founder',
+		hasRequirement: async (user: MUser): Promise<true | string> => {
+			if (user.bitfield.includes(BitField.LaunchFounder)) return true;
+			if (!isEventActive('launch')) {
+				return 'The Launch event is on hold. The Founder title can only be claimed while it is active.';
+			}
+			return true;
+		},
+		action: async (user: MUser) => {
+			if (user.bitfield.includes(BitField.LaunchFounder)) {
+				return `You already have the Founder title ${LAUNCH_FOUNDER_BADGE}.`;
+			}
+			await user.update({
+				bitfield: {
+					push: BitField.LaunchFounder
+				}
+			});
+			return `You claimed the Founder title ${LAUNCH_FOUNDER_BADGE}. It stays on your name after the Launch event ends.`;
+		}
+	},
 	{
 		name: independenceDay2Box,
 		hasRequirement: async (user: MUser): Promise<true | string> => {

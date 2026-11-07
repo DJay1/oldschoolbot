@@ -21,4 +21,4 @@ You receive a 15 second bonus to your maximum trip length for every 2.5b gp you 
 
 You can see a leaderboard of who has sacrificed the most value using [[/lb sacrifice type\:Most Value Sacrificed]]
 
-Tier 3 patrons or above receive 3 times the bonus to their trip length from sacrifice value. For example, a tier 3 patron with 2.5b sacrificed will receive a 45 second bonus and with 10b sacrificed will receive a 3 minute bonus.
+[Tier 3 patrons](https://patreon.com/bscbot) or above receive 3 times the bonus to their trip length from sacrifice value. For example, a tier 3 patron with 2.5b sacrificed will receive a 45 second bonus and with 10b sacrificed will receive a 3 minute bonus.

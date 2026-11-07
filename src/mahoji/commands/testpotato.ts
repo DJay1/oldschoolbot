@@ -22,7 +22,7 @@ import {
 } from '@/lib/bitFieldUtils.js';
 import { allStashUnitsFlat, allStashUnitTiers } from '@/lib/clues/stashUnits.js';
 import { CombatAchievements } from '@/lib/combat_achievements/combatAchievements.js';
-import { BitField, BitFieldData, globalConfig, MAX_LEVEL, MAX_XP } from '@/lib/constants.js';
+import { BitField, BitFieldData, globalConfig, MAX_LEVEL, MAX_XP, testingShortcutsEnabled } from '@/lib/constants.js';
 import { expertCapesCL, spiritAnglerOutfit } from '@/lib/data/CollectionsExport.js';
 import { Eatables } from '@/lib/data/eatables.js';
 import { TOBMaxMageGear, TOBMaxMeleeGear, TOBMaxRangeGear } from '@/lib/data/tob.js';
@@ -717,7 +717,7 @@ export const testPotatoCommand = globalConfig.isProduction
 				}
 			],
 			run: async ({ options, user, interaction, rng }) => {
-				if (globalConfig.isProduction) {
+				if (!testingShortcutsEnabled()) {
 					Logging.logError('Test command ran in production', { userID: user.id });
 					return 'This will never happen...';
 				}
