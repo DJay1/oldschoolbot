@@ -17,6 +17,7 @@ import { Bank, EItem, itemID, toKMB } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main.js';
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { buildClueButtons } from '@/lib/clues/clueUtils.js';
 import { combatAchievementTripEffect } from '@/lib/combat_achievements/combatAchievements.js';
@@ -41,6 +42,7 @@ import {
 	makeRepeatTripButton,
 	makeTearsOfGuthixButton
 } from '@/lib/util/interactions.js';
+import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { hasSkillReqs, perHourChance } from '@/lib/util/smallUtils.js';
 import { alching } from '@/mahoji/commands/laps.js';
 import { isUsersDailyReady } from '@/mahoji/lib/abstracted_commands/dailyCommand.js';
@@ -760,6 +762,30 @@ export async function handleTripFinish(
 	// Several addXP calls in one trip each append the same bonus. Show each bonus once, with the XP summed.
 	if (message.message.content) {
 		message.setContent(consolidateSkillXpBonusLines(message.message.content));
+	}
+
+	// Clue finishes with Zippy, a casket double, or another trip bonus get one image of the
+	// whole pile. Plain clue trips (caskets only) keep their text message.
+	if (data.type === 'ClueCompletion' && !message.message.files?.some(file => file)) {
+		const tier = ClueTiers.find(t => t.id === data.ci);
+		const imageBank = clueFinishLootImage({
+			loot,
+			extras: itemsToAddWithCL,
+			base: tier ? new Bank().add(tier.id, data.q) : null
+		});
+		if (imageBank) {
+			try {
+				const qty = data.q;
+				const image = await makeBankImage({
+					bank: imageBank,
+					title: tier ? `Loot From ${qty} ${tier.name} Clue${qty === 1 ? '' : 's'}:` : 'Clue loot',
+					user
+				});
+				message.addFile(image);
+			} catch (err) {
+				Logging.logError(err as Error);
+			}
+		}
 	}
 
 	await globalClient.sendMessageOrWebhook(channelId, message);

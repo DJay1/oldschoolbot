@@ -5,6 +5,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { randInt, roll } from 'node-rng';
 import { Bank, LootTable } from 'oldschooljs';
 
+import { zippyClueFinishLines } from '@/lib/clues/clueFinishLoot.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import type { ClueActivityTaskOptions } from '@/lib/types/minions.js';
 
@@ -84,14 +85,15 @@ export const clueTask: MinionTask = {
 
 			loot.add(bonusLoot);
 
+			let zippyDoubled = false;
 			if (roll(CLUE_CASKET_DOUBLE_RATE)) {
 				await ClientSettings.updateBankSetting('zippy_loot', loot);
 				await user.statsBankUpdate('loot_from_zippy_bank', loot);
 				loot.multiply(2);
-				str += '\nZippy has **doubled** your loot.';
+				zippyDoubled = true;
 			}
 
-			str += `\n\nZippy has found these items for you: ${new Bank(bonusLoot)}`;
+			str += zippyClueFinishLines({ bonusLoot, doubled: zippyDoubled });
 		}
 
 		const firstAgeDouble = firstAgeCasketDouble({
