@@ -1133,6 +1133,7 @@ export const adminCommand = defineCommand({
 		if (options.badges) {
 			if ((!options.badges.remove && !options.badges.add) || (options.badges.add && options.badges.remove)) {
 				return Object.entries(badges)
+					.filter((entry): entry is [string, string] => Boolean(entry[1]))
 					.map(entry => `**${entry[1]}:** ${entry[0]}`)
 					.join('\n');
 			}
@@ -1157,7 +1158,8 @@ export const adminCommand = defineCommand({
 				badges: uniqueArr(newBadges)
 			});
 
-			return `${action === 'add' ? 'Added' : 'Removed'} ${badgeName} ${badges[badgeID]} badge to ${
+			const badgeEmoji = badges[badgeID];
+			return `${action === 'add' ? 'Added' : 'Removed'} ${badgeName}${badgeEmoji ? ` ${badgeEmoji}` : ''} badge to ${
 				options.badges.user.user.username
 			}.`;
 		}

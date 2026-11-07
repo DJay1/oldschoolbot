@@ -172,7 +172,7 @@ export enum BitField {
 	DisableBankWeights = 55,
 	DisableBankFavorites = 56,
 
-	OriginalCyrSupporter = 199,
+	BSCEarlySupporter = 199,
 	HasGivenBirthdayPack = 200,
 	HasPermanentSpawnLamp = 201,
 	HasScrollOfFarming = 202,
@@ -266,7 +266,7 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 	[BitField.UsedSirenicTablet]: { name: 'Used Sirenic Tablet', protected: false, userConfigurable: false },
 	[BitField.UsedStrangledTablet]: { name: 'Used Strangled Tablet', protected: false, userConfigurable: false },
 	[BitField.SelfGamblingLocked]: { name: 'Self Gambling Lock', protected: false, userConfigurable: true },
-	[BitField.OriginalCyrSupporter]: { name: 'Original supporter', protected: false, userConfigurable: false },
+	[BitField.BSCEarlySupporter]: { name: 'BSC Early Supporter', protected: false, userConfigurable: false },
 	[BitField.HasGivenBirthdayPack]: { name: 'Has Given Birthday Pack', protected: false, userConfigurable: false },
 	[BitField.BypassAgeRestriction]: { name: 'Bypassed Age Restriction', protected: false, userConfigurable: false },
 	[BitField.HasPermanentEventBackgrounds]: {
@@ -534,7 +534,7 @@ export const BadgesEnum = {
 	TopGiveawayer: 14,
 	Farmer: 15,
 	Hacktoberfest: 16,
-	BSCEarlySupporter: 17,
+	// Badge id 17 is reserved and retired.
 	TopClueHunter: 18
 } as const;
 
@@ -556,7 +556,6 @@ export const badges: { [key: number]: string } = {
 	[BadgesEnum.TopGiveawayer]: Emoji.SantaHat,
 	[BadgesEnum.Farmer]: Emoji.Farming,
 	[BadgesEnum.Hacktoberfest]: customEmoji('hacktoberfest'),
-	[BadgesEnum.BSCEarlySupporter]: Emoji.EsbCorgi,
 	[BadgesEnum.TopClueHunter]: Emoji.ClueScroll
 };
 
