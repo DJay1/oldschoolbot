@@ -1,10 +1,10 @@
-import { BSOItem } from '@/lib/bso/BSOItem.js';
 import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
 
 import { Time } from '@oldschoolgg/toolkit';
 import { MathRNG, type RNGProvider } from 'node-rng';
 import { Bank, EItem, Items } from 'oldschooljs';
 
+import { summerFishingStartAdjustments } from '@/lib/events/summer/fishing.js';
 import type { Fish } from '@/lib/skilling/types.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import {
@@ -363,37 +363,15 @@ export async function calcFishingTripStart({
 		boosts.push('**Powerfishing**');
 	}
 
-	const hasOldCrabCageEquipped = gearBank.hasEquipped(BSOItem.OLD_CRAB_CAGE);
-	const patriciaPetID = gearBank.usingPet('Patricia', { returnID: true });
-	const hasPatriciaEquipped = Boolean(patriciaPetID);
-	const eclipsePetName = patriciaPetID ? Items.getOrThrow(patriciaPetID).name : 'Patricia';
-	const hasShelldonEquipped = gearBank.usingPet('Shelldon');
-	const isPatriciaLobsterBoost = fish.name === 'Lobster' && hasPatriciaEquipped && hasOldCrabCageEquipped;
+	const summerFishing = summerFishingStartAdjustments(gearBank, fish.name);
+	tripSpeedMultiplier *= summerFishing.speedMultiplier;
+	maxTripLength += summerFishing.extraMaxTripLength;
+	boosts.push(...summerFishing.boosts);
 
-	if (hasPatriciaEquipped) {
-		if (isPatriciaLobsterBoost) {
-			tripSpeedMultiplier *= 3;
-			boosts.push(
-				`<:starfish:1515651612918677564> 3x faster for ${eclipsePetName} and Old crab cage while fishing Lobster`
-			);
-		} else {
-			tripSpeedMultiplier *= 2.15;
-			boosts.push(
-				`<:starfish:1515651612918677564> ${eclipsePetName} is your new best friend! You two become an expert fishing pair!`
-			);
-		}
-	} else if (hasShelldonEquipped) {
+	const hasShelldonEquipped = gearBank.usingPet('Shelldon');
+	if (!summerFishing.suppressShelldon && hasShelldonEquipped) {
 		tripSpeedMultiplier *= 2;
 		boosts.push('<:shelldon:748496988407988244> Shelldon helps you fish!');
-	}
-
-	if (hasOldCrabCageEquipped) {
-		maxTripLength += Time.Minute * 5;
-		boosts.push('+5 minutes for Old crab cage');
-		if (!isPatriciaLobsterBoost) {
-			tripSpeedMultiplier *= speedMultiplierFromPercentReduction(20);
-			boosts.push('20% faster for Old crab cage');
-		}
 	}
 
 	if (gearBank.hasEquippedOrInBank('Shark tooth necklace')) {

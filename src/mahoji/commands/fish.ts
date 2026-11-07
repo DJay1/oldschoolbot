@@ -1,8 +1,8 @@
-import { getEclipsePetName } from '@/lib/bso/summerDays.js';
-
 import { stringSearch } from '@oldschoolgg/toolkit';
 import { Bank, Monsters } from 'oldschooljs';
 
+import { isEventActive } from '@/lib/events/registry.js';
+import { getEclipsePetName } from '@/lib/events/summer/summerDays.js';
 import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
 import {
 	anglerItemsArr,
@@ -183,9 +183,16 @@ export const fishCommand = defineCommand({
 		});
 
 		let response = `${user.minionName} is now fishing ${spot.name}, it'll take around ${formatTripDuration(user, result.duration)} to finish.`;
-		const hasPatricia = user.usingPet('Patricia');
-		if (spot.name !== 'Lobster' && hasPatricia && user.hasEquipped('Old crab cage') && !user.cl.has('Partycrab')) {
-			response += `\n\n${getEclipsePetName(user)} keeps circling the cage, but whatever you're hoping to coax out of it won't answer here.`;
+		if (isEventActive('summer')) {
+			const hasPatricia = user.usingPet('Patricia');
+			if (
+				spot.name !== 'Lobster' &&
+				hasPatricia &&
+				user.hasEquipped('Old crab cage') &&
+				!user.cl.has('Partycrab')
+			) {
+				response += `\n\n${getEclipsePetName(user)} keeps circling the cage, but whatever you're hoping to coax out of it won't answer here.`;
+			}
 		}
 		if (result.suppliesToRemove.length > 0) {
 			response += `\n\n**Used Supplies:** ${bankToStrShortNames(result.suppliesToRemove)}.`;

@@ -1,5 +1,4 @@
 import { addUnchargedFirstAgeShards } from '@/lib/bso/firstAge/shards.js';
-import { handleCrateSpawns } from '@/lib/bso/handleCrateSpawns.js';
 import type { MTame } from '@/lib/bso/structures/MTame.js';
 import {
 	type ArbitraryTameActivity,
@@ -21,6 +20,7 @@ import { isEmpty } from 'remeda';
 import type { TameActivity } from '@/prisma/main.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { BitField } from '@/lib/constants.js';
+import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
 import { handlePassiveImplings } from '@/lib/implings.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { allOpenables } from '@/lib/openables.js';
