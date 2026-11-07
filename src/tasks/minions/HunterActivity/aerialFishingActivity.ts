@@ -1,9 +1,6 @@
-import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
-
 import { Bank } from 'oldschooljs';
 
 import addSkillingClueToLoot from '@/lib/minions/functions/addSkillingClueToLoot.js';
-import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
 import aerialFishingCreatures from '@/lib/skilling/skills/hunter/aerialFishing.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
 import { skillingPetDropRate } from '@/lib/util.js';
@@ -70,20 +67,11 @@ export const aerialFishingTask: MinionTask = {
 			mottledEelCaught * mottledEel.hunterXP +
 			commonTenchCaught * commonTench.hunterXP +
 			bluegillCaught * bluegill.hunterXP;
-		let fishXpReceived =
+		const fishXpReceived =
 			greaterSirenCaught * greaterSiren.fishingXP! +
 			mottledEelCaught * mottledEel.fishingXP! +
 			commonTenchCaught * commonTench.fishingXP! +
 			bluegillCaught * bluegill.fishingXP!;
-
-		let bonusXP = 0;
-		const anglerBonus = Fishing.util.calcAnglerBonusXP({
-			gearBank: user.gearBank,
-			xp: fishXpReceived,
-			roundingMethod: 'ceil'
-		});
-		fishXpReceived = anglerBonus.totalXP;
-		bonusXP += anglerBonus.bonusXP;
 
 		const fishXP = await user.addXP({
 			skillName: 'fishing',
@@ -111,18 +99,6 @@ export const aerialFishingTask: MinionTask = {
 		}
 
 		let str = `${user}, ${user.minionName} finished aerial fishing and caught ${greaterSirenCaught}x ${greaterSiren.name}, ${mottledEelCaught}x ${mottledEel.name}, ${commonTenchCaught}x ${commonTench.name}, ${bluegillCaught}x ${bluegill.name}, ${huntXP}, ${fishXP}. ${user.minionName} asks if you'd like them to do another of the same trip.`;
-
-		if (bonusXP > 0) {
-			const pieceIds = Fishing.anglerItems.map(i => i[0]);
-			const hasFull = user.gear.skilling.hasEquipped(pieceIds, true);
-			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
-			str += `\n\n${namedOutfitXpLine({
-				outfit: 'Angler',
-				percent: anglerBonus.percent,
-				xp: bonusXP,
-				fromMaxSet
-			})}`;
-		}
 
 		// Add clue scrolls
 		const clueScrollChance = 636_833;

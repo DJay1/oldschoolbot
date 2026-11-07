@@ -1,12 +1,10 @@
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
 
 import { calcPerHour, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import { trackLoot } from '@/lib/lootTrack.js';
 import { WintertodtCrate } from '@/lib/simulation/wintertodt.js';
-import Firemaking from '@/lib/skilling/skills/firemaking.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 
@@ -56,8 +54,7 @@ export const wintertodtTask: MinionTask = {
 		const wcLvl = user.skillsAsLevels.woodcutting;
 		const conLevel = user.skillsAsLevels.construction;
 
-		let fmXpToGive = Math.floor(fmLvl * 100 * quantity + numberOfRoots * (fmLvl * 3));
-		let fmBonusXP = 0;
+		const fmXpToGive = Math.floor(fmLvl * 100 * quantity + numberOfRoots * (fmLvl * 3));
 		const wcXpToGive = Math.floor(numberOfRoots * (wcLvl * 0.3));
 		const constructionXPPerBrazier = conLevel * 4;
 		let numberOfBraziers = 0;
@@ -66,28 +63,6 @@ export const wintertodtTask: MinionTask = {
 		}
 		const conXP = numberOfBraziers * constructionXPPerBrazier;
 		let xpStr = await user.addXP({ skillName: 'construction', amount: conXP, duration: data.duration });
-
-		// If they have the entire pyromancer outfit, give an extra 0.5% xp bonus
-		if (
-			isWearingFullFirstAgeMaxSet(user) ||
-			user.hasEquippedOrInBank(
-				Object.keys(Firemaking.pyromancerItems).map(i => Number.parseInt(i)),
-				'every'
-			)
-		) {
-			const amountToAdd = Math.floor(fmXpToGive * (2.5 / 100));
-			fmXpToGive += amountToAdd;
-			fmBonusXP += amountToAdd;
-		} else {
-			// For each pyromancer item, check if they have it, give its' XP boost if so.
-			for (const [itemID, bonus] of Object.entries(Firemaking.pyromancerItems)) {
-				if (user.hasEquippedOrInBank(Number.parseInt(itemID))) {
-					const amountToAdd = Math.floor(fmXpToGive * (bonus / 100));
-					fmXpToGive += amountToAdd;
-					fmBonusXP += amountToAdd;
-				}
-			}
-		}
 
 		xpStr += `, ${await user.addXP({
 			skillName: 'woodcutting',
@@ -122,18 +97,6 @@ export const wintertodtTask: MinionTask = {
 		});
 
 		let output = `${user}, ${user.minionName} finished subduing Wintertodt ${quantity}x times (${calcPerHour(quantity, data.duration).toFixed(1)}/hr), you now have ${newScore} KC. ${xpStr}, you cut ${numberOfRoots}x Bruma roots.`;
-
-		if (fmBonusXP > 0) {
-			const pieceIds = Object.keys(Firemaking.pyromancerItems).map(i => Number.parseInt(i));
-			const hasFull = user.hasEquippedOrInBank(pieceIds, 'every');
-			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
-			output += `\n\n${namedOutfitXpLine({
-				outfit: 'Pyromancer',
-				percent: hasFull || fromMaxSet ? 2.5 : null,
-				xp: fmBonusXP,
-				fromMaxSet
-			})}`;
-		}
 
 		if (hasMasterCape) {
 			output += '\n\n2x loot for Firemaking master cape.';

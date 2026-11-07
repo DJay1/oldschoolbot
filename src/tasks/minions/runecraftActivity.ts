@@ -1,7 +1,7 @@
 import { MIN_LENGTH_FOR_PET } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
 
-import { increaseNumByPercent, Time } from '@oldschoolgg/toolkit';
+import { Time } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { Bank, EItem } from 'oldschooljs';
 
@@ -31,20 +31,7 @@ export const runecraftTask: MinionTask = {
 			runeXP = rune.xp * 1.5;
 		}
 
-		let xpReceived = essenceQuantity * runeXP;
-
-		const hasMaster = user.hasEquippedOrInBank(
-			[
-				'Master runecrafter hat',
-				'Master runecrafter robe',
-				'Master runecrafter skirt',
-				'Master runecrafter boots'
-			],
-			'every'
-		);
-		if (hasMaster) {
-			xpReceived = increaseNumByPercent(xpReceived, 10);
-		}
+		const xpReceived = essenceQuantity * runeXP;
 		const magicXpReceived = imbueCasts * 86;
 
 		let xpRes = `\n${await user.addXP({
@@ -57,9 +44,6 @@ export const runecraftTask: MinionTask = {
 		}
 
 		let str = `${user}, ${user.minionName} finished crafting ${runeQuantity} ${rune.name}. ${xpRes}`;
-		if (hasMaster) {
-			str += 'You received 10% bonus XP from your Master runecrafter outfit.';
-		}
 
 		const raimentQuantity = raimentBonus(user, runeQuantity);
 		runeQuantity += raimentQuantity;

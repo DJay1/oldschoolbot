@@ -1,6 +1,4 @@
-import { BlacksmithOutfit } from '@/lib/bso/bsoConstants.js';
 import { dwarvenOutfit } from '@/lib/bso/collection-log/main.js';
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 
 import { Bank } from 'oldschooljs';
 
@@ -15,12 +13,7 @@ export const smithingTask: MinionTask = {
 
 		const smithedItem = Smithing.SmithableItems.find(item => item.id === smithedBarID)!;
 
-		let xpReceived = quantity * smithedItem.xp;
-
-		const hasBS = isWearingFullFirstAgeMaxSet(user) || user.hasEquippedOrInBank(BlacksmithOutfit, 'every');
-		if (hasBS) {
-			xpReceived *= 1.1;
-		}
+		const xpReceived = quantity * smithedItem.xp;
 
 		const xpRes = await user.addXP({
 			skillName: 'smithing',
@@ -30,10 +23,7 @@ export const smithingTask: MinionTask = {
 		const loot = new Bank({
 			[smithedItem.id]: quantity * smithedItem.outputMultiple
 		});
-		let str = `${user}, ${user.minionName} finished smithing, you received ${loot}. ${xpRes}`;
-		if (hasBS) {
-			str += '\n**10%** Bonus XP For Blacksmith Outfit';
-		}
+		const str = `${user}, ${user.minionName} finished smithing, you received ${loot}. ${xpRes}`;
 
 		let collectionLog = true;
 		const bingos = await findBingosWithUserParticipating(user.id);

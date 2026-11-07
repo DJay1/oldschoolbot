@@ -8,22 +8,31 @@ import { Bank, LootTable } from 'oldschooljs';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import type { ClueActivityTaskOptions } from '@/lib/types/minions.js';
 
-export const FIRST_AGE_CASKET_DOUBLE_MESSAGE = 'Your First Age (max) set doubled your clue casket!';
+/** Bold matches Zippy's clue line: `Zippy has **doubled** your loot.` */
+export const FIRST_AGE_CASKET_DOUBLE_MESSAGE = 'Your First Age (max) set **doubled** your clue casket!';
 
 /**
  * Zippy and the First Age (max) set each roll 1/15 on their own.
- * Zippy runs first and may double the whole clue loot. The set then doubles whatever
- * reward caskets are already in the loot, so Zippy's 1 -> 2 becomes 4 when both hit.
+ * Zippy runs first and may double the whole clue loot. The set then doubles every
+ * reward casket already in that loot (beginner through elder, including caskets Zippy
+ * found of other tiers), so Zippy's 1 -> 2 becomes 4 when both hit.
  */
-export function firstAgeCasketDouble(input: {
-	wearingFullMaxSet: boolean;
-	rolledDouble: boolean;
-	casketsAlready: number;
-}): { extraCaskets: number; message: string | null } {
-	if (!input.wearingFullMaxSet || !input.rolledDouble || input.casketsAlready <= 0) {
-		return { extraCaskets: 0, message: null };
+export function firstAgeCasketDouble(input: { wearingFullMaxSet: boolean; rolledDouble: boolean; loot: Bank }): {
+	extraCaskets: Bank;
+	message: string | null;
+} {
+	const extraCaskets = new Bank();
+	if (!input.wearingFullMaxSet || !input.rolledDouble) {
+		return { extraCaskets, message: null };
 	}
-	return { extraCaskets: input.casketsAlready, message: FIRST_AGE_CASKET_DOUBLE_MESSAGE };
+	for (const tier of ClueTiers) {
+		const qty = input.loot.amount(tier.id);
+		if (qty > 0) extraCaskets.add(tier.id, qty);
+	}
+	if (extraCaskets.length === 0) {
+		return { extraCaskets, message: null };
+	}
+	return { extraCaskets, message: FIRST_AGE_CASKET_DOUBLE_MESSAGE };
 }
 
 const possibleFound = new LootTable()
@@ -88,10 +97,10 @@ export const clueTask: MinionTask = {
 		const firstAgeDouble = firstAgeCasketDouble({
 			wearingFullMaxSet: isWearingFullFirstAgeMaxSet(user),
 			rolledDouble: firstAgeRolledDouble,
-			casketsAlready: loot.amount(clueTier.id)
+			loot
 		});
-		if (firstAgeDouble.extraCaskets > 0) {
-			loot.add(clueTier.id, firstAgeDouble.extraCaskets);
+		if (firstAgeDouble.extraCaskets.length > 0) {
+			loot.add(firstAgeDouble.extraCaskets);
 			str += `\n${firstAgeDouble.message}`;
 		}
 

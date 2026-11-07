@@ -1,3 +1,5 @@
+import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
+
 import { calcWhatPercent, formatDuration, reduceNumByPercent, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -169,6 +171,7 @@ export async function giantsFoundryStartCommand(
 	// If they have the entire Smiths' Uniform, give an extra 15% speed bonus
 	let setBonus = 0;
 	if (
+		isWearingFullFirstAgeMaxSet(user) ||
 		user.hasEquippedOrInBank(
 			Object.keys(Smithing.smithsUniformItems).map(i => Number.parseInt(i)),
 			'every'

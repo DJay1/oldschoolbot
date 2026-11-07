@@ -1,8 +1,3 @@
-import { isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
-
-import { calcPercentOfNum } from '@oldschoolgg/toolkit';
-
-import { calcConBonusXP } from '@/lib/skilling/skills/construction/calcConBonusXP.js';
 import type { MahoganyHomesActivityTaskOptions } from '@/lib/types/minions.js';
 
 export const mahoganyHomesTask: MinionTask = {
@@ -12,15 +7,9 @@ export const mahoganyHomesTask: MinionTask = {
 
 		await user.incrementMinigameScore('mahogany_homes', quantity);
 
-		let bonusXP = 0;
-		const carpenterPieces = calcConBonusXP(user.gear.skilling.raw());
-		const outfitMultiplier = isWearingFullFirstAgeMaxSet(user) ? Math.max(carpenterPieces, 2.5) : carpenterPieces;
-		if (outfitMultiplier > 0) {
-			bonusXP = calcPercentOfNum(outfitMultiplier, xp);
-		}
 		const xpRes = await user.addXP({
 			skillName: 'construction',
-			amount: xp + bonusXP,
+			amount: xp,
 			duration,
 			source: 'MahoganyHomes'
 		});
@@ -35,11 +24,7 @@ export const mahoganyHomesTask: MinionTask = {
 			}
 		});
 
-		let str = `${user}, ${user.minionName} finished doing ${quantity}x Mahogany Homes contracts, you received ${points} Carpenter points. ${xpRes} ${flappyRes.userMsg}`;
-
-		if (bonusXP > 0) {
-			str += `\nYou received ${bonusXP.toLocaleString()} bonus XP from your Carpenter's outfit.`;
-		}
+		const str = `${user}, ${user.minionName} finished doing ${quantity}x Mahogany Homes contracts, you received ${points} Carpenter points. ${xpRes} ${flappyRes.userMsg}`;
 
 		handleTripFinish({ user, channelId, message: str, data });
 	}

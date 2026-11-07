@@ -1,9 +1,6 @@
-import { isWearingFullFirstAgeMaxSet, namedOutfitXpLine } from '@/lib/bso/firstAge/shards.js';
-
 import { calcPerHour, increaseNumByPercent } from '@oldschoolgg/toolkit';
 
 import { getTemporossLoot } from '@/lib/simulation/tempoross.js';
-import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
 import type { TemporossActivityTaskOptions } from '@/lib/types/minions.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 
@@ -21,30 +18,7 @@ export const temporossTask: MinionTask = {
 		}
 		const loot = getTemporossLoot(rewardTokens, currentLevel, user.bank);
 
-		let fXPtoGive = quantity * 5500 * (currentLevel / 40);
-		let fBonusXP = 0;
-
-		// If they have the entire angler outfit, give an extra 0.5% xp bonus
-		if (
-			isWearingFullFirstAgeMaxSet(user) ||
-			user.gear.skilling.hasEquipped(
-				Fishing.anglerItems.map(i => i[0]),
-				true
-			)
-		) {
-			const amountToAdd = Math.floor(fXPtoGive * (2.5 / 100));
-			fXPtoGive += amountToAdd;
-			fBonusXP += amountToAdd;
-		} else {
-			// For each angler item, check if they have it, give its' XP boost if so.
-			for (const [itemID, bonus] of Fishing.anglerItems) {
-				if (user.hasEquipped(itemID)) {
-					const amountToAdd = Math.floor(fXPtoGive * (bonus / 100));
-					fXPtoGive += amountToAdd;
-					fBonusXP += amountToAdd;
-				}
-			}
-		}
+		const fXPtoGive = quantity * 5500 * (currentLevel / 40);
 
 		const xpStr = await user.addXP({
 			skillName: 'fishing',
@@ -65,21 +39,9 @@ export const temporossTask: MinionTask = {
 			previousCL
 		});
 
-		let output = `${user}, ${
+		const output = `${user}, ${
 			user.minionName
 		} finished fighting Tempoross ${quantity}x times (${calcPerHour(quantity, data.duration).toFixed(1)}/hr), you now have ${newScore} KC. ${xpStr.toLocaleString()}`;
-
-		if (fBonusXP > 0) {
-			const pieceIds = Fishing.anglerItems.map(i => i[0]);
-			const hasFull = user.gear.skilling.hasEquipped(pieceIds, true);
-			const fromMaxSet = isWearingFullFirstAgeMaxSet(user) && !hasFull;
-			output += `\n\n${namedOutfitXpLine({
-				outfit: 'Angler',
-				percent: hasFull || fromMaxSet ? 2.5 : null,
-				xp: fBonusXP,
-				fromMaxSet
-			})}`;
-		}
 
 		return handleTripFinish({
 			user,
