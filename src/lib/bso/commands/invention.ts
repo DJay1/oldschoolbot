@@ -73,7 +73,8 @@ export const inventionCommand = defineCommand({
 					type: 'Integer',
 					description: 'The amount of materials you want to use (Optional).',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},

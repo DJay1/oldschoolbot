@@ -222,9 +222,15 @@ export class Bank {
 
 	public multiply(multiplier: number, itemsToNotMultiply?: number[]): this {
 		if (this.frozen) throw new Error(frozenErrorStr);
+		if (!Number.isSafeInteger(multiplier) || multiplier < 1) {
+			throw new Error('Invalid quantity.');
+		}
 		for (const [itemID, quantity] of this.map.entries()) {
 			if (itemsToNotMultiply?.includes(itemID)) continue;
-			this.map.set(itemID, Math.floor(quantity * multiplier));
+			if (quantity > Math.floor(Number.MAX_SAFE_INTEGER / multiplier)) {
+				throw new Error('Invalid quantity.');
+			}
+			this.map.set(itemID, quantity * multiplier);
 		}
 		return this;
 	}

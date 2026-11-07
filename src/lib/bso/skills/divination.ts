@@ -401,6 +401,7 @@ export async function chargePortentIfHasCharges({
 		}
 	});
 	if (!portent) return { didCharge: false };
+	if (!Number.isSafeInteger(charges) || charges < 1) return { didCharge: false };
 	if (portent.charges_remaining < charges) return { didCharge: false };
 	const newPortent = await prisma.portent.update({
 		where: {

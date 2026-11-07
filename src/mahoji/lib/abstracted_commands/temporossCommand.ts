@@ -2,6 +2,7 @@ import { calcWhatPercent, formatDuration, reduceNumByPercent, Time } from '@olds
 
 import type { TemporossActivityTaskOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 export async function temporossCommand(user: MUser, channelId: string, quantity: number | undefined) {
 	const fLevel = user.skillLevel('fishing');
@@ -43,6 +44,11 @@ export async function temporossCommand(user: MUser, channelId: string, quantity:
 	}
 
 	const maxTripLength = await user.calcMaxTripLength('Tempoross');
+	if (quantity !== undefined) {
+		const parsedQuantity = validateQuantity(quantity, { min: 1, max: MAX_QUANTITY });
+		if (!parsedQuantity.ok) return parsedQuantity.error;
+		quantity = parsedQuantity.value;
+	}
 	if (!quantity) {
 		quantity = Math.floor(maxTripLength / durationPerRoss);
 	}

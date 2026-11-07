@@ -67,7 +67,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity of planks to make.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				},
 				{
 					type: 'Integer',
@@ -139,7 +140,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity (optional).',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -160,7 +162,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity to do (optional).',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -185,7 +188,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity of collecting trips.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				},
 				{
 					type: 'Boolean',
@@ -278,7 +282,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The amount to do. (optional)',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -360,7 +365,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity to enchant.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -385,7 +391,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity to bury.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -410,7 +417,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity to scatter.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -448,7 +456,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity to alch.',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				},
 				{
 					type: 'Integer',
@@ -481,7 +490,8 @@ export const activitiesCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity to cast (Optional).',
 					required: false,
-					min_value: 1
+					min_value: 1,
+					max_value: 100_000
 				}
 			]
 		},
@@ -507,7 +517,8 @@ export const activitiesCommand = defineCommand({
 							name: 'minutes',
 							description: 'How many minutes to do (optional).',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						},
 						{
 							type: 'Boolean',
@@ -527,7 +538,8 @@ export const activitiesCommand = defineCommand({
 							name: 'minutes',
 							description: 'How many minutes to do (optional).',
 							required: false,
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						},
 						{
 							type: 'Boolean',

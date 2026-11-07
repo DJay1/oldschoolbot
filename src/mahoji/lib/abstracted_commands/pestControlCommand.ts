@@ -4,6 +4,7 @@ import { Bank, Items } from 'oldschooljs';
 import type { MinigameActivityTaskOptionsWithNoChanges } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { hasSkillReqs, isValidSkill } from '@/lib/util/smallUtils.js';
+import { requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 const itemBoosts = [
 	[Items.resolveFullItems(['Abyssal whip', 'Abyssal tentacle']), 12],
@@ -160,15 +161,18 @@ export async function pestControlBuyCommand(user: MUser, input: string) {
 		if (!hasDiary) {
 			return "You can't buy this because you haven't completed the Western Provinces hard diary.";
 		}
-		await user.transactItems({ itemsToRemove: new Bank().add(buyable.inputItem.id) });
 	}
-	await user.statsUpdate({
-		pest_control_points: {
-			decrement: cost
+	const loot = new Bank().add(item.id);
+	await user.transactItems({
+		itemsToAdd: loot,
+		itemsToRemove: buyable.inputItem ? new Bank().add(buyable.inputItem.id) : undefined,
+		collectionLog: true,
+		statsUpdates: {
+			pest_control_points: {
+				decrement: cost
+			}
 		}
 	});
-	const loot = new Bank().add(item.id);
-	await user.transactItems({ itemsToAdd: loot, collectionLog: true });
 
 	return `Successfully purchased ${loot} for ${cost} Void knight commendation points.`;
 }
@@ -224,35 +228,47 @@ export async function pestControlXPCommand(interaction: MInteraction, user: MUse
 	if (!Object.keys(xpMultiplier).includes(skillName) || !isValidSkill(skillName)) {
 		return "That's not a valid skill to buy XP for.";
 	}
-	if (!amount || amount < 1) {
-		return "That's not a valid amount of points to spend.}";
-	}
+	const parsedAmount = requirePositiveQuantity(amount, { max: 1000, label: 'Amount' });
+	if (!parsedAmount.ok) return parsedAmount.error;
+	amount = parsedAmount.value;
 
 	const level = user.skillsAsLevels[skillName];
 	if (level < 25) {
 		return 'You need at least level 25 to buy XP from Pest Control.';
 	}
 	const xpPerPoint = Math.floor(Math.pow(level, 2) / 600) * xpMultiplier[skillName as keyof typeof xpMultiplier];
+	const xpProduct = safePositiveProduct(Math.max(0, xpPerPoint), amount, Number.MAX_SAFE_INTEGER);
+	if (!xpProduct.ok) return xpProduct.error;
 
 	const { pest_control_points: balance } = await user.fetchStats();
 	if (balance < amount) {
 		return `You cannot afford this, because you have only ${balance} points.`;
 	}
 	await interaction.confirmation(
-		`Are you sure you want to spend ${amount} points on ${xpPerPoint * amount} ${toTitleCase(skillName)} XP?`
+		`Are you sure you want to spend ${amount} points on ${xpProduct.value} ${toTitleCase(skillName)} XP?`
 	);
 	await user.statsUpdate({
 		pest_control_points: {
 			decrement: amount
 		}
 	});
-	const xpRes = await user.addXP({
-		skillName,
-		amount: xpPerPoint * amount,
-		duration: undefined,
-		minimal: false,
-		artificial: true
-	});
+	let xpRes: string;
+	try {
+		xpRes = await user.addXP({
+			skillName,
+			amount: xpProduct.value,
+			duration: undefined,
+			minimal: false,
+			artificial: true
+		});
+	} catch (error) {
+		await user.statsUpdate({
+			pest_control_points: {
+				increment: amount
+			}
+		});
+		throw error;
+	}
 
 	return `You spent ${amount} points (${xpPerPoint} ${toTitleCase(skillName)} XP per point).
 ${xpRes}`;

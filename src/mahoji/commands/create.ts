@@ -5,6 +5,7 @@ import { Bank } from 'oldschooljs';
 
 import Createables from '@/lib/data/createables.js';
 import type { SkillNameType } from '@/lib/skilling/types.js';
+import { MAX_QUANTITY, safePositiveProduct, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 export const createCommand = defineCommand({
 	name: 'create',
@@ -49,6 +50,12 @@ export const createCommand = defineCommand({
 		const createableItem = Createables.find(item => stringMatches(item.name, itemName));
 		if (!createableItem) return "That's not a valid item.";
 
+		if (quantity !== undefined) {
+			const parsedQuantity = validateQuantity(quantity, { min: 1, max: MAX_QUANTITY });
+			if (!parsedQuantity.ok) return parsedQuantity.error;
+			quantity = parsedQuantity.value;
+		}
+
 		if (!quantity || createableItem.cantHaveItems) {
 			quantity = 1;
 		}
@@ -78,10 +85,6 @@ export const createCommand = defineCommand({
 			}
 		}
 
-		if (createableItem.GPCost && user.GP < createableItem.GPCost * quantity) {
-			return `You need ${createableItem.GPCost.toLocaleString()} coins to ${action} this item.`;
-		}
-
 		if (createableItem.maxCanOwn) {
 			const allItems = user.allItemsOwned;
 			const amountOwned = allItems.amount(createableItem.name);
@@ -89,6 +92,14 @@ export const createCommand = defineCommand({
 				return `You already have ${amountOwned}x ${createableItem.name}, you can't create another.`;
 			}
 			quantity = createableItem.maxCanOwn - amountOwned;
+		}
+
+		const gpCost = createableItem.GPCost
+			? safePositiveProduct(createableItem.GPCost, quantity, Number.MAX_SAFE_INTEGER)
+			: null;
+		if (gpCost && !gpCost.ok) return gpCost.error;
+		if (gpCost?.ok && user.GP < gpCost.value) {
+			return `You need ${gpCost.value.toLocaleString()} coins to ${action} this item.`;
 		}
 
 		const outItems = new Bank(
@@ -100,8 +111,8 @@ export const createCommand = defineCommand({
 				: new Bank(createableItem.inputItems)
 		).multiply(quantity);
 
-		if (createableItem.GPCost) {
-			inItems.add('Coins', createableItem.GPCost * quantity);
+		if (gpCost?.ok) {
+			inItems.add('Coins', gpCost.value);
 		}
 
 		const materialsOwned = user.materialsOwned();

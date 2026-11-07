@@ -3,6 +3,12 @@ import { Bank } from 'oldschooljs';
 
 import { BitField } from '@/lib/constants.js';
 import { SlayerRewardsShop } from '@/lib/slayer/slayerUnlocks.js';
+import {
+	MAX_SHOP_QUANTITY,
+	requirePositiveQuantity,
+	safePositiveProduct,
+	validateQuantity
+} from '@/lib/util/validateQuantity.js';
 
 const slayerPurchaseError =
 	'An error occurred trying to make this purchase. Please try again or contact #help-and-support if the issue persists.';
@@ -31,12 +37,19 @@ export async function slayerShopBuyCommand({
 		if (buyableObj.haveOne && user.allItemsOwned.has(buyableObj.item)) {
 			return `You already own a ${buyableObj.name}`;
 		}
-		const qty = buyableObj.haveOne ? 1 : (quantity ?? 1);
-		const cost = qty * buyableObj.slayerPointCost;
+		const parsedQuantity = requirePositiveQuantity(quantity, { max: MAX_SHOP_QUANTITY });
+		if (!parsedQuantity.ok) return parsedQuantity.error;
+		const qty = buyableObj.haveOne ? 1 : parsedQuantity.value;
+		const parsedCost = safePositiveProduct(buyableObj.slayerPointCost, qty);
+		if (!parsedCost.ok) return parsedCost.error;
+		const cost = parsedCost.value;
 		if (user.user.slayer_points >= cost) {
 			try {
-				await user.update({ slayer_points: { decrement: cost } });
-				await user.addItemsToBank({ items: new Bank().add(buyableObj.item, qty), collectionLog: true });
+				await user.transactItems({
+					itemsToAdd: new Bank().add(buyableObj.item, qty),
+					collectionLog: true,
+					otherUpdates: { slayer_points: { decrement: cost } }
+				});
 				return `You bought ${qty}x ${buyableObj.name}.`;
 			} catch (e) {
 				Logging.logError(e as Error, {
@@ -55,7 +68,9 @@ export async function slayerShopBuyCommand({
 		if (user.user.slayer_unlocks.includes(buyableObj.id)) {
 			return `You already have ${buyableObj.name} unlocked.`;
 		}
-		const cost = buyableObj.slayerPointCost;
+		const parsedCost = validateQuantity(buyableObj.slayerPointCost, { min: 1, label: 'Cost' });
+		if (!parsedCost.ok) return parsedCost.error;
+		const cost = parsedCost.value;
 		if (user.user.slayer_points >= cost) {
 			const newUnlocks = [...user.user.slayer_unlocks, buyableObj.id];
 			try {

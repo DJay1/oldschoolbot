@@ -36,7 +36,8 @@ describe('Bank Parsers', () => {
 		expect(psb(',, , , , ,, , , , ,')).toEqual([]);
 		expect(psb('twisted bow, twisted bow, 1000 twisted bow, 5k twisted bow')).toEqual([[get('Twisted bow'), 0]]);
 
-		expect(psb('-1 twisted bow')).toEqual([[get('Twisted bow'), 0]]);
+		expect(psb('-1 twisted bow')).toEqual([]);
+		expect(psb('-500 coins')).toEqual([]);
 
 		expect(psb('1k twisted bow, twisted bow, 1000x twisted bow, 5k twisted bow')).toEqual([
 			[get('Twisted bow'), 1000]

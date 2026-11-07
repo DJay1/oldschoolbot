@@ -4,6 +4,12 @@ import { Bank, Items } from 'oldschooljs';
 import chatHeadImage from '@/lib/canvas/chatHeadImage.js';
 import type { MinigameActivityTaskOptionsWithNoChanges } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import {
+	MAX_SHOP_QUANTITY,
+	requirePositiveQuantity,
+	safePositiveProduct,
+	validateQuantity
+} from '@/lib/util/validateQuantity.js';
 
 const plainGraceful = new Bank({
 	'Graceful hood': 1,
@@ -120,8 +126,14 @@ export async function agilityArenaBuyCommand(user: MUser, input: string, qty = 1
 		};
 	}
 
+	const parsedQty = requirePositiveQuantity(qty, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQty.ok) return parsedQty.error;
+	qty = parsedQty.value;
+
 	if (buyable) {
-		let cost = qty * buyable.cost;
+		const parsedCost = safePositiveProduct(buyable.cost, qty);
+		if (!parsedCost.ok) return parsedCost.error;
+		let cost = parsedCost.value;
 		let errorMsg: string | null = null;
 		if (buyable.name === 'Graceful outfit Recolour') {
 			qty = 1;
@@ -167,6 +179,10 @@ export async function agilityArenaBuyCommand(user: MUser, input: string, qty = 1
 }
 
 export async function agilityArenaXPCommand(user: MUser, qty: number): CommandResponse {
+	const parsedQty = validateQuantity(qty, { min: 1, max: 1000 });
+	if (!parsedQty.ok) return parsedQty.error;
+	if (![1, 10, 25, 100, 1000].includes(parsedQty.value)) return 'Invalid quantity.';
+	qty = parsedQty.value;
 	const amountTicketsHas = user.bank.amount('Agility arena ticket');
 
 	if (amountTicketsHas === 0) {

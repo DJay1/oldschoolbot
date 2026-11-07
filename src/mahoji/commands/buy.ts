@@ -11,6 +11,7 @@ import { quests } from '@/lib/minions/data/quests.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 import { Minigames } from '@/lib/settings/minigames.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
+import { MAX_QUANTITY } from '@/lib/util/validateQuantity.js';
 import { buyFossilIslandNotes } from '@/mahoji/lib/abstracted_commands/buyFossilIslandNotes.js';
 import { buyingTripCommand } from '@/mahoji/lib/abstracted_commands/buyingTripCommand.js';
 import { buyKitten } from '@/mahoji/lib/abstracted_commands/buyKitten.js';
@@ -48,7 +49,10 @@ export const buyCommand = defineCommand({
 	],
 	run: async ({ options, user, interaction, channelId }) => {
 		const { name } = options;
-		let quantity: number | null = mahojiParseNumber({ input: options.quantity, min: 1 });
+		let quantity: number | null = mahojiParseNumber({ input: options.quantity, min: 1, max: MAX_QUANTITY });
+		if (options.quantity && quantity === null) {
+			return 'Quantity must be a whole number of at least 1.';
+		}
 
 		if (stringMatches(name, 'kitten')) {
 			return buyKitten(interaction);

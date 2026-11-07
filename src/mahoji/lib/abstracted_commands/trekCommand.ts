@@ -10,6 +10,7 @@ import type { GearRequirement } from '@/lib/structures/Gear.js';
 import type { TempleTrekkingActivityTaskOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { readableStatName } from '@/lib/util/smallUtils.js';
+import { MAX_SHOP_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 export async function trekCommand(user: MUser, channelId: string, difficulty: string, quantity: number | undefined) {
 	const tier = difficulties.find(item => stringMatches(item.difficulty, difficulty));
@@ -154,7 +155,10 @@ export async function trekShop(
 	if (quantity === undefined) {
 		quantity = inbankquantity;
 	}
-	if (quantity > inbankquantity || quantity === 0) {
+	const parsedQuantity = validateQuantity(quantity, { min: 1, max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
+	if (quantity > inbankquantity) {
 		return "You don't have enough reward tokens for that.";
 	}
 	const outItems = new Bank();

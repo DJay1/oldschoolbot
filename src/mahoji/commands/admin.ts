@@ -54,6 +54,7 @@ import { GrandExchange } from '@/lib/grandExchange.js';
 import { syncCustomPrices } from '@/lib/preStartup.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 import { sorts } from '@/lib/sorts.js';
+import { capCurrencyBalances } from '@/lib/util/capCurrencyBalances.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
 import { safeMessage } from '@/lib/util/smallUtils.js';
@@ -1100,6 +1101,19 @@ export const adminCommand = defineCommand({
 			type: 'Subcommand',
 			name: 'fix_giveaways',
 			description: 'Re-add Join/Leave buttons to all active giveaways.'
+		},
+		{
+			type: 'Subcommand',
+			name: 'cap_balances',
+			description: 'Preview or cap currency balances that are above the supported maximum.',
+			options: [
+				{
+					type: 'Boolean',
+					name: 'apply',
+					description: 'Apply the cap. Omit to preview only.',
+					required: false
+				}
+			]
 		}
 	],
 	run: async ({ options, userId, interaction, guildId, rng }) => {
@@ -1603,6 +1617,11 @@ There are ${await countUsersWithItemInCl(item.id, isIron)} ${isIron ? 'ironmen' 
 			return {
 				files: [{ buffer: Buffer.from(str), name: 'output.txt' }]
 			};
+		}
+
+		if (options.cap_balances) {
+			if (!isAdmin) return 'Only admins can cap balances.';
+			return capCurrencyBalances(options.cap_balances.apply === true);
 		}
 
 		return 'Invalid command.';

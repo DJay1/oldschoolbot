@@ -9,6 +9,7 @@ import { customPrices } from '@/lib/customItems/util.js';
 import { NestBoxesTable } from '@/lib/simulation/misc.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
+import { safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 /**
  * - Hardcoded prices
@@ -292,13 +293,18 @@ export const sellCommand = defineCommand({
 			const specialPrice = specialSoldItems.get(item.id);
 			let pricePerStack = -1;
 			if (specialPrice) {
-				pricePerStack = Math.floor(specialPrice * qty);
+				const priced = safePositiveProduct(specialPrice, qty, Number.MAX_SAFE_INTEGER);
+				if (!priced.ok) return 'That sale is too large.';
+				pricePerStack = priced.value;
 			} else {
 				const { price } = user.isIronman
 					? sellStorePriceOfItem(item, qty)
 					: sellPriceOfItem(item, taxRatePercent);
-				pricePerStack = Math.floor(price * qty);
+				const priced = safePositiveProduct(Math.floor(price), qty, Number.MAX_SAFE_INTEGER);
+				if (!priced.ok) return 'That sale is too large.';
+				pricePerStack = priced.value;
 			}
+			if (!Number.isSafeInteger(totalPrice + pricePerStack)) return 'That sale is too large.';
 			totalPrice += pricePerStack;
 			botItemSellData.push({
 				item_id: item.id,

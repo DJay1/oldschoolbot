@@ -2,6 +2,8 @@ import { Time } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { Bank, Items, Monsters, resolveItems } from 'oldschooljs';
 
+import { MAX_SHOP_QUANTITY, requirePositiveQuantity } from '@/lib/util/validateQuantity.js';
+
 export const gods = [
 	{
 		name: 'Zamorak',
@@ -231,6 +233,9 @@ export async function divineDominionCheck(user: MUser) {
 	return favourStr;
 }
 export async function divineDominionSacrificeCommand(user: MUser, itemStr: string, quantity = 1) {
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
 	const item = Items.getItem(itemStr);
 	if (!item) {
 		return "That item doesn't exist.";

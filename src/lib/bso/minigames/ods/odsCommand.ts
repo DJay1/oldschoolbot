@@ -4,6 +4,7 @@ import { Bank, Items } from 'oldschooljs';
 
 import { trackLoot } from '@/lib/lootTrack.js';
 import type { MinigameActivityTaskOptionsWithNoChanges } from '@/lib/types/minions.js';
+import { MAX_SHOP_QUANTITY, requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 export const OuraniaBuyables = [
 	{
@@ -40,8 +41,13 @@ export async function odsBuyCommand(user: MUser, name: string, qty: number): Com
 	const buyable = OuraniaBuyables.find(i => stringMatches(name, i.item.name));
 	if (!buyable) return "That's not a valid item to buy.";
 
-	let { item, cost } = buyable;
-	cost *= qty;
+	const parsedQuantity = requirePositiveQuantity(qty, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	qty = parsedQuantity.value;
+	const { item } = buyable;
+	const parsedCost = safePositiveProduct(buyable.cost, qty);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
 	const balance = user.user.ourania_tokens;
 	if (balance < cost) {
 		return `You don't have enough Ourania Tokens to buy the ${qty.toLocaleString()}x ${
@@ -49,13 +55,15 @@ export async function odsBuyCommand(user: MUser, name: string, qty: number): Com
 		}. You need ${cost.toLocaleString()}, but you have only ${balance.toLocaleString()}.`;
 	}
 
-	await user.update({
-		ourania_tokens: {
-			decrement: cost
+	await user.transactItems({
+		itemsToAdd: new Bank().add(item.id, qty),
+		collectionLog: true,
+		otherUpdates: {
+			ourania_tokens: {
+				decrement: cost
+			}
 		}
 	});
-
-	await user.addItemsToBank({ items: new Bank().add(item.id, qty), collectionLog: true });
 
 	return `Successfully purchased ${qty.toLocaleString()}x ${item.name} for ${cost.toLocaleString()} Ourania Tokens.`;
 }

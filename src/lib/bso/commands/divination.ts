@@ -14,6 +14,7 @@ import { formatDuration, increaseNumByPercent, removeFromArr, Time } from '@olds
 import { Bank } from 'oldschooljs';
 
 import { assert } from '@/lib/util/logError.js';
+import { safePositiveProduct, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 export const divinationCommand = defineCommand({
 	name: 'divination',
@@ -92,6 +93,7 @@ export const divinationCommand = defineCommand({
 					name: 'quantity',
 					description: 'The quantity of portents to consume for charges.',
 					min_value: 1,
+					max_value: 100_000,
 					required: true
 				}
 			]
@@ -139,14 +141,19 @@ export const divinationCommand = defineCommand({
 			if (!portent) {
 				return 'Invalid portent.';
 			}
+			const parsedQuantity = validateQuantity(options.charge_portent.quantity, { min: 1, max: 100_000 });
+			if (!parsedQuantity.ok) return parsedQuantity.error;
+			const quantity = parsedQuantity.value;
+			const parsedCharges = safePositiveProduct(portent.chargesPerPortent, quantity);
+			if (!parsedCharges.ok) return parsedCharges.error;
 			const cost = new Bank();
-			cost.add(portent.item.id, options.charge_portent.quantity);
+			cost.add(portent.item.id, quantity);
 			if (!user.owns(cost)) {
 				return `You don't own ${cost}.`;
 			}
-			assert(options.charge_portent.quantity > 0);
-			const chargesToGet = options.charge_portent.quantity * portent.chargesPerPortent;
-			if (options.charge_portent.quantity > 1) {
+			assert(quantity > 0);
+			const chargesToGet = parsedCharges.value;
+			if (quantity > 1) {
 				await interaction.confirmation(
 					`Are you sure you want to consume ${cost} for ${chargesToGet}x charges?`
 				);

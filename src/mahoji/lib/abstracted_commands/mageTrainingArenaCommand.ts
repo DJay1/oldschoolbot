@@ -4,6 +4,7 @@ import { Bank, Items, LootTable } from 'oldschooljs';
 import type { MinigameActivityTaskOptionsWithNoChanges } from '@/lib/types/minions.js';
 import { determineRunes } from '@/lib/util/determineRunes.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { validateQuantity } from '@/lib/util/validateQuantity.js';
 import { pizazzPointsPerHour } from '@/tasks/minions/minigames/mageTrainingArenaActivity.js';
 
 const RuneTable = new LootTable()
@@ -78,22 +79,19 @@ export async function mageTrainingArenaBuyCommand(user: MUser, input = '') {
 		return `You don't have enough Pizazz Points to buy the ${item.name}. You need ${cost}, but you have only ${balance}.`;
 	}
 
-	if (upgradesFrom) {
-		await user.removeItemsFromBank(new Bank().add(upgradesFrom.id));
-	}
+	const parsedCost = validateQuantity(cost, { min: 1, label: 'Cost' });
+	if (!parsedCost.ok) return parsedCost.error;
 
-	await prisma.minigame.update({
-		where: {
-			user_id: user.id
-		},
-		data: {
+	await user.transactItems({
+		itemsToAdd: new Bank().add(item.id, 1),
+		itemsToRemove: upgradesFrom ? new Bank().add(upgradesFrom.id) : undefined,
+		collectionLog: true,
+		minigameUpdates: {
 			pizazz_points: {
-				decrement: cost
+				decrement: parsedCost.value
 			}
 		}
 	});
-
-	await user.addItemsToBank({ items: new Bank().add(item.id, 1), collectionLog: true });
 
 	return `Successfully purchased 1x ${item.name} for ${cost} Pizazz Points.`;
 }

@@ -8,6 +8,7 @@ import { trackLoot } from '@/lib/lootTrack.js';
 import Smithing from '@/lib/skilling/skills/smithing/index.js';
 import type { GiantsFoundryActivityTaskOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { MAX_SHOP_QUANTITY, requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
 
 export const giantsFoundryAlloys = [
 	{
@@ -268,7 +269,12 @@ export async function giantsFoundryShopCommand(
 			.join(', ')}`;
 	}
 
-	const cost = quantity * shopItem.cost;
+	const parsedQuantity = requirePositiveQuantity(quantity, { max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
+	const parsedCost = safePositiveProduct(shopItem.cost, quantity);
+	if (!parsedCost.ok) return parsedCost.error;
+	const cost = parsedCost.value;
 	if (cost > currentUserReputation) {
 		return `You don't have enough Foundry Reputation to buy ${quantity.toLocaleString()}x ${shopItem.name} (${
 			shopItem.cost
@@ -287,12 +293,11 @@ export async function giantsFoundryShopCommand(
 
 	await user.transactItems({
 		collectionLog: true,
-		itemsToAdd: new Bank(shopItem.output).multiply(quantity)
-	});
-
-	await user.statsUpdate({
-		foundry_reputation: {
-			decrement: cost
+		itemsToAdd: new Bank(shopItem.output).multiply(quantity),
+		statsUpdates: {
+			foundry_reputation: {
+				decrement: cost
+			}
 		}
 	});
 	const newRep = await user.fetchUserStat('foundry_reputation');

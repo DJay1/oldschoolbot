@@ -140,7 +140,8 @@ export const bsoMinigamesCommand = defineCommand({
 							type: 'Integer',
 							name: 'quantity',
 							description: 'The quantity you want to buy (default 1).',
-							min_value: 1
+							min_value: 1,
+							max_value: 100_000
 						}
 					]
 				}
@@ -264,6 +265,7 @@ export const bsoMinigamesCommand = defineCommand({
 							name: 'quantity',
 							description: 'The quantity you want to sacrifice (default 1).',
 							min_value: 1,
+							max_value: 100_000,
 							required: false
 						}
 					]

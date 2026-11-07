@@ -7,6 +7,7 @@ import type {
 	ShadesOfMortonSacredOilOptions
 } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 type Remains = 'Loar' | 'Phrin' | 'Riyl' | 'Fiyr' | 'Asyn' | 'Urium';
 
@@ -445,6 +446,11 @@ export async function shadesOfMortonCreatePyreLogsCommand(
 
 	const totalTime = await user.calcMaxTripLength('ShadesOfMortonPyreLogs');
 	const maxQuantity = Math.min(logsOwned, sacredOilOwned, Math.floor(totalTime / TIME_PER_PYRE_LOG));
+	if (quantity !== undefined) {
+		const parsedQuantity = validateQuantity(quantity, { min: 1, max: MAX_QUANTITY });
+		if (!parsedQuantity.ok) return parsedQuantity.error;
+		quantity = parsedQuantity.value;
+	}
 	const finalQuantity = quantity ? Math.min(quantity, maxQuantity) : maxQuantity;
 	if (finalQuantity < 1) return 'You do not have enough time or supplies to make any pyre logs.';
 

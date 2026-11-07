@@ -105,7 +105,8 @@ export const clueCommand = defineCommand({
 			name: 'quantity',
 			description: 'The quantity you want to do.',
 			required: false,
-			min_value: 1
+			min_value: 1,
+			max_value: 100_000
 		}
 	],
 	run: async ({ options, user, channelId, rng }) => {
