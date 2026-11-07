@@ -12,6 +12,11 @@
  *   src/lib/customItems/   (see ./customItems.ts)
  *   named IDs: src/lib/bso/BSOItem.ts
  *
+ * Seasonal event items (summer, christmas, halloween, easter):
+ *   src/lib/events/<event>/items.ts
+ *   Registered from customItems.ts even when the event is disabled, so
+ *   items players already own keep their names, ids, and icons.
+ *
  * To change a stock item ID: edit item_data.json (oldschooljs generate scripts),
  * not a call site.
  * To change a custom item ID: edit the `setCustomItem` call and `BSOItem`, then

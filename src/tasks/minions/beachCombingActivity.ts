@@ -1,18 +1,19 @@
 import { BSOItem } from '@/lib/bso/BSOItem.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
-import { handleCrateSpawns } from '@/lib/bso/handleCrateSpawns.js';
+
+import { Time } from '@oldschoolgg/toolkit';
+import { Bank, type ItemBank, LootTable, randArrItem, SimpleTable } from 'oldschooljs';
+
+import { globalConfig } from '@/lib/constants.js';
+import { isEventActive } from '@/lib/events/registry.js';
+import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
 import {
 	BEACH_COMBING_PET,
 	beachOutfitTable,
 	convertMysteriousBottleToSeaWater,
 	getEclipsePetName,
 	SUMMER_CRATE_S9_EMOJI
-} from '@/lib/bso/summerDays.js';
-
-import { Time } from '@oldschoolgg/toolkit';
-import { Bank, type ItemBank, LootTable, randArrItem, SimpleTable } from 'oldschooljs';
-
-import { globalConfig } from '@/lib/constants.js';
+} from '@/lib/events/summer/summerDays.js';
 import type { BeachCombingActivityTaskOptions } from '@/lib/types/minions.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 
@@ -136,6 +137,17 @@ export const beachCombingTask: MinionTask = {
 	type: 'BeachCombing',
 	async run(data: BeachCombingActivityTaskOptions, { user, handleTripFinish, rng }) {
 		const { channelId, duration, method } = data;
+		if (!isEventActive('summer')) {
+			return handleTripFinish({
+				user,
+				channelId,
+				message: {
+					content: `${user}, the summer shoreline event is on hold, so ${user.minionName} headed back without searching the tide line.`
+				},
+				data,
+				loot: null
+			});
+		}
 		const minutes = Math.floor(duration / Time.Minute);
 		const loot = new Bank();
 		const discoveries: string[] = [];

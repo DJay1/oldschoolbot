@@ -5,10 +5,12 @@ import { roll } from 'node-rng';
 import { Bank, Items } from 'oldschooljs';
 
 import { BitField } from '@/lib/constants.js';
+import { isEventActive } from '@/lib/events/registry.js';
 
 const crateItem = Items.getOrThrow(BSOItem.SUMMER_CRATE_S9);
 
 export function handleCrateSpawns(user: MUser, duration: number, kind: 'trip' | 'tame' = 'trip', _messages?: string[]) {
+	if (!isEventActive('summer')) return null;
 	const accountAge = user.accountAgeInDays();
 	let dropratePerMinute = 8 * 60;
 	if (kind === 'tame') dropratePerMinute *= 2;

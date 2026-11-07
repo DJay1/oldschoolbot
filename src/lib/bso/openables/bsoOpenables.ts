@@ -5,7 +5,6 @@ import {
 	MysteryImpling,
 	ShrimplingImpling
 } from '@/lib/bso/customImplings.js';
-import { holidayOpenables } from '@/lib/bso/openables/holidayOpenables.js';
 import { mysteryBoxOpenables } from '@/lib/bso/openables/mysteryBoxes.js';
 import {
 	BirthdayPackTable,
@@ -20,6 +19,7 @@ import {
 
 import { Bank, Items, itemID, LootTable } from 'oldschooljs';
 
+import { holidayOpenables } from '@/lib/events/openables.js';
 import type { UnifiedOpenable } from '@/lib/openables.js';
 import { keyCrates } from '../keyCrates.js';
 import { PaintBoxTable } from '../paintColors.js';

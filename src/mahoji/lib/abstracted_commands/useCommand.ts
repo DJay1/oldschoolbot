@@ -3,7 +3,6 @@ import { addToDoubleLootTimer } from '@/lib/bso/doubleLoot.js';
 import { allDyes, dyedItems } from '@/lib/bso/dyedItems.js';
 import { mysteriousStepData } from '@/lib/bso/mysteryTrail.js';
 import { divinationEnergies } from '@/lib/bso/skills/divination.js';
-import { getLydiaQuote } from '@/lib/bso/summerDays.js';
 
 import { bold, EmbedBuilder } from '@oldschoolgg/discord';
 import { notEmpty, objectEntries, Time } from '@oldschoolgg/toolkit';
@@ -12,24 +11,12 @@ import { Bank, type Item, Items, resolveItems } from 'oldschooljs';
 
 import { gearImages } from '@/lib/canvas/gearImageData.js';
 import { BitField } from '@/lib/constants.js';
+import { easterUseTrollResponse } from '@/lib/events/easter/use.js';
+import { isEventActive, seasonalEventName } from '@/lib/events/registry.js';
+import { getLydiaQuote } from '@/lib/events/summer/summerDays.js';
+import type { SeasonalEventId } from '@/lib/events/types.js';
 import { assert } from '@/lib/util/logError.js';
 import { flowerTable } from '@/mahoji/lib/abstracted_commands/hotColdCommand.js';
-
-const easterUseTrollItemIDs = new Set([Items.getOrThrow('Magnegg').id, Items.getOrThrow('Wabbit eggs').id]);
-const easterUseTrollMessages = [
-	'🥚 The egg refuses. It has standards.',
-	'🐇 You try that combo. Somewhere, a Wabbit files a complaint.',
-	'🤨 The Magnegg looks deeply unimpressed.',
-	'🥚 Nothing happens, except a faint sense of being judged.',
-	'🐰 The Wabbit eggs rustle mysteriously, then do absolutely nothing.',
-	'🫠 You were so preoccupied with whether you could, you never asked whether the egg cared.',
-	'🥚 The Magnegg emits a vibe best described as "no."',
-	'🐇 A distant bunny laughs at your crafting attempt.',
-	'🙄 The eggs decline to participate in whatever this is.',
-	'🥚 You tap the items together. The items remain unconvinced.',
-	'🐰 The Wabbit union will be hearing about this.',
-	'✨ For one brief moment, it almost seems like something might happen. It does not.'
-] as const;
 
 const messageInABottleMessages = [
 	"We are but a week from finishing our journey, yet the seas have claimed my dearest and only friend, Felris, a noble pup. He was loyal and uplifting, and warmed the heart on a cold day. The tragedy of his loss echoes in the lonely crash of the waves, a vivid reminder of a journey he couldn't complete. Alone, I endure, with only his memory as my companion.",
@@ -198,6 +185,7 @@ export const genericUsables: {
 	loot: Bank | (() => Bank) | null;
 	response: (loot: Bank) => CommandResponse | Awaited<CommandResponse>;
 	addToCL?: boolean;
+	eventId?: SeasonalEventId;
 }[] = [
 	{
 		items: [Items.getOrThrow('Banana'), Items.getOrThrow('Monkey')],
@@ -207,6 +195,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Knife'), Items.getOrThrow('Turkey')],
+		eventId: 'christmas',
 		cost: new Bank().add('Turkey'),
 		loot: new Bank().add('Turkey drumstick', 3),
 		response: () => 'You cut your Turkey into 3 drumsticks!',
@@ -250,6 +239,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Sun Scream'), Items.getOrThrow('Patricia')],
+		eventId: 'summer',
 		cost: new Bank().add('Sun Scream').add('Patricia'),
 		loot: new Bank().add('Lydia'),
 		response: () => {
@@ -268,6 +258,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Sun Scream'), Items.getOrThrow('Partycrab')],
+		eventId: 'summer',
 		cost: new Bank().add('Sun Scream').add('Partycrab'),
 		loot: new Bank().add('Mona'),
 		response: () => 'You rub Sun Scream onto Partycrab, and it struts away looking dramatically beach-goth.',
@@ -275,6 +266,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Sun Scream'), Items.getOrThrow('Dwarven warhammer')],
+		eventId: 'summer',
 		cost: new Bank().add('Sun Scream').add('Dwarven warhammer'),
 		loot: new Bank().add('Gothic Dwarven warhammer'),
 		response: () =>
@@ -283,6 +275,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Pestle and mortar'), Items.getOrThrow('Purple sand dollar')],
+		eventId: 'summer',
 		cost: new Bank().add('Purple sand dollar'),
 		loot: new Bank().add('Purple dust'),
 		response: () => 'You grind the Purple sand dollar into a fine heap of shimmering Purple dust.',
@@ -290,6 +283,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Purple dust'), Items.getOrThrow('Bottle of sea water')],
+		eventId: 'summer',
 		cost: new Bank().add('Purple dust').add('Bottle of sea water'),
 		loot: new Bank().add('Sun Scream (unf)'),
 		response: () => 'You mix the Purple dust into the Bottle of sea water, creating a murky Sun Scream (unf).',
@@ -297,6 +291,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Sun Scream (unf)'), Items.getOrThrow('Black shell')],
+		eventId: 'summer',
 		cost: new Bank().add('Sun Scream (unf)').add('Black shell'),
 		loot: new Bank().add('Sun Scream'),
 		response: () =>
@@ -515,6 +510,7 @@ export const genericUsables: {
 	// Ginger root
 	{
 		items: [Items.getOrThrow('Christmas cake recipe'), Items.getOrThrow('Doug')],
+		eventId: 'christmas',
 		cost: new Bank(),
 		loot: new Bank().add('Ginger root'),
 		response: () => 'You show the recipe to Doug, who goes off digging and returns with a Ginger root.',
@@ -522,6 +518,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Christmas cake recipe'), Items.getOrThrow('Wilvus')],
+		eventId: 'christmas',
 		cost: new Bank(),
 		loot: new Bank().add('Ginger root'),
 		response: () => 'You show the recipe to Wilvus, who goes off and steals it from a mole who had one.',
@@ -538,6 +535,7 @@ export const genericUsables: {
 	// Gingerbread
 	{
 		items: [Items.getOrThrow('Ginger root'), Items.getOrThrow('Dodgy bread')],
+		eventId: 'christmas',
 		cost: new Bank().add('Ginger root').add('Dodgy bread'),
 		loot: new Bank().add('Gingerbread'),
 		response: () => 'You make some Gingerbread.',
@@ -545,6 +543,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Pumpkin carving knife'), Items.getOrThrow('Heirloom pumpkin')],
+		eventId: 'halloween',
 		cost: new Bank().add('Heirloom pumpkin'),
 		loot: new Bank().add('Jack-o-lantern'),
 		response: () => 'You carve your Heirloom pumpkin into a Jack-o-lantern.',
@@ -552,6 +551,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Ensouled demon head'), Items.getOrThrow('Mumpkin')],
+		eventId: 'halloween',
 		cost: new Bank().add('Ensouled demon head').add('Mumpkin'),
 		loot: new Bank().add('Mumpkin (demonic)'),
 		response: () => 'Your mumpkin is now demonic.',
@@ -559,6 +559,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Pumpkin'), Items.getOrThrow('Mumpkin')],
+		eventId: 'halloween',
 		cost: new Bank().add('Pumpkin').add('Mumpkin'),
 		loot: new Bank().add('Mumpkin (pumpkin)'),
 		response: () => 'Your mumpkin is now wearing a Pumpkin on his head.',
@@ -566,6 +567,7 @@ export const genericUsables: {
 	},
 	{
 		items: [Items.getOrThrow('Bones'), Items.getOrThrow('Mumpkin')],
+		eventId: 'halloween',
 		cost: new Bank().add('Bones').add('Mumpkin'),
 		loot: new Bank().add('Mumpkin (dead)'),
 		response: () => 'You have turned your mumpkin into a dead mumpkin.',
@@ -671,6 +673,9 @@ for (const genericU of genericUsables) {
 	usables.push({
 		items: genericU.items,
 		run: async user => {
+			if (genericU.eventId && !isEventActive(genericU.eventId)) {
+				return `The ${seasonalEventName(genericU.eventId)} event is on hold, so that does nothing right now.`;
+			}
 			const cost = genericU.cost ? genericU.cost : undefined;
 			const loot =
 				genericU.loot === null ? undefined : genericU.loot instanceof Bank ? genericU.loot : genericU.loot();
@@ -748,9 +753,8 @@ export async function useCommand(user: MUser, _firstItem: string, _secondItem?: 
 	if (!firstItem || (_secondItem !== undefined && !secondItem)) return "That's not a valid item.";
 	const items = [firstItem, secondItem].filter(notEmpty);
 	assert(items.length === 1 || items.length === 2);
-	if (items.some(item => easterUseTrollItemIDs.has(item.id))) {
-		return randArrItem(easterUseTrollMessages) ?? easterUseTrollMessages[0];
-	}
+	const easterTroll = easterUseTrollResponse(items.map(item => item.id));
+	if (easterTroll) return easterTroll;
 
 	const { bank } = user;
 	const checkBank = new Bank();

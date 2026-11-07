@@ -5,7 +5,8 @@ import { Bank, Items } from 'oldschooljs';
 
 import { BitField, BOT_TYPE, Channel, MAX_TOTAL_LEVEL } from '@/lib/constants.js';
 import { calcCLDetails } from '@/lib/data/Collections.js';
-import { HolidayItems } from '@/lib/data/holidayItems.js';
+import { halloweenClaimHoldMessage } from '@/lib/events/halloween/claim.js';
+import { HolidayItems } from '@/lib/events/halloween/claimItems.js';
 import { getReclaimableItemsOfUser } from '@/lib/reclaimableItems.js';
 
 const independenceDay2Box = 'Independence Day 2 Box';
@@ -99,6 +100,8 @@ const claimables = [
 	{
 		name: `Halloween Items`,
 		action: async (user: MUser) => {
+			const holdMessage = halloweenClaimHoldMessage();
+			if (holdMessage) return holdMessage;
 			if (BOT_TYPE === 'BSO') {
 				return 'This command is only for NEED TO REPLACE.';
 			}
