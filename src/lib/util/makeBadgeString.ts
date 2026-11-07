@@ -12,7 +12,7 @@ export function makeBadgeString(
 		rawBadges.push(Emoji.Ironman);
 	}
 	if (isOriginalCyrSupporter) {
-		rawBadges.unshift(Emoji.Seer);
+		rawBadges.unshift(Emoji.EsbCorgi);
 	}
 	return rawBadges.join(' ').trim();
 }

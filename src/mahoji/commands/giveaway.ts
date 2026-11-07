@@ -116,7 +116,7 @@ export const giveawayCommand = defineCommand({
 				}
 			});
 			if (existingGiveaways.length >= maxGiveaways && !userHasUnlimitedGiveaways(user)) {
-				return `You cannot have more than ${cyrFan ? Emoji.Seer : ''} ${maxGiveaways} giveaways active at a time.`;
+				return `You cannot have more than ${cyrFan ? Emoji.EsbCorgi : ''} ${maxGiveaways} giveaways active at a time.`;
 			}
 
 			if (!guildId && !interaction.guildId) {
