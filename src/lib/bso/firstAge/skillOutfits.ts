@@ -72,7 +72,7 @@ export const skillXpOutfits: readonly SkillOutfitDefinition[] = [
 	},
 	{
 		skill: 'farming',
-		outfit: 'Farmer',
+		outfit: "Farmer's",
 		where: 'anywhere',
 		fullPercent: 2.5,
 		pieces: [
@@ -84,14 +84,14 @@ export const skillXpOutfits: readonly SkillOutfitDefinition[] = [
 	},
 	{
 		skill: 'construction',
-		outfit: 'Carpenter',
+		outfit: "Carpenter's",
 		where: 'skilling',
 		fullPercent: 2.5,
 		pieces: standardPieces(["Carpenter's helmet", "Carpenter's shirt", "Carpenter's trousers", "Carpenter's boots"])
 	},
 	{
 		skill: 'fletching',
-		outfit: 'Fletcher',
+		outfit: "Fletcher's",
 		where: 'anywhere',
 		fullPercent: 3,
 		pieces: [
@@ -104,14 +104,14 @@ export const skillXpOutfits: readonly SkillOutfitDefinition[] = [
 	},
 	{
 		skill: 'invention',
-		outfit: 'Inventor',
+		outfit: "Inventors'",
 		where: 'anywhere',
 		fullPercent: 4,
 		pieces: flatPieces(inventorOutfit, 0.5)
 	},
 	{
 		skill: 'divination',
-		outfit: 'Diviner',
+		outfit: "Diviner's",
 		where: 'anywhere',
 		fullPercent: 4,
 		pieces: flatPieces(divinersOutfit, 0.5)
@@ -205,14 +205,161 @@ export function resolveSkillOutfitXp(input: {
 	return best;
 }
 
+const FIRST_AGE_BONUS_PATTERN = /You received (\d+(?:\.\d+)?)% bonus XP for First age outfit items\./g;
+const OUTFIT_PERCENT_PATTERN = /\*\*([^*]+?) bonus:\*\* (\d+(?:\.\d+)?)% \(([^)]+) XP\) from (your .+? outfit)\./g;
+const OUTFIT_FLAT_PATTERN = /\*\*([^*]+?) bonus:\*\* ([^(\n]+?) XP from (your .+? outfit)\./g;
+const BONUS_CLAUSE_PATTERN =
+	/You received \d+(?:\.\d+)?% bonus XP for First age outfit items\.|\*\*[^*]+ bonus:\*\*.*?outfit\./g;
+
+interface TextSpan {
+	start: number;
+	end: number;
+}
+
+interface OutfitHit extends TextSpan {
+	outfit: string;
+	percent: number | null;
+	xp: number;
+	fromMaxSet: boolean;
+}
+
+function parseLocaleInt(value: string): number {
+	const digits = value.replace(/\D/g, '');
+	return digits.length > 0 ? Number(digits) : Number.NaN;
+}
+
+function viaForOutfit(outfit: string, fromMaxSet: boolean): string {
+	return fromMaxSet ? `your First Age (max) set, same as the ${outfit} outfit` : `your ${outfit} outfit`;
+}
+
+function rangesOverlap(spans: readonly TextSpan[]): boolean {
+	const sorted = [...spans].sort((a, b) => a.start - b.start);
+	for (let i = 1; i < sorted.length; i++) {
+		if (sorted[i].start < sorted[i - 1].end) return true;
+	}
+	return false;
+}
+
+/** Drop a repeated sentence, including the gap that separated it from the previous text. */
+function removalSpan(message: string, start: number, end: number): TextSpan {
+	const lineStart = message.lastIndexOf('\n', start - 1) + 1;
+	const newlineAt = message.indexOf('\n', end);
+	const lineContentEnd = newlineAt === -1 ? message.length : newlineAt;
+	const aloneOnLine =
+		message.slice(lineStart, start).trim() === '' && message.slice(end, lineContentEnd).trim() === '';
+	if (aloneOnLine) {
+		if (lineStart > 0) return { start: lineStart - 1, end: lineContentEnd };
+		if (newlineAt !== -1) return { start: 0, end: newlineAt + 1 };
+		return { start: 0, end: message.length };
+	}
+	if (start > 0 && message[start - 1] === ' ') return { start: start - 1, end };
+	return { start, end };
+}
+
+function applyEdits(message: string, edits: { start: number; end: number; text: string }[]): string {
+	const sorted = [...edits].sort((a, b) => a.start - b.start);
+	if (rangesOverlap(sorted)) return message;
+	let cursor = 0;
+	let out = '';
+	for (const edit of sorted) {
+		out += message.slice(cursor, edit.start);
+		out += edit.text;
+		cursor = edit.end;
+	}
+	return out + message.slice(cursor);
+}
+
+/**
+ * One line per distinct First Age sentence and skilling-outfit bonus.
+ * Repeated lines from several addXP calls keep the first wording and sum the XP.
+ * A single line is left untouched. Amounts granted to the player do not change.
+ */
+export function consolidateSkillXpBonusLines(message: string): string {
+	if (!message) return message;
+
+	const edits: { start: number; end: number; text: string }[] = [];
+	const firstAgeGroups = new Map<string, TextSpan[]>();
+	for (const match of message.matchAll(FIRST_AGE_BONUS_PATTERN)) {
+		const index = match.index;
+		if (index === undefined) continue;
+		const spans = firstAgeGroups.get(match[1]) ?? [];
+		spans.push({ start: index, end: index + match[0].length });
+		firstAgeGroups.set(match[1], spans);
+	}
+	for (const spans of firstAgeGroups.values()) {
+		for (const span of spans.slice(1)) {
+			const removal = removalSpan(message, span.start, span.end);
+			edits.push({ ...removal, text: '' });
+		}
+	}
+
+	const percentHits: OutfitHit[] = [];
+	for (const match of message.matchAll(OUTFIT_PERCENT_PATTERN)) {
+		const index = match.index;
+		if (index === undefined) continue;
+		const outfit = match[1];
+		const percent = Number(match[2]);
+		const xp = parseLocaleInt(match[3]);
+		const fromMaxSet = match[4] === viaForOutfit(outfit, true);
+		const fromOutfit = match[4] === viaForOutfit(outfit, false);
+		if (!fromMaxSet && !fromOutfit) continue;
+		if (!Number.isFinite(percent) || !Number.isFinite(xp)) continue;
+		percentHits.push({ start: index, end: index + match[0].length, outfit, percent, xp, fromMaxSet });
+	}
+
+	const flatHits: OutfitHit[] = [];
+	for (const match of message.matchAll(OUTFIT_FLAT_PATTERN)) {
+		const index = match.index;
+		if (index === undefined) continue;
+		const span = { start: index, end: index + match[0].length };
+		if (percentHits.some(hit => hit.start < span.end && span.start < hit.end)) continue;
+		const outfit = match[1];
+		const xp = parseLocaleInt(match[2]);
+		const fromMaxSet = match[3] === viaForOutfit(outfit, true);
+		const fromOutfit = match[3] === viaForOutfit(outfit, false);
+		if (!fromMaxSet && !fromOutfit) continue;
+		if (!Number.isFinite(xp)) continue;
+		flatHits.push({ ...span, outfit, percent: null, xp, fromMaxSet });
+	}
+
+	const outfitGroups = new Map<string, OutfitHit[]>();
+	for (const hit of [...percentHits, ...flatHits]) {
+		const key = `${hit.outfit}\0${hit.percent ?? 'flat'}\0${hit.fromMaxSet}`;
+		const group = outfitGroups.get(key) ?? [];
+		group.push(hit);
+		outfitGroups.set(key, group);
+	}
+	for (const group of outfitGroups.values()) {
+		if (group.length < 2) continue;
+		group.sort((a, b) => a.start - b.start);
+		const [first, ...rest] = group;
+		const xp = group.reduce((sum, hit) => sum + hit.xp, 0);
+		edits.push({
+			start: first.start,
+			end: first.end,
+			text: namedOutfitXpLine({
+				outfit: first.outfit,
+				percent: first.percent,
+				xp,
+				fromMaxSet: first.fromMaxSet
+			})
+		});
+		for (const hit of rest) {
+			const removal = removalSpan(message, hit.start, hit.end);
+			edits.push({ ...removal, text: '' });
+		}
+	}
+
+	if (edits.length === 0) return message;
+	return applyEdits(message, edits);
+}
+
 /** First Age and outfit sentences from an addXP result, for trips that build their own XP line. */
 export function skillXpBonusClauses(message: string): string {
 	const withoutLevelUps = message
 		.split('\n')
 		.filter(line => !line.includes('**Congratulations'))
 		.join(' ');
-	const matches = withoutLevelUps.match(
-		/You received \d+(?:\.\d+)?% bonus XP for First age outfit items\.|\*\*[^*]+ bonus:\*\*.*?outfit\./g
-	);
+	const matches = consolidateSkillXpBonusLines(withoutLevelUps).match(BONUS_CLAUSE_PATTERN);
 	return matches ? matches.join(' ') : '';
 }

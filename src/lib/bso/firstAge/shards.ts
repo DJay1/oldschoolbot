@@ -175,7 +175,7 @@ export const FIRST_AGE_REQUIRED_SACRIFICES = [
 		slots: [['Pyromancer hood'], ['Pyromancer garb'], ['Pyromancer robe'], ['Pyromancer boots']]
 	},
 	{
-		outfit: 'Farmer',
+		outfit: "Farmer's",
 		slots: [
 			["Farmer's strawhat"],
 			["Farmer's jacket", "Farmer's shirt"],
@@ -204,7 +204,7 @@ export const FIRST_AGE_REQUIRED_SACRIFICES = [
 		]
 	},
 	{
-		outfit: 'Fletcher',
+		outfit: "Fletcher's",
 		slots: [
 			["Fletcher's hat"],
 			["Fletcher's top"],
@@ -214,7 +214,7 @@ export const FIRST_AGE_REQUIRED_SACRIFICES = [
 		]
 	},
 	{
-		outfit: 'Inventor',
+		outfit: "Inventors'",
 		slots: [
 			["Inventors' helmet"],
 			["Inventors' torso"],
@@ -225,7 +225,7 @@ export const FIRST_AGE_REQUIRED_SACRIFICES = [
 		]
 	},
 	{
-		outfit: 'Diviner',
+		outfit: "Diviner's",
 		slots: [
 			["Diviner's headwear"],
 			["Diviner's robe"],
@@ -239,7 +239,7 @@ export const FIRST_AGE_REQUIRED_SACRIFICES = [
 		slots: [['Rogue mask'], ['Rogue top'], ['Rogue trousers'], ['Rogue gloves'], ['Rogue boots']]
 	},
 	{
-		outfit: 'Carpenter',
+		outfit: "Carpenter's",
 		slots: [["Carpenter's helmet"], ["Carpenter's shirt"], ["Carpenter's trousers"], ["Carpenter's boots"]]
 	},
 	{
@@ -247,7 +247,7 @@ export const FIRST_AGE_REQUIRED_SACRIFICES = [
 		slots: [['Hat of the eye'], ['Robe top of the eye'], ['Robe bottoms of the eye'], ['Boots of the eye']]
 	},
 	{
-		outfit: 'Zealot',
+		outfit: "Zealot's",
 		slots: [["Zealot's helm"], ["Zealot's robe top"], ["Zealot's robe bottom"], ["Zealot's boots"]]
 	}
 ] as const;
