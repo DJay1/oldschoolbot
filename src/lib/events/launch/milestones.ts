@@ -16,7 +16,7 @@ export const LAUNCH_LEVEL_99_XP = convertLVLtoXP(99);
 const LAUNCH_GIFT_OWNER_ID = '290167629966999552';
 
 async function notifyLaunchOwner(text: string): Promise<void> {
-	const channelId = process.env.LOG_CHANNEL_ID;
+	const channelId = process.env.NOTIFICATIONS_CHANNEL_ID || process.env.LOG_CHANNEL_ID;
 	if (!channelId) return;
 	await globalClient
 		.sendMessage(channelId, { content: `<@${LAUNCH_GIFT_OWNER_ID}> ${text}`, allowedMentions: { users: [LAUNCH_GIFT_OWNER_ID] } })

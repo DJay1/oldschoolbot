@@ -130,7 +130,7 @@ const claimables = [
 			if (user.bitfield.includes(BitField.BothBotsMaxedFreeTierOnePerks)) {
 				return 'You already claimed this!';
 			}
-			globalClient.sendMessage(Channel.ServerGeneral, {
+			globalClient.sendMessage(Channel.Notifications, {
 				content: `${user.mention} just claimed free tier 1 perks for being maxed on both accounts!`
 			});
 			await user.update({

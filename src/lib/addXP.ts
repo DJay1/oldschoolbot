@@ -16,12 +16,12 @@ import {
 import { convertLVLtoXP, convertXPtoLVL, type Item, Items, toKMB } from 'oldschooljs';
 
 import { type User, UserEventType } from '@/prisma/main.js';
-import { globalConfig, MAX_LEVEL, MAX_LEVEL_XP, MAX_TOTAL_LEVEL, MAX_XP } from '@/lib/constants.js';
+import { MAX_LEVEL, MAX_LEVEL_XP, MAX_TOTAL_LEVEL, MAX_XP } from '@/lib/constants.js';
+import { skillEmoji } from '@/lib/data/emojis.js';
+import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { LAUNCH_XP_BONUS_SENTENCE, LAUNCH_XP_BOOST_PERCENT } from '@/lib/events/launch/constants.js';
 import { maybeAnnounceLaunchFirst99, maybeAnnounceLaunchFirstMax } from '@/lib/events/launch/milestones.js';
 import { isEventActive } from '@/lib/events/registry.js';
-import { skillEmoji } from '@/lib/data/emojis.js';
-import { getSimilarItems } from '@/lib/data/similarItems.js';
 import type { AddXpParams } from '@/lib/minions/types.js';
 import Skillcapes from '@/lib/skilling/skillcapes.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
@@ -60,7 +60,6 @@ async function onMax(user: MUser) {
 	} 🎉`;
 
 	globalClient.emit(Events.ServerNotification, str);
-	globalClient.sendMessage(globalConfig.supportServerID, { content: str });
 	const clientSettings = await ClientSettings.fetch({ maxing_message: true });
 	globalClient.sendDm(user.id, clientSettings.maxing_message);
 	await maybeAnnounceLaunchFirstMax(user, normies).catch(err => Logging.logError(err as Error));

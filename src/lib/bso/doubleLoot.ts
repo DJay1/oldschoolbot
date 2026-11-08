@@ -28,7 +28,7 @@ export async function addToDoubleLootTimer(amount: number, reason: string) {
 
 	const ends = new Date(newDoubleLootTimer);
 	const ping = DOUBLE_LOOT_ROLE_ID ? `${roleMention(DOUBLE_LOOT_ROLE_ID)} ` : '';
-	await globalClient.sendMessage(Channel.GeneralChannel, {
+	await globalClient.sendMessage(Channel.Notifications, {
 		content: `${ping}🎉 **${formatDuration(amount)}** added to Double Loot because: ${reason}\nDouble Loot now ends ${time(ends)} (${time(ends, 'R')}).`,
 		allowedMentions: { roles: DOUBLE_LOOT_ROLE_ID ? [DOUBLE_LOOT_ROLE_ID] : [] }
 	});
@@ -67,7 +67,7 @@ export async function syncPrescence() {
 	const active = isDoubleLootActive();
 	if (wasDoubleLootActive === true && !active) {
 		await globalClient
-			.sendMessage(Channel.GeneralChannel, { content: 'Double Loot has ended.' })
+			.sendMessage(Channel.Notifications, { content: 'Double Loot has ended.' })
 			.catch(err => Logging.logError(err as Error));
 	}
 	wasDoubleLootActive = active;

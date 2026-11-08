@@ -108,7 +108,8 @@ const logChannelOverride = process.env.LOG_CHANNEL_ID;
 export const Channel: ChannelConfig = logChannelOverride
 	? {
 			ServerGeneral: logChannelOverride,
-			Notifications: logChannelOverride,
+			// Fun announcements (rare drops, pets, maxing, double loot) can live in their own channel.
+			Notifications: process.env.NOTIFICATIONS_CHANNEL_ID || logChannelOverride,
 			GrandExchange: logChannelOverride,
 			EconomyLogs: logChannelOverride,
 			HelpAndSupport: logChannelOverride,
