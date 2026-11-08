@@ -30,6 +30,14 @@ export async function bankBgCommand(interaction: MInteraction, user: MUser, name
 		return `Your bank background is now **${selectedImage.name}**!`;
 	}
 
+	// Custom backgrounds belong to specific players.
+	if (selectedImage.owners?.includes(user.id)) {
+		await user.update({
+			bankBackground: selectedImage.id
+		});
+		return `Your bank background is now **${selectedImage.name}**!`;
+	}
+
 	if (selectedImage.storeBitField && user.user.store_bitfield.includes(selectedImage.storeBitField)) {
 		await user.update({
 			bankBackground: selectedImage.id
