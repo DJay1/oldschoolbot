@@ -22,6 +22,7 @@ export const vasaBISGear = new Gear({
 });
 
 export async function vasaCommand(interaction: MInteraction, user: MUser, channelId: string, quantity?: number) {
+	await interaction.defer();
 	const instance = new BossInstance({
 		interaction,
 		leader: user,
