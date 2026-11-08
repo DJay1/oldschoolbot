@@ -6,9 +6,7 @@ import { chunk } from 'remeda';
 import { choicesOf, filterOption, itemOption } from '@/discord/index.js';
 import type { BankFlag } from '@/lib/canvas/bankImage.js';
 import { bankFlags } from '@/lib/canvas/bankImage.js';
-import { PerkTier } from '@/lib/constants.js';
 import { type Flags, OverrideStatus } from '@/lib/minions/types.js';
-import { withPatreonLink } from '@/lib/patreonLink.js';
 import { BankSortMethods } from '@/lib/sorts.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
@@ -111,14 +109,6 @@ export const bankCommand = defineCommand({
 
 		if (options.flag) mahojiFlags.push(options.flag);
 		if (options.flag_extra) mahojiFlags.push(options.flag_extra);
-		if (
-			(mahojiFlags.includes('show_all') || mahojiFlags.includes('wide')) &&
-			(await user.fetchPerkTier()) < PerkTier.Two
-		) {
-			return withPatreonLink(
-				'Seeing your whole bank as one long image to scroll (show_all or wide) is a Patreon perk for Pup and up. Everyone can use the page buttons.'
-			);
-		}
 		if (options.page && options.item) {
 			options.item = `${options.page} ${options.item}`.trim();
 			options.page = undefined;
