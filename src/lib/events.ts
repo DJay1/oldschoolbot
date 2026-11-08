@@ -17,6 +17,7 @@ import { lastRoboChimpSyncCache } from '@/lib/cache.js';
 import { CONSTANTS, globalConfig } from '@/lib/constants.js';
 import { customItems } from '@/lib/customItems/util.js';
 import { isEventActive, resolveSeasonalEvent } from '@/lib/events/registry.js';
+import { patreonUrl } from '@/lib/patreonLink.js';
 import { roboChimpSyncData } from '@/lib/roboChimp.js';
 import type { ActivityTaskData } from '@/lib/types/minions.js';
 import { claimDiscordEvent } from '@/lib/util/discordEventGate.js';
@@ -238,6 +239,12 @@ const mentionCommands: MentionCommand[] = [
 		}
 	},
 	{
+		name: 'patreon',
+		aliases: ['patreon', 'patron'],
+		description: 'Shows the Patreon link.',
+		run: async () => ({ content: patreonMessage() })
+	},
+	{
 		name: 'cd',
 		aliases: ['cd'],
 		description: 'Shows your cooldowns.',
@@ -296,6 +303,10 @@ const mentionCommands: MentionCommand[] = [
 	}
 ];
 
+function patreonMessage() {
+	return `🐶 Support Bark School Corgo on Patreon and unlock perks like longer trips, extra boxes and more: <${patreonUrl()}>\nSee all the tiers with /patron info.`;
+}
+
 const commandList = [...new Set(mentionCommands.flatMap(i => [i.name, ...i.aliases]))];
 
 export async function onMessage(msg: IMessage) {
@@ -304,6 +315,12 @@ export async function onMessage(msg: IMessage) {
 	void boxSpawnHandler(msg);
 
 	const content = msg.content.trim();
+	if (/^[.!]patreon$/i.test(content)) {
+		if (await globalClient.channelIsSendable(msg.channel_id)) {
+			await globalClient.replyToMessage(msg, { content: patreonMessage() });
+		}
+		return;
+	}
 	if (!content.includes(mentionText)) return;
 
 	const statusRegex = new RegExp(`^(\\s*<@&?[0-9]+>)*\\s*<@${globalConfig.clientID}>\\s*(<@&?[0-9]+>\\s*)*$`);

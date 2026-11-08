@@ -15,6 +15,7 @@ import {
 	bscPatronRoleChanges,
 	bscPatronRolesConfigured,
 	bscPatronTierByLevel,
+	bscStaffLevelFromRoles,
 	bscSupportServerId,
 	decideBscPatronSync,
 	nextBscCustomBackground,
@@ -100,7 +101,9 @@ export async function syncBscPatronFromRoles(userId: string, roleIds: readonly s
 	if (!bscPatronRolesConfigured()) return;
 	const state = await getBscPatronOverride(userId);
 	if (state?.manual) return;
-	const roleLevel = bscPatronLevelFromRoles(roleIds);
+	const paidLevel = bscPatronLevelFromRoles(roleIds);
+	const staffLevel = bscStaffLevelFromRoles(roleIds);
+	const roleLevel = Math.max(paidLevel, staffLevel);
 	if (roleLevel === 0 && !state) {
 		const existing = await prisma.user.findUnique({
 			where: { id: userId },
@@ -123,7 +126,12 @@ export async function syncBscPatronFromRoles(userId: string, roleIds: readonly s
 	});
 	if (decision.skip) return;
 
-	const changes = decision.reconcileRoles ? bscPatronRoleChanges(roleIds, decision.level) : { add: null, remove: [] };
+	// Staff perks don't hand out a Patreon tier role, so leave their roles alone.
+	const staffDriven = staffLevel > paidLevel;
+	const changes =
+		decision.reconcileRoles && !staffDriven
+			? bscPatronRoleChanges(roleIds, decision.level)
+			: { add: null, remove: [] };
 	const sameLevel = decision.level === bitLevel;
 	const sameGrace = (decision.roleMissingSince ?? null) === (state?.roleMissingSince ?? null);
 	const sameCustom = decision.customBackground === (state?.customBackground ?? false);

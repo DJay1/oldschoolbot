@@ -248,6 +248,29 @@ export function bscPatronTierFromBits(bits: readonly number[]): BscPatronTier | 
 	return bscPatronTierByLevel(bscPatronLevelFromBits(bits));
 }
 
+/** Staff roles (DJ, Owner, Admin, Head Mod, Mod) get Top Dog perks for free. STAFF_ROLE_IDS overrides. */
+export const BSC_STAFF_PATRON_LEVEL: BscPatronLevel = 3;
+const DEFAULT_STAFF_ROLE_IDS = [
+	'1385684584976482374',
+	'1456110293825355819',
+	'1353916725086785646',
+	'1325179339641458749',
+	'1496337775560232970'
+];
+
+export function bscStaffRoleIds(): string[] {
+	const raw = process.env.STAFF_ROLE_IDS?.trim();
+	if (!raw) return DEFAULT_STAFF_ROLE_IDS;
+	return raw
+		.split(',')
+		.map(id => id.trim())
+		.filter(Boolean);
+}
+
+export function bscStaffLevelFromRoles(roleIds: readonly string[]): BscPatronLevel {
+	return bscStaffRoleIds().some(id => roleIds.includes(id)) ? BSC_STAFF_PATRON_LEVEL : 0;
+}
+
 /** Highest configured role wins. Unconfigured roles are ignored. */
 export function bscPatronLevelFromRoles(roleIds: readonly string[]): BscPatronLevel {
 	let level: BscPatronLevel = 0;
