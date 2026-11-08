@@ -57,6 +57,9 @@ const configuredSupportGuild =
 	process.env.SUPPORT_GUILD_ID ?? process.env.TESTING_SERVER ?? process.env.TESTING_SERVER_ID;
 const TEST_SERVER_ID = configuredSupportGuild ?? OLDSCHOOLGG_TESTING_SERVER_ID;
 const TEST_SERVER_LOG_CHANNEL = process.env.TESTING_LOG_CHANNEL ?? '1042760447830536212';
+/** The Los Perros channel where /tools patron spawnbox and spawnlamp work, and where chat box spawns happen. */
+export const SPAWN_CHANNEL_ID = process.env.SPAWN_CHANNEL_ID ?? '1569016748349325432';
+export const spawnChannelMessage = `Spawning only works in <#${SPAWN_CHANNEL_ID}>. Head over there to spawn boxes and lamps!`;
 export const DELETED_USER_ID = '111111111111111111';
 export const BOT_AVATAR_HASH =
 	BOT_TYPE === 'OSB' ? '99c10999dc733528115dea1e061f3209' : '26bf6ee2aee1402680862d26eeeef2b5';

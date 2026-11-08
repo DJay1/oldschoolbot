@@ -10,12 +10,12 @@ import { Emoji, formatDuration, PerkTier, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, randArrItem, randInt, roll } from 'node-rng';
 import { Bank, convertLVLtoXP, itemID } from 'oldschooljs';
 
-import { BitField, Channel, globalConfig } from '@/lib/constants.js';
+import { BitField, globalConfig, SPAWN_CHANNEL_ID, spawnChannelMessage } from '@/lib/constants.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
 
 export async function spawnLampIsReady(user: MUser, channelId: string): Promise<[true] | [false, string]> {
-	if (globalConfig.isProduction && ![Channel.GeneralChannel, Channel.ServerGeneral].includes(channelId)) {
-		return [false, "You can't use spawnlamp in this channel."];
+	if (globalConfig.isProduction && channelId !== SPAWN_CHANNEL_ID) {
+		return [false, spawnChannelMessage];
 	}
 
 	const perkTier = await user.fetchPerkTier();
@@ -107,8 +107,8 @@ export async function spawnBoxCommand(user: MUser, interaction: MInteraction): C
 	if (perkTier < PerkTier.Five && !user.bitfield.includes(BitField.HasPermanentEventBackgrounds)) {
 		return withPatreonLink('Spawn box is an Alpha perk.');
 	}
-	if (globalConfig.isProduction && ![Channel.GeneralChannel, Channel.ServerGeneral].includes(interaction.channelId)) {
-		return "You can't use spawnbox in this channel.";
+	if (globalConfig.isProduction && interaction.channelId !== SPAWN_CHANNEL_ID) {
+		return spawnChannelMessage;
 	}
 	const lastUse = Number(user.user.last_spawn_box_date ?? 0);
 	const difference = Date.now() - lastUse;

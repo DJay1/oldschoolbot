@@ -8,7 +8,7 @@ import { formatOrdinal, isFunction, stringMatches, Time } from '@oldschoolgg/too
 import { MathRNG, randArrItem, roll } from 'node-rng';
 import { Bank, Items, LootTable, Monsters } from 'oldschooljs';
 
-import { globalConfig } from '@/lib/constants.js';
+import { globalConfig, SPAWN_CHANNEL_ID } from '@/lib/constants.js';
 import { allCollectionLogsFlat } from '@/lib/data/Collections.js';
 import Createables from '@/lib/data/createables.js';
 import killableMonsters from '../minions/data/killableMonsters/index.js';
@@ -178,7 +178,7 @@ type Challenge = (msg: IMessage) => Promise<MUser | null>;
 
 let lastDrop = 0;
 
-const channelId = globalConfig.isProduction ? '792691343284764693' : '944924763405574174';
+const channelId = SPAWN_CHANNEL_ID;
 
 export async function boxSpawnHandler(msg: IMessage) {
 	if (!globalConfig.isProduction) return;
