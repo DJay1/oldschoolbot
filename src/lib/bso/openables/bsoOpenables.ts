@@ -20,6 +20,7 @@ import {
 import { customEmoji } from '@oldschoolgg/toolkit';
 import { Bank, Items, itemID, LootTable } from 'oldschooljs';
 
+import { launchBoxOpenable } from '@/lib/events/launch/launchBox.js';
 import { holidayOpenables } from '@/lib/events/openables.js';
 import type { UnifiedOpenable } from '@/lib/openables.js';
 import { keyCrates } from '../keyCrates.js';
@@ -37,6 +38,7 @@ for (const energy of divinationEnergies) {
 const VenatrixEggTable = new LootTable().tertiary(1000, 'Baby venatrix');
 
 export const bsoOpenables: UnifiedOpenable[] = [
+	launchBoxOpenable,
 	...mysteryBoxOpenables,
 	...holidayOpenables,
 	{

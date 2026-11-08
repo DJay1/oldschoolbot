@@ -208,6 +208,8 @@ import {
 	zulrahCL
 } from '@/lib/data/CollectionsExport.js';
 import { allChristmasEvent2024Items, allChristmasEvent2025Items } from '@/lib/events/christmas/collectionLogItems.js';
+import { launchBoxCL } from '@/lib/events/launch/collectionLog.js';
+import { LaunchItem } from '@/lib/events/launch/items.js';
 import { beachOutfitTable } from '@/lib/events/summer/summerDays.js';
 import { growablePetsCL } from '@/lib/growablePets.js';
 import { implingsCL } from '@/lib/implings.js';
@@ -1510,6 +1512,11 @@ export const allCollectionLogs: ICollection = {
 			'All Pets': {
 				alias: ['pet', 'pets'],
 				items: allPetsCL
+			},
+			'Launch Box': {
+				alias: ['launch', 'launch box', 'launchbox'],
+				items: launchBoxCL,
+				fmtProg: ({ stats }) => `${stats.openableScores.amount(LaunchItem.LAUNCH_BOX)} Launch boxes opened`
 			},
 			'Random Events': {
 				alias: ['random'],
