@@ -114,7 +114,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 				messages.push("You almost found a Launch box... I wonder what's in there.");
 			}
 			if (!result.found) return;
-			messages.push('🎁 You found a Launch box!');
+			messages.push(`${customEmoji('launchbox')} You found a Launch box!`);
 			return { itemsToAddWithCL: new Bank().add(LaunchItem.LAUNCH_BOX) };
 		}
 	},

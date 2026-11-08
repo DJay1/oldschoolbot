@@ -799,7 +799,7 @@ export async function leaguesCheckUser(userID: string) {
 			ranking.tasksRanking
 		})
 **Total Points:** ${roboChimpUser.leagues_points_total.toLocaleString()} (Rank ${ranking.pointsRanking})
-**Points Balance:** ${roboChimpUser.leagues_points_balance_osb.toLocaleString()} BSC / ${roboChimpUser.leagues_points_balance_bso.toLocaleString()} BSC
+**Points Balance:** ${roboChimpUser.leagues_points_balance_bso.toLocaleString()} BSC points
 ${resStr}`,
 		finished: [...finishedIDs, ...roboChimpUser.leagues_completed_tasks_ids]
 	};
@@ -943,7 +943,7 @@ export async function leaguesClaimCommand(user: MUser, finishedTaskIDs: number[]
 	const newTotal = newUser.leagues_points_total;
 
 	const response: Awaited<CommandResponse> = {
-		content: `You claimed ${newlyFinishedTasks.length} tasks, and received ${pointsToAward} points. You now have a balance of ${newUser.leagues_points_balance_osb} BSC points and ${newUser.leagues_points_balance_bso} BSC points, and ${newTotal} total points. You have completed a total of ${newUser.leagues_completed_tasks_ids.length} tasks.`
+		content: `You claimed ${newlyFinishedTasks.length} tasks, and received ${pointsToAward} points. You now have ${newUser.leagues_points_balance_bso.toLocaleString()} BSC points to spend, and ${newTotal.toLocaleString()} total points earned. You have completed a total of ${newUser.leagues_completed_tasks_ids.length} tasks.`
 	};
 
 	if (newlyFinishedTasks.length > 10) {

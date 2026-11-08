@@ -99,7 +99,11 @@ function addMaterials(loot: Bank, rng: LaunchBoxRng, min: number, max: number) {
 	}
 }
 
+/** Trips shorter than this can't roll a Launch box. */
+export const LAUNCH_BOX_MIN_TRIP_MS = 20 * Time.Minute;
+
 export function launchBoxTripChance(durationMs: number, doubleLoot: boolean): number {
+	if (durationMs < LAUNCH_BOX_MIN_TRIP_MS) return 0;
 	const minutes = Math.max(0, durationMs) / Time.Minute;
 	const chance = Math.min(1, minutes / 300);
 	return Math.min(1, chance * (doubleLoot ? 2 : 1));

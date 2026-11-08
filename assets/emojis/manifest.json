@@ -3241,6 +3241,21 @@
 			"usedIn": [
 				"src/lib/bso/bsoEmoji.ts"
 			]
+		},
+		{
+			"name": "launchbox",
+			"uploadName": "launchbox",
+			"aliases": [],
+			"fallback": "🎁",
+			"animated": false,
+			"source": null,
+			"image": "launchbox.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Launch box item icon (bso_icons 74200).",
+			"usedIn": [
+				"src/lib/util/handleTripFinish.ts"
+			]
 		}
 	]
 }
