@@ -65,7 +65,7 @@ const CLUE_SCROLLS: readonly (readonly [string, number, number, number])[] = [
 ];
 
 const RARE_SCALE = 1_000_000;
-export const CORGO_PARTY_HAT_PITY = 120;
+export const CORGO_PARTY_HAT_PITY = 100;
 
 export interface Closeness {
 	got: boolean;
@@ -182,12 +182,12 @@ export function openLaunchBoxes({
 		if (rng.randInt(1, 15) === 1) loot.add('Coins', 3_000_000);
 		if (rng.randInt(1, 40) === 1) loot.add('Coins', 5_000_000);
 
-		const spooky = oneIn(rng, 10);
+		const spooky = oneIn(rng, 5);
 		note(tracks['Spooky piece'], spooky);
 		if (spooky.got) loot.add(SPOOKY_GRACEFUL[rng.randInt(0, SPOOKY_GRACEFUL.length - 1)]);
 
 		const openNumber = boxesOpenedBefore + i + 1;
-		const hat = oneIn(rng, 100);
+		const hat = oneIn(rng, 75);
 		const pity = !hasHat && openNumber >= CORGO_PARTY_HAT_PITY;
 		const hatHit = hat.got || pity;
 		note(tracks['Corgo party hat'], hatHit ? { got: true, percent: 100 } : hat);
