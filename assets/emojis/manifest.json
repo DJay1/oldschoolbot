@@ -12,7 +12,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Abyssal_tentacle",
@@ -25,7 +27,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/degradeableItems.ts"]
+			"usedIn": [
+				"src/lib/degradeableItems.ts"
+			]
 		},
 		{
 			"name": "AdamantTrophy",
@@ -38,7 +42,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "agility",
@@ -51,7 +57,11 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts", "tests/integration/MUser.test.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts",
+				"tests/integration/MUser.test.ts"
+			]
 		},
 		{
 			"name": "amethystMinion",
@@ -64,7 +74,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
+			"usedIn": [
+				"src/lib/minions/data/minionIcons.ts"
+			]
 		},
 		{
 			"name": "Amulet_of_blood_fury",
@@ -77,7 +89,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/degradeableItems.ts"]
+			"usedIn": [
+				"src/lib/degradeableItems.ts"
+			]
 		},
 		{
 			"name": "Ancient_staff",
@@ -107,7 +121,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/degradeableItems.ts"]
+			"usedIn": [
+				"src/lib/degradeableItems.ts"
+			]
 		},
 		{
 			"name": "attack",
@@ -120,7 +136,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "Baby_chinchompa_red",
@@ -133,7 +152,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Baby_mole",
@@ -164,7 +185,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "OSRS bank chest item sprite.",
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/util/handleTripFinish.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/util/handleTripFinish.ts"
+			]
 		},
 		{
 			"name": "Beaver",
@@ -177,7 +201,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "bigOrangeGem",
@@ -190,7 +216,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "BirdsNest",
@@ -203,7 +231,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/emojis.ts", "src/lib/util/interactions.ts"]
+			"usedIn": [
+				"src/lib/data/emojis.ts",
+				"src/lib/util/interactions.ts"
+			]
 		},
 		{
 			"name": "birthdayPresent",
@@ -212,11 +243,15 @@
 			"fallback": "🎁",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "birthdayPresent.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom present.",
-			"usedIn": ["data/bso/openables.json", "data/osb/openables.json", "src/lib/openables.ts"]
+			"usedIn": [
+				"data/bso/openables.json",
+				"data/osb/openables.json",
+				"src/lib/openables.ts"
+			]
 		},
 		{
 			"name": "Bloodhound",
@@ -229,7 +264,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Bottomless_compost_bucket",
@@ -242,7 +279,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/emojis.ts"]
+			"usedIn": [
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "brock",
@@ -251,11 +290,14 @@
 			"fallback": "🦫",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "brock.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom woodcutting pet.",
-			"usedIn": ["src/lib/bso/pvmEffects.ts", "src/lib/util/handleTripFinish.ts"]
+			"usedIn": [
+				"src/lib/bso/pvmEffects.ts",
+				"src/lib/util/handleTripFinish.ts"
+			]
 		},
 		{
 			"name": "BronzeTrophy",
@@ -268,7 +310,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Bryophytas_essence",
@@ -281,7 +325,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/emojis.ts"]
+			"usedIn": [
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "BSO",
@@ -294,7 +340,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "bug",
@@ -307,7 +355,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Callisto_cub",
@@ -357,7 +407,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/degradeableItems.ts"]
+			"usedIn": [
+				"src/lib/degradeableItems.ts"
+			]
 		},
 		{
 			"name": "Chompy_chick",
@@ -370,7 +422,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Clue_scroll",
@@ -396,11 +450,13 @@
 			"fallback": "⬆️",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "Clue_upgrader.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom Invention device.",
-			"usedIn": ["src/lib/bso/skills/invention/effects/clueUpgraderEffect.ts"]
+			"usedIn": [
+				"src/lib/bso/skills/invention/effects/clueUpgraderEffect.ts"
+			]
 		},
 		{
 			"name": "collectionLog",
@@ -413,7 +469,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "combat",
@@ -426,7 +484,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "combatAchievements",
@@ -439,7 +500,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "construction",
@@ -452,7 +515,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "cooking",
@@ -465,7 +531,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "crab",
@@ -478,7 +547,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "cracker",
@@ -491,7 +562,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "crafting",
@@ -504,7 +577,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "deathCard",
@@ -513,11 +589,13 @@
 			"fallback": "💀",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "deathCard.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom Halloween card.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "deathtouched_dart",
@@ -530,7 +608,9 @@
 			"status": "wiki",
 			"wiki": "rs3",
 			"notes": null,
-			"usedIn": ["src/mahoji/lib/abstracted_commands/minionKill/minionKill.ts"]
+			"usedIn": [
+				"src/mahoji/lib/abstracted_commands/minionKill/minionKill.ts"
+			]
 		},
 		{
 			"name": "defence",
@@ -543,7 +623,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "Dharoks_helm",
@@ -575,7 +658,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "dice",
@@ -588,7 +673,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "OSRS dice model (Dice 6).",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Divination",
@@ -601,7 +688,9 @@
 			"status": "wiki",
 			"wiki": "rs3",
 			"notes": null,
-			"usedIn": ["src/lib/data/emojis.ts"]
+			"usedIn": [
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "doubleSpanner",
@@ -614,7 +703,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "doug",
@@ -623,8 +714,8 @@
 			"fallback": "🐾",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "doug.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom mining mole pet.",
 			"usedIn": [
@@ -658,11 +749,13 @@
 			"fallback": "🥚",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "dragonEgg.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom tame egg.",
-			"usedIn": ["src/lib/bso/tames/tames.ts"]
+			"usedIn": [
+				"src/lib/bso/tames/tames.ts"
+			]
 		},
 		{
 			"name": "DragonTrophy",
@@ -675,7 +768,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "dungeoneering",
@@ -705,7 +800,10 @@
 			"status": "wiki",
 			"wiki": "rs3",
 			"notes": null,
-			"usedIn": ["src/lib/bso/commands/dg.ts", "src/lib/bso/tasks/dungeoneeringActivity.ts"]
+			"usedIn": [
+				"src/lib/bso/commands/dg.ts",
+				"src/lib/bso/tasks/dungeoneeringActivity.ts"
+			]
 		},
 		{
 			"name": "EagleEgg",
@@ -714,11 +812,13 @@
 			"fallback": "🥚",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "EagleEgg.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom tame egg.",
-			"usedIn": ["src/lib/bso/tames/tames.ts"]
+			"usedIn": [
+				"src/lib/bso/tames/tames.ts"
+			]
 		},
 		{
 			"name": "easterEgg",
@@ -731,7 +831,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "ehpclock",
@@ -740,11 +842,15 @@
 			"fallback": "⏱️",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "ehpclock.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom efficient-hours clock.",
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts", "src/lib/data/pets.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts",
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Elder_maul",
@@ -773,7 +879,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "emeraldMinion",
@@ -786,7 +894,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
+			"usedIn": [
+				"src/lib/minions/data/minionIcons.ts"
+			]
 		},
 		{
 			"name": "farming",
@@ -799,7 +909,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "Fedora",
@@ -830,7 +943,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "Static fire cape sprite. The previous emoji was animated; this application emoji is a still image.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "firemaking",
@@ -843,7 +958,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "fishing",
@@ -869,11 +987,14 @@
 			"fallback": "🐦",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "Flappy.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom pet.",
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/mahoji/lib/abstracted_commands/slotsCommand.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/mahoji/lib/abstracted_commands/slotsCommand.ts"
+			]
 		},
 		{
 			"name": "fletching",
@@ -886,7 +1007,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "gear",
@@ -895,11 +1019,13 @@
 			"fallback": "🛡️",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "gear.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom gear-score icon. The equipment-tab graphic is a full panel, not an emoji.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "ghostCard",
@@ -908,11 +1034,13 @@
 			"fallback": "👻",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "ghostCard.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom Halloween card.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "Giant_squirrel",
@@ -925,7 +1053,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "goldTrophy",
@@ -938,7 +1068,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "greenGem",
@@ -951,7 +1083,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "hacktoberfest",
@@ -964,7 +1098,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["src/lib/constants.ts"]
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
 		},
 		{
 			"name": "halloweenCandy",
@@ -973,11 +1109,13 @@
 			"fallback": "🍬",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "halloweenCandy.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom Halloween candy.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "hammer",
@@ -990,7 +1128,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Hamstare",
@@ -999,11 +1139,13 @@
 			"fallback": "🐹",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "Hamstare.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom hamster pet.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "harry",
@@ -1012,11 +1154,14 @@
 			"fallback": "🐒",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "harry.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom monkey pet.",
-			"usedIn": ["src/lib/util/handleTripFinish.ts", "src/tasks/minions/agilityActivity.ts"]
+			"usedIn": [
+				"src/lib/util/handleTripFinish.ts",
+				"src/tasks/minions/agilityActivity.ts"
+			]
 		},
 		{
 			"name": "Hellpuppy",
@@ -1047,7 +1192,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "herblore",
@@ -1060,7 +1207,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "Heron",
@@ -1073,7 +1223,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Hill_giant_club",
@@ -1086,7 +1238,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/emojis.ts"]
+			"usedIn": [
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "hitpoints",
@@ -1099,7 +1253,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "hmb",
@@ -1108,11 +1265,13 @@
 			"fallback": "👑",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "hmb.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom tiered mystery box.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "Huge_lamp",
@@ -1125,7 +1284,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "OSRS antique lamp, the standard XP lamp. The original emoji was custom 'huge lamp' art.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "hunter",
@@ -1138,7 +1299,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "Ikkle_hydra",
@@ -1151,7 +1315,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "Default serpentine Ikkle hydra. The wiki has no unsuffixed sprite.",
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "incinerator",
@@ -1164,7 +1330,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Invention",
@@ -1177,7 +1345,10 @@
 			"status": "wiki",
 			"wiki": "rs3",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "ironman",
@@ -1190,7 +1361,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "IronTrophy",
@@ -1203,7 +1376,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Item_contract",
@@ -1212,11 +1387,14 @@
 			"fallback": "📜",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "Item_contract.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom item-contract scroll. The RuneScape Wiki item-protection contract is a different item.",
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "Jalnibrek",
@@ -1229,7 +1407,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Kalphite_princess_2nd_form",
@@ -1256,8 +1436,8 @@
 			"fallback": "🐉",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "klik.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom dragon pet.",
 			"usedIn": [
@@ -1289,11 +1469,13 @@
 			"fallback": "🐕",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "kuro.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom pet.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Leagues",
@@ -1306,7 +1488,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "Official OSRS Leagues icon. The old EmojiId.Leagues constant is unused by commands.",
-			"usedIn": ["src/lib/data/emojis.ts"]
+			"usedIn": [
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "Lil_creator",
@@ -1319,7 +1503,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "lil_lamb",
@@ -1328,11 +1514,13 @@
 			"fallback": "🐑",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "lil_lamb.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom lamb pet.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "Lil_zik",
@@ -1345,7 +1533,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Little_nightmare",
@@ -1358,7 +1548,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts", "src/lib/minions/data/killableMonsters/index.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts",
+				"src/lib/minions/data/killableMonsters/index.ts"
+			]
 		},
 		{
 			"name": "magic",
@@ -1371,7 +1564,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "Magicmastercape",
@@ -1384,12 +1580,16 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "OSRS magic cape. BSO master-cape art is custom and is not on the wiki.",
-			"usedIn": ["src/lib/util/handleTripFinish.ts"]
+			"usedIn": [
+				"src/lib/util/handleTripFinish.ts"
+			]
 		},
 		{
 			"name": "minigameIcon",
 			"uploadName": "minigameIcon",
-			"aliases": ["minigame_icon"],
+			"aliases": [
+				"minigame_icon"
+			],
 			"fallback": "🎯",
 			"animated": false,
 			"source": "https://oldschool.runescape.wiki/w/File:Minigame_icon.png",
@@ -1414,7 +1614,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "minion",
@@ -1446,7 +1649,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "MoneyBag",
@@ -1459,7 +1664,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "OSRS Coins (1000) sack, used as the money-bag icon.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Monkey_crate",
@@ -1468,11 +1675,14 @@
 			"fallback": "📦",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "Monkey_crate.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom BSO monkey crate. The wiki crate is the monkey-dentures crate, a different item.",
-			"usedIn": ["data/bso/openables.json", "src/lib/bso/openables/bsoOpenables.ts"]
+			"usedIn": [
+				"data/bso/openables.json",
+				"src/lib/bso/openables/bsoOpenables.ts"
+			]
 		},
 		{
 			"name": "monkey_egg",
@@ -1481,11 +1691,13 @@
 			"fallback": "🥚",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "monkey_egg.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom tame egg.",
-			"usedIn": ["src/lib/bso/tames/tames.ts"]
+			"usedIn": [
+				"src/lib/bso/tames/tames.ts"
+			]
 		},
 		{
 			"name": "moonlightMutator",
@@ -1494,11 +1706,13 @@
 			"fallback": "🌙",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "moonlightMutator.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom mutator item.",
-			"usedIn": ["src/lib/util/handleTripFinish.ts"]
+			"usedIn": [
+				"src/lib/util/handleTripFinish.ts"
+			]
 		},
 		{
 			"name": "mysterybox",
@@ -1507,11 +1721,14 @@
 			"fallback": "🎁",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "mysterybox.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom mystery-box item.",
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/util/handleTripFinish.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/util/handleTripFinish.ts"
+			]
 		},
 		{
 			"name": "Nexling",
@@ -1524,7 +1741,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Noon",
@@ -1537,7 +1756,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "obis",
@@ -1546,11 +1767,14 @@
 			"fallback": "🔮",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "obis.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom runecraft guardian pet.",
-			"usedIn": ["src/lib/util/handleTripFinish.ts", "src/tasks/minions/runecraftActivity.ts"]
+			"usedIn": [
+				"src/lib/util/handleTripFinish.ts",
+				"src/tasks/minions/runecraftActivity.ts"
+			]
 		},
 		{
 			"name": "Octo",
@@ -1559,11 +1783,13 @@
 			"fallback": "🐙",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "Octo.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom pet.",
-			"usedIn": ["src/mahoji/lib/abstracted_commands/openCommand.ts"]
+			"usedIn": [
+				"src/mahoji/lib/abstracted_commands/openCommand.ts"
+			]
 		},
 		{
 			"name": "Olmlet",
@@ -1576,7 +1802,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts", "src/mahoji/lib/abstracted_commands/coxCommand.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts",
+				"src/mahoji/lib/abstracted_commands/coxCommand.ts"
+			]
 		},
 		{
 			"name": "orangeGem",
@@ -1589,7 +1818,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "OSBot",
@@ -1602,7 +1833,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "partycrab",
@@ -1611,11 +1844,13 @@
 			"fallback": "🦀",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "partycrab.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom beach pet.",
-			"usedIn": ["src/tasks/minions/fishingActivity.ts"]
+			"usedIn": [
+				"src/tasks/minions/fishingActivity.ts"
+			]
 		},
 		{
 			"name": "peky",
@@ -1624,8 +1859,8 @@
 			"fallback": "🐦",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "peky.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom pigeon pet.",
 			"usedIn": [
@@ -1753,7 +1988,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Pet_kreearra",
@@ -1802,7 +2039,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Pet_smoke_devil",
@@ -1815,7 +2054,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Pet_snakeling",
@@ -1881,7 +2122,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "plopper",
@@ -1890,11 +2133,13 @@
 			"fallback": "🐷",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "plopper.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom pig pet.",
-			"usedIn": ["src/tasks/minions/farmingStep.ts"]
+			"usedIn": [
+				"src/tasks/minions/farmingStep.ts"
+			]
 		},
 		{
 			"name": "pmb",
@@ -1903,11 +2148,13 @@
 			"fallback": "🎀",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "pmb.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom tiered mystery box.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "prayer",
@@ -1920,7 +2167,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "Prince_black_dragon",
@@ -1947,11 +2197,13 @@
 			"fallback": "🎃",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "pumpkinCard.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom Halloween card.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "questIcon",
@@ -1964,7 +2216,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "ranged",
@@ -1977,7 +2231,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "remy",
@@ -1986,11 +2243,14 @@
 			"fallback": "🐀",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "remy.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom cooking rat pet.",
-			"usedIn": ["src/mahoji/commands/cook.ts", "src/tasks/minions/cookingActivity.ts"]
+			"usedIn": [
+				"src/mahoji/commands/cook.ts",
+				"src/tasks/minions/cookingActivity.ts"
+			]
 		},
 		{
 			"name": "Rift_guardian_fire",
@@ -2003,7 +2263,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Rock_golem",
@@ -2016,7 +2278,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "Rocky",
@@ -2029,7 +2293,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "rottenPotato",
@@ -2042,7 +2308,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "RSGP",
@@ -2055,7 +2323,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "OSRS Coins (10000).",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "RSHappy",
@@ -2068,7 +2338,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "RSSad",
@@ -2081,7 +2353,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "runecraft",
@@ -2094,7 +2368,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "runecraftMasterCape",
@@ -2107,7 +2384,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "OSRS runecraft cape. BSO master-cape art is custom and is not on the wiki.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "RuneTrophy",
@@ -2120,7 +2399,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "s9chest",
@@ -2129,11 +2410,13 @@
 			"fallback": "🎁",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "s9chest.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom seasonal chest.",
-			"usedIn": ["src/lib/bso/summerDays.ts"]
+			"usedIn": [
+				"src/lib/bso/summerDays.ts"
+			]
 		},
 		{
 			"name": "Sanguinesti_staff_uncharged",
@@ -2146,7 +2429,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/degradeableItems.ts"]
+			"usedIn": [
+				"src/lib/degradeableItems.ts"
+			]
 		},
 		{
 			"name": "santaHat",
@@ -2159,7 +2444,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "sapphireMinion",
@@ -2172,7 +2459,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
+			"usedIn": [
+				"src/lib/minions/data/minionIcons.ts"
+			]
 		},
 		{
 			"name": "Scorpias_offspring",
@@ -2199,11 +2488,14 @@
 			"fallback": "🐕",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "scruffy.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom dog pet.",
-			"usedIn": ["src/mahoji/commands/fletch.ts", "src/tasks/minions/agilityActivity.ts"]
+			"usedIn": [
+				"src/mahoji/commands/fletch.ts",
+				"src/tasks/minions/agilityActivity.ts"
+			]
 		},
 		{
 			"name": "Seedpack",
@@ -2248,7 +2540,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Serpentine_helm",
@@ -2261,7 +2555,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/degradeableItems.ts"]
+			"usedIn": [
+				"src/lib/degradeableItems.ts"
+			]
 		},
 		{
 			"name": "shelldon",
@@ -2270,8 +2566,8 @@
 			"fallback": "🦀",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "shelldon.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom crab pet.",
 			"usedIn": [
@@ -2290,7 +2586,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "skipper",
@@ -2299,11 +2597,15 @@
 			"fallback": "🐧",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "skipper.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom penguin pet.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts", "src/mahoji/commands/sell.ts", "src/tasks/minions/agilityActivity.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts",
+				"src/mahoji/commands/sell.ts",
+				"src/tasks/minions/agilityActivity.ts"
+			]
 		},
 		{
 			"name": "Skotos",
@@ -2316,7 +2618,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "skull",
@@ -2329,7 +2633,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "Wilderness skull status icon.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Skull",
@@ -2342,7 +2648,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "OSRS skull item. The original badge art was custom.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "slayer",
@@ -2355,7 +2663,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "slayerMasterCape",
@@ -2368,7 +2679,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": "OSRS slayer cape. BSO master-cape art is custom and is not on the wiki.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "smithing",
@@ -2381,7 +2694,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "smokey",
@@ -2390,11 +2706,14 @@
 			"fallback": "🐈",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "smokey.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom pet.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts", "src/lib/util/handleTripFinish.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts",
+				"src/lib/util/handleTripFinish.ts"
+			]
 		},
 		{
 			"name": "Smokey",
@@ -2403,11 +2722,14 @@
 			"fallback": "🐱",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "smokey.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom pet (slots). Separate art from the lowercase smokey emoji.",
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/mahoji/lib/abstracted_commands/slotsCommand.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/mahoji/lib/abstracted_commands/slotsCommand.ts"
+			]
 		},
 		{
 			"name": "Smolcano",
@@ -2420,7 +2742,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts", "src/lib/minions/data/killableMonsters/index.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts",
+				"src/lib/minions/data/killableMonsters/index.ts"
+			]
 		},
 		{
 			"name": "SOTWtrophy",
@@ -2433,7 +2758,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "spanner",
@@ -2446,7 +2773,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "Sraracha",
@@ -2473,11 +2802,14 @@
 			"fallback": "⭐",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "starfish.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom beach pet.",
-			"usedIn": ["src/lib/bso/summerDays.ts", "src/lib/skilling/skills/fishing/fishingTripStart.ts"]
+			"usedIn": [
+				"src/lib/bso/summerDays.ts",
+				"src/lib/skilling/skills/fishing/fishingTripStart.ts"
+			]
 		},
 		{
 			"name": "SteelTrophy",
@@ -2490,7 +2822,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["packages/toolkit/src/constants.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts"
+			]
 		},
 		{
 			"name": "strength",
@@ -2503,12 +2837,17 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "tangleroot",
 			"uploadName": "tangleroot",
-			"aliases": ["Tangleroot"],
+			"aliases": [
+				"Tangleroot"
+			],
 			"fallback": "🌱",
 			"animated": false,
 			"source": "https://oldschool.runescape.wiki/w/File:Tangleroot.png",
@@ -2533,7 +2872,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "TinyTempor",
@@ -2546,7 +2888,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/pets.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "tmb",
@@ -2555,11 +2900,13 @@
 			"fallback": "📦",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "tmb.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom tiered mystery box.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "Toxic_blowpipe",
@@ -2572,7 +2919,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/minions/functions/blowpipeCommand.ts"]
+			"usedIn": [
+				"src/lib/minions/functions/blowpipeCommand.ts"
+			]
 		},
 		{
 			"name": "Tumekens_shadow",
@@ -2585,7 +2934,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/degradeableItems.ts"]
+			"usedIn": [
+				"src/lib/degradeableItems.ts"
+			]
 		},
 		{
 			"name": "Twisted_bow",
@@ -2627,11 +2978,13 @@
 			"fallback": "🎁",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "umb.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom tiered mystery box.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "vampireCard",
@@ -2640,11 +2993,13 @@
 			"fallback": "🧛",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "vampireCard.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom Halloween card.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "Venenatis_spiderling",
@@ -2689,11 +3044,13 @@
 			"fallback": "👾",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "Voidling.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom pet.",
-			"usedIn": ["src/lib/util/handleTripFinish.ts"]
+			"usedIn": [
+				"src/lib/util/handleTripFinish.ts"
+			]
 		},
 		{
 			"name": "Vorki",
@@ -2724,7 +3081,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
+			"usedIn": [
+				"src/lib/minions/data/minionIcons.ts"
+			]
 		},
 		{
 			"name": "wilvus",
@@ -2733,11 +3092,14 @@
 			"fallback": "🦝",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "wilvus.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom raccoon pet.",
-			"usedIn": ["src/lib/util/handleTripFinish.ts", "src/tasks/minions/pickpocketActivity.ts"]
+			"usedIn": [
+				"src/lib/util/handleTripFinish.ts",
+				"src/tasks/minions/pickpocketActivity.ts"
+			]
 		},
 		{
 			"name": "wintertoad",
@@ -2746,8 +3108,8 @@
 			"fallback": "🐸",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "wintertoad.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom wintertoad pet.",
 			"usedIn": [
@@ -2763,11 +3125,13 @@
 			"fallback": "🧙",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "witchCard.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom Halloween card.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		},
 		{
 			"name": "woodcutting",
@@ -2780,7 +3144,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "Xerics_talisman_inert",
@@ -2810,7 +3177,10 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["packages/toolkit/src/constants.ts", "src/lib/data/emojis.ts"]
+			"usedIn": [
+				"packages/toolkit/src/constants.ts",
+				"src/lib/data/emojis.ts"
+			]
 		},
 		{
 			"name": "yellowMinion",
@@ -2823,7 +3193,9 @@
 			"status": "bsc",
 			"wiki": null,
 			"notes": "Bark School Corgi art.",
-			"usedIn": ["src/lib/minions/data/minionIcons.ts"]
+			"usedIn": [
+				"src/lib/minions/data/minionIcons.ts"
+			]
 		},
 		{
 			"name": "Youngllef",
@@ -2836,7 +3208,9 @@
 			"status": "wiki",
 			"wiki": "osrs",
 			"notes": null,
-			"usedIn": ["src/lib/data/pets.ts"]
+			"usedIn": [
+				"src/lib/data/pets.ts"
+			]
 		},
 		{
 			"name": "zak",
@@ -2845,11 +3219,13 @@
 			"fallback": "🐂",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "zak.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom yak pet.",
-			"usedIn": ["src/tasks/minions/smeltingActivity.ts"]
+			"usedIn": [
+				"src/tasks/minions/smeltingActivity.ts"
+			]
 		},
 		{
 			"name": "zippy",
@@ -2858,11 +3234,13 @@
 			"fallback": "🐾",
 			"animated": false,
 			"source": null,
-			"image": null,
-			"status": "missing",
+			"image": "zippy.png",
+			"status": "bsc",
 			"wiki": null,
 			"notes": "Custom ferret pet.",
-			"usedIn": ["src/lib/bso/bsoEmoji.ts"]
+			"usedIn": [
+				"src/lib/bso/bsoEmoji.ts"
+			]
 		}
 	]
 }
