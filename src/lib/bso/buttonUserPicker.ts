@@ -12,6 +12,9 @@ import { MathRNG, randInt } from 'node-rng';
  * The question is the command reply. The command's return value replaces it, which
  * clears the buttons.
  */
+/** The spawner can answer alone for this long before everyone else can. */
+export const SPAWNER_HEAD_START_MS = 5 * Time.Second;
+
 export async function buttonUserPicker({
 	interaction,
 	str,
@@ -19,7 +22,8 @@ export async function buttonUserPicker({
 	ironmenAllowed,
 	answers,
 	creator,
-	creatorGetsTwoGuesses
+	creatorGetsTwoGuesses,
+	creatorHeadStartMs = SPAWNER_HEAD_START_MS
 }: {
 	interaction: MInteraction;
 	str: string;
@@ -28,6 +32,7 @@ export async function buttonUserPicker({
 	answers: string[];
 	creator: string;
 	creatorGetsTwoGuesses?: boolean;
+	creatorHeadStartMs?: number;
 }): Promise<string | null> {
 	const ordered = MathRNG.shuffle([...answers]);
 	const nonce = randInt(1, 1_000_000_000).toString(36);
@@ -50,6 +55,7 @@ export async function buttonUserPicker({
 	if (!posted?.message_id) return null;
 
 	const guessed: string[] = [];
+	const openToAllAt = Date.now() + creatorHeadStartMs;
 
 	return new Promise(resolve => {
 		let settled = false;
@@ -58,7 +64,9 @@ export async function buttonUserPicker({
 			interaction,
 			channelId: interaction.channelId,
 			messageId: posted.message_id,
-			timeoutMs: timer
+			timeoutMs: timer,
+			// Keep collecting every click until someone wins or time runs out. The default stops after the first click.
+			maxCollected: Number.POSITIVE_INFINITY
 		});
 
 		const finish = (winnerId: string | null) => {
@@ -87,6 +95,15 @@ export async function buttonUserPicker({
 					await buttonInteraction.reply({
 						ephemeral: true,
 						content: "You aren't allowed to participate.."
+					});
+					return;
+				}
+
+				if (!isCreator && Date.now() < openToAllAt) {
+					const wait = Math.ceil((openToAllAt - Date.now()) / 1000);
+					await buttonInteraction.reply({
+						ephemeral: true,
+						content: `The spawner gets a head start. You can answer in ${wait}s.`
 					});
 					return;
 				}

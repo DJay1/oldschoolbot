@@ -88,7 +88,7 @@ export async function spawnLampCommand(user: MUser, interaction: MInteraction): 
 
 	const winnerId = await buttonUserPicker({
 		interaction,
-		str: `${BSOEmoji.HugeLamp} ${userMention(user.id)} spawned a Lamp: ${question}`,
+		str: `${BSOEmoji.HugeLamp} ${userMention(user.id)} spawned a Lamp (they get a 5s head start): ${question}`,
 		timer: Time.Minute,
 		ironmenAllowed: false,
 		answers,
@@ -124,7 +124,7 @@ export async function spawnBoxCommand(user: MUser, interaction: MInteraction): C
 
 	const winnerId = await buttonUserPicker({
 		interaction,
-		str: `${Emoji.MysteryBox} ${userMention(user.id)} spawned a Mystery Box. Answer within ${time(Math.floor((Date.now() + timeToAnswer) / 1000), 'R')}.
+		str: `${Emoji.MysteryBox} ${userMention(user.id)} spawned a Mystery Box (they get a 5s head start). Answer within ${time(Math.floor((Date.now() + timeToAnswer) / 1000), 'R')}.
 
 ${question}`,
 		timer: timeToAnswer,

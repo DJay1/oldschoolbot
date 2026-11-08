@@ -1,8 +1,7 @@
 import { Time } from '@oldschoolgg/toolkit';
-import { Bank, Items, itemID, type ItemBank } from 'oldschooljs';
+import { Bank, type ItemBank, Items, itemID } from 'oldschooljs';
 
 import type { UnifiedOpenable } from '@/lib/openables.js';
-
 import { launchBoxCL } from './collectionLog.js';
 import { LaunchItem } from './items.js';
 
@@ -33,18 +32,19 @@ export const LAUNCH_BOX_POTIONS: readonly (readonly [string, number])[] = [
 	['Super energy(4)', 10]
 ];
 
-export const LAUNCH_BOX_MATERIALS = [
-	'Yew logs',
-	'Teak logs',
-	'Mahogany logs',
-	'Coal',
-	'Iron ore',
-	'Mithril ore',
-	'Uncut sapphire',
-	'Uncut ruby',
-	'Raw shark',
-	'Big bones'
-] as const;
+/** Every box gives each of these, in a range big enough to actually level with. [name, min, max] */
+export const LAUNCH_BOX_MATERIALS: readonly (readonly [string, number, number])[] = [
+	['Yew logs', 250, 1000],
+	['Teak logs', 250, 1000],
+	['Mahogany logs', 250, 1000],
+	['Coal', 250, 1000],
+	['Iron ore', 250, 1000],
+	['Mithril ore', 250, 1000],
+	['Uncut sapphire', 50, 200],
+	['Uncut ruby', 50, 200],
+	['Raw shark', 100, 300],
+	['Big bones', 100, 400]
+];
 
 const SPOOKY_GRACEFUL = [
 	'Spooky graceful hood',
@@ -93,11 +93,8 @@ function note(track: Closeness, next: Closeness) {
 	if (!track.got && next.roll > track.roll) track.roll = next.roll;
 }
 
-function addMaterials(loot: Bank, rng: LaunchBoxRng, min: number, max: number) {
-	const total = rng.randInt(min, max);
-	for (let i = 0; i < total; i++) {
-		loot.add(LAUNCH_BOX_MATERIALS[rng.randInt(0, LAUNCH_BOX_MATERIALS.length - 1)]);
-	}
+function addMaterials(loot: Bank, rng: LaunchBoxRng) {
+	for (const [name, min, max] of LAUNCH_BOX_MATERIALS) loot.add(name, rng.randInt(min, max));
 }
 
 /** Trips shorter than this can't roll a Launch box. */
@@ -137,7 +134,9 @@ export function buildFounderLaunchExtras(rng: LaunchBoxRng): Bank {
 	for (const [name, qty] of LAUNCH_BOX_POTIONS) {
 		loot.add(name, qty * 2);
 	}
-	addMaterials(loot, rng, 200, 400);
+	// Founder claim gets double materials.
+	addMaterials(loot, rng);
+	addMaterials(loot, rng);
 	loot.add(LaunchItem.LAUNCH_BOX);
 	return loot;
 }
@@ -174,7 +173,7 @@ export function openLaunchBoxes({
 		loot.add('Potato with cheese', 2000);
 		for (const [name, qty] of LAUNCH_BOX_POTIONS) loot.add(name, qty);
 		loot.add('Air rune', 1000).add('Fire rune', 1000).add('Nature rune', 1000).add('Law rune', 500);
-		addMaterials(loot, rng, 100, 200);
+		addMaterials(loot, rng);
 		if (rng.randInt(1, 3) === 1) loot.add('Cannonball', rng.randInt(1000, 3000));
 		loot.add('Small lamp');
 		if (rng.randInt(1, 4) === 1) loot.add('Average lamp');
