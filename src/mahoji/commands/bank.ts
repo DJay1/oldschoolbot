@@ -116,7 +116,7 @@ export const bankCommand = defineCommand({
 			(await user.fetchPerkTier()) < PerkTier.Two
 		) {
 			return withPatreonLink(
-				'Scrolling through your whole bank in one image (show_all or wide) is a Patreon perk for Pup and up.'
+				'Seeing your whole bank as one long image to scroll (show_all or wide) is a Patreon perk for Pup and up. Everyone can use the page buttons.'
 			);
 		}
 		if (options.page && options.item) {
@@ -202,12 +202,7 @@ export const bankCommand = defineCommand({
 
 		const bankSize = Math.ceil(bank.length / 56);
 
-		if (
-			mahojiFlags.includes('show_all') ||
-			mahojiFlags.includes('wide') ||
-			(await user.fetchPerkTier()) < PerkTier.Two ||
-			bankSize === 1
-		) {
+		if (mahojiFlags.includes('show_all') || mahojiFlags.includes('wide') || bankSize === 1) {
 			return result;
 		}
 
