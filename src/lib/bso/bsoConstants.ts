@@ -76,6 +76,7 @@ compCapeCreatableBank.freeze();
 
 export const itemContractResetTime = Time.Hour * 7.8;
 export const giveBoxResetTime = Time.Hour * 23.5;
-export const SPAWN_BOX_COOLDOWN = Time.Day;
+export const SPAWN_BOX_COOLDOWN = Time.Minute * 45;
+export const SPAWN_LAMP_COOLDOWN = Time.Hour * 12;
 
 /** Spawn lamp and spawn box share a short cooldown so patrons can keep the channel busy. */

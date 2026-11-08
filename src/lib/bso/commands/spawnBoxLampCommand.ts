@@ -1,4 +1,4 @@
-import { giveBoxResetTime, SPAWN_BOX_COOLDOWN } from '@/lib/bso/bsoConstants.js';
+import { giveBoxResetTime, SPAWN_BOX_COOLDOWN, SPAWN_LAMP_COOLDOWN } from '@/lib/bso/bsoConstants.js';
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 import { buttonUserPicker } from '@/lib/bso/buttonUserPicker.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
@@ -20,6 +20,7 @@ const SPAWN_KINDS = {
 		label: 'Lamp',
 		emoji: () => BSOEmoji.HugeLamp,
 		perkName: 'Spawn lamp',
+		cooldown: SPAWN_LAMP_COOLDOWN,
 		permanentBit: BitField.HasPermanentSpawnLamp,
 		lastUsed: (user: MUser) => Number(user.user.lastSpawnLamp ?? 0),
 		stamp: (now: number) => ({ lastSpawnLamp: now }),
@@ -30,6 +31,7 @@ const SPAWN_KINDS = {
 		label: 'Mystery Box',
 		emoji: () => Emoji.MysteryBox,
 		perkName: 'Spawn box',
+		cooldown: SPAWN_BOX_COOLDOWN,
 		permanentBit: BitField.HasPermanentEventBackgrounds,
 		lastUsed: (user: MUser) => Number(user.user.last_spawn_box_date ?? 0),
 		stamp: (now: number) => ({ last_spawn_box_date: now }),
@@ -49,7 +51,7 @@ export async function spawnIsReady(user: MUser, channelId: string, kind: SpawnKi
 	if (globalConfig.isProduction && channelId !== SPAWN_CHANNEL_ID) {
 		return [false, spawnChannelMessage];
 	}
-	const left = SPAWN_BOX_COOLDOWN - (Date.now() - cfg.lastUsed(user));
+	const left = cfg.cooldown - (Date.now() - cfg.lastUsed(user));
 	if (left > 0) {
 		return [false, `You can spawn another ${cfg.label.toLowerCase()} in ${formatDuration(left)}.`];
 	}
