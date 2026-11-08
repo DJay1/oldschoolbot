@@ -15,7 +15,7 @@ const worst: LaunchBoxRng = { randInt: (_min, max) => max };
 const best: LaunchBoxRng = { randInt: min => min };
 
 test('rare roll closeness is the chance compared with the roll', () => {
-	expect(rareRoll(25, 47_619)).toEqual({ got: false, percent: 84 });
+	expect(rareRoll(25, 4)).toEqual({ got: false, roll: 22, denominator: 25 });
 	expect(rareRoll(25, 1).got).toBe(true);
 });
 
@@ -43,7 +43,7 @@ test('opening a Launch box gives the fixed supplies and skips patron boxes', () 
 	expect(bank.amount('Clue scroll (grandmaster)')).toBe(0);
 	expect(bank.amount('Clue scroll (elder)')).toBe(0);
 	expect(bank.amount(LaunchItem.CORGO_PARTY_HAT)).toBe(0);
-	expect(message).toContain('How close you were:');
+	expect(message).toContain('Your best rolls (hit the top number to win):');
 	expect(message).toContain('Corgo party hat:');
 	expect(message).not.toContain('Corgo party hat: ✅ Got it!');
 });

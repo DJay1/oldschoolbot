@@ -69,27 +69,28 @@ export const CORGO_PARTY_HAT_PITY = 100;
 
 export interface Closeness {
 	got: boolean;
-	percent: number;
+	/** Shown roll out of the denominator; hitting the denominator wins. */
+	roll: number;
+	denominator: number;
 }
 
-/** closeness = drop chance compared with the roll. A hit is 100%. */
-export function rareRoll(denominator: number, roll: number): Closeness {
-	const threshold = Math.max(1, Math.round(RARE_SCALE / denominator));
-	if (roll <= threshold) return { got: true, percent: 100 };
-	return { got: false, percent: Math.min(99, Math.round((threshold / roll) * 100)) };
+/** A 1/denominator roll. A raw roll of 1 wins and shows as denominator/denominator; others show lower. */
+export function rareRoll(denominator: number, rawRoll: number): Closeness {
+	const roll = denominator - rawRoll + 1;
+	return { got: roll === denominator, roll, denominator };
 }
 
 function oneIn(rng: LaunchBoxRng, denominator: number): Closeness {
-	return rareRoll(denominator, rng.randInt(1, RARE_SCALE));
+	return rareRoll(denominator, rng.randInt(1, denominator));
 }
 
 function note(track: Closeness, next: Closeness) {
 	if (next.got) {
 		track.got = true;
-		track.percent = 100;
+		track.roll = track.denominator;
 		return;
 	}
-	if (!track.got && next.percent > track.percent) track.percent = next.percent;
+	if (!track.got && next.roll > track.roll) track.roll = next.roll;
 }
 
 function addMaterials(loot: Bank, rng: LaunchBoxRng, min: number, max: number) {
@@ -144,7 +145,7 @@ export function buildFounderLaunchExtras(rng: LaunchBoxRng): Bank {
 const CLOSENESS_NAMES = ['Corgo party hat', 'Spooky piece', 'Gregoyle', 'Kuro', 'Flappy'] as const;
 
 function closenessLine(name: string, track: Closeness): string {
-	return track.got ? `${name}: ✅ Got it!` : `${name}: ${track.percent}% of the way there`;
+	return track.got ? `${name}: ✅ Got it!` : `${name}: best roll ${track.roll}/${track.denominator}`;
 }
 
 export function openLaunchBoxes({
@@ -160,11 +161,11 @@ export function openLaunchBoxes({
 }): { bank: Bank; message: string } {
 	const loot = new Bank();
 	const tracks: Record<(typeof CLOSENESS_NAMES)[number], Closeness> = {
-		'Corgo party hat': { got: false, percent: 0 },
-		'Spooky piece': { got: false, percent: 0 },
-		Gregoyle: { got: false, percent: 0 },
-		Kuro: { got: false, percent: 0 },
-		Flappy: { got: false, percent: 0 }
+		'Corgo party hat': { got: false, roll: 0, denominator: 75 },
+		'Spooky piece': { got: false, roll: 0, denominator: 5 },
+		Gregoyle: { got: false, roll: 0, denominator: 125 },
+		Kuro: { got: false, roll: 0, denominator: 250 },
+		Flappy: { got: false, roll: 0, denominator: 1000 }
 	};
 	let hasHat = ownsPartyHat;
 
@@ -194,7 +195,7 @@ export function openLaunchBoxes({
 		const hat = oneIn(rng, 75);
 		const pity = !hasHat && openNumber >= CORGO_PARTY_HAT_PITY;
 		const hatHit = hat.got || pity;
-		note(tracks['Corgo party hat'], hatHit ? { got: true, percent: 100 } : hat);
+		note(tracks['Corgo party hat'], hatHit ? { got: true, roll: 75, denominator: 75 } : hat);
 		if (hatHit) {
 			loot.add(LaunchItem.CORGO_PARTY_HAT);
 			hasHat = true;
@@ -216,7 +217,7 @@ export function openLaunchBoxes({
 	const closeness = CLOSENESS_NAMES.map(name => closenessLine(name, tracks[name])).join('\n');
 	return {
 		bank: loot,
-		message: `${loot}\nHow close you were:\n${closeness}`
+		message: `${loot}\nYour best rolls (hit the top number to win):\n${closeness}`
 	};
 }
 
