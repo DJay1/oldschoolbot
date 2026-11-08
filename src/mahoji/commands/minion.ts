@@ -30,7 +30,7 @@ import { getAllKillCounts, getKCByName } from '@/lib/util/getKCByName.js';
 import { minionStatsEmbed } from '@/lib/util/minionStatsEmbed.js';
 import { getPeakTimesString } from '@/lib/util/peaks.js';
 import { refreshUserCache } from '@/lib/util/refreshCache.js';
-import { patreonUrl } from '@/lib/patreonLink.js';
+import { BSC_PATRON_TIERS } from '@/lib/bsc/patronTiers.js';
 import { isValidNickname, patronMsg } from '@/lib/util/smallUtils.js';
 import {
 	achievementDiaryCommand,
@@ -119,7 +119,7 @@ export async function getUserInfo(user: MUser) {
 		everythingString: `${user.badgedUsername}[${user.id}]
 **Current Trip:** ${taskText}
 **Perk Tier:** ${perkTierDisplay}
-**Perks:** ${patreonUrl()}
+**Perks:** ${bscPerksLine(result.perkTier)}
 **Blacklisted:** ${result.isBlacklisted}
 **Badges:** ${result.badges}
 **Ironman:** ${result.isIronman}
@@ -620,3 +620,10 @@ ${substr}`;
 		return 'Unknown command';
 	}
 });
+
+function bscPerksLine(perkTier: number): string {
+	const tier = [...BSC_PATRON_TIERS].reverse().find(t => perkTier >= t.perkTier);
+	if (!tier) return 'None';
+	const below = tier.level > 1 ? ', plus every perk from the tiers below' : '';
+	return `__${tier.name}__: ${tier.summary}${below}`;
+}
