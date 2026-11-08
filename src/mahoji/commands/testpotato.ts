@@ -345,10 +345,10 @@ const thingsToWipe = [
 	'giveaways'
 ] as const;
 
-export const testPotatoCommand = globalConfig.isProduction
-	? null
-	: defineCommand({
+// Live bot: only the bot admin (DJ) can see or run this; it is registered on the support server only.
+export const testPotatoCommand = defineCommand({
 			name: 'testpotato',
+			guildId: globalConfig.isProduction ? globalConfig.supportServerID : undefined,
 			description: 'Commands for making testing easier and faster.',
 			options: [
 				{
@@ -717,9 +717,9 @@ export const testPotatoCommand = globalConfig.isProduction
 				}
 			],
 			run: async ({ options, user, interaction, rng }) => {
-				if (!testingShortcutsEnabled()) {
-					Logging.logError('Test command ran in production', { userID: user.id });
-					return 'This will never happen...';
+				if (!testingShortcutsEnabled() && !user.isAdmin()) {
+					Logging.logError('Test command blocked for non-admin', { userID: user.id });
+					return 'Only the bot owner can use this.';
 				}
 
 				if (options.party) {

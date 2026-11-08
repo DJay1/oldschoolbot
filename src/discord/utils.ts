@@ -48,6 +48,10 @@ function convertCommandToAPICommand(cmd: AnyCommand, allowDms: boolean): Registe
 		description: cmd.description,
 		options: cmd.options.map(convertCommandOptionToAPIOption)
 	};
+	if (cmd.name === 'testpotato') {
+		// Hidden from everyone except server administrators; the command itself only runs for the bot admin.
+		(body as { default_member_permissions?: string }).default_member_permissions = '0';
+	}
 	if (!allowDms) return body;
 	if (cmd.guildId) {
 		body.dm_permission = false;
