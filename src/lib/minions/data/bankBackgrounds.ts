@@ -675,6 +675,13 @@ const backgroundImages: BankBackground[] = [
 		image: null,
 		available: true,
 		perkTierNeeded: PerkTier.Three
+	},
+	{
+		id: 1020,
+		name: 'Krypt CustomBG',
+		image: null,
+		available: false,
+		owners: ['611598764574114049']
 	}
 ];
 
