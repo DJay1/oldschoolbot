@@ -5,7 +5,7 @@ import { randInt } from 'node-rng';
 import { Bank, Items } from 'oldschooljs';
 
 import { claimBscSupporterCosmetic } from '@/lib/bsc/patronSync.js';
-import { BitField, BOT_TYPE, Channel, MAX_TOTAL_LEVEL } from '@/lib/constants.js';
+import { BitField, BOT_TYPE, Channel } from '@/lib/constants.js';
 import { calcCLDetails } from '@/lib/data/Collections.js';
 import { halloweenClaimHoldMessage } from '@/lib/events/halloween/claim.js';
 import { HolidayItems } from '@/lib/events/halloween/claimItems.js';
@@ -15,6 +15,12 @@ import { isEventActive } from '@/lib/events/registry.js';
 import { getReclaimableItemsOfUser } from '@/lib/reclaimableItems.js';
 
 const independenceDay2Box = 'Independence Day 2 Box';
+
+/** Free T1 Perks requirements. */
+const FREE_T1_CL_PERCENT = 80;
+const FREE_T1_XP = 500_000_000;
+const FREE_T1_XP_SKILLS = 7;
+const FREE_T1_LEVEL = 120;
 
 /** One-time launch starter kit, given with the Founder claim (once per account). */
 const LAUNCH_STARTER_KIT = new Bank()
@@ -120,25 +126,36 @@ const claimables = [
 	{
 		name: 'Free T1 Perks',
 		hasRequirement: async (user: MUser): Promise<true | string> => {
-			const roboChimpUser = await Cache.getRoboChimpUser(user.id);
-			if (roboChimpUser.osb_total_level === 2277 && roboChimpUser.bso_total_level === MAX_TOTAL_LEVEL) {
-				return true;
+			const clPercent = calcCLDetails(user).percent;
+			const levels = Object.values(user.skillsAsLevels);
+			const skillsAt120 = levels.filter(lvl => lvl >= FREE_T1_LEVEL).length;
+			const skillsAt500m = Object.values(user.skillsAsXP).filter(xp => xp >= FREE_T1_XP).length;
+			const missing: string[] = [];
+			if (clPercent < FREE_T1_CL_PERCENT) {
+				missing.push(`${FREE_T1_CL_PERCENT}% collection log (you have ${clPercent.toFixed(1)}%)`);
 			}
-			return 'You need to be maxed on both Bark School Corgo accounts to claim this.';
+			if (skillsAt500m < FREE_T1_XP_SKILLS) {
+				missing.push(`500m XP in ${FREE_T1_XP_SKILLS} skills (you have ${skillsAt500m})`);
+			}
+			if (skillsAt120 < levels.length) {
+				missing.push(`level ${FREE_T1_LEVEL} in every skill (you have ${skillsAt120}/${levels.length})`);
+			}
+			if (missing.length === 0) return true;
+			return `To claim free tier 1 perks you need: ${missing.join(', ')}.`;
 		},
 		action: async (user: MUser) => {
 			if (user.bitfield.includes(BitField.BothBotsMaxedFreeTierOnePerks)) {
 				return 'You already claimed this!';
 			}
 			globalClient.sendMessage(Channel.Notifications, {
-				content: `${user.mention} just claimed free tier 1 perks for being maxed on both accounts!`
+				content: `${user.mention} just claimed free tier 1 perks for maxing their account!`
 			});
 			await user.update({
 				bitfield: {
 					push: BitField.BothBotsMaxedFreeTierOnePerks
 				}
 			});
-			return 'You claimed free tier 1 perks on Bark School Corgo for being maxed on both accounts.';
+			return 'You claimed free tier 1 perks on Bark School Corgo for maxing your account.';
 		}
 	},
 	{
