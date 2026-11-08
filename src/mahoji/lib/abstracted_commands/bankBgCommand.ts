@@ -7,6 +7,11 @@ import { withPatreonLink } from '@/lib/patreonLink.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 
 export async function bankBgCommand(interaction: MInteraction, user: MUser, name: string) {
+	// Backgrounds load lazily on the first bank image, so load them here too right after a restart.
+	if (!bankImageTask.ready) {
+		await bankImageTask.init();
+		bankImageTask.ready = true;
+	}
 	const bankImages = bankImageTask.backgroundImages;
 	const selectedImage = bankImages.find(img => stringMatches(img.name, name));
 
