@@ -6,6 +6,7 @@ import { Bank } from 'oldschooljs';
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
 import { bscDailyCooldownMs } from '@/lib/bsc/patronTiers.js';
 import { CONSTANTS } from '@/lib/constants.js';
+import { isEventActive } from '@/lib/events/registry.js';
 import { getRandomTriviaQuestions } from '@/lib/roboChimp.js';
 import dailyRoll from '@/lib/simulation/dailyTable.js';
 
@@ -85,6 +86,17 @@ async function reward(rng: RNGProvider, user: MUser, triviaCorrect: boolean): Pr
 	if (hasSkipper && coinsToGive > 0) {
 		coinsToGive = Math.floor(coinsToGive * 1.5);
 		bonuses.push(`${BSOEmoji.Skipper} Skipper negotiated you 50% more coins!`);
+	}
+
+	if (isEventActive('launch')) {
+		let tripled = false;
+		for (const [item, qty] of loot.items()) {
+			if (/mystery box/i.test(item.name)) {
+				loot.add(item.id, qty * 2);
+				tripled = true;
+			}
+		}
+		if (tripled) bonuses.push('🎉 Launch event: your mystery boxes were tripled!');
 	}
 
 	if (user.isIronman) {
