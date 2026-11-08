@@ -4,6 +4,7 @@ import {
 	applyQueueDailyReset,
 	dailyQueueAllowance,
 	maxQueuedTripsForPerkTier,
+	queueResetAtMs,
 	utcDayStartMs
 } from '@/lib/bsc/tripQueueLimits.js';
 import { fetchRepeatTrips, startRepeatTripFromActivity } from '@/lib/util/repeatStoredTrip.js';
@@ -138,14 +139,13 @@ export async function addTripsToQueue(user: MUser, activityType: string, times: 
 	const now = Date.now();
 	const state = await getTripQueueState(user.id, now);
 
-	if (dailyCap !== null) {
-		const dailyLeft = dailyCap - state.dailyUsed;
-		if (dailyLeft <= 0) {
-			return `Free players can queue ${dailyCap} trips per day. Your daily queue resets at midnight UTC.`;
-		}
-		if (times > dailyLeft) {
-			return `You can queue ${dailyLeft} more trip${dailyLeft === 1 ? '' : 's'} today (free players get ${dailyCap} a day, resetting at midnight UTC).`;
-		}
+	const resetAt = `<t:${Math.floor(queueResetAtMs(now) / 1000)}:R>`;
+	const dailyLeft = dailyCap - state.dailyUsed;
+	if (dailyLeft <= 0) {
+		return `You've used all ${dailyCap} of your queued trips. They refill ${resetAt}.`;
+	}
+	if (times > dailyLeft) {
+		return `You can queue ${dailyLeft} more trip${dailyLeft === 1 ? '' : 's'} right now (you get ${dailyCap} every 2 days, refilling ${resetAt}).`;
 	}
 
 	if (times > maxAtOnce) {
@@ -174,7 +174,7 @@ export async function addTripsToQueue(user: MUser, activityType: string, times: 
 	await saveState(state);
 
 	const pretty = formatTripName(activity.type);
-	const dailyNote = dailyCap !== null ? ` You have ${dailyCap - state.dailyUsed} left to queue today.` : '';
+	const dailyNote = ` You have ${dailyCap - state.dailyUsed} left until they refill ${resetAt}.`;
 	return `Queued ${times} ${pretty} trip${times === 1 ? '' : 's'}. ${state.remaining} in the queue.${dailyNote}`;
 }
 
@@ -193,11 +193,9 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 		lines.push('Your trip queue is empty.');
 	}
 	lines.push(`You can have up to ${maxAtOnce} trips queued at once.`);
-	if (dailyCap !== null) {
-		lines.push(
-			`Free players can queue ${dailyCap} trips per day. You have queued ${state.dailyUsed} today (resets at midnight UTC).`
-		);
-	}
+	lines.push(
+		`You get ${dailyCap} queued trips every 2 days and have used ${state.dailyUsed} (refills <t:${Math.floor(queueResetAtMs(Date.now()) / 1000)}:R>).`
+	);
 	return lines.join(' ');
 }
 

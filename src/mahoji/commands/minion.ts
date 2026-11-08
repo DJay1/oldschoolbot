@@ -12,6 +12,7 @@ import {
 import { convertLVLtoXP, Items } from 'oldschooljs';
 
 import { ownedItemOption, skillOption } from '@/discord/index.js';
+import { BSC_PATRON_TIERS } from '@/lib/bsc/patronTiers.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { BitFieldData, MAX_LEVEL, PerkTier } from '@/lib/constants.js';
 import { degradeableItems } from '@/lib/degradeableItems.js';
@@ -30,7 +31,6 @@ import { getAllKillCounts, getKCByName } from '@/lib/util/getKCByName.js';
 import { minionStatsEmbed } from '@/lib/util/minionStatsEmbed.js';
 import { getPeakTimesString } from '@/lib/util/peaks.js';
 import { refreshUserCache } from '@/lib/util/refreshCache.js';
-import { BSC_PATRON_TIERS } from '@/lib/bsc/patronTiers.js';
 import { isValidNickname, patronMsg } from '@/lib/util/smallUtils.js';
 import {
 	achievementDiaryCommand,
@@ -623,7 +623,7 @@ ${substr}`;
 
 function bscPerksLine(perkTier: number): string {
 	const tier = [...BSC_PATRON_TIERS].reverse().find(t => perkTier >= t.perkTier);
-	if (!tier) return 'None';
+	if (!tier) return 'Free player: queue 2 trips every 2 days with /queue (each patron tier adds 1 more)';
 	const below = tier.level > 1 ? ', plus every perk from the tiers below' : '';
 	return `__${tier.name}__: ${tier.summary}${below}`;
 }

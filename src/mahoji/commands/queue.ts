@@ -3,7 +3,7 @@ import { fetchRepeatTrips } from '@/lib/util/repeatStoredTrip.js';
 
 export const queueCommand = defineCommand({
 	name: 'queue',
-	description: 'Line up repeats of a recent trip. Free players get 2 a day; patrons can queue more.',
+	description: 'Line up repeats of a recent trip. Free players get 2 every 2 days; each patron tier adds 1.',
 	attributes: {
 		examples: ['/queue add trip:MonsterKilling times:3', '/queue view', '/queue clear']
 	},

@@ -56,7 +56,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		patreonTierIdEnv: 'PATREON_TIER_PUP_ID',
 		badge: '🐾',
 		summary:
-			'+3 min max trip length, full scrollable bank (show_all) and bank page buttons, queue 3 trips, supporter badge'
+			'+3 min max trip length, full scrollable bank (show_all) and bank page buttons, queue 3 trips every 2 days, supporter badge'
 	},
 	{
 		level: 2,
@@ -70,7 +70,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_GOODBOY',
 		patreonTierIdEnv: 'PATREON_TIER_GOODBOY_ID',
 		badge: '🐾',
-		summary: '+6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 6 trips'
+		summary: '+6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips every 2 days'
 	},
 	{
 		level: 3,
@@ -84,7 +84,8 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_TOPDOG',
 		patreonTierIdEnv: 'PATREON_TIER_TOPDOG_ID',
 		badge: '🐶',
-		summary: '+10 min trips, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots, queue 9 trips'
+		summary:
+			'+10 min trips, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots, queue 5 trips every 2 days'
 	},
 	{
 		level: 4,
@@ -99,7 +100,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		patreonTierIdEnv: 'PATREON_TIER_ALPHA_ID',
 		badge: '🦴',
 		summary:
-			'+15 min trips, bank backgrounds and background commands, spawn lamp and spawn box, unlimited giveaways, +8 Grand Exchange slots, queue 12 trips'
+			'+15 min trips, bank backgrounds and background commands, spawn lamp and spawn box, unlimited giveaways, +8 Grand Exchange slots, queue 6 trips every 2 days'
 	},
 	{
 		level: 5,
@@ -114,7 +115,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		patreonTierIdEnv: 'PATREON_TIER_PACKLEADER_ID',
 		badge: '🐺',
 		summary:
-			'exclusive bank background, double loot once a month, gift 1 week of Good Boy once a month, queue 15 trips'
+			'exclusive bank background, double loot once a month, gift 1 week of Good Boy once a month, queue 7 trips every 2 days'
 	},
 	{
 		level: 6,
@@ -129,7 +130,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		patreonTierIdEnv: 'PATREON_TIER_BIGGESTOFDOGS_ID',
 		badge: '👑',
 		summary:
-			'custom bank background while you stay Pack Leader or higher, gift 1 week of Alpha once a month, queue 18 trips'
+			'custom bank background while you stay Pack Leader or higher, gift 1 week of Alpha once a month, queue 8 trips every 2 days'
 	}
 ] as const;
 

@@ -1,42 +1,35 @@
+import { Time } from '@oldschoolgg/toolkit';
+
 import { PerkTier } from '@/lib/constants.js';
 
-/** F2P players can queue this many trips each UTC calendar day. */
-export const F2P_DAILY_QUEUE_LIMIT = 2;
+/** Free players can queue this many trips per reset window. */
+export const F2P_QUEUE_LIMIT = 2;
+
+/** The queue allowance resets every 2 days (fixed UTC windows). */
+export const QUEUE_RESET_MS = Time.Day * 2;
 
 /**
- * Max trips that can be queued at once for each patron perk tier.
- * PerkTier Two is Pup, through Seven (Biggest of Dogs).
+ * Trips a player may queue per window (and have lined up at once).
+ * Free players get 2, then each patron tier adds 1: Pup (PerkTier Two) 3 up to Biggest of Dogs (Seven) 8.
  */
-const PATRON_QUEUE_LIMITS: ReadonlyArray<{ minPerk: PerkTier; max: number }> = [
-	{ minPerk: PerkTier.Seven, max: 18 },
-	{ minPerk: PerkTier.Six, max: 15 },
-	{ minPerk: PerkTier.Five, max: 12 },
-	{ minPerk: PerkTier.Four, max: 9 },
-	{ minPerk: PerkTier.Three, max: 6 },
-	{ minPerk: PerkTier.Two, max: 3 }
-];
-
-/** How many trips a player may have lined up at once. F2P (below Pup) is 2. */
 export function maxQueuedTripsForPerkTier(perkTier: number): number {
-	for (const entry of PATRON_QUEUE_LIMITS) {
-		if (perkTier >= entry.minPerk) return entry.max;
-	}
-	return F2P_DAILY_QUEUE_LIMIT;
+	const level = perkTier >= PerkTier.Two ? Math.min(6, perkTier - 1) : 0;
+	return F2P_QUEUE_LIMIT + level;
 }
 
-/**
- * Daily add cap. Patrons (Pup and up) have no daily cap, only the at-once max.
- * Returns null when there is no daily cap.
- */
-export function dailyQueueAllowance(perkTier: number): number | null {
-	if (perkTier >= PerkTier.Two) return null;
-	return F2P_DAILY_QUEUE_LIMIT;
+/** Trips a player may add per 2-day window. Same as the at-once max. */
+export function dailyQueueAllowance(perkTier: number): number {
+	return maxQueuedTripsForPerkTier(perkTier);
 }
 
-/** Start of the current UTC calendar day, in unix milliseconds. */
+/** Start of the current 2-day UTC window, in unix milliseconds. */
 export function utcDayStartMs(now: number): number {
-	const date = new Date(now);
-	return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+	return Math.floor(now / QUEUE_RESET_MS) * QUEUE_RESET_MS;
+}
+
+/** When the current window ends and the allowance refills. */
+export function queueResetAtMs(now: number): number {
+	return utcDayStartMs(now) + QUEUE_RESET_MS;
 }
 
 export function applyQueueDailyReset<T extends { dailyUsed: number; dailyReset: number }>(row: T, now: number): T {
