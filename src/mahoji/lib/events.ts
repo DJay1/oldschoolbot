@@ -6,6 +6,7 @@ import { TimerManager } from '@sapphire/timer-manager';
 
 import { bulkUpdateCommands } from '@/discord/utils.js';
 import { warnBlankBscPatronRoles } from '@/lib/bsc/patronTiers.js';
+import { startupChangelog } from '@/lib/bsc/startupChangelog.js';
 import { Channel, globalConfig, META_CONSTANTS, testingShortcutsEnabled } from '@/lib/constants.js';
 import { loadSeasonalEventOverrides } from '@/lib/events/store.js';
 import { initTickers } from '@/lib/tickers.js';
@@ -36,7 +37,9 @@ export const onStartup = async () => {
 	if (globalConfig.isProduction) {
 		globalClient
 			.sendMessage(Channel.GeneralChannel, {
-				content: `I have just turned on!\n\n${META_CONSTANTS.RENDERED_STR}`
+				content: [`I have just turned on!`, META_CONSTANTS.RENDERED_STR, startupChangelog()]
+					.filter(Boolean)
+					.join('\n\n')
 			})
 			.catch(err => Logging.logError(err));
 	}
