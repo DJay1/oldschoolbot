@@ -86,6 +86,7 @@ describe('launch wipe classification', () => {
 		}
 		expect(knownTables('main')).toContain('seasonal_event_config');
 		expect(knownTables('main')).toContain('bsc_patron_override');
+		expect(knownTables('main')).toContain('bsc_trip_queue');
 		expect(tablesFor('main', 'wipe')).toContain('users');
 		expect(tablesFor('main', 'keep')).toContain('guilds');
 		expect(tablesFor('main', 'keep')).not.toContain('users');

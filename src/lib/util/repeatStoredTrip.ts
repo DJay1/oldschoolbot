@@ -15,7 +15,7 @@ import { kibbles } from '@/lib/bso/kibble.js';
 import { divinationEnergies, memoryHarvestTypes } from '@/lib/bso/skills/divination.js';
 
 import { ButtonBuilder, ButtonStyle, idToUnixTs } from '@oldschoolgg/discord';
-import { objectValues, Time } from '@oldschoolgg/toolkit';
+import { objectValues, Time, UserError } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main/enums.js';
@@ -1054,4 +1054,37 @@ export async function repeatTrip(user: MUser, interaction: OSInteraction, activi
 		continueDeltaMillis
 		// TODO: continueDeltaMillis: interaction.createdAt.getTime() - (interaction.message?.createdTimestamp ?? 0)
 	});
+}
+
+function commandResponseText(response: Awaited<CommandResponse>): string | null {
+	if (typeof response === 'string') return response;
+	if (response && typeof response === 'object' && 'content' in response && typeof response.content === 'string') {
+		return response.content;
+	}
+	return null;
+}
+
+export async function startRepeatTripFromActivity(
+	user: MUser,
+	activity: Activity,
+	interaction: OSInteraction
+): Promise<{ ok: boolean; message: string }> {
+	if (await user.minionIsBusy()) {
+		return { ok: false, message: 'Your minion is busy.' };
+	}
+	try {
+		const response = await repeatTrip(user, interaction, activity);
+		const started = await user.minionIsBusy();
+		const text = commandResponseText(response);
+		if (started) {
+			return { ok: true, message: text ?? `Started a ${activity.type} trip.` };
+		}
+		return { ok: false, message: text ?? 'The trip could not be started.' };
+	} catch (err) {
+		if (err instanceof UserError) {
+			return { ok: false, message: err.message };
+		}
+		Logging.logError(err as Error);
+		return { ok: false, message: 'Something went wrong starting the queued trip.' };
+	}
 }

@@ -1,4 +1,5 @@
 import { tearsOfGuthixIronmanReqs, tearsOfGuthixSkillReqs } from '@/lib/bso/commands/tearsOfGuthixCommand.js';
+import { isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
 import { consolidateSkillXpBonusLines } from '@/lib/bso/firstAge/skillOutfits.js';
 import { gods } from '@/lib/bso/minigames/divineDominion.js';
 import { mysteriousStepData } from '@/lib/bso/mysteryTrail.js';
@@ -17,6 +18,7 @@ import { Bank, EItem, itemID, toKMB } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main.js';
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import { tryStartQueuedTrip } from '@/lib/bsc/tripQueue.js';
 import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { buildClueButtons } from '@/lib/clues/clueUtils.js';
@@ -26,7 +28,6 @@ import { LAUNCH_XP_BONUS_SENTENCE } from '@/lib/events/launch/constants.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
 import { rollLaunchBoxFromTrip } from '@/lib/events/launch/launchBox.js';
 import { isEventActive } from '@/lib/events/registry.js';
-import { isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
 import { handleGrowablePetGrowth } from '@/lib/growablePets.js';
 import { handlePassiveImplings } from '@/lib/implings.js';
@@ -784,11 +785,7 @@ export async function handleTripFinish(
 	// Several addXP calls in one trip each append the same bonus. Show each bonus once, with the XP summed.
 	if (message.message.content) {
 		let content = consolidateSkillXpBonusLines(message.message.content);
-		if (
-			isEventActive('launch') &&
-			/\bXP\b/.test(content) &&
-			!content.includes('Launch event')
-		) {
+		if (isEventActive('launch') && /\bXP\b/.test(content) && !content.includes('Launch event')) {
 			content += `\n${LAUNCH_XP_BONUS_SENTENCE}`;
 		}
 		message.setContent(content);
@@ -816,6 +813,15 @@ export async function handleTripFinish(
 				Logging.logError(err as Error);
 			}
 		}
+	}
+
+	try {
+		const queueNote = await tryStartQueuedTrip(user, data.channelId ?? channelId);
+		if (queueNote) {
+			message.addContent(`\n${queueNote}`);
+		}
+	} catch (err) {
+		Logging.logError(err as Error);
 	}
 
 	await globalClient.sendMessageOrWebhook(channelId, message);

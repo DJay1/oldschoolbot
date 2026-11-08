@@ -33,6 +33,7 @@ export const CLIENT_STORAGE_KEEP_COLUMNS = [
 
 /** Created by SQL at startup, not a Prisma model. Guild settings for seasonal events. */
 export const NON_PRISMA_KEEP_TABLES = ['seasonal_event_config', 'bsc_patron_override', '_prisma_migrations'] as const;
+export const NON_PRISMA_WIPE_TABLES = ['bsc_trip_queue'] as const;
 
 export const MAIN_MODELS: readonly ClassifiedModel[] = [
 	{
@@ -336,14 +337,16 @@ export function modelsFor(schema: WipeSchema): readonly ClassifiedModel[] {
 }
 
 export function tablesFor(schema: WipeSchema, action: WipeAction): string[] {
-	return modelsFor(schema)
+	const tables = modelsFor(schema)
 		.filter(model => model.action === action)
 		.map(model => model.table);
+	if (schema === 'main' && action === 'wipe') tables.push(...NON_PRISMA_WIPE_TABLES);
+	return tables;
 }
 
 export function knownTables(schema: WipeSchema): string[] {
 	const tables = modelsFor(schema).map(model => model.table);
-	if (schema === 'main') tables.push(...NON_PRISMA_KEEP_TABLES);
+	if (schema === 'main') tables.push(...NON_PRISMA_KEEP_TABLES, ...NON_PRISMA_WIPE_TABLES);
 	return tables;
 }
 
