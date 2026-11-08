@@ -4,6 +4,7 @@ import { LaunchItem } from './items.js';
 
 /** Uniques from a Launch box. Opened-box count is shown separately from openable scores. */
 export const launchBoxCL: number[] = [
+	LaunchItem.LAUNCH_BOX,
 	LaunchItem.CORGO_PARTY_HAT,
 	BSOItem.SPOOKY_GRACEFUL_HOOD,
 	BSOItem.SPOOKY_GRACEFUL_TOP,
