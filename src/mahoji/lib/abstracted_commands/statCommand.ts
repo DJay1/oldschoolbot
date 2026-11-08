@@ -778,7 +778,7 @@ GROUP BY data->>'plantsName'`;
 **Slots:** ${gpSlots}`
 			};
 		},
-		perkTierNeeded: PerkTier.Four
+		perkTierNeeded: null
 	},
 	{
 		name: 'Personal Slayer Tasks',
