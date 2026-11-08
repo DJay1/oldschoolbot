@@ -1,6 +1,7 @@
 import { stringMatches } from '@oldschoolgg/toolkit';
 import { Bank, resolveItems, toKMB } from 'oldschooljs';
 
+import { bscPatronNameForPerkTier } from '@/lib/bsc/patronTiers.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
@@ -66,8 +67,11 @@ export async function bankBgCommand(interaction: MInteraction, user: MUser, name
 
 	// Check they have the required perk tier.
 	if (selectedImage.perkTierNeeded && (await user.fetchPerkTier()) < selectedImage.perkTierNeeded) {
+		const tierName = bscPatronNameForPerkTier(selectedImage.perkTierNeeded);
 		return withPatreonLink(
-			`This background is only available for Tier ${Number(selectedImage.perkTierNeeded) - 1} patrons.`
+			tierName
+				? `This background is a ${tierName} perk.`
+				: `This background is only available for Tier ${Number(selectedImage.perkTierNeeded) - 1} patrons.`
 		);
 	}
 

@@ -1,6 +1,8 @@
 import { Time } from '@oldschoolgg/toolkit';
 import { LRUCache } from 'lru-cache';
 
+import { getBscPatronOverride } from '@/lib/bsc/patronStore.js';
+import { bscActiveGiftPerkTier } from '@/lib/bsc/patronTiers.js';
 import { BitField, BOT_TYPE, PerkTier } from '@/lib/constants.js';
 import type { RobochimpUser } from '@/lib/roboChimp.js';
 
@@ -199,6 +201,20 @@ export async function getUsersPerkTier({
 	}
 	if (bitfield.includes(BitField.PatronTier1) || bitfield.includes(BitField.BothBotsMaxedFreeTierOnePerks)) {
 		eligibleTiers.push(PerkTier.Two);
+	}
+
+	try {
+		const patronOverride = await getBscPatronOverride(user.id);
+		const giftedPerk = bscActiveGiftPerkTier(
+			patronOverride?.giftTier ?? null,
+			patronOverride?.giftUntil ?? null,
+			Date.now()
+		);
+		if (giftedPerk > 0) eligibleTiers.push(giftedPerk);
+	} catch (err) {
+		Logging.logDebug(`BSC patron gift lookup failed for ${user.id}`, {
+			error: err instanceof Error ? err.message : String(err)
+		});
 	}
 	// Server boosting perk has been eliminated
 	const tier = Math.max(...eligibleTiers, 0);

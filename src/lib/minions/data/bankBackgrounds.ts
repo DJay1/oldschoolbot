@@ -51,7 +51,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Lumbridge',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 10_000_000,
 		storeBitField: StoreBitfield.HasSetTwoDarkPermanentBankBackgrounds
 	},
@@ -66,7 +66,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Edgeville',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 10_000_000,
 		storeBitField: StoreBitfield.HasSetTwoDarkPermanentBankBackgrounds
 	},
@@ -200,7 +200,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Dark',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 10_000_000
 	},
 	{
@@ -217,7 +217,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Grass',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 10_000_000,
 		storeBitField: StoreBitfield.HasSetOneNaturePermanentBankBackgrounds
 	},
@@ -244,7 +244,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Wilderness',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		collectionLogItemsNeeded: new Bank({
 			'Dragon pickaxe': 1,
 			'Dragon med helm': 1,
@@ -287,7 +287,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Grand Exchange',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 2_147_483_647,
 		sacValueRequired: 2_147_483_647,
 		storeBitField: StoreBitfield.HasSetOneNaturePermanentBankBackgrounds
@@ -297,7 +297,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Falador Park',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		collectionLogItemsNeeded: new Bank({
 			Tangleroot: 1
 		}),
@@ -312,7 +312,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Pets',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 20_000_000,
 		transparent: true,
 		storeBitField: StoreBitfield.HasSetThreeTransparentAnimalsPermanentBankBackgrounds
@@ -322,7 +322,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Transparent',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 20_000_000,
 		transparent: true
 	},
@@ -331,7 +331,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Smokey',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 20_000_000,
 		transparent: true,
 		storeBitField: StoreBitfield.HasSetThreeTransparentAnimalsPermanentBankBackgrounds
@@ -341,7 +341,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Nieve',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 20_000_000,
 		storeBitField: StoreBitfield.HasSetFourGirlsPermanentBankBackgrounds
 	},
@@ -350,7 +350,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'ToB',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 20_000_000,
 		transparent: true,
 		hasPurple: true,
@@ -381,7 +381,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Konar Transparent',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 20_000_000,
 		transparent: true,
 		storeBitField: StoreBitfield.HasSetFourGirlsPermanentBankBackgrounds
@@ -391,7 +391,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Konar',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 20_000_000,
 		storeBitField: StoreBitfield.HasSetFourGirlsPermanentBankBackgrounds
 	},
@@ -400,7 +400,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Sandwich Lady',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 20_000_000,
 		transparent: true,
 		storeBitField: StoreBitfield.HasSetFourGirlsPermanentBankBackgrounds
@@ -410,7 +410,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Farmer Jane (Dynamic)',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 500_000,
 		alternateImages: [{ id: 1 }],
 		storeBitField: StoreBitfield.HasDynamicFarmingBackgroundPermanentBankBackgrounds
@@ -420,7 +420,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Farmer Jane (Transparent, Dynamic)',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 500_000,
 		transparent: true,
 		alternateImages: [{ id: 1 }],
@@ -431,7 +431,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Swans (Transparent)',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 500_000,
 		transparent: true,
 		storeBitField: StoreBitfield.HasSetThreeTransparentAnimalsPermanentBankBackgrounds
@@ -441,7 +441,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Troll',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 500_000
 	},
 	{
@@ -449,7 +449,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Christmas',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 500_000
 	},
 	{
@@ -457,7 +457,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Jad',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 500_000
 	},
 	{
@@ -465,7 +465,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Halloween Logo',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 500_000
 	},
 	{
@@ -473,7 +473,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Halloween Manor',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 10_000_000,
 		storeBitField: StoreBitfield.HalloweenItemIconPack
 	},
@@ -483,7 +483,7 @@ const backgroundImages: BankBackground[] = [
 		image: null,
 		available: true,
 		gpCost: 10_000_000,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		transparent: true
 	},
 	{
@@ -492,7 +492,7 @@ const backgroundImages: BankBackground[] = [
 		image: null,
 		available: true,
 		gpCost: 10_000_000,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		transparent: true
 	},
 	{
@@ -500,7 +500,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Peepo Scooter',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four,
+		perkTierNeeded: PerkTier.Five,
 		gpCost: 10_000_000
 	},
 	{
@@ -519,14 +519,14 @@ const backgroundImages: BankBackground[] = [
 			'Ignecarus dragonclaw': 1
 		}),
 		gpCost: 500_000_000,
-		perkTierNeeded: PerkTier.Four
+		perkTierNeeded: PerkTier.Five
 	},
 	{
 		id: 508,
 		name: 'Maledict Mortimer',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Four
+		perkTierNeeded: PerkTier.Five
 	},
 	{
 		id: 1000,

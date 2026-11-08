@@ -111,6 +111,10 @@ export interface DiscordClientEventsMap {
 	guildMemberUpdate: [
 		member: { guild_id?: string | null; roles?: string[] | null; user?: { id?: string | null } | null }
 	];
+	guildMemberAdd: [
+		member: { guild_id?: string | null; roles?: string[] | null; user?: { id?: string | null } | null }
+	];
+	guildMemberRemove: [member: { guild_id?: string | null; user?: { id?: string | null } | null }];
 }
 
 export type UserUsernameFetcher = (userId: string) => Promise<string>;

@@ -130,6 +130,14 @@ export class DiscordClient extends AsyncEventEmitter<DiscordClientEventsMap> imp
 					this.emit('guildMemberUpdate', packet.d);
 					break;
 				}
+				case GatewayDispatchEvents.GuildMemberAdd: {
+					this.emit('guildMemberAdd', packet.d);
+					break;
+				}
+				case GatewayDispatchEvents.GuildMemberRemove: {
+					this.emit('guildMemberRemove', packet.d);
+					break;
+				}
 			}
 		});
 	}

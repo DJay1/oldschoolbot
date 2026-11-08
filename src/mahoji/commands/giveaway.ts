@@ -16,8 +16,13 @@ import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
 
-function userHasUnlimitedGiveaways(user: MUser) {
-	return user.isTrusted() || user.bitfield.includes(BitField.UnlimitedGiveaways);
+async function userHasUnlimitedGiveaways(user: MUser) {
+	const perkTier = user.perkTierIsCached ? user.perkTier : await user.fetchPerkTier();
+	return (
+		user.isTrusted() ||
+		user.bitfield.includes(BitField.UnlimitedGiveaways) ||
+		perkTier >= patronFeatures.UnlimitedGiveaways.tier
+	);
 }
 
 export function makeGiveawayButtons(giveawayID: number) {
@@ -115,7 +120,7 @@ export const giveawayCommand = defineCommand({
 					completed: false
 				}
 			});
-			if (existingGiveaways.length >= maxGiveaways && !userHasUnlimitedGiveaways(user)) {
+			if (existingGiveaways.length >= maxGiveaways && !(await userHasUnlimitedGiveaways(user))) {
 				return `You cannot have more than ${
 					isBSCEarlySupporter ? Emoji.EsbCorgi : ''
 				} ${maxGiveaways} giveaways active at a time.`;

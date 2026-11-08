@@ -276,12 +276,12 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 	[BitField.Contributor]: { name: 'Contributor', protected: true, userConfigurable: false },
 	[BitField.HasPermanentTierOne]: { name: 'Permanent Tier 1', protected: false, userConfigurable: false },
 	[BitField.HasPermanentSpawnLamp]: { name: 'Permanent Spawn Lamp', protected: false, userConfigurable: false },
-	[BitField.PatronTier1]: { name: 'Tier 1 Patron', protected: false, userConfigurable: false },
-	[BitField.PatronTier2]: { name: 'Tier 2 Patron', protected: false, userConfigurable: false },
-	[BitField.PatronTier3]: { name: 'Tier 3 Patron', protected: false, userConfigurable: false },
-	[BitField.PatronTier4]: { name: 'Tier 4 Patron', protected: false, userConfigurable: false },
-	[BitField.PatronTier5]: { name: 'Tier 5 Patron', protected: false, userConfigurable: false },
-	[BitField.PatronTier6]: { name: 'Tier 6 Patron', protected: false, userConfigurable: false },
+	[BitField.PatronTier1]: { name: 'Pup', protected: false, userConfigurable: false },
+	[BitField.PatronTier2]: { name: 'Good Boy', protected: false, userConfigurable: false },
+	[BitField.PatronTier3]: { name: 'Top Dog', protected: false, userConfigurable: false },
+	[BitField.PatronTier4]: { name: 'Alpha', protected: false, userConfigurable: false },
+	[BitField.PatronTier5]: { name: 'Pack Leader', protected: false, userConfigurable: false },
+	[BitField.PatronTier6]: { name: 'Biggest of Dogs', protected: false, userConfigurable: false },
 
 	[BitField.HasHalloweenWallkit]: { name: 'Halloween Wall Kit Unlocked', protected: false, userConfigurable: false },
 	[BitField.HasHosidiusWallkit]: { name: 'Hosidius Wall Kit Unlocked', protected: false, userConfigurable: false },
@@ -720,7 +720,7 @@ export const patronFeatures = {
 		tier: PerkTier.Four
 	},
 	UnlimitedGiveaways: {
-		tier: PerkTier.Four
+		tier: PerkTier.Five
 	}
 };
 

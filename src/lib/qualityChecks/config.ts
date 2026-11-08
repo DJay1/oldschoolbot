@@ -149,7 +149,7 @@ export const qualityCheckCampaign = {
 			id: 'no-patreon-plugs',
 			label: 'No Patreon plugs',
 			instruction:
-				'Read /help, /invite, /patreon, and /minion buy. Any Patreon link must be https://patreon.com/bscbot. There must be no oldschoolgg or magnaboy Patreon link. /minion buy uses Bark School Corgo and has no Patreon link.'
+				'Read /help, /invite, /patron info, and /minion buy. Any Patreon link must be https://patreon.com/bscbot. There must be no oldschoolgg or magnaboy Patreon link. /minion buy uses Bark School Corgo and has no Patreon link.'
 		}
 	]
 } as const satisfies {

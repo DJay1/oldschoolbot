@@ -10,7 +10,7 @@ export const helpCommand = defineCommand({
 
 Use the slash commands to play. If you do not have a minion yet, run \`/minion buy\`.
 
-Perks: ${patreonUrl()}`
+Perks: /patron info — ${patreonUrl()}`
 		};
 	}
 });

@@ -32,7 +32,7 @@ export const CLIENT_STORAGE_KEEP_COLUMNS = [
 ] as const;
 
 /** Created by SQL at startup, not a Prisma model. Guild settings for seasonal events. */
-export const NON_PRISMA_KEEP_TABLES = ['seasonal_event_config', '_prisma_migrations'] as const;
+export const NON_PRISMA_KEEP_TABLES = ['seasonal_event_config', 'bsc_patron_override', '_prisma_migrations'] as const;
 
 export const MAIN_MODELS: readonly ClassifiedModel[] = [
 	{

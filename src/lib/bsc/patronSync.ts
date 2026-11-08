@@ -1,19 +1,25 @@
 import { Routes } from '@oldschoolgg/discord';
 
+import { GE_SLOTS_CACHE } from '@/lib/cache.js';
 import { BitField } from '@/lib/constants.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
-import { getBscPatronOverride, saveBscPatronOverride } from './patronStore.js';
+import { type BscPatronOverride, getBscPatronOverride, updateBscPatronOverride } from './patronStore.js';
 import {
 	BSC_COSMETIC_COOLDOWN,
 	BSC_PATRON_BITS,
 	BSC_SUPPORTER_COSMETIC,
+	type BscPatronLevel,
 	bscPatronLevelFromBits,
 	bscPatronLevelFromPatreonTierIds,
 	bscPatronLevelFromRoles,
+	bscPatronRoleChanges,
 	bscPatronRolesConfigured,
 	bscPatronTierByLevel,
 	bscSupportServerId,
-	patronBitsForLevel
+	decideBscPatronSync,
+	nextBscCustomBackground,
+	patronBitsForLevel,
+	warnBlankBscPatronRoles
 } from './patronTiers.js';
 
 export async function applyBscPatronTier(user: MUser, level: number): Promise<void> {
@@ -22,9 +28,34 @@ export async function applyBscPatronTier(user: MUser, level: number): Promise<vo
 	const next = [...kept, ...wanted];
 	const unchanged =
 		next.length === user.bitfield.length && next.every(bit => user.bitfield.includes(bit as BitField));
-	if (unchanged) return;
+	if (unchanged) {
+		await user.fetchPerkTier({ forceNoCache: true });
+		return;
+	}
 	await user.update({ bitfield: next });
+	GE_SLOTS_CACHE.delete(user.id);
 	await user.fetchPerkTier({ forceNoCache: true });
+}
+
+async function persistPatronLevel(
+	user: MUser,
+	level: number,
+	patch: Partial<Omit<BscPatronOverride, 'userId'>>
+): Promise<void> {
+	const state = await getBscPatronOverride(user.id);
+	const custom = patch.customBackground ?? nextBscCustomBackground(level, state?.customBackground ?? false);
+	const previousId = state?.customBackgroundId ?? null;
+	if (!custom && previousId != null && user.user.bankBackground === previousId) {
+		await user.update({ bankBackground: 1 });
+	}
+	await applyBscPatronTier(user, level);
+	await updateBscPatronOverride(user.id, {
+		tier: level,
+		roleMissingSince: patch.roleMissingSince ?? null,
+		customBackground: custom,
+		customBackgroundId: custom ? (patch.customBackgroundId ?? previousId) : null,
+		...patch
+	});
 }
 
 /**
@@ -34,22 +65,76 @@ export async function applyBscPatronTier(user: MUser, level: number): Promise<vo
 export async function syncBscPatronUser(user: MUser, level: number): Promise<'manual' | 'updated'> {
 	const override = await getBscPatronOverride(user.id);
 	if (override?.manual) return 'manual';
-	await applyBscPatronTier(user, level);
+	await persistPatronLevel(user, level, {
+		roleMissingSince: null,
+		customBackground: nextBscCustomBackground(level, override?.customBackground ?? false)
+	});
 	return 'updated';
+}
+
+export async function alignBscPatronRoles(
+	userId: string,
+	level: number,
+	currentRoleIds: readonly string[]
+): Promise<void> {
+	const changes = bscPatronRoleChanges(currentRoleIds, level);
+	if (!changes.add && changes.remove.length === 0) return;
+	const guildId = bscSupportServerId();
+	if (changes.add) {
+		await globalClient.giveRole(guildId, userId, changes.add).catch(err => {
+			Logging.logDebug(`BSC patron: could not add role ${changes.add} to ${userId}`, {
+				error: (err as Error).message
+			});
+		});
+	}
+	for (const roleId of changes.remove) {
+		await globalClient.takeRole(guildId, userId, roleId).catch(err => {
+			Logging.logDebug(`BSC patron: could not remove role ${roleId} from ${userId}`, {
+				error: (err as Error).message
+			});
+		});
+	}
 }
 
 export async function syncBscPatronFromRoles(userId: string, roleIds: readonly string[]): Promise<void> {
 	if (!bscPatronRolesConfigured()) return;
-	const override = await getBscPatronOverride(userId);
-	if (override?.manual) return;
-	const level = bscPatronLevelFromRoles(roleIds);
-	const existing = await prisma.user.findUnique({
-		where: { id: userId },
-		select: { id: true }
-	});
-	if (!existing && level === 0) return;
+	const state = await getBscPatronOverride(userId);
+	if (state?.manual) return;
+	const roleLevel = bscPatronLevelFromRoles(roleIds);
+	if (roleLevel === 0 && !state) {
+		const existing = await prisma.user.findUnique({
+			where: { id: userId },
+			select: { bitfield: true }
+		});
+		if (!existing || bscPatronLevelFromBits(existing.bitfield) === 0) return;
+	}
+
 	const user = await mUserFetch(userId);
-	await applyBscPatronTier(user, level);
+	const bitLevel = bscPatronLevelFromBits(user.bitfield);
+	const decision = decideBscPatronSync({
+		roleLevel,
+		now: Date.now(),
+		state: {
+			manual: false,
+			tier: bitLevel,
+			roleMissingSince: state?.roleMissingSince ?? null,
+			customBackground: state?.customBackground ?? false
+		}
+	});
+	if (decision.skip) return;
+
+	const changes = decision.reconcileRoles ? bscPatronRoleChanges(roleIds, decision.level) : { add: null, remove: [] };
+	const sameLevel = decision.level === bitLevel;
+	const sameGrace = (decision.roleMissingSince ?? null) === (state?.roleMissingSince ?? null);
+	const sameCustom = decision.customBackground === (state?.customBackground ?? false);
+	const rolesClean = !changes.add && changes.remove.length === 0;
+	if (sameLevel && sameGrace && sameCustom && rolesClean) return;
+
+	await persistPatronLevel(user, decision.level, {
+		roleMissingSince: decision.roleMissingSince,
+		customBackground: decision.customBackground
+	});
+	if (!rolesClean) await alignBscPatronRoles(userId, decision.level, roleIds);
 }
 
 export async function handleBscGuildMemberUpdate(member: {
@@ -62,6 +147,13 @@ export async function handleBscGuildMemberUpdate(member: {
 	const userId = member.user?.id;
 	if (!userId) return;
 	await syncBscPatronFromRoles(userId, member.roles ?? []);
+}
+
+export async function handleBscGuildMemberRemove(member: {
+	guild_id?: string | null;
+	user?: { id?: string | null } | null;
+}): Promise<void> {
+	await handleBscGuildMemberUpdate({ ...member, roles: [] });
 }
 
 export async function syncBscPatronGuildMembers(): Promise<void> {
@@ -101,14 +193,14 @@ interface PatreonApiBody {
 }
 
 /** Optional Patreon API v2 sync. Returns null when the creator token is not configured. */
-export function parseBscPatreonMembers(body: PatreonApiBody): Map<string, 0 | 1 | 2 | 3> {
+export function parseBscPatreonMembers(body: PatreonApiBody): Map<string, BscPatronLevel> {
 	const discordByPatreonUser = new Map<string, string>();
 	for (const included of body.included ?? []) {
 		if (included.type !== 'user' || !included.id) continue;
 		const discordId = included.attributes?.social_connections?.discord?.user_id;
 		if (discordId) discordByPatreonUser.set(included.id, discordId);
 	}
-	const result = new Map<string, 0 | 1 | 2 | 3>();
+	const result = new Map<string, BscPatronLevel>();
 	for (const member of body.data ?? []) {
 		if (member.attributes?.patron_status !== 'active_patron') continue;
 		const patreonUserId = member.relationships?.user?.data?.id;
@@ -123,6 +215,17 @@ export function parseBscPatreonMembers(body: PatreonApiBody): Map<string, 0 | 1 
 		if (level > previous) result.set(discordId, level);
 	}
 	return result;
+}
+
+async function fetchSupportMemberRoleIds(userId: string): Promise<string[] | null> {
+	try {
+		const member = (await globalClient.rest.get(Routes.guildMember(bscSupportServerId(), userId))) as {
+			roles?: string[];
+		};
+		return member.roles ?? [];
+	} catch {
+		return null;
+	}
 }
 
 export async function syncBscPatreonApi(): Promise<'skipped' | 'synced'> {
@@ -143,21 +246,33 @@ export async function syncBscPatreonApi(): Promise<'skipped' | 'synced'> {
 	for (const [userId, level] of parsed) {
 		const override = await getBscPatronOverride(userId);
 		if (override?.manual) continue;
+		const roles = await fetchSupportMemberRoleIds(userId);
+		if (roles) await alignBscPatronRoles(userId, level, roles);
 		const user = await mUserFetch(userId);
-		await applyBscPatronTier(user, level);
+		await persistPatronLevel(user, level, {
+			roleMissingSince: null,
+			customBackground: nextBscCustomBackground(level, override?.customBackground ?? false)
+		});
 	}
 	return 'synced';
 }
 
 export async function syncBscPatrons(): Promise<void> {
-	await syncBscPatronGuildMembers();
+	warnBlankBscPatronRoles();
 	await syncBscPatreonApi();
+	await syncBscPatronGuildMembers();
 }
 
 export async function setBscPatronOverride(user: MUser, level: number, manual: boolean): Promise<string> {
-	if (![0, 1, 2, 3].includes(level)) return 'Tier must be 0, 1, 2, or 3.';
-	await saveBscPatronOverride({ userId: user.id, tier: level, manual });
-	await applyBscPatronTier(user, level);
+	if (!Number.isInteger(level) || level < 0 || level > 6) {
+		return 'Tier must be 0 to 6, or a name: none, pup, goodboy, topdog, alpha, packleader, biggestofdogs.';
+	}
+	const state = await getBscPatronOverride(user.id);
+	await persistPatronLevel(user, level, {
+		manual,
+		roleMissingSince: null,
+		customBackground: nextBscCustomBackground(level, state?.customBackground ?? false)
+	});
 	const tier = bscPatronTierByLevel(level);
 	const name = tier ? tier.name : 'no patron tier';
 	const lock = manual ? 'Role sync will not change this.' : 'Role sync can change this on the next pass.';
@@ -167,7 +282,7 @@ export async function setBscPatronOverride(user: MUser, level: number, manual: b
 export async function claimBscSupporterCosmetic(user: MUser): Promise<string> {
 	const level = bscPatronLevelFromBits(user.bitfield);
 	if (level < 2) {
-		return withPatreonLink('The monthly cosmetic is for Good Boy and Top Dog.');
+		return withPatreonLink('The monthly cosmetic is for Good Boy and above.');
 	}
 	const override = await getBscPatronOverride(user.id);
 	const now = Date.now();
@@ -175,9 +290,8 @@ export async function claimBscSupporterCosmetic(user: MUser): Promise<string> {
 		const wait = BSC_COSMETIC_COOLDOWN - (now - override.cosmeticClaimedAt);
 		return `You already opened this month's cosmetic box. You can open another in ${Math.ceil(wait / (1000 * 60 * 60 * 24))} days.`;
 	}
-	await saveBscPatronOverride({
-		userId: user.id,
-		tier: override?.tier ?? level,
+	await updateBscPatronOverride(user.id, {
+		tier: override?.tier && override.tier > 0 ? override.tier : level,
 		manual: override?.manual ?? false,
 		cosmeticClaimedAt: now
 	});

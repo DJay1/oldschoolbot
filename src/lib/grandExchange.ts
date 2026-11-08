@@ -7,8 +7,9 @@ import PQueue from 'p-queue';
 import { clamp } from 'remeda';
 
 import { type GEListing, GEListingType, type GETransaction } from '@/prisma/main.js';
+import { BSC_GE_SLOT_BOOSTS } from '@/lib/bsc/patronTiers.js';
 import { GE_SLOTS_CACHE, marketPricemap } from '@/lib/cache.js';
-import { BitField, globalConfig, PerkTier } from '@/lib/constants.js';
+import { BitField, globalConfig } from '@/lib/constants.js';
 import { isCustomItem } from '@/lib/customItems/util.js';
 import type { RobochimpUser } from '@/lib/roboChimp.js';
 import { fetchTableBank, makeTransactFromTableBankQueries } from '@/lib/table-banks/tableBank.js';
@@ -155,21 +156,11 @@ class GrandExchangeSingleton {
 					name: `${num.toLocaleString()} Leagues Points`,
 					amount: 1
 				})),
-				{
-					has: async (user: MUser) => (await user.fetchPerkTier()) >= PerkTier.Four,
-					name: 'Tier 3 Patron',
-					amount: 8
-				},
-				{
-					has: async (user: MUser) => (await user.fetchPerkTier()) >= PerkTier.Three,
-					name: 'Tier 2 Patron',
-					amount: 4
-				},
-				{
-					has: async (user: MUser) => (await user.fetchPerkTier()) >= PerkTier.Two,
-					name: 'Tier 1 Patron',
-					amount: 2
-				}
+				...BSC_GE_SLOT_BOOSTS.map(boost => ({
+					has: async (user: MUser) => (await user.fetchPerkTier()) >= boost.minPerk,
+					name: boost.name,
+					amount: boost.amount
+				}))
 			]
 		}
 	};

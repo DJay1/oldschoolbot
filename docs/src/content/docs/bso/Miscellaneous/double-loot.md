@@ -7,7 +7,7 @@ Double Loot is a global timed buff. If active, qualifying loot rolls are doubled
 ## How it is activated
 
 - Using [[Double Loot token]] adds a **random 6–36 minutes**.
-- [Patreon](https://patreon.com/bscbot) tier rewards can add time.
+- [Patreon](https://patreon.com/bscbot) Pack Leader and Biggest of Dogs can add time once a month with `/patron double_loot`.
 - Staff/tester tooling can add time.
 
 ## Where it applies

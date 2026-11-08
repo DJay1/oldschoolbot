@@ -46,7 +46,9 @@ import {
 	getBitFieldData,
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
+import { assignBscCustomBackground } from '@/lib/bsc/patronPerks.js';
 import { setBscPatronOverride } from '@/lib/bsc/patronSync.js';
+import { parseBscPatronTierInput } from '@/lib/bsc/patronTiers.js';
 import {
 	BadgesEnum,
 	BitField,
@@ -1108,29 +1110,81 @@ export const adminCommand = defineCommand({
 			]
 		},
 		{
-			type: 'Subcommand',
+			type: 'SubcommandGroup',
 			name: 'patron',
-			description: 'Set a BSC patron tier. Manual overrides are kept by role sync.',
+			description: 'Set or clear a Bark School Corgo patron tier.',
 			options: [
 				{
-					type: 'User',
-					name: 'user',
-					description: 'The player.',
-					required: true
+					type: 'Subcommand',
+					name: 'set',
+					description: 'Set a patron tier. Manual overrides are kept by role sync.',
+					options: [
+						{
+							type: 'User',
+							name: 'user',
+							description: 'The player.',
+							required: true
+						},
+						{
+							type: 'String',
+							name: 'tier',
+							description: 'Pup, Good Boy, Top Dog, Alpha, Pack Leader, Biggest of Dogs, or none.',
+							required: true,
+							choices: [
+								{ name: 'None', value: 'none' },
+								{ name: 'Pup', value: 'pup' },
+								{ name: 'Good Boy', value: 'goodboy' },
+								{ name: 'Top Dog', value: 'topdog' },
+								{ name: 'Alpha', value: 'alpha' },
+								{ name: 'Pack Leader', value: 'packleader' },
+								{ name: 'Biggest of Dogs', value: 'biggestofdogs' }
+							]
+						},
+						{
+							type: 'Boolean',
+							name: 'manual',
+							description: 'When true (default), role sync will not change this tier.',
+							required: false
+						}
+					]
 				},
 				{
-					type: 'Integer',
-					name: 'tier',
-					description: '0 none, 1 Pup, 2 Good Boy, 3 Top Dog.',
-					required: true,
-					min_value: 0,
-					max_value: 3
+					type: 'Subcommand',
+					name: 'clear',
+					description: 'Clear a patron tier. Manual is kept so role sync does not immediately restore it.',
+					options: [
+						{
+							type: 'User',
+							name: 'user',
+							description: 'The player.',
+							required: true
+						},
+						{
+							type: 'Boolean',
+							name: 'manual',
+							description: 'When true (default), role sync will not restore a tier.',
+							required: false
+						}
+					]
 				},
 				{
-					type: 'Boolean',
-					name: 'manual',
-					description: 'When true (default), role sync will not change this tier.',
-					required: false
+					type: 'Subcommand',
+					name: 'background',
+					description: 'Assign the custom bank background for a Biggest of Dogs.',
+					options: [
+						{
+							type: 'User',
+							name: 'user',
+							description: 'The player.',
+							required: true
+						},
+						{
+							type: 'String',
+							name: 'name',
+							description: 'Bank background name or id to put on this player.',
+							required: true
+						}
+					]
 				}
 			]
 		},
@@ -1322,9 +1376,21 @@ ${META_CONSTANTS.RENDERED_STR}`
 			return rng.pick(gifs);
 		}
 
-		if (options.patron) {
-			const target = await mUserFetch(options.patron.user.user.id);
-			return setBscPatronOverride(target, options.patron.tier, options.patron.manual !== false);
+		if (options.patron?.set) {
+			const level = parseBscPatronTierInput(options.patron.set.tier);
+			if (level === null) {
+				return 'Unknown tier. Use none, pup, goodboy, topdog, alpha, packleader, or biggestofdogs.';
+			}
+			const target = await mUserFetch(options.patron.set.user.user.id);
+			return setBscPatronOverride(target, level, options.patron.set.manual !== false);
+		}
+		if (options.patron?.clear) {
+			const target = await mUserFetch(options.patron.clear.user.user.id);
+			return setBscPatronOverride(target, 0, options.patron.clear.manual !== false);
+		}
+		if (options.patron?.background) {
+			const target = await mUserFetch(options.patron.background.user.user.id);
+			return assignBscCustomBackground(target, options.patron.background.name);
 		}
 
 		if (options.event) {

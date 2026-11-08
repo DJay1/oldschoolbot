@@ -66,9 +66,9 @@ import { minionCommand } from '@/mahoji/commands/minion.js';
 import { mixCommand } from '@/mahoji/commands/mix.js';
 import { offerCommand } from '@/mahoji/commands/offer.js';
 import { openCommand } from '@/mahoji/commands/open.js';
+import { patronCommand } from '@/mahoji/commands/patron.js';
 import { payCommand } from '@/mahoji/commands/pay.js';
 import { pohCommand } from '@/mahoji/commands/poh.js';
-import { patreonCommand } from '@/mahoji/commands/patreon.js';
 import { pollCommand } from '@/mahoji/commands/poll.js';
 import { priceCommand } from '@/mahoji/commands/price.js';
 import { qualityCheckCommand } from '@/mahoji/commands/qualitycheck.js';
@@ -139,7 +139,7 @@ export const allCommandsDONTIMPORT: AnyCommand[] = [
 	pollCommand,
 	qualityCheckCommand,
 	pohCommand,
-	patreonCommand,
+	patronCommand,
 	priceCommand,
 	openCommand,
 	offerCommand,

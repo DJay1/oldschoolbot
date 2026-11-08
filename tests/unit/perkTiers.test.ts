@@ -11,10 +11,11 @@ describe('perk tier helpers', () => {
 	});
 
 	test('computes cyr trip bonus from paid bits', () => {
+		// Upstream Cyr minutes. Tier 1 is 7 minutes. BSC Good Boy is a separate +6.
 		expect(getCyrTripBonus([16])).toBe(Time.Minute * 3);
-		expect(getCyrTripBonus([17])).toBe(Time.Minute * 6);
-		expect(getCyrTripBonus([18])).toBe(Time.Minute * 10);
-		expect(getCyrTripBonus([19])).toBe(Time.Minute * 15);
+		expect(getCyrTripBonus([17])).toBe(Time.Minute * 7);
+		expect(getCyrTripBonus([18])).toBe(Time.Minute * 11);
+		expect(getCyrTripBonus([19])).toBe(Time.Minute * 16);
 		expect(getCyrTripBonus([])).toBe(0);
 	});
 });

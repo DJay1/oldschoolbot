@@ -1,15 +1,14 @@
 import { giveBox, spawnBoxCommand, spawnLampCommand } from '@/lib/bso/commands/spawnBoxLampCommand.js';
-import { addToDoubleLootTimer } from '@/lib/bso/doubleLoot.js';
 import { keyCrates } from '@/lib/bso/keyCrates.js';
-import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
 import { repairBrokenItemsFromUser } from '@/lib/bso/util/repairBrokenItems.js';
 
-import { EmbedBuilder, userMention } from '@oldschoolgg/discord';
-import { formatDuration, PerkTier, stringMatches, stringSearch, Time } from '@oldschoolgg/toolkit';
+import { EmbedBuilder } from '@oldschoolgg/discord';
+import { formatDuration, PerkTier, stringMatches, stringSearch } from '@oldschoolgg/toolkit';
 import { Bank, type Item, type ItemBank, ItemGroups, Items, resolveItems, ToBUniqueTable } from 'oldschooljs';
 
 import type { Activity } from '@/prisma/main.js';
 import { choicesOf, itemOption, monsterOption, skillOption } from '@/discord/index.js';
+import { triggerBscDoubleLoot } from '@/lib/bsc/patronPerks.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { allStashUnitsFlat } from '@/lib/clues/stashUnits.js';
 import { allCLItemsFiltered, allDroppedItems } from '@/lib/data/Collections.js';
@@ -17,12 +16,12 @@ import { gnomeRestaurantCL, guardiansOfTheRiftCL, shadesOfMorttonCL } from '@/li
 import pets from '@/lib/data/pets.js';
 import killableMonsters, { effectiveMonsters, NightmareMonster } from '@/lib/minions/data/killableMonsters/index.js';
 import { allOpenables, type UnifiedOpenable } from '@/lib/openables.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import type { MinigameName } from '@/lib/settings/minigames.js';
 import { Minigames } from '@/lib/settings/minigames.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
 import { isGroupActivity, isNexActivity, isRaidsActivity, isTOBOrTOAActivity } from '@/lib/util/activityTypeCheck.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
-import { withPatreonLink } from '@/lib/patreonLink.js';
 import { asyncGzip, parseStaticTimeInterval, patronMsg, staticTimeIntervals } from '@/lib/util/smallUtils.js';
 import {
 	stashUnitBuildAllCommand,
@@ -761,53 +760,6 @@ async function checkMassesCommand(guildId: string | null) {
 ${massStr}`.slice(0, 1999);
 }
 
-function calcTime(perkTier: PerkTier | 0) {
-	for (const [bit, dur] of [
-		[PerkTier.Seven, Time.Minute * 90],
-		[PerkTier.Six, Time.Minute * 40],
-		[PerkTier.Five, Time.Minute * 20]
-	] as const) {
-		if (perkTier === bit) return dur;
-	}
-	throw new Error('User is not a Tier 4+ Patron');
-}
-
-export const PATRON_DOUBLE_LOOT_COOLDOWN = Time.Day * 31;
-async function patronTriggerDoubleLoot(user: MUser) {
-	const perkTier = await user.fetchPerkTier();
-	if (perkTier < PerkTier.Five) {
-		return withPatreonLink('Only T4, T5 or T6 patrons can use this command.');
-	}
-
-	const lastTime = user.user.last_patron_double_time_trigger;
-	const differenceSinceLastUsage = lastTime ? Date.now() - lastTime.getTime() : null;
-	if (differenceSinceLastUsage && differenceSinceLastUsage < PATRON_DOUBLE_LOOT_COOLDOWN) {
-		return `This command is still on cooldown, you can use it again in: ${formatDuration(
-			PATRON_DOUBLE_LOOT_COOLDOWN - differenceSinceLastUsage
-		)}.`;
-	}
-
-	const time = calcTime(perkTier);
-
-	const group = await findGroupOfUser(user.id);
-	await prisma.user.updateMany({
-		where: {
-			id: {
-				in: group
-			}
-		},
-		data: {
-			last_patron_double_time_trigger: new Date()
-		}
-	});
-
-	await addToDoubleLootTimer(
-		time,
-		`${userMention(user.id)} used their monthly Tier ${perkTier - 1} double loot time`
-	);
-	return `Added ${formatDuration(time)} of double loot.`;
-}
-
 export const toolsCommand = defineCommand({
 	name: 'tools',
 	description: 'Various tools and miscellaneous commands.',
@@ -1017,7 +969,7 @@ export const toolsCommand = defineCommand({
 				{
 					type: 'Subcommand',
 					name: 'doubleloot',
-					description: 'Add double loot time.'
+					description: 'Start monthly server double loot. Same as /patron double_loot.'
 				}
 			]
 		},
@@ -1183,7 +1135,9 @@ export const toolsCommand = defineCommand({
 				return minionStats(user);
 			}
 			if (patron.give_box) {
-				if ((await user.fetchPerkTier()) < PerkTier.Two) return patronMsg(PerkTier.Two);
+				if ((await user.fetchPerkTier()) < PerkTier.Four) {
+					return withPatreonLink('Giving a mystery box is a Top Dog perk.');
+				}
 				return giveBox(user, patron.give_box.user);
 			}
 			if (patron.activity_export) {
@@ -1203,7 +1157,7 @@ export const toolsCommand = defineCommand({
 				return statsCommand(user, patron.stats.stat);
 			}
 			if (patron.doubleloot) {
-				return patronTriggerDoubleLoot(user);
+				return triggerBscDoubleLoot(user);
 			}
 		}
 		if (options.user) {

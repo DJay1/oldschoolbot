@@ -1,28 +1,20 @@
 import { calcPercentOfNum, calcWhatPercent, Time } from '@oldschoolgg/toolkit';
 
 import type { activity_type_enum } from '@/prisma/main.js';
-import { bscPatronTripBonusMs } from '@/lib/bsc/patronTiers.js';
+import { bscPatronTripBonusMs, bscTripBonusForPerkTier } from '@/lib/bsc/patronTiers.js';
 import { BitField, PerkTier } from '@/lib/constants.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { getCyrTripBonus, RobochimpBitfieldEnum } from '@/lib/perkTiers.js';
 
 export function patronMaxTripBonus(perkTier: PerkTier | 0) {
-	if (perkTier === PerkTier.Two) return Time.Minute * 3;
-	else if (perkTier === PerkTier.Three) return Time.Minute * 6;
-	else if (perkTier >= PerkTier.Four) return Time.Minute * 10;
-	return 0;
+	return bscTripBonusForPerkTier(perkTier);
 }
 
 export async function calcMaxTripLength(user: MUser, activity?: activity_type_enum) {
 	const perkTier = await user.fetchPerkTier({ forceNoCache: true });
 	const roboBits = (await Cache.getRoboChimpUser(user.id)).bits;
 	let max = Time.Minute * 30;
-	const bscTripBonus = bscPatronTripBonusMs(user.bitfield);
-	if (bscTripBonus > 0) {
-		max += bscTripBonus;
-	} else {
-		max += Math.max(patronMaxTripBonus(perkTier), getCyrTripBonus(roboBits));
-	}
+	max += Math.max(bscPatronTripBonusMs(user.bitfield), patronMaxTripBonus(perkTier), getCyrTripBonus(roboBits));
 
 	if (roboBits.includes(RobochimpBitfieldEnum.BonusMinute)) {
 		max += Time.Minute * 3;

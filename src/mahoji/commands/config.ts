@@ -18,11 +18,10 @@ import { clamp } from 'remeda';
 
 import type { activity_type_enum } from '@/prisma/main/enums.js';
 import { choicesOf, itemOption } from '@/discord/index.js';
-import { bscPatronLevelFromBits } from '@/lib/bsc/patronTiers.js';
 import { CanvasModule } from '@/lib/canvas/CanvasModule.js';
 import { gearImages } from '@/lib/canvas/gearImageData.js';
 import { ItemIconPacks } from '@/lib/canvas/iconPacks.js';
-import { BitField, BitFieldData } from '@/lib/constants.js';
+import { BitField, BitFieldData, PerkTier } from '@/lib/constants.js';
 import { Eatables } from '@/lib/data/eatables.js';
 import { CombatOptionsArray } from '@/lib/minions/data/combatConstants.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
@@ -361,8 +360,8 @@ async function bgColorConfig(user: MUser, hex?: string) {
 		};
 	}
 
-	if (bscPatronLevelFromBits(user.bitfield) < 3) {
-		return withPatreonLink('A custom bank background color is a Top Dog perk.');
+	if ((await user.fetchPerkTier()) < PerkTier.Five) {
+		return withPatreonLink('A custom bank background color is an Alpha perk.');
 	}
 
 	hex = hex.toUpperCase();

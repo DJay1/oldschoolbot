@@ -3,7 +3,7 @@ import { ActivityType, GatewayIntentBits, PresenceUpdateStatus } from '@oldschoo
 import { onRawGuildCreate } from '@/discord/handlers/guildCreate.js';
 import { interactionHandler } from '@/discord/interactionHandler.js';
 import { OldSchoolBotClient } from '@/discord/OldSchoolBotClient.js';
-import { handleBscGuildMemberUpdate } from '@/lib/bsc/patronSync.js';
+import { handleBscGuildMemberRemove, handleBscGuildMemberUpdate } from '@/lib/bsc/patronSync.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { onMessage } from '@/lib/events.js';
 import { onStartup } from '@/mahoji/lib/events.js';
@@ -82,6 +82,12 @@ client.on('debug', async ({ message }) => {
 
 client.on('guildMemberUpdate', member => {
 	handleBscGuildMemberUpdate(member).catch(err => Logging.logError(err as Error));
+});
+client.on('guildMemberAdd', member => {
+	handleBscGuildMemberUpdate(member).catch(err => Logging.logError(err as Error));
+});
+client.on('guildMemberRemove', member => {
+	handleBscGuildMemberRemove(member).catch(err => Logging.logError(err as Error));
 });
 client.on('guildCreate', onRawGuildCreate);
 client.on('guildCreate', async guild => {

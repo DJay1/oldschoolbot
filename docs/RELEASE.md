@@ -476,7 +476,7 @@ Emoji ids are not a database table. They live in the gitignored JSON file and in
 
 Config columns kept on `clientStorage`: `id`, `disabled_commands`, `custom_prices`, `maxing_message`, `shutdown`, `grand_exchange_is_locked`. If the bot stays shut down after a wipe, `shutdown` was already true. That flag is config and is not cleared.
 
-Not Prisma models, and kept if present: `seasonal_event_config`, `_prisma_migrations`.
+Not Prisma models, and kept if present: `seasonal_event_config`, `bsc_patron_override`, `_prisma_migrations`. `bsc_patron_override` holds manual patron locks, gift cooldowns, and custom-background entitlement. The bot creates it on startup. It is not a Prisma model, so it does not need `db push`. Do not drop `seasonal_event_config`.
 
 `Guild.mega_duck_location` is kept with the guild row, including `usersParticipated`.
 
@@ -521,33 +521,64 @@ The Founder mark stays on the name after the event ends. A wipe with the default
 
 ## Patron tiers
 
-Create three tiers on https://patreon.com/bscbot:
+Create these six tiers on https://patreon.com/bscbot. Use these names and prices. Each tier includes every perk below it. There is no $100 tier.
 
-| Tier | Price | In-game |
-| --- | --- | --- |
-| Pup | $3 | 🐾 on the name, +10% of the 30 minute base trip length |
-| Good Boy | $7 | Pup benefits, +20% trip length, the Good Boy bank background, daily cooldown at 75%, monthly cosmetic mark |
-| Top Dog | $15 | Good Boy benefits, custom bank background color, 🐶 on the name, early-access role |
+| Patreon tier name | Price | Discord role env | Bot bit |
+| --- | --- | --- | --- |
+| Pup | $3 | `PATRON_ROLE_PUP` | PatronTier1 |
+| Good Boy | $5 | `PATRON_ROLE_GOODBOY` | PatronTier2 |
+| Top Dog | $10 | `PATRON_ROLE_TOPDOG` | PatronTier3 |
+| Alpha | $15 | `PATRON_ROLE_ALPHA` | PatronTier4 |
+| Pack Leader | $25 | `PATRON_ROLE_PACKLEADER` | PatronTier5 |
+| Biggest of Dogs | $50 | `PATRON_ROLE_BIGGESTOFDOGS` | PatronTier6 |
 
-No tier gives coins, tradeable items, XP lamps, or drop-rate boosts. The BSC Early Supporter badge (bit 199) is separate.
+Perks, as totals for that tier:
 
-In Patreon, enable the Discord integration and connect the three tiers to three roles in the support guild. Then set these in the env file for the bot that should grant them:
+| Tier | Perks |
+| --- | --- |
+| Pup | +3 min max trip, supporter badge |
+| Good Boy | +6 min, Discord role, higher sim caps, +2 Grand Exchange slots |
+| Top Dog | +10 min, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots |
+| Alpha | +15 min, bank backgrounds and background commands, spawn lamp, spawn box, unlimited giveaways, +8 Grand Exchange slots |
+| Pack Leader | exclusive bank background (Barrows), `/patron double_loot` once a month (40 min, server-wide), gift 1 week of Good Boy once a month |
+| Biggest of Dogs | custom bank background while they stay Pack Leader or higher, `/patron double_loot` once a month (90 min), gift 1 week of Alpha once a month |
+
+### Checklist for DJ
+
+1. On https://patreon.com/bscbot create six tiers named exactly Pup, Good Boy, Top Dog, Alpha, Pack Leader, and Biggest of Dogs, at $3, $5, $10, $15, $25, and $50.
+2. In the support guild, create one Discord role per tier. Role names can match the tier names. Copy each role id.
+3. In Patreon, turn on the Discord integration and connect each Patreon tier to its role. Patreon assigns and removes those roles. The bot does not need a creator token for that.
+4. Put the role ids in the prod and test env files:
 
 ```
 PATRON_ROLE_PUP=
 PATRON_ROLE_GOODBOY=
 PATRON_ROLE_TOPDOG=
+PATRON_ROLE_ALPHA=
+PATRON_ROLE_PACKLEADER=
+PATRON_ROLE_BIGGESTOFDOGS=
 ```
 
-The bot reads those roles on member updates and once an hour, and sets `PatronTier1`, `PatronTier2`, or `PatronTier3`. Losing the role clears the tier. An owner override is kept:
+5. Leave a role blank only if that tier is not ready. The bot logs one startup warning and skips that tier. It does not crash.
+6. Restart the bot. `SUPPORT_SERVER_ID` is the guild those roles live in. If it is unset, the bot uses `SUPPORT_GUILD_ID`.
+7. Subscribe a Discord-linked test account, then upgrade, downgrade, and cancel. The bot sets patron bits from the highest role, removes lower tier roles, and on cancel keeps perks for 3 days after the role disappears.
+8. A manual override is the fallback. `manual:false` lets the next role sync replace it.
 
 ```
-/admin patron user:@Player tier:2
+/admin patron set user:@Player tier:alpha
 ```
 
-`tier` is 0, 1, 2, or 3. Add `manual:false` to let the next role sync replace it.
+```
+/admin patron clear user:@Player
+```
 
-Optional API sync, if you would rather not rely only on roles:
+```
+/admin patron background user:@Player name:Barrows
+```
+
+`/admin patron background` only works for Biggest of Dogs, and the image stays while they are Pack Leader or higher. There is no upload pipeline. Pick an existing background name or id.
+
+Optional Patreon API v2 sync. Leave these unset to use Discord roles only. If you set the token and campaign, the bot also reads entitled tiers and updates roles for linked Discord accounts. Role sync still runs and remains the source of truth for members in the support guild.
 
 ```
 PATREON_CREATOR_TOKEN=
@@ -555,6 +586,23 @@ PATREON_CAMPAIGN_ID=
 PATREON_TIER_PUP_ID=
 PATREON_TIER_GOODBOY_ID=
 PATREON_TIER_TOPDOG_ID=
+PATREON_TIER_ALPHA_ID=
+PATREON_TIER_PACKLEADER_ID=
+PATREON_TIER_BIGGESTOFDOGS_ID=
 ```
 
-The old oldschoolgg Patreon and GitHub sponsor sync does not run.
+Player commands:
+
+```
+/patron info
+```
+
+```
+/patron gift user:@Friend
+```
+
+```
+/patron double_loot
+```
+
+The old oldschoolgg Patreon and GitHub sponsor sync does not run. The BSC Early Supporter badge (bit 199) is separate. No `db push` is required for this ladder. Gift cooldowns and the custom-background flag live in `bsc_patron_override`, which the bot creates. Do not drop `seasonal_event_config`.

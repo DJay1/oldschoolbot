@@ -5,11 +5,13 @@ import { Time } from '@oldschoolgg/toolkit';
 import { TimerManager } from '@sapphire/timer-manager';
 
 import { bulkUpdateCommands } from '@/discord/utils.js';
+import { warnBlankBscPatronRoles } from '@/lib/bsc/patronTiers.js';
 import { Channel, globalConfig, META_CONSTANTS, testingShortcutsEnabled } from '@/lib/constants.js';
 import { loadSeasonalEventOverrides } from '@/lib/events/store.js';
 import { initTickers } from '@/lib/tickers.js';
 
 export const onStartup = async () => {
+	warnBlankBscPatronRoles();
 	await syncDoubleLoot();
 	await loadSeasonalEventOverrides().catch(err => Logging.logError(err));
 	syncSlayerMaskLeaderboardCache();

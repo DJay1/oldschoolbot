@@ -12,6 +12,7 @@ import { Bank, type ItemBank, Items, toKMB } from 'oldschooljs';
 
 import type { command_name_enum } from '@/prisma/main.js';
 import { mentionCommand } from '@/discord/utils.js';
+import { PATRON_DOUBLE_LOOT_COOLDOWN } from '@/lib/bsc/patronTiers.js';
 import { lastRoboChimpSyncCache } from '@/lib/cache.js';
 import { CONSTANTS, globalConfig } from '@/lib/constants.js';
 import { customItems } from '@/lib/customItems/util.js';
@@ -21,7 +22,6 @@ import { claimDiscordEvent } from '@/lib/util/discordEventGate.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { minionStatsEmbed } from '@/lib/util/minionStatsEmbed.js';
 import { refreshUserCache } from '@/lib/util/refreshCache.js';
-import { PATRON_DOUBLE_LOOT_COOLDOWN } from '@/mahoji/commands/tools.js';
 import { minionStatusCommand } from '@/mahoji/lib/abstracted_commands/minionStatusCommand.js';
 
 const mentionText = `<@${globalConfig.clientID}>`;
@@ -84,7 +84,7 @@ const cooldownTimers: {
 		name: 'Monthly Double Loot',
 		timeStamp: (user: MUser) => Number(user.user.last_patron_double_time_trigger),
 		cd: PATRON_DOUBLE_LOOT_COOLDOWN,
-		command: ['tools', 'patron', 'doubleloot'],
+		command: ['patron', 'double_loot'],
 		utcReset: false
 	},
 	{

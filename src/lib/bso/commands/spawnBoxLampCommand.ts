@@ -19,9 +19,9 @@ export async function spawnLampIsReady(user: MUser, channelId: string): Promise<
 	}
 
 	const perkTier = await user.fetchPerkTier();
-	const isPatron = perkTier >= PerkTier.Four || user.bitfield.includes(BitField.HasPermanentSpawnLamp);
+	const isPatron = perkTier >= PerkTier.Five || user.bitfield.includes(BitField.HasPermanentSpawnLamp);
 	if (!isPatron) {
-		return [false, withPatreonLink('You need to be a T3 patron or higher to use this command.')];
+		return [false, withPatreonLink('Spawn lamp is an Alpha perk.')];
 	}
 	const currentDate = Date.now();
 	const lastDate = Number(user.user.lastSpawnLamp);
@@ -104,8 +104,8 @@ export async function spawnLampCommand(user: MUser, interaction: MInteraction): 
 
 export async function spawnBoxCommand(user: MUser, interaction: MInteraction): CommandResponse {
 	const perkTier = await user.fetchPerkTier();
-	if (perkTier < PerkTier.Four && !user.bitfield.includes(BitField.HasPermanentEventBackgrounds)) {
-		return withPatreonLink('You need to be a T3 patron or higher to use this command.');
+	if (perkTier < PerkTier.Five && !user.bitfield.includes(BitField.HasPermanentEventBackgrounds)) {
+		return withPatreonLink('Spawn box is an Alpha perk.');
 	}
 	if (globalConfig.isProduction && ![Channel.GeneralChannel, Channel.ServerGeneral].includes(interaction.channelId)) {
 		return "You can't use spawnbox in this channel.";
