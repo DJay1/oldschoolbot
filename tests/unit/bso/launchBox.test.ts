@@ -84,7 +84,7 @@ test('a lucky open can roll the chase items and a dry open of 30 still has one h
 	expect(lucky.bank.amount('Spooky graceful hood')).toBe(1);
 	expect(lucky.bank.amount('Double loot token')).toBe(1);
 	expect(lucky.bank.amount(LaunchItem.DOUBLE_XP_TOKEN)).toBe(1);
-	expect(lucky.message).toContain('Spooky graceful: ✅ Got it!');
+	expect(lucky.message).toContain('Spooky piece: ✅ Got it!');
 
 	const batch = openLaunchBoxes({
 		quantity: CORGO_PARTY_HAT_PITY,

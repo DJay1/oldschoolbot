@@ -65,7 +65,7 @@ const CLUE_SCROLLS: readonly (readonly [string, number, number, number])[] = [
 ];
 
 const RARE_SCALE = 1_000_000;
-export const CORGO_PARTY_HAT_PITY = 30;
+export const CORGO_PARTY_HAT_PITY = 120;
 
 export interface Closeness {
 	got: boolean;
@@ -137,7 +137,7 @@ export function buildFounderLaunchExtras(rng: LaunchBoxRng): Bank {
 	return loot;
 }
 
-const CLOSENESS_NAMES = ['Corgo party hat', 'Spooky graceful', 'Gregoyle', 'Kuro', 'Flappy'] as const;
+const CLOSENESS_NAMES = ['Corgo party hat', 'Spooky piece', 'Gregoyle', 'Kuro', 'Flappy'] as const;
 
 function closenessLine(name: string, track: Closeness): string {
 	return track.got ? `${name}: ✅ Got it!` : `${name}: ${track.percent}% of the way there`;
@@ -157,7 +157,7 @@ export function openLaunchBoxes({
 	const loot = new Bank();
 	const tracks: Record<(typeof CLOSENESS_NAMES)[number], Closeness> = {
 		'Corgo party hat': { got: false, percent: 0 },
-		'Spooky graceful': { got: false, percent: 0 },
+		'Spooky piece': { got: false, percent: 0 },
 		Gregoyle: { got: false, percent: 0 },
 		Kuro: { got: false, percent: 0 },
 		Flappy: { got: false, percent: 0 }
@@ -183,11 +183,11 @@ export function openLaunchBoxes({
 		if (rng.randInt(1, 40) === 1) loot.add('Coins', 5_000_000);
 
 		const spooky = oneIn(rng, 10);
-		note(tracks['Spooky graceful'], spooky);
-		if (spooky.got) for (const piece of SPOOKY_GRACEFUL) loot.add(piece);
+		note(tracks['Spooky piece'], spooky);
+		if (spooky.got) loot.add(SPOOKY_GRACEFUL[rng.randInt(0, SPOOKY_GRACEFUL.length - 1)]);
 
 		const openNumber = boxesOpenedBefore + i + 1;
-		const hat = oneIn(rng, 25);
+		const hat = oneIn(rng, 100);
 		const pity = !hasHat && openNumber >= CORGO_PARTY_HAT_PITY;
 		const hatHit = hat.got || pity;
 		note(tracks['Corgo party hat'], hatHit ? { got: true, percent: 100 } : hat);
