@@ -21,8 +21,7 @@ export function zippyClueFinishLines(input: { bonusLoot: Bank; doubled: boolean 
  * Zippy's double, First Age casket double) plus anything trip finish added on top
  * (loot doubling, pet bonuses, and similar extras).
  *
- * Returns null when that pile is only the clue caskets the trip always produces, so a
- * clue finish with no Zippy and no other bonus stays a text message.
+ * Every clue trip gets an image, even when the pile is only the caskets.
  */
 export function clueFinishLootImage(input: {
 	loot: Bank | null | undefined;
@@ -33,6 +32,5 @@ export function clueFinishLootImage(input: {
 	if (input.loot?.length) combined.add(input.loot);
 	if (input.extras?.length) combined.add(input.extras);
 	if (combined.length === 0) return null;
-	if (input.base && combined.equals(input.base)) return null;
 	return combined;
 }

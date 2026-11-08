@@ -775,7 +775,7 @@ export async function handleTripFinish(
 	}
 
 	// Clue finishes with Zippy, a casket double, or another trip bonus get one image of the
-	// whole pile. Plain clue trips (caskets only) keep their text message.
+	// whole pile. Plain clue trips get the image too.
 	if (data.type === 'ClueCompletion' && !message.message.files?.some(file => file)) {
 		const tier = ClueTiers.find(t => t.id === data.ci);
 		const imageBank = clueFinishLootImage({
