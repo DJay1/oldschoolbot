@@ -94,7 +94,7 @@ test('admin ids come from ADMIN_USER_IDS', () => {
 test('the launch event is off until an admin enables it, and the founder mark still renders', () => {
 	expect(isEventActive('launch')).toBe(false);
 	expect(makeBadgeString([], false, false, true)).toBe(LAUNCH_FOUNDER_BADGE);
-	expect(makeBadgeString([], true, true, true)).toBe(`${Emoji.EsbCorgi} ${Emoji.Ironman}`);
+	expect(makeBadgeString([], true, true, true)).toBe(`${Emoji.EsbCorgi} ${LAUNCH_FOUNDER_BADGE} ${Emoji.Ironman}`);
 });
 
 test('a trip keeps one launch XP sentence', () => {

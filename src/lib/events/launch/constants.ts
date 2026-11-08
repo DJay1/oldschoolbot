@@ -1,11 +1,11 @@
-import { Emoji } from '@oldschoolgg/toolkit';
+import { customEmoji } from '@oldschoolgg/toolkit';
 
 export const LAUNCH_XP_BOOST_PERCENT = 25;
 
 export const LAUNCH_XP_BONUS_SENTENCE = `You received ${LAUNCH_XP_BOOST_PERCENT}% bonus XP from the Launch event.`;
 
-/** Founder title uses the same BSC Corgo icon as the Early Supporter badge. */
-export const LAUNCH_FOUNDER_BADGE: string = Emoji.EsbCorgi;
+/** Founder title uses the BSC server icon (pixel helmet Corgo). */
+export const LAUNCH_FOUNDER_BADGE: string = customEmoji('bscicon');
 
 export const LAUNCH_MAX_MILESTONE_ID = 'max';
 

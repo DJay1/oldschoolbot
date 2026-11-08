@@ -2223,6 +2223,21 @@
 			]
 		},
 		{
+			"name": "bscicon",
+			"uploadName": "bscicon",
+			"aliases": [],
+			"fallback": "🐕",
+			"animated": false,
+			"source": null,
+			"image": "bscicon.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Bark School Corgo server icon (pixel helmet Corgo).",
+			"usedIn": [
+				"src/lib/events/launch/constants.ts"
+			]
+		},
+		{
 			"name": "esbcorgi",
 			"uploadName": "esbcorgi",
 			"aliases": [],
