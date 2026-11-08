@@ -104,7 +104,7 @@ async function spawnCommand(user: MUser, interaction: MInteraction, kind: SpawnK
 	await user.update(cfg.stamp(now));
 
 	const { answers, question, explainAnswer } = generateXPLevelQuestion();
-	const timeToAnswer = Time.Minute;
+	const timeToAnswer = Time.Second * 30;
 	const winnerId = await buttonUserPicker({
 		interaction,
 		str: `${cfg.emoji()} ${userMention(user.id)} spawned a ${cfg.label} (they get a 5s head start). Answer within ${time(Math.floor((now + timeToAnswer) / 1000), 'R')}.
