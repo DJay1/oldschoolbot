@@ -1,4 +1,4 @@
-import { type PerkTier, Time } from '@oldschoolgg/toolkit';
+import { Time } from '@oldschoolgg/toolkit';
 import { Bank, resolveItems } from 'oldschooljs';
 
 import Skillcapes from '@/lib/skilling/skillcapes.js';
@@ -79,4 +79,3 @@ export const giveBoxResetTime = Time.Hour * 23.5;
 export const SPAWN_BOX_COOLDOWN = Time.Second * 30;
 
 /** Spawn lamp and spawn box share a short cooldown so patrons can keep the channel busy. */
-export const spawnLampResetTime = (_user: MUser, _perkTier: PerkTier | 0) => SPAWN_BOX_COOLDOWN;

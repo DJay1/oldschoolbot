@@ -1,5 +1,5 @@
 import { boxSpawnHandler } from '@/lib/bso/boxSpawns.js';
-import { giveBoxResetTime, itemContractResetTime, spawnLampResetTime } from '@/lib/bso/bsoConstants.js';
+import { giveBoxResetTime, itemContractResetTime, SPAWN_BOX_COOLDOWN } from '@/lib/bso/bsoConstants.js';
 import { DOUBLE_LOOT_FINISH_TIME_CACHE, isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
 import { getGuthixianCacheInterval, userHasDoneCurrentGuthixianCache } from '@/lib/bso/minigames/guthixianCache.js';
 import { allIronmanMbTables, allMbTables } from '@/lib/bso/openables/mysteryBoxes.js';
@@ -57,14 +57,14 @@ const cooldownTimers: {
 	{
 		name: 'Spawn Lamp',
 		timeStamp: (user: MUser) => Number(user.user.lastSpawnLamp),
-		cd: ({ user, perkTier }) => spawnLampResetTime(user, perkTier),
+		cd: SPAWN_BOX_COOLDOWN,
 		command: ['tools', 'patron', 'spawnlamp'],
 		utcReset: false
 	},
 	{
 		name: 'Spawn Box',
 		timeStamp: (user: MUser) => Number(user.user.last_spawn_box_date ?? 0),
-		cd: Time.Minute * 45,
+		cd: SPAWN_BOX_COOLDOWN,
 		command: ['tools', 'patron', 'spawnbox'],
 		utcReset: false
 	},
