@@ -6,13 +6,14 @@ import { formatDuration, PerkTier, removeFromArr, stringMatches, Time, uniqueArr
 import { cryptoRng } from 'node-rng/crypto';
 import { Bank, type ItemBank } from 'oldschooljs';
 
+import { activity_type_enum } from '@/prisma/main/enums.js';
 import type { Giveaway } from '@/prisma/main.js';
 import { giveawayCache } from '@/lib/cache.js';
 import type { ClueTier } from '@/lib/clues/clueTiers.js';
 import { BitField } from '@/lib/constants.js';
-import { withPatreonLink } from '@/lib/patreonLink.js';
 import { InteractionID } from '@/lib/InteractionID.js';
 import { toggleAutoRummage } from '@/lib/minions/data/valeTotems.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { handleQualityCheckButton } from '@/lib/qualityChecks/buttons.js';
 import { type RunCommandArgs, runCommand } from '@/lib/settings/settings.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
@@ -130,7 +131,10 @@ async function repeatTripHandler(user: MUser, id: string, interaction: OSInterac
 	const split = id.split('_');
 	const matchingActivity = trips.find(i => i.type === split[2]);
 	if (!matchingActivity) {
-		return repeatTrip(user, interaction, trips[0]);
+		// After auto farming, the plain Repeat Trip button goes back to the trip you were doing before.
+		// Auto farm keeps its own button for farming again.
+		const nonFarmTrip = trips.find(i => i.type !== activity_type_enum.Farming);
+		return repeatTrip(user, interaction, nonFarmTrip ?? trips[0]);
 	}
 	return repeatTrip(user, interaction, matchingActivity);
 }
