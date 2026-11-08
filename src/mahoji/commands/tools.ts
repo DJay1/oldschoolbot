@@ -1098,7 +1098,6 @@ export const toolsCommand = defineCommand({
 				);
 			}
 			if (patron.mostdrops) {
-				if ((await user.fetchPerkTier()) < PerkTier.Four) return patronMsg(PerkTier.Four);
 				return mostDrops(user, patron.mostdrops.item, String(patron.mostdrops.filter));
 			}
 			if (patron.sacrificed_bank) {
