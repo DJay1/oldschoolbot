@@ -22,7 +22,7 @@ export function makeBadgeString(
 	if (patron) {
 		rawBadges.unshift(patron.badge);
 	}
-	if (isLaunchFounder) {
+	if (isLaunchFounder && !isBSCEarlySupporter) {
 		rawBadges.unshift(LAUNCH_FOUNDER_BADGE);
 	}
 	if (isBSCEarlySupporter) {

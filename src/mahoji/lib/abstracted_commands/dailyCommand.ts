@@ -145,6 +145,7 @@ export async function dailyCommand(rng: RNGProvider, interaction: MInteraction, 
 	});
 
 	const [question, ...fakeQuestions] = await getRandomTriviaQuestions();
+	if (!question) return reward(rng, user, true);
 	const allAnswers = uniqueArr(rng.shuffle([question, ...fakeQuestions].map(q => q.answers[0])));
 
 	const choice = await globalClient.pickStringWithButtons({

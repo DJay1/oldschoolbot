@@ -1,9 +1,11 @@
+import { Emoji } from '@oldschoolgg/toolkit';
+
 export const LAUNCH_XP_BOOST_PERCENT = 25;
 
 export const LAUNCH_XP_BONUS_SENTENCE = `You received ${LAUNCH_XP_BOOST_PERCENT}% bonus XP from the Launch event.`;
 
-/** Text fallback until founder art exists. Still shown after the event ends. */
-export const LAUNCH_FOUNDER_BADGE = '🏅';
+/** Founder title uses the same BSC Corgo icon as the Early Supporter badge. */
+export const LAUNCH_FOUNDER_BADGE: string = Emoji.EsbCorgi;
 
 export const LAUNCH_MAX_MILESTONE_ID = 'max';
 
