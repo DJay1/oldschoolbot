@@ -55,7 +55,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_PUP',
 		patreonTierIdEnv: 'PATREON_TIER_PUP_ID',
 		badge: '🐾',
-		summary: '+3 min max trip length, supporter badge'
+		summary: '+3 min max trip length, full scrollable bank (show_all) and bank page buttons, supporter badge'
 	},
 	{
 		level: 2,

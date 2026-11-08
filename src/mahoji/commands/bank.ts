@@ -8,6 +8,7 @@ import type { BankFlag } from '@/lib/canvas/bankImage.js';
 import { bankFlags } from '@/lib/canvas/bankImage.js';
 import { PerkTier } from '@/lib/constants.js';
 import { type Flags, OverrideStatus } from '@/lib/minions/types.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { BankSortMethods } from '@/lib/sorts.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
@@ -110,6 +111,14 @@ export const bankCommand = defineCommand({
 
 		if (options.flag) mahojiFlags.push(options.flag);
 		if (options.flag_extra) mahojiFlags.push(options.flag_extra);
+		if (
+			(mahojiFlags.includes('show_all') || mahojiFlags.includes('wide')) &&
+			(await user.fetchPerkTier()) < PerkTier.Two
+		) {
+			return withPatreonLink(
+				'Scrolling through your whole bank in one image (show_all or wide) is a Patreon perk for Pup and up.'
+			);
+		}
 		if (options.page && options.item) {
 			options.item = `${options.page} ${options.item}`.trim();
 			options.page = undefined;

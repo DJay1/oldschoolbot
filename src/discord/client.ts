@@ -13,6 +13,7 @@ const client = new OldSchoolBotClient({
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.GuildMessageReactions,
 		GatewayIntentBits.DirectMessages,
 		GatewayIntentBits.DirectMessageReactions,
