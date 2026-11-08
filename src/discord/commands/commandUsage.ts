@@ -57,7 +57,8 @@ export function getInteractionOptionsForLog({
 	interaction: MInteraction;
 	options: CommandOptions;
 }) {
-	if (interaction.rawInteraction.type !== InteractionType.ApplicationCommand) {
+	// Queued and auto-farm trips run without a real Discord interaction.
+	if (interaction.rawInteraction?.type !== InteractionType.ApplicationCommand) {
 		return undefined;
 	}
 	const inferredOptions = convertAPIOptionsToCommandOptions({

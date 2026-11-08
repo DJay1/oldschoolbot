@@ -1043,7 +1043,11 @@ export async function repeatTrip(user: MUser, interaction: OSInteraction, activi
 		}
 		throw err;
 	}
-	const continueDeltaMillis = interaction.createdTimestamp - idToUnixTs(interaction.messageId);
+	// Slash commands (like auto farm) have no source message, so there is no continue delta.
+	let continueDeltaMillis: number | null = null;
+	try {
+		continueDeltaMillis = interaction.createdTimestamp - idToUnixTs(interaction.messageId);
+	} catch {}
 
 	return runCommand({
 		commandName: handler.commandName,
