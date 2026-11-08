@@ -29,9 +29,6 @@ export async function diceCommand(rng: RNGProvider, user: MUser, interaction: MI
 	const won = roll >= 50;
 	const amountToAdd = won ? amount : -amount;
 
-	await ClientSettings.updateClientGPTrackSetting('gp_dice', amountToAdd);
-	await user.updateGPTrackSetting('gp_dice', amountToAdd);
-
 	if (won) {
 		await user.statsUpdate({
 			dice_wins: { increment: 1 }
@@ -43,6 +40,8 @@ export async function diceCommand(rng: RNGProvider, user: MUser, interaction: MI
 		});
 		await user.removeItemsFromBank(new Bank().add('Coins', amount));
 	}
+	await ClientSettings.updateClientGPTrackSetting('gp_dice', amountToAdd);
+	await user.updateGPTrackSetting('gp_dice', amountToAdd);
 
 	let resultStr = `${user.badgedUsername} rolled **${roll}** on the percentile dice, and you ${
 		won ? 'won' : 'lost'
