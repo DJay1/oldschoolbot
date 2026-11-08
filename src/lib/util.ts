@@ -1,3 +1,4 @@
+import { isEventActive } from '@/lib/events/registry.js';
 import { removeFromArr } from '@oldschoolgg/toolkit';
 import { convertXPtoLVL, type ItemBank } from 'oldschooljs';
 
@@ -20,7 +21,8 @@ export function skillingPetDropRate(
 	const twoHundredMillXP = xp >= MAX_XP;
 	const skillLevel = convertXPtoLVL(xp, MAX_LEVEL);
 	const petRateDivisor = twoHundredMillXP ? 15 : 1;
-	const dropRate = Math.floor((baseDropRate - skillLevel * 25) / petRateDivisor);
+	const launchDivisor = isEventActive('launch') ? 2 : 1;
+	const dropRate = Math.floor((baseDropRate - skillLevel * 25) / petRateDivisor / launchDivisor);
 	return { petDropRate: dropRate };
 }
 

@@ -53,7 +53,7 @@ export const seasonalEvents: readonly SeasonalEventDefinition[] = [
 		id: 'launch',
 		name: 'Launch',
 		summary:
-			'Launch week: +25% XP, a claimable Founder title, and one-time first-to-99 and first-to-max announcements. Owned Founder titles stay visible while this is on hold.',
+			'Launch: +25% XP, triple daily mystery boxes, 12-hour dailies, double skilling pet chance, a claimable Founder title with a starter kit, and one-time first-to-99 and first-to-max announcements. Owned Founder titles stay visible while this is on hold.',
 		enabled: false
 	}
 ];

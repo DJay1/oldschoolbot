@@ -13,6 +13,17 @@ import { isEventActive } from '@/lib/events/registry.js';
 import { getReclaimableItemsOfUser } from '@/lib/reclaimableItems.js';
 
 const independenceDay2Box = 'Independence Day 2 Box';
+
+/** One-time launch starter kit, given with the Founder claim (once per account). */
+const LAUNCH_STARTER_KIT = new Bank()
+	.add('Coins', 5_000_000)
+	.add('Shark', 200)
+	.add('Prayer potion(4)', 50)
+	.add('Air rune', 2000)
+	.add('Fire rune', 1000)
+	.add('Law rune', 500)
+	.add('Nature rune', 500)
+	.freeze();
 const independenceDay2EndDate = new Date('2026-07-20T00:00:00.000Z');
 
 function maxIndy2Boxes(user: MUser): number {
@@ -68,7 +79,8 @@ const claimables = [
 					push: BitField.LaunchFounder
 				}
 			});
-			return `You claimed the Founder title ${LAUNCH_FOUNDER_BADGE}. It stays on your name after the Launch event ends.`;
+			await user.transactItems({ itemsToAdd: LAUNCH_STARTER_KIT });
+			return `You claimed the Founder title ${LAUNCH_FOUNDER_BADGE}. It stays on your name after the Launch event ends.\nYour launch starter kit is in your bank: ${LAUNCH_STARTER_KIT}`;
 		}
 	},
 	{

@@ -1,6 +1,6 @@
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 
-import { Emoji, formatDuration, isWeekend, uniqueArr } from '@oldschoolgg/toolkit';
+import { Emoji, formatDuration, isWeekend, Time, uniqueArr } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
@@ -30,7 +30,9 @@ export async function isUsersDailyReady(
 	const lastVoteDate = Number(stats.last_daily_timestamp);
 	const difference = currentDate - lastVoteDate;
 
-	const dailyCooldown = bscDailyCooldownMs(user.bitfield, CONSTANTS.DAILY_COOLDOWN);
+	const baseCooldown = bscDailyCooldownMs(user.bitfield, CONSTANTS.DAILY_COOLDOWN);
+	// Launch event: dailies every 12 hours at most.
+	const dailyCooldown = isEventActive('launch') ? Math.min(baseCooldown, Time.Hour * 12) : baseCooldown;
 	if (difference < dailyCooldown) {
 		const duration = Date.now() - (lastVoteDate + dailyCooldown);
 		return { isReady: false, durationUntilReady: duration };
