@@ -23,7 +23,10 @@ import { buildClueButtons } from '@/lib/clues/clueUtils.js';
 import { combatAchievementTripEffect } from '@/lib/combat_achievements/combatAchievements.js';
 import { BitField, CONSTANTS, PerkTier } from '@/lib/constants.js';
 import { LAUNCH_XP_BONUS_SENTENCE } from '@/lib/events/launch/constants.js';
+import { LaunchItem } from '@/lib/events/launch/items.js';
+import { rollLaunchBoxFromTrip } from '@/lib/events/launch/launchBox.js';
 import { isEventActive } from '@/lib/events/registry.js';
+import { isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
 import { handleGrowablePetGrowth } from '@/lib/growablePets.js';
 import { handlePassiveImplings } from '@/lib/implings.js';
@@ -96,6 +99,23 @@ const tripFinishEffects: TripFinishEffect[] = [
 				}
 			}
 			return {};
+		}
+	},
+	{
+		name: 'Launch box',
+		fn: async ({ data, messages, rng }) => {
+			if (!isEventActive('launch')) return;
+			const result = rollLaunchBoxFromTrip({
+				durationMs: data.duration,
+				doubleLoot: isDoubleLootActive(data.duration),
+				rng
+			});
+			if (result.nearMiss) {
+				messages.push("You almost found a Launch box... I wonder what's in there.");
+			}
+			if (!result.found) return;
+			messages.push('🎁 You found a Launch box!');
+			return { itemsToAddWithCL: new Bank().add(LaunchItem.LAUNCH_BOX) };
 		}
 	},
 	{

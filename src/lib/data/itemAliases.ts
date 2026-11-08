@@ -430,6 +430,8 @@ export interface CustomItemData {
 	isPet?: true;
 	isSecret?: true;
 	tags?: ('SUMMONING' | 'IN_UMB')[];
+	/** Shown as the item examine. Bark School Corgo does not have a separate examine command yet. */
+	examine?: string;
 }
 declare module 'oldschooljs' {
 	interface Item {
