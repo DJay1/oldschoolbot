@@ -106,7 +106,8 @@ export async function minionKillCommand(
 		kcForBonus = kcs.BRANDA + kcs.ELDRIC + kcs.ROYAL_TITANS;
 	}
 
-	const result = newMinionKillCommand({
+	const maxTripLength = await user.calcMaxTripLength('MonsterKilling');
+	const killArgs = {
 		gearBank: user.gearBank,
 		attackStyles: user.getAttackStyles(),
 		currentSlayerTask: slayerInfo,
@@ -114,7 +115,7 @@ export async function minionKillCommand(
 		isTryingToUseWildy: wilderness ?? false,
 		monsterKC: kcForBonus,
 		inputPVMMethod: method,
-		maxTripLength: await user.calcMaxTripLength('MonsterKilling'),
+		maxTripLength,
 		pkEvasionExperience,
 		poh: await getPOH(user.id),
 		inputQuantity,
@@ -125,7 +126,27 @@ export async function minionKillCommand(
 		disabledInventions: user.user.disabled_inventions,
 		currentPeak: generateDailyPeakIntervals().currentPeak,
 		rng
-	});
+	};
+	let result = newMinionKillCommand(killArgs);
+
+	// Speed boosts (weekend, items, etc.) shorten the trip after the kill count is picked.
+	// When no quantity was given, refill the trip up to the max length with those boosts counted.
+	if (typeof result !== 'string' && inputQuantity === undefined && result.duration < maxTripLength) {
+		const inflatedMax = Math.floor(maxTripLength * (maxTripLength / result.duration));
+		let candidate = newMinionKillCommand({ ...killArgs, maxTripLength: inflatedMax });
+		for (let i = 0; i < 6 && typeof candidate !== 'string' && candidate.duration > maxTripLength; i++) {
+			const nextQty = candidate.quantity - 1;
+			if (nextQty <= result.quantity) break;
+			candidate = newMinionKillCommand({ ...killArgs, maxTripLength: inflatedMax, inputQuantity: nextQty });
+		}
+		if (
+			typeof candidate !== 'string' &&
+			candidate.duration <= maxTripLength &&
+			candidate.quantity > result.quantity
+		) {
+			result = candidate;
+		}
+	}
 
 	if (typeof result === 'string') {
 		return result;
