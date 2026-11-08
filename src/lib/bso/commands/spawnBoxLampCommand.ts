@@ -130,7 +130,8 @@ ${question}`,
 		timer: timeToAnswer,
 		ironmenAllowed: false,
 		answers,
-		creator: user.id
+		creator: user.id,
+		creatorGetsTwoGuesses: true
 	});
 	if (!winnerId) return `Nobody got it. ${explainAnswer}`;
 	const winner = await mUserFetch(winnerId);

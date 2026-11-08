@@ -1,7 +1,6 @@
-import { PerkTier, Time } from '@oldschoolgg/toolkit';
+import { type PerkTier, Time } from '@oldschoolgg/toolkit';
 import { Bank, resolveItems } from 'oldschooljs';
 
-import { BitField } from '@/lib/constants.js';
 import Skillcapes from '@/lib/skilling/skillcapes.js';
 
 export const GLOBAL_BSO_XP_MULTIPLIER = 5;
@@ -77,20 +76,7 @@ compCapeCreatableBank.freeze();
 
 export const itemContractResetTime = Time.Hour * 7.8;
 export const giveBoxResetTime = Time.Hour * 23.5;
-export const SPAWN_BOX_COOLDOWN = Time.Minute * 45;
+export const SPAWN_BOX_COOLDOWN = Time.Second * 30;
 
-export const spawnLampResetTime = (user: MUser, perkTier: PerkTier | 0) => {
-	const bf = user.bitfield;
-
-	const hasPerm = bf.includes(BitField.HasPermanentSpawnLamp);
-	const hasTier5 = perkTier >= PerkTier.Five;
-	const hasTier4 = !hasTier5 && perkTier === PerkTier.Four;
-
-	let cooldown = ([PerkTier.Six, PerkTier.Five] as number[]).includes(perkTier) ? Time.Hour * 12 : Time.Hour * 24;
-
-	if (!hasTier5 && !hasTier4 && hasPerm) {
-		cooldown = Time.Hour * 48;
-	}
-
-	return cooldown - Time.Minute * 15;
-};
+/** Spawn lamp and spawn box share a short cooldown so patrons can keep the channel busy. */
+export const spawnLampResetTime = (_user: MUser, _perkTier: PerkTier | 0) => SPAWN_BOX_COOLDOWN;
