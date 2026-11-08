@@ -1,7 +1,10 @@
-import { roleMention } from '@oldschoolgg/discord';
+import { roleMention, time } from '@oldschoolgg/discord';
 import { formatDuration, Time } from '@oldschoolgg/toolkit';
 
-import { Channel, Roles } from '@/lib/constants.js';
+import { Channel } from '@/lib/constants.js';
+
+/** Optional Los Perros role to ping when double loot starts. */
+const DOUBLE_LOOT_ROLE_ID = process.env.DOUBLE_LOOT_ROLE_ID || null;
 
 export let DOUBLE_LOOT_FINISH_TIME_CACHE = 0;
 
@@ -23,12 +26,13 @@ export async function addToDoubleLootTimer(amount: number, reason: string) {
 	});
 	DOUBLE_LOOT_FINISH_TIME_CACHE = newDoubleLootTimer;
 
+	const ends = new Date(newDoubleLootTimer);
+	const ping = DOUBLE_LOOT_ROLE_ID ? `${roleMention(DOUBLE_LOOT_ROLE_ID)} ` : '';
 	await globalClient.sendMessage(Channel.GeneralChannel, {
-		content: `${roleMention(Roles.BSODoubleLoot)} 🎉 ${formatDuration(
-			amount
-		)} added to the Double Loot timer because: ${reason}. 🎉`,
-		allowedMentions: { roles: [Roles.BSODoubleLoot] }
+		content: `${ping}🎉 **${formatDuration(amount)}** added to Double Loot because: ${reason}\nDouble Loot now ends ${time(ends)} (${time(ends, 'R')}).`,
+		allowedMentions: { roles: DOUBLE_LOOT_ROLE_ID ? [DOUBLE_LOOT_ROLE_ID] : [] }
 	});
+	wasDoubleLootActive = true;
 
 	await syncPrescence();
 }
@@ -55,8 +59,18 @@ export async function syncDoubleLoot() {
 	DOUBLE_LOOT_FINISH_TIME_CACHE = Number(clientSettings.double_loot_finish_time);
 }
 
+let wasDoubleLootActive: boolean | null = null;
+
+/** Refreshes the bot status and posts once in the log channel when double loot runs out. */
 export async function syncPrescence() {
 	await syncDoubleLoot();
+	const active = isDoubleLootActive();
+	if (wasDoubleLootActive === true && !active) {
+		await globalClient
+			.sendMessage(Channel.GeneralChannel, { content: 'Double Loot has ended.' })
+			.catch(err => Logging.logError(err as Error));
+	}
+	wasDoubleLootActive = active;
 
 	const str = isDoubleLootActive()
 		? `${formatDuration(DOUBLE_LOOT_FINISH_TIME_CACHE - Date.now(), true)} Double Loot!`

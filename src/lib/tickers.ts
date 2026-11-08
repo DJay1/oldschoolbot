@@ -1,3 +1,4 @@
+import { syncPrescence } from '@/lib/bso/doubleLoot.js';
 import { syncSlayerMaskLeaderboardCache } from '@/lib/bso/skills/slayer/slayerMaskLeaderboard.js';
 import { MTame } from '@/lib/bso/structures/MTame.js';
 import { runTameTask } from '@/lib/bso/tames/tameTasks.js';
@@ -338,6 +339,16 @@ LIMIT 10;`;
 		}
 	}
 ];
+
+tickers.push({
+	name: 'double_loot_presence',
+	startupWait: Time.Second * 15,
+	interval: Time.Minute,
+	timer: null,
+	cb: async () => {
+		await syncPrescence();
+	}
+});
 
 tickers.push({
 	name: 'bsc_patron_sync',

@@ -16,6 +16,7 @@ import { PATRON_DOUBLE_LOOT_COOLDOWN } from '@/lib/bsc/patronTiers.js';
 import { lastRoboChimpSyncCache } from '@/lib/cache.js';
 import { CONSTANTS, globalConfig } from '@/lib/constants.js';
 import { customItems } from '@/lib/customItems/util.js';
+import { isEventActive, resolveSeasonalEvent } from '@/lib/events/registry.js';
 import { roboChimpSyncData } from '@/lib/roboChimp.js';
 import type { ActivityTaskData } from '@/lib/types/minions.js';
 import { claimDiscordEvent } from '@/lib/util/discordEventGate.js';
@@ -269,6 +270,11 @@ const mentionCommands: MentionCommand[] = [
 			if (isDoubleLootActive()) {
 				const date = new Date(DOUBLE_LOOT_FINISH_TIME_CACHE);
 				content += `\n\n2️⃣🇽 **Double Loot is Active until ${time(date)} (${time(date, 'R')})**`;
+			}
+			const launch = resolveSeasonalEvent('launch');
+			if (isEventActive('launch') && launch.end !== null) {
+				const launchEnd = new Date(launch.end);
+				content += `\n**Launch event: +25% XP and Launch boxes until ${time(launchEnd)} (${time(launchEnd, 'R')})**`;
 			}
 
 			return {
