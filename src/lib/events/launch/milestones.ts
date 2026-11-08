@@ -12,6 +12,17 @@ import {
 
 export const LAUNCH_LEVEL_99_XP = convertLVLtoXP(99);
 
+/** DJ gets pinged for every first 99 so he can spawn the community gift. */
+const LAUNCH_GIFT_OWNER_ID = '290167629966999552';
+
+async function notifyLaunchOwner(text: string): Promise<void> {
+	const channelId = process.env.LOG_CHANNEL_ID;
+	if (!channelId) return;
+	await globalClient
+		.sendMessage(channelId, { content: `<@${LAUNCH_GIFT_OWNER_ID}> ${text}`, allowedMentions: { users: [LAUNCH_GIFT_OWNER_ID] } })
+		.catch(() => null);
+}
+
 const ready = { done: false };
 
 async function ensureLaunchMilestoneStore() {
@@ -74,8 +85,9 @@ export async function maybeAnnounceLaunchFirst99(user: MUser, skill: string): Pr
 	if (!claimed) return;
 	globalClient.emit(
 		Events.ServerNotification,
-		launchFirst99Announcement(user.usernameOrMention, toTitleCase(skill))
+		`${launchFirst99Announcement(user.usernameOrMention, toTitleCase(skill))} Tag <@${LAUNCH_GIFT_OWNER_ID}> to claim a special gift for everyone!`
 	);
+	await notifyLaunchOwner(`First 99 ${toTitleCase(skill)}: ${user.usernameOrMention} (${user.id}). Time to spawn the community gift.`);
 }
 
 export async function maybeAnnounceLaunchFirstMax(user: MUser, maxedAccounts: number): Promise<void> {
