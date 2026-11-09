@@ -2352,6 +2352,12 @@ export async function getCollection(options: {
 					collection: clItems,
 					completions: userKC,
 					isActivity: attributes.isActivity,
+					isOpenable:
+						typeof attributes.kcActivity === 'object' &&
+						attributes.kcActivity !== null &&
+						Object.values(attributes.kcActivity).some(
+							v => typeof v === 'function' && Function.prototype.toString.call(v).includes('openableScores')
+						),
 					collectionObtained: userAmount,
 					collectionTotal: totalCl,
 					leftList: getLeftList(

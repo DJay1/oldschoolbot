@@ -25,6 +25,7 @@ export interface IToReturnCollection {
 	collection: Set<number>;
 	completions?: Record<string, number>;
 	isActivity?: boolean;
+	isOpenable?: boolean;
 	collectionObtained: number;
 	collectionTotal: number;
 	leftList?: ILeftListStatus;

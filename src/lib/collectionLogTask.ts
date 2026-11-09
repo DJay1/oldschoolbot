@@ -337,33 +337,28 @@ class CollectionLogTask {
 			color
 		});
 
-		// Openable CLs: show Opens beside Obtained when Default completion is present.
-		const openedCount = collectionLog.completions?.Default;
-		if (
-			!flags.missing &&
-			type === 'collection' &&
-			openedCount !== undefined &&
-			collectionLog.isActivity
-		) {
-			const openedLabel = '  Opened: ';
-			const afterObtained = Math.floor(
-				obtainableMeasure.width + canvas.measureTextWidth(obtainedText)
-			);
-			canvas.drawText({
-				text: openedLabel,
-				x: afterObtained,
-				y: 13,
-				color: this.COLORS.ORANGEY
-			});
-			canvas.drawText({
-				text: openedCount.toLocaleString(),
-				x: afterObtained + Math.floor(canvas.measureTextWidth(openedLabel)),
-				y: 13,
-				color: this.COLORS.WHITE
-			});
-		}
-
 		if (collectionLog.completions && ['collection', 'bank', 'tame'].includes(type)) {
+			// Openables: Completions.Default is openable_scores - show Opened on its own line.
+			const openedCount = collectionLog.completions.Default;
+			if (
+				collectionLog.isOpenable &&
+				!flags.missing &&
+				openedCount !== undefined
+			) {
+				const openedLabel = 'Opened: ';
+				canvas.drawText({
+					text: openedLabel,
+					x: 0,
+					y: 25,
+					color: this.COLORS.ORANGEY
+				});
+				canvas.drawText({
+					text: openedCount.toLocaleString(),
+					x: Math.floor(canvas.measureTextWidth(openedLabel)),
+					y: 25,
+					color: this.COLORS.WHITE
+				});
+			} else if (!collectionLog.isOpenable) {
 			const baseText = collectionLog.isActivity ? 'Completions: ' : 'Kills: ';
 			let drawnSoFar = baseText;
 			// Times done/killed
@@ -414,6 +409,7 @@ class CollectionLogTask {
 					y: pixelLevel,
 					color: this.COLORS.WHITE
 				});
+			}
 			}
 		}
 
