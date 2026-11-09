@@ -1193,7 +1193,7 @@ export const adminCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'announce_backfill',
-			description: 'Optional dry-run or re-post Notification embeds. Catch-up is automatic on restart.',
+			description: 'Optional dry-run or re-post Notification embeds for rare items.',
 			options: [
 				{
 					type: 'Boolean',

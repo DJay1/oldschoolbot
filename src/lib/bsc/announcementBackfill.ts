@@ -188,7 +188,7 @@ export async function runAnnouncementBackfill(options: BackfillRunOptions): Prom
 				preview || '(none)',
 				extra,
 				``,
-				`Normal catch-up is automatic on restart. Use dry_run:false only to re-post individual Notification embeds.`
+				`Use dry_run:false only to re-post individual Notification embeds. The restart message no longer lists catch-up.`
 			]
 				.filter(line => line !== undefined)
 				.join('\n')

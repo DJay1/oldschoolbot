@@ -1,22 +1,18 @@
 import { EmbedBuilder, dateFm } from '@oldschoolgg/discord';
 
-import { formatStartupCatchUp, markCatchUpAnnounced } from '@/lib/bsc/announcementBackfill.js';
 import { startupActiveBoosts } from '@/lib/bsc/startupActiveBoosts.js';
 import { startupChangelogLines } from '@/lib/bsc/startupChangelog.js';
 import { META_CONSTANTS } from '@/lib/constants.js';
 
-const CATCH_UP_CAP = 15;
-
 /**
- * Compact restart notice for General: title, time, boosts, changelog, one-time catch-up.
+ * Compact restart notice for General: title, time, boosts, changelog.
+ * Funziez / Notification channel already logs item receives, so catch-up is not listed here.
  */
 export async function buildStartupRestartMessage(): Promise<{
 	embeds: EmbedBuilder[];
-	catchUpCount: number;
 }> {
 	const boosts = startupActiveBoosts();
 	const changes = startupChangelogLines();
-	const catchUp = await formatStartupCatchUp(CATCH_UP_CAP);
 
 	const embed = new EmbedBuilder()
 		.setColor(0x57_f2_87)
@@ -31,20 +27,11 @@ export async function buildStartupRestartMessage(): Promise<{
 	}
 
 	if (changes.length > 0) {
-		blocks.push(`**What changed:**\n${changes.map(line => `- ${line}`).join('\n')}`);
-	}
-
-	if (catchUp.lines.length > 0) {
-		const body = catchUp.lines.map(line => `- ${line}`).join('\n');
-		const extra = catchUp.hidden > 0 ? `\n- +${catchUp.hidden} more` : '';
-		blocks.push(`**Already owned (catch-up):**\n${body}${extra}`);
+		const changeLines = changes.map(line => `- ${line}`).join('\n');
+		blocks.push(`**What changed:**\n${changeLines}`);
 	}
 
 	embed.setDescription(blocks.join('\n\n').slice(0, 4000));
 
-	if (catchUp.candidates.length > 0) {
-		await markCatchUpAnnounced(catchUp.candidates);
-	}
-
-	return { embeds: [embed], catchUpCount: catchUp.candidates.length };
+	return { embeds: [embed] };
 }

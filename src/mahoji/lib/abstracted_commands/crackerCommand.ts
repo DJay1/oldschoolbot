@@ -1,4 +1,5 @@
 import { partyHatTableRoll } from '@/lib/bso/holidayItems.js';
+import { makeCrackerWhoWonImage } from '@/lib/canvas/crackerImage.js';
 
 import type { IUser } from '@oldschoolgg/schemas';
 import { Emoji } from '@oldschoolgg/toolkit';
@@ -17,6 +18,10 @@ const JunkTable = new LootTable()
 	.add('Gold ring', 1, 1 / 13.9)
 	.add('Black dagger', 1, 1 / 24.3)
 	.add('Law rune', 1, 1 / 25.3);
+
+function displayName(user: MUser): string {
+	return user.username || user.id;
+}
 
 export async function crackerCommand({
 	ownerID,
@@ -38,7 +43,20 @@ export async function crackerCommand({
 		await owner.removeItemsFromBank(new Bank().add('Christmas cracker', 1));
 		const loot = partyHatTableRoll();
 		await owner.addItemsToBank({ items: loot, collectionLog: true });
-		return `${Emoji.ChristmasCracker} ${owner} pulled a Christmas cracker with... yourself? You received ${loot}.`;
+		const image = await makeCrackerWhoWonImage({
+			ownerName: displayName(owner),
+			otherName: displayName(owner),
+			winnerName: displayName(owner),
+			loserName: displayName(owner),
+			winnerLoot: loot,
+			loserLoot: new Bank(),
+			solo: true,
+			iconPackId: owner.iconPackId
+		});
+		return {
+			content: `${Emoji.ChristmasCracker} You pulled a Christmas cracker with yourself!`,
+			files: [image]
+		};
 	}
 	if (otherPersonAPIUser.bot) return "Bot's don't have hands.";
 	if (otherPerson.id === owner.id) return 'Nice try.';
@@ -58,5 +76,18 @@ export async function crackerCommand({
 	await loser.addItemsToBank({ items: loserLoot, collectionLog: true });
 	await addToOpenablesScores(owner, new Bank().add('Christmas cracker', 1).freeze());
 
-	return `${Emoji.ChristmasCracker} ${owner} pulled a Christmas cracker with ${otherPerson} and....\n\n ${winner} received ${winnerLoot}, ${loser} received ${loserLoot}.`;
+	const image = await makeCrackerWhoWonImage({
+		ownerName: displayName(owner),
+		otherName: displayName(otherPerson),
+		winnerName: displayName(winner),
+		loserName: displayName(loser),
+		winnerLoot,
+		loserLoot,
+		iconPackId: owner.iconPackId
+	});
+
+	return {
+		content: `${Emoji.ChristmasCracker} ${owner} pulled a Christmas cracker with ${otherPerson}!`,
+		files: [image]
+	};
 }
