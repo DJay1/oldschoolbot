@@ -97,9 +97,9 @@ const cooldownTimers: {
 	{
 		name: 'Balthazars Big Bonanza',
 		timeStamp: (user: MUser) => Number(user.user.last_bonanza_date),
-		cd: Time.Day * 7,
+		cd: CONSTANTS.BALTHAZARS_BIG_BONANZA_CD,
 		command: ['bsominigames', 'balthazars_big_bonanza', 'start'],
-		utcReset: false
+		utcReset: true
 	}
 ];
 
