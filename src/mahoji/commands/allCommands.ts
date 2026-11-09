@@ -37,6 +37,7 @@ import { cookCommand } from '@/mahoji/commands/cook.js';
 import { craftCommand } from '@/mahoji/commands/craft.js';
 import { createCommand } from '@/mahoji/commands/create.js';
 import { dataCommand } from '@/mahoji/commands/data.js';
+import { dcLookupCommand } from '@/mahoji/commands/dclookup.js';
 import { dropCommand } from '@/mahoji/commands/drop.js';
 import { farmingCommand } from '@/mahoji/commands/farming.js';
 import { finishCommand } from '@/mahoji/commands/finish.js';
@@ -115,6 +116,7 @@ export const allCommandsDONTIMPORT: AnyCommand[] = [
 	createCommand,
 	activitiesCommand,
 	dataCommand,
+	dcLookupCommand,
 	fletchCommand,
 	gambleCommand,
 	gearCommand,

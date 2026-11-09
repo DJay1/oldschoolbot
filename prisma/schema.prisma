@@ -1528,6 +1528,7 @@ model UserCounter {
 }
 
 enum command_name_enum {
+  dclookup
   firstage
   patron
   qualitycheck
