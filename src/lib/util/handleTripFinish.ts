@@ -111,9 +111,13 @@ const tripFinishEffects: TripFinishEffect[] = [
 				doubleLoot: isDoubleLootActive(data.duration),
 				rng
 			});
-			if (!result.found) return;
-			messages.push(`${customEmoji('launchbox')} You found a Launch box!`);
-			return { itemsToAddWithCL: new Bank().add(LaunchItem.LAUNCH_BOX) };
+			if (result.amount <= 0) return;
+			messages.push(
+				result.amount === 1
+					? `${customEmoji('launchbox')} You found a Launch box!`
+					: `${customEmoji('launchbox')} You found ${result.amount} Launch boxes!`
+			);
+			return { itemsToAddWithCL: new Bank().add(LaunchItem.LAUNCH_BOX, result.amount) };
 		}
 	},
 	{

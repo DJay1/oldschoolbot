@@ -65,7 +65,7 @@ const CLUE_SCROLLS: readonly (readonly [string, number, number, number])[] = [
 ];
 
 const RARE_SCALE = 1_000_000;
-export const CORGO_PARTY_HAT_PITY = 100;
+export const CORGO_PARTY_HAT_PITY = 200;
 
 export interface Closeness {
 	got: boolean;
@@ -100,11 +100,16 @@ function addMaterials(loot: Bank, rng: LaunchBoxRng) {
 /** Trips shorter than this can't roll a Launch box. */
 export const LAUNCH_BOX_MIN_TRIP_MS = 20 * Time.Minute;
 
+export const LAUNCH_BOX_BASE_MINUTES = 20;
+export const LAUNCH_BOX_BASELINE_RATE_MINUTES = 112;
+export const LAUNCH_BOX_TRIP_EXPONENT = 1.08;
+
 export function launchBoxTripChance(durationMs: number, doubleLoot: boolean): number {
 	if (durationMs < LAUNCH_BOX_MIN_TRIP_MS) return 0;
 	const minutes = Math.max(0, durationMs) / Time.Minute;
-	const chance = Math.min(1, minutes / 300);
-	return Math.min(1, chance * (doubleLoot ? 2 : 1));
+	const baseExpected = LAUNCH_BOX_BASE_MINUTES / LAUNCH_BOX_BASELINE_RATE_MINUTES;
+	const expected = (minutes / LAUNCH_BOX_BASE_MINUTES) ** LAUNCH_BOX_TRIP_EXPONENT * baseExpected;
+	return expected * (doubleLoot ? 2 : 1);
 }
 
 export function rollLaunchBoxFromTrip({
@@ -115,11 +120,13 @@ export function rollLaunchBoxFromTrip({
 	durationMs: number;
 	doubleLoot: boolean;
 	rng: LaunchBoxRng;
-}): { found: boolean } {
-	const chance = launchBoxTripChance(durationMs, doubleLoot);
-	if (chance <= 0) return { found: false };
+}): { amount: number } {
+	const expected = launchBoxTripChance(durationMs, doubleLoot);
+	if (expected <= 0) return { amount: 0 };
+	const guaranteed = Math.floor(expected);
+	const remainder = expected - guaranteed;
 	const roll = rng.randInt(1, RARE_SCALE);
-	return { found: roll <= Math.round(chance * RARE_SCALE) };
+	return { amount: guaranteed + (roll <= Math.round(remainder * RARE_SCALE) ? 1 : 0) };
 }
 
 export function buildFounderLaunchExtras(rng: LaunchBoxRng): Bank {

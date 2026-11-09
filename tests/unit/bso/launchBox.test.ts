@@ -1,3 +1,4 @@
+import { Time } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
 import { expect, test } from 'vitest';
 
@@ -6,13 +7,38 @@ import {
 	CORGO_PARTY_HAT_PITY,
 	LAUNCH_BOX_MYSTERY_BOXES,
 	LAUNCH_BOX_POTIONS,
+	type LaunchBoxRng,
+	launchBoxTripChance,
 	openLaunchBoxes,
 	rareRoll,
-	type LaunchBoxRng
+	rollLaunchBoxFromTrip
 } from '@/lib/events/launch/launchBox.js';
 
 const worst: LaunchBoxRng = { randInt: (_min, max) => max };
 const best: LaunchBoxRng = { randInt: min => min };
+
+test('trips under 20 minutes never give a Launch box', () => {
+	expect(launchBoxTripChance(Time.Minute * 19, false)).toBe(0);
+	expect(rollLaunchBoxFromTrip({ durationMs: Time.Minute * 19, doubleLoot: true, rng: best }).amount).toBe(0);
+});
+
+test('expected Launch boxes per trip follow the 20 / 112 minute curve', () => {
+	expect(launchBoxTripChance(Time.Minute * 20, false)).toBeCloseTo(20 / 112, 5);
+	expect(launchBoxTripChance(Time.Minute * 40, false)).toBeCloseTo(2 ** 1.08 * (20 / 112), 5);
+	expect(launchBoxTripChance(Time.Hour, false)).toBeCloseTo(3 ** 1.08 * (20 / 112), 5);
+	expect(launchBoxTripChance(Time.Hour, true)).toBeCloseTo(2 * 3 ** 1.08 * (20 / 112), 5);
+});
+
+test('long trips can give more than one Launch box', () => {
+	const expected = launchBoxTripChance(Time.Hour * 2, false);
+	expect(expected).toBeGreaterThan(1);
+	expect(rollLaunchBoxFromTrip({ durationMs: Time.Hour * 2, doubleLoot: false, rng: worst }).amount).toBe(
+		Math.floor(expected)
+	);
+	expect(rollLaunchBoxFromTrip({ durationMs: Time.Hour * 2, doubleLoot: false, rng: best }).amount).toBe(
+		Math.floor(expected) + 1
+	);
+});
 
 test('rare roll closeness is the chance compared with the roll', () => {
 	expect(rareRoll(25, 4)).toEqual({ got: false, roll: 22, denominator: 25 });
