@@ -175,6 +175,8 @@ export const seaKrakenCL = resolveItems([
 	'Squid dye'
 ]);
 
+export const yetiCL = resolveItems(['Penguin egg', 'Frostclaw cape', 'Cold heart', 'Yeti hide', 'Raw yeti meat']);
+
 export const queenBlackDragonCL = resolveItems([
 	'Queen black dragonling',
 	'Draconic visage',

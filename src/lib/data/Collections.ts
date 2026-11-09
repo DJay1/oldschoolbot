@@ -27,7 +27,8 @@ import {
 	treeBeardCL,
 	vasaMagusCL,
 	venatrixCL,
-	vladDrakanCL
+	vladDrakanCL,
+	yetiCL
 } from '@/lib/bso/collection-log/main.js';
 import {
 	balthazarsBigBonanzaCL,
@@ -776,6 +777,12 @@ export const allCollectionLogs: ICollection = {
 				allItems: BSOMonsters.SeaKraken.table.allItems,
 				items: seaKrakenCL,
 				fmtProg: kcProg(BSOMonsters.SeaKraken.id)
+			},
+			Yeti: {
+				alias: BSOMonsters.Yeti.aliases,
+				allItems: BSOMonsters.Yeti.table.allItems,
+				items: yetiCL,
+				fmtProg: kcProg(BSOMonsters.Yeti.id)
 			},
 			'Queen Black Dragon': {
 				alias: BSOMonsters.QueenBlackDragon.aliases,
