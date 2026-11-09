@@ -1,5 +1,4 @@
 import { ownedItemOption } from '@/discord/index.js';
-import { beachCombingCommand } from '@/lib/events/summer/beachCommand.js';
 import { Planks } from '@/lib/minions/data/planks.js';
 import Potions from '@/lib/minions/data/potions.js';
 import { quests } from '@/lib/minions/data/quests.js';
@@ -8,7 +7,6 @@ import birdhouses from '@/lib/skilling/skills/hunter/birdHouseTrapping.js';
 import { Castables } from '@/lib/skilling/skills/magic/castables.js';
 import { Enchantables } from '@/lib/skilling/skills/magic/enchantables.js';
 import Prayer from '@/lib/skilling/skills/prayer.js';
-import type { BeachCombingMethod } from '@/lib/types/minions.js';
 import { aerialFishingCommand } from '@/mahoji/lib/abstracted_commands/aerialFishingCommand.js';
 import { alchCommand } from '@/mahoji/lib/abstracted_commands/alchCommand.js';
 import { birdhouseCheckCommand, birdhouseHarvestCommand } from '@/mahoji/lib/abstracted_commands/birdhousesCommand.js';
@@ -98,30 +96,6 @@ export const activitiesCommand = defineCommand({
 			type: 'Subcommand',
 			name: 'my_notes',
 			description: 'Send your minion to rummage skeletons for Ancient pages.'
-		},
-		{
-			type: 'Subcommand',
-			name: 'beach_combing',
-			description: 'Send your minion to spend some time on the shoreline.',
-			options: [
-				{
-					type: 'String',
-					name: 'focus',
-					description: 'What your minion should focus on while at the beach.',
-					required: true,
-					choices: ['Surfing', 'BeachCombing', 'BuildSandcastles', 'PickupTrash'].map(i => ({
-						name: i,
-						value: i
-					}))
-				},
-				{
-					type: 'Integer',
-					name: 'minutes',
-					description: 'The number of minutes to stay out.',
-					required: false,
-					min_value: 10
-				}
-			]
 		},
 		{
 			type: 'Subcommand',
@@ -610,18 +584,6 @@ export const activitiesCommand = defineCommand({
 		}
 		if (options.my_notes) {
 			return myNotesCommand(user, channelId);
-		}
-		if (options.beach_combing) {
-			const focus = options.beach_combing.focus;
-			const method: BeachCombingMethod | null =
-				focus === 'Surfing' ||
-				focus === 'BeachCombing' ||
-				focus === 'BuildSandcastles' ||
-				focus === 'PickupTrash'
-					? focus
-					: null;
-			if (!method) return 'That is not a shoreline focus.';
-			return beachCombingCommand(user, channelId, method, options.beach_combing.minutes);
 		}
 		if (options.warriors_guild) {
 			return warriorsGuildCommand(

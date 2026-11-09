@@ -320,7 +320,9 @@ const tripHandlers: {
 	},
 	[activity_type_enum.BeachCombing]: {
 		commandName: 'activities',
-		args: data => ({ beach_combing: { focus: data.method, minutes: data.minutes } })
+		args: () => {
+			throw new UserError('Beach combing is no longer available.');
+		}
 	},
 	[activity_type_enum.Collecting]: {
 		commandName: 'activities',
