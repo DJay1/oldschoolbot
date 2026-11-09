@@ -52,6 +52,7 @@ export async function syncBSCEarlySupporterBit(user: MUser, roboChimpUser: Roboc
 			}
 		}
 	});
+	await Cache.resetUsername(user.id);
 }
 
 export async function roboChimpSyncData(user: MUser, newCL?: Bank) {

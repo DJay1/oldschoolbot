@@ -213,6 +213,10 @@ export class MUserClass extends BaseUser {
 			});
 		});
 		this._updateRawUser(newUser);
+		// Patron/badge bits change the leaderboard name string; drop the Redis cache now.
+		if ('bitfield' in data || 'badges' in data) {
+			await Cache.resetUsername(userId);
+		}
 		return this;
 	}
 
