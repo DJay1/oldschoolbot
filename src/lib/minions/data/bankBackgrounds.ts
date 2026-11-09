@@ -691,6 +691,13 @@ const backgroundImages: BankBackground[] = [
 		owners: ['814501863449165844', '290167629966999552'],
 		purpleImage: null,
 		hasPurple: true
+	},
+	{
+		id: 1024,
+		name: 'potmonsta CustomBG',
+		image: null,
+		available: false,
+		owners: ['414491085172375553']
 	}
 ];
 
