@@ -682,6 +682,15 @@ const backgroundImages: BankBackground[] = [
 		image: null,
 		available: false,
 		owners: ['611598764574114049']
+	},
+	{
+		id: 1023,
+		name: 'Zootr CustomBG',
+		image: null,
+		available: false,
+		owners: ['814501863449165844', '290167629966999552'],
+		purpleImage: null,
+		hasPurple: true
 	}
 ];
 
