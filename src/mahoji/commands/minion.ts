@@ -213,7 +213,12 @@ export const minionCommand = defineCommand({
 							)
 							.map(bg => bg.id);
 						return bankImages
-							.filter(bg => user.isModOrAdmin() || bg.available || owned.includes(bg.id))
+							.filter(bg => {
+								if (user.isModOrAdmin()) return true;
+								// Owner-locked customs never appear for anyone else.
+								if (bg.owners && bg.owners.length > 0 && !owned.includes(bg.id)) return false;
+								return bg.available || owned.includes(bg.id);
+							})
 							.filter(bg => (!value ? true : bg.name.toLowerCase().includes(value.toLowerCase())))
 							.map(i => {
 								const name = i.perkTierNeeded
