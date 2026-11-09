@@ -264,7 +264,8 @@ export enum BitField {
 	LaunchFounder = 237,
 	DisableGlowEffects = 238,
 	/** Cosmetic mark from the monthly Good Boy box. Not a tradeable item. */
-	BSCPatronCosmetic = 239
+	BSCPatronCosmetic = 239,
+	ReceivedGuaranteedVorkathHead = 240
 }
 
 export interface IBitFieldData {
@@ -569,6 +570,11 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 	},
 	[BitField.BSCPatronCosmetic]: {
 		name: 'BSC Supporter Cosmetic',
+		protected: true,
+		userConfigurable: false
+	},
+	[BitField.ReceivedGuaranteedVorkathHead]: {
+		name: "Received guaranteed Vorkath's head",
 		protected: true,
 		userConfigurable: false
 	},

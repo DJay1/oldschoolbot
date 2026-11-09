@@ -10,10 +10,18 @@ import {
 
 import { calcPerHour, calcWhatPercent, Emoji, reduceNumByPercent, Time, uniqueArr } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
-import { Bank, EMonster, type ItemBank, type MonsterKillOptions, MonsterSlayerMaster, Monsters } from 'oldschooljs';
+import {
+	Bank,
+	EItem,
+	EMonster,
+	type ItemBank,
+	type MonsterKillOptions,
+	MonsterSlayerMaster,
+	Monsters
+} from 'oldschooljs';
 import { clone, isDeepEqual } from 'remeda';
 
-import type { BitField } from '@/lib/constants.js';
+import { type BitField, BitField as BitFieldEnum } from '@/lib/constants.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
 import { addMonsterXPRaw } from '@/lib/minions/functions/addMonsterXPRaw.js';
@@ -32,6 +40,8 @@ import calculateGearLostOnDeathWilderness from '@/lib/util/calculateGearLostOnDe
 import { increaseWildEvasionXp } from '@/lib/util/calcWildyPkChance.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { calculateSimpleMonsterDeathChance } from '@/lib/util/smallUtils.js';
+
+const VORKATH_HEAD_GUARANTEED_KC = 50;
 
 function handleSlayerTaskCompletion({
 	slayerContext,
@@ -385,6 +395,18 @@ export function doMonsterTrip(data: newOptions) {
 	if (!wiped) {
 		if (monster.specialLoot) {
 			monster.specialLoot({ loot, ownedItems: gearBank.bank, quantity: finalQuantity, cl: data.cl });
+		}
+		if (
+			monster.id === Monsters.Vorkath.id &&
+			quantity > 0 &&
+			currentKC + quantity >= VORKATH_HEAD_GUARANTEED_KC &&
+			!bitfield.includes(BitFieldEnum.ReceivedGuaranteedVorkathHead)
+		) {
+			loot.add(EItem.VORKATHS_HEAD);
+			updateBank.userUpdates.bitfield = { push: BitFieldEnum.ReceivedGuaranteedVorkathHead };
+			messages.push(
+				`You received a guaranteed Vorkath's head for reaching ${VORKATH_HEAD_GUARANTEED_KC} Vorkath kills.`
+			);
 		}
 		if (
 			monster.name.toLowerCase() === 'unicorn' &&
