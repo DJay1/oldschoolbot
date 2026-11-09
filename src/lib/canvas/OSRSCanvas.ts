@@ -1,3 +1,4 @@
+import { isPlaceholderItem, PLACEHOLDER_FIRST_ID } from '@/lib/bso/bankPlaceholders.js';
 import { applyCustomItemEffects } from '@/lib/bso/canvas/customItemEffects.js';
 import { handleSlayerMaskGlow } from '@/lib/bso/skills/slayer/slayerMaskHelms.js';
 
@@ -434,8 +435,10 @@ export class OSRSCanvas {
 		const cached = OSRSCanvas.LOCAL_ICON_CACHE.get(itemID);
 		if (cached) return cached;
 		let onDisk = await readFile(path.join(OSRSCanvas.ITEM_ICON_CACHE_DIR, `${itemID}.png`)).catch(() => null);
-		if (!onDisk)
-			onDisk = await readFile(path.join(OSRSCanvas.ITEM_BSO_ICON_DIR, `${itemID}.png`)).catch(() => null);
+		if (!onDisk) {
+			const iconID = isPlaceholderItem(itemID) ? PLACEHOLDER_FIRST_ID : itemID;
+			onDisk = await readFile(path.join(OSRSCanvas.ITEM_BSO_ICON_DIR, `${iconID}.png`)).catch(() => null);
+		}
 		if (!onDisk) return OSRSCanvas.placeholderItemIcon();
 		try {
 			const image = await loadImage(onDisk);

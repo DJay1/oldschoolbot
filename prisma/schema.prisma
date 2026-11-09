@@ -1530,6 +1530,7 @@ model UserCounter {
 }
 
 enum command_name_enum {
+  buyplaceholders
   dclookup
   firstage
   patron

@@ -1,4 +1,5 @@
 import { BSOItem } from '@/lib/bso/BSOItem.js';
+import { isPlaceholderItem } from '@/lib/bso/bankPlaceholders.js';
 import { bsoShortNameMap } from '@/lib/bso/bsoShortNameMap.js';
 
 import { existsSync } from 'node:fs';
@@ -415,7 +416,7 @@ class BankImageTask {
 				x: xLoc,
 				y: yLoc,
 				outline: isNewCLItem ? { outlineColor: newClGlowColour, alpha: 1 } : undefined,
-				quantity,
+				quantity: isPlaceholderItem(item.id) ? undefined : quantity,
 				textColor: isNewCLItem ? newClGlowColour : undefined,
 				user,
 				override_show_paints: paintOverride,

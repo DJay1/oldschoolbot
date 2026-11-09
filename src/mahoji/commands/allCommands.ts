@@ -25,6 +25,7 @@ import { bingoCommand } from '@/mahoji/commands/bingo.js';
 import { bsCommand } from '@/mahoji/commands/bs.js';
 import { buildCommand } from '@/mahoji/commands/build.js';
 import { buyCommand } from '@/mahoji/commands/buy.js';
+import { buyPlaceholdersCommand } from '@/mahoji/commands/buyplaceholders.js';
 import { caCommand } from '@/mahoji/commands/ca.js';
 import { casketCommand } from '@/mahoji/commands/casket.js';
 import { chooseCommand } from '@/mahoji/commands/choose.js';
@@ -99,6 +100,7 @@ export const allCommandsDONTIMPORT: AnyCommand[] = [
 	bsCommand,
 	buildCommand,
 	buyCommand,
+	buyPlaceholdersCommand,
 	caCommand,
 	chooseCommand,
 	chopCommand,
