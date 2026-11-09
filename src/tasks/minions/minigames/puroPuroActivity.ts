@@ -3,6 +3,7 @@ import { Bank, EItem } from 'oldschooljs';
 
 import { implings, puroImpHighTierTable, puroImpNormalTable, puroImpSpellTable } from '@/lib/implings.js';
 import type { PuroPuroActivityTaskOptions } from '@/lib/types/minions.js';
+import { makeBankImage } from '@/lib/util/makeBankImage.js';
 
 function hunt(rng: RNGProvider, minutes: number, hasGraceful: boolean, min: number, max: number) {
 	let totalQty = 0;
@@ -158,20 +159,7 @@ export const puroPuroTask: MinionTask = {
 		});
 
 		if (magicXP > 0) message += `\n${magicXpStr}.`;
-		message +=
-			implingsLoot.length === 0
-				? `\nYou didn't get any loot.`
-				: `\nYou received: **${implingsLoot
-						.items()
-						.sort((curr, next) => {
-							const currHunterLevel = implings[curr[0].id].level;
-							const nextHunterLevel = implings[next[0].id].level;
-							return nextHunterLevel - currHunterLevel;
-						})
-						.map(item => {
-							return `${item[1]}x ${item[0].name}`;
-						})
-						.join(', ')}**.`;
+		if (implingsLoot.length === 0) message += `\nYou didn't get any loot.`;
 
 		if (missed.length > 0) message += `\nYou missed out on ${missed} due to your hunter level being too low.`;
 
@@ -190,7 +178,7 @@ export const puroPuroTask: MinionTask = {
 			message += `\n\n${messages.join('\n')}`;
 		}
 
-		await user.transactItems({
+		const { previousCL } = await user.transactItems({
 			itemsToAdd: implingsLoot,
 			collectionLog: true,
 			itemsToRemove: itemCost
@@ -198,6 +186,23 @@ export const puroPuroTask: MinionTask = {
 
 		await user.statsBankUpdate('puropuro_implings_bank', implingsLoot);
 
-		return handleTripFinish({ user, channelId, message, data, loot: implingsLoot });
+		if (implingsLoot.length === 0) {
+			return handleTripFinish({ user, channelId, message, data, loot: implingsLoot });
+		}
+
+		const image = await makeBankImage({
+			bank: implingsLoot,
+			title: 'Loot From Puro-Puro',
+			user,
+			previousCL
+		});
+
+		return handleTripFinish({
+			user,
+			channelId,
+			message: { content: message, files: [image] },
+			data,
+			loot: implingsLoot
+		});
 	}
 };
