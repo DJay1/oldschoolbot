@@ -5,7 +5,6 @@ import { ECombatOption, type IGuild } from '@oldschoolgg/schemas';
 import {
 	cleanString,
 	formatDuration,
-	hexToDecimal,
 	isValidHexColor,
 	miniID,
 	removeFromArr,
@@ -354,7 +353,7 @@ async function bgColorConfig(user: MUser, hex?: string) {
 		return {
 			embeds: [
 				embed
-					.setColor(hexToDecimal(currentColor))
+					.setColor(Number.parseInt(currentColor.slice(1), 16))
 					.setDescription(`Your current background color is \`${currentColor}\`.`)
 			]
 		};
@@ -374,7 +373,9 @@ async function bgColorConfig(user: MUser, hex?: string) {
 	});
 
 	return {
-		embeds: [embed.setColor(hexToDecimal(hex)).setDescription(`Your background color is now \`${hex}\``)]
+		embeds: [
+			embed.setColor(Number.parseInt(hex.slice(1), 16)).setDescription(`Your background color is now \`${hex}\``)
+		]
 	};
 }
 

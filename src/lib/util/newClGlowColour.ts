@@ -1,5 +1,5 @@
 import { EmbedBuilder } from '@oldschoolgg/discord';
-import { hexToDecimal, isValidHexColor, PerkTier } from '@oldschoolgg/toolkit';
+import { isValidHexColor, PerkTier } from '@oldschoolgg/toolkit';
 
 import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
 import { patronMsg } from '@/lib/util/smallUtils.js';
@@ -27,7 +27,7 @@ export async function newClGlowColourCommand(user: MUser, colour?: string | null
 		return {
 			embeds: [
 				new EmbedBuilder()
-					.setColor(hexToDecimal(shown))
+					.setColor(Number.parseInt(shown.slice(1), 16))
 					.setDescription(
 						current
 							? `Your new collection log glow colour is \`${current}\`.`
@@ -49,7 +49,7 @@ export async function newClGlowColourCommand(user: MUser, colour?: string | null
 	return {
 		embeds: [
 			new EmbedBuilder()
-				.setColor(hexToDecimal(hex))
+				.setColor(Number.parseInt(hex.slice(1), 16))
 				.setDescription(`New collection log items in your bank images will now glow \`${hex}\`.`)
 		]
 	};
