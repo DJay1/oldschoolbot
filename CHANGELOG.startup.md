@@ -3,7 +3,7 @@
 Edit this file when shipping a batch you want listed as individual bullets on restart.
 Only used when this file changes between startups.
 
-- Renamed /bsominigames to /bscminigames
-- Added dry streaks for Zippy and similar activity pets
-- Giveaway list shows entered/not entered for everyone
-- Fixed @bsc cd ready links to point at bscminigames
+- Christmas cracker results use a Corgo who-won card with real item sprites
+- Winner and also-pulled panels use optional celebrating/sad corgi background art
+- Winner item plate adapts contrast for light or dark sprites
+- Restart embed no longer lists Already owned (catch-up); funziez already logs receives
