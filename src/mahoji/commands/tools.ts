@@ -586,6 +586,125 @@ LIMIT 10;`);
 	});
 }
 
+
+const EASTERN_FERRET_ID = 91_938;
+const SAND_GECKO_ID = 3251;
+const VARROCK_COURSE_ID = 4;
+const ARDOUGNE_COURSE_ID = 11;
+const PENGUIN_COURSE_ID = 12;
+
+function creatureDryStreakEntity(name: string, creatureId: number, items: number[]): DrystreakEntity {
+	return {
+		name,
+		items,
+		run: async ({ item, ironmanOnly }) => {
+			const result = await prisma.$queryRawUnsafe<{ id: string; val: number }[]>(`SELECT users.id, ("creature_scores"->>'${creatureId}')::int AS val
+FROM users
+INNER JOIN "user_stats" ON "user_stats"."user_id"::text = "users"."id"
+WHERE "collectionLogBank"->>'${item.id}' IS NULL
+AND "creature_scores"->>'${creatureId}' IS NOT NULL
+${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
+ORDER BY ("creature_scores"->>'${creatureId}')::int DESC
+LIMIT 10;`);
+			return result;
+		},
+		format: num => `${num.toLocaleString()} catches`
+	};
+}
+
+function activityMinutesDryStreakEntity(
+	name: string,
+	activityTypes: string[],
+	items: number[],
+	label: string
+): DrystreakEntity {
+	const typeList = activityTypes.map(t => `'${t}'`).join(', ');
+	return {
+		name,
+		items,
+		run: async ({ item, ironmanOnly }) => {
+			const result = await prisma.$queryRawUnsafe<{ id: string; val: number }[]>(`SELECT user_id::text AS id, (SUM(duration) / 60000)::int AS val
+FROM activity
+WHERE type IN (${typeList})
+AND completed = true
+AND user_id IN (
+	SELECT id::bigint FROM users
+	WHERE "collectionLogBank"->>'${item.id}' IS NULL
+	${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
+)
+GROUP BY user_id
+HAVING (SUM(duration) / 60000)::int > 0
+ORDER BY val DESC
+LIMIT 10;`);
+			return result;
+		},
+		format: num => `${num.toLocaleString()} ${label}`
+	};
+}
+
+function activityTripsDryStreakEntity(name: string, activityType: string, items: number[]): DrystreakEntity {
+	return {
+		name,
+		items,
+		run: async ({ item, ironmanOnly }) => {
+			const result = await prisma.$queryRawUnsafe<{ id: string; val: number }[]>(`SELECT user_id::text AS id, COUNT(1)::int AS val
+FROM activity
+WHERE type = '${activityType}'
+AND completed = true
+AND user_id IN (
+	SELECT id::bigint FROM users
+	WHERE "collectionLogBank"->>'${item.id}' IS NULL
+	${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
+)
+GROUP BY user_id
+ORDER BY val DESC
+LIMIT 10;`);
+			return result;
+		},
+		format: num => `${num.toLocaleString()} trips`
+	};
+}
+
+function lapsDryStreakEntity(name: string, courseId: number, items: number[]): DrystreakEntity {
+	return {
+		name,
+		items,
+		run: async ({ item, ironmanOnly }) => {
+			const result = await prisma.$queryRawUnsafe<{ id: string; val: number }[]>(`SELECT users.id, ("laps_scores"->>'${courseId}')::int AS val
+FROM users
+INNER JOIN "user_stats" ON "user_stats"."user_id"::text = "users"."id"
+WHERE "collectionLogBank"->>'${item.id}' IS NULL
+AND "laps_scores"->>'${courseId}' IS NOT NULL
+${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
+ORDER BY ("laps_scores"->>'${courseId}')::int DESC
+LIMIT 10;`);
+			return result;
+		},
+		format: num => `${num.toLocaleString()} laps`
+	};
+}
+
+const bsoActivityPetDryStreaks: DrystreakEntity[] = [
+	creatureDryStreakEntity('Zippy (Eastern Ferrets)', EASTERN_FERRET_ID, resolveItems(['Zippy'])),
+	activityTripsDryStreakEntity('Zippy (Questing)', 'Questing', resolveItems(['Zippy'])),
+	creatureDryStreakEntity('Sandy (Sand Geckos)', SAND_GECKO_ID, resolveItems(['Sandy'])),
+	activityMinutesDryStreakEntity('Doug (Mining)', ['Mining', 'MotherlodeMining'], resolveItems(['Doug']), 'minutes mining'),
+	activityMinutesDryStreakEntity('Remy (Cooking)', ['Cooking'], resolveItems(['Remy']), 'minutes cooking'),
+	activityMinutesDryStreakEntity('Shelldon (Fishing)', ['Fishing'], resolveItems(['Shelldon']), 'minutes fishing'),
+	activityMinutesDryStreakEntity('Zak (Smelting)', ['Smelting'], resolveItems(['Zak']), 'minutes smelting'),
+	activityMinutesDryStreakEntity('Peky (Woodcutting)', ['Woodcutting'], resolveItems(['Peky']), 'minutes woodcutting'),
+	activityMinutesDryStreakEntity('Obis (Runecraft)', ['Runecraft'], resolveItems(['Obis']), 'minutes runecrafting'),
+	activityMinutesDryStreakEntity('Wilvus (Thieving)', ['Pickpocket'], resolveItems(['Wilvus']), 'minutes thieving'),
+	activityMinutesDryStreakEntity('Lil Lamb (Alching)', ['Alching'], resolveItems(['Lil lamb']), 'minutes alching'),
+	lapsDryStreakEntity('Scruffy (Varrock Agility)', VARROCK_COURSE_ID, resolveItems(['Scruffy'])),
+	lapsDryStreakEntity('Harry (Ardougne Agility)', ARDOUGNE_COURSE_ID, resolveItems(['Harry'])),
+	lapsDryStreakEntity('Skipper (Penguin Agility)', PENGUIN_COURSE_ID, resolveItems(['Skipper']))
+];
+
+for (const entity of bsoActivityPetDryStreaks) {
+	dryStreakEntities.push(entity);
+}
+
 for (const crate of keyCrates) {
 	dryStreakEntities.push({
 		name: crate.item.name,

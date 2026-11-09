@@ -2,7 +2,7 @@
 title: "Fist of Guthix"
 ---
 
-You can start this minigame using [[/bsominigames fist_of_guthix start]].
+You can start this minigame using [[/bscminigames fist_of_guthix start]].
 
 Each game awards 15 Fist of Guthix tokens (30 with Flappy).
 

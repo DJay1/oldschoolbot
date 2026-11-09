@@ -2,7 +2,7 @@
 title: "Tinkering Workshop"
 ---
 
-You can start this minigame with the command: [[/bsominigames tinkering_workshop start]]
+You can start this minigame with the command: [[/bscminigames tinkering_workshop start]]
 
 Tinkering Workshop is an invention minigame where you tinker with materials to gain XP and acquire the invention skilling outfit and a materials bag.
 

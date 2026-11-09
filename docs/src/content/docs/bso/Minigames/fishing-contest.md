@@ -12,9 +12,9 @@ Daily fishing trip that always takes 1 minute and 41 seconds and resets at 00:00
   - [[/buy name\:beginner's tackle box]]
   - [[/buy name\:contest rod]]
 - View stats and current locations:
-  - [[/bsominigames fishing_contest stats_info]]
+  - [[/bscminigames fishing_contest stats_info]]
 - Start a trip:
-  - [[/bsominigames fishing_contest fish location\:[Location]]]
+  - [[/bscminigames fishing_contest fish location\:[Location]]]
 
 One piece of bait is used per fish caught. The type of bait used is based on the location.
 

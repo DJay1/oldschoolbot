@@ -50,7 +50,7 @@
 			"subOptions": []
 		},
 		{
-			"name": "bsominigames",
+			"name": "bscminigames",
 			"desc": "Send your minion to do various bso minigames.",
 			"subOptions": [
 				"balthazars_big_bonanza",

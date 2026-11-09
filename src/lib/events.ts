@@ -99,7 +99,7 @@ const cooldownTimers: {
 		name: 'Balthazars Big Bonanza',
 		timeStamp: (user: MUser) => Number(user.user.last_bonanza_date),
 		cd: CONSTANTS.BALTHAZARS_BIG_BONANZA_CD,
-		command: ['bsominigames', 'balthazars_big_bonanza', 'start'],
+		command: ['bscminigames', 'balthazars_big_bonanza', 'start'],
 		utcReset: true
 	}
 ];
@@ -277,7 +277,7 @@ const mentionCommands: MentionCommand[] = [
 			if (await userHasDoneCurrentGuthixianCache(user)) {
 				content += `Guthixian Cache: ${time(currentGuthixCacheInterval.end)}`;
 			} else {
-				content += bold(`Guthixian Cache: Ready ${mentionCommand('bsominigames', 'guthixian_cache', 'join')}`);
+				content += bold(`Guthixian Cache: Ready ${mentionCommand('bscminigames', 'guthixian_cache', 'join')}`);
 			}
 
 			if (isDoubleLootActive()) {

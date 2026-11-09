@@ -120,7 +120,7 @@ export async function fishingContestStatsCommand(user: MUser) {
 	const validLocs = getValidLocationsForFishType(currentFishType);
 	return `**Fishing Contest**
 
-You can participate using \`/bsominigames fishing_contest fish [location]\`
+You can participate using \`/bscminigames fishing_contest fish [location]\`
 
 **Todays Catch:** A fish from a ${currentFishType.temperature} ${currentFishType.water} (${validLocs
 		.map(i => i.name)

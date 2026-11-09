@@ -251,20 +251,16 @@ export const giveawayCommand = defineCommand({
 				};
 			}
 
-			function getEmoji(giveaway: Giveaway) {
+			function entryMarker(giveaway: Giveaway) {
 				if (giveaway.user_id === user.id || giveaway.users_entered.includes(user.id)) {
-					return Emoji.Green;
+					return `${Emoji.Green} entered`;
 				}
-				return Emoji.RedX;
+				return `${Emoji.RedX} not entered`;
 			}
-
-			const perkTier = await user.fetchPerkTier();
 
 			const lines = giveaways.map(
 				(g: Giveaway) =>
-					`${
-						perkTier >= patronFeatures.ShowEnteredInGiveawayList.tier ? `${getEmoji(g)} ` : ''
-					}[${toKMB(marketPriceOfBank(new Bank(g.loot as ItemBank)))} giveaway ending ${time(
+					`${entryMarker(g)} - [${toKMB(marketPriceOfBank(new Bank(g.loot as ItemBank)))} giveaway ending ${time(
 						g.finish_date,
 						'R'
 					)}](${messageLink(g.channel_id, g.message_id)})`

@@ -3,7 +3,7 @@ title: "Turael's Trials"
 ---
 
 Fight waves of superior monsters using one of three combat styles: melee, mage or range.
-Start a trip with `[/bsominigames turaels_trials start method:melee]` (or mage/range).
+Start a trip with `[/bscminigames turaels_trials start method:melee]` (or mage/range).
 Each wave lasts about 2.9 minutes per kill.
 
 ## Requirements

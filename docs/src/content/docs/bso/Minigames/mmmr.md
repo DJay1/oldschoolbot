@@ -11,7 +11,7 @@ Monkey Rumble is a minigame where you wear a greegree to turn into a monkey, and
 3. [[/buy name\:Beginner rumble greegree]]
 4. [[/gear equip gear_setup\:Misc item\:Beginner rumble greegree]]
 5. Make sure you have some fruit for your monkey-form to eat!
-6. [[/bsominigames monkey_rumble start]]
+6. [[/bscminigames monkey_rumble start]]
 
 - You need an M'speak amulet and a rumble greegree (buy them) to compete. You start with a Beginner rumble greegree, and after doing more games, you unlock higher greegrees.
 - Higher greegrees (monkey tiers) increase XP and chances of unique rewards. XP scales based on your monkey tier and strength level.

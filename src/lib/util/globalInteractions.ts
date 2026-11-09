@@ -372,7 +372,7 @@ async function globalButtonInteractionHandler({
 			};
 		}
 		return runCommand({
-			commandName: 'bsominigames',
+			commandName: 'bscminigames',
 			args: { fishing_contest: { fish: {} } },
 			...options
 		});

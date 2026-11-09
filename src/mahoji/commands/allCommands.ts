@@ -1,4 +1,4 @@
-import { bsoMinigamesCommand } from '@/lib/bso/commands/bsominigames.js';
+import { bsoMinigamesCommand } from '@/lib/bso/commands/bscminigames.js';
 import { completionCommand } from '@/lib/bso/commands/completion.js';
 import { dgCommand } from '@/lib/bso/commands/dg.js';
 import { divinationCommand } from '@/lib/bso/commands/divination.js';

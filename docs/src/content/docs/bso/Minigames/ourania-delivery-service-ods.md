@@ -4,7 +4,7 @@ title: "Ourania Delivery Service (ODS)"
 
 The Ourania Delivery Service (ODS) is similar to Gnome Restaurant, but instead of delivering food, you **craft runes** and deliver them to **wizards in need**.
 
-Start a trip: [[/bsominigames ourania_delivery_service start]]
+Start a trip: [[/bscminigames ourania_delivery_service start]]
 
 You’ll receive **Runecraft XP** and **Ourania tokens** based on your performance.
 
@@ -20,8 +20,8 @@ Equip **Kuro** and have **Roboflappy** in your bank to receive both pet bonuses.
 
 ## Spending Tokens
 
-Check token balance: [[/bsominigames ourania_delivery_service stats]]  
-Buy rewards: [[/bsominigames ourania_delivery_service buy name\:[Item name]]]
+Check token balance: [[/bscminigames ourania_delivery_service stats]]  
+Buy rewards: [[/bscminigames ourania_delivery_service buy name\:[Item name]]]
 
 | **Item**                 | **Tokens** |
 | ------------------------ | ---------- |

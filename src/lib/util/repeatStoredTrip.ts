@@ -732,7 +732,7 @@ const tripHandlers: {
 		})
 	},
 	[activity_type_enum.OuraniaDeliveryService]: {
-		commandName: 'bsominigames',
+		commandName: 'bscminigames',
 		args: () => ({
 			ourania_delivery_service: {
 				start: {}
@@ -740,7 +740,7 @@ const tripHandlers: {
 		})
 	},
 	[activity_type_enum.MonkeyRumble]: {
-		commandName: 'bsominigames',
+		commandName: 'bscminigames',
 		args: () => ({
 			monkey_rumble: {
 				start: {}
@@ -748,7 +748,7 @@ const tripHandlers: {
 		})
 	},
 	[activity_type_enum.BaxtorianBathhouses]: {
-		commandName: 'bsominigames',
+		commandName: 'bscminigames',
 		args: (data: BathhouseTaskOptions) => ({
 			baxtorian_bathhouses: {
 				start: { tier: data.tier, heating: data.ore, water_mixture: data.mixture }
@@ -827,7 +827,7 @@ const tripHandlers: {
 		args: (data: ClueActivityTaskOptions) => ({ tier: data.ci, quantity: data.q })
 	},
 	[activity_type_enum.FistOfGuthix]: {
-		commandName: 'bsominigames',
+		commandName: 'bscminigames',
 		args: () => ({
 			fist_of_guthix: {
 				start: {}
@@ -835,7 +835,7 @@ const tripHandlers: {
 		})
 	},
 	[activity_type_enum.StealingCreation]: {
-		commandName: 'bsominigames',
+		commandName: 'bscminigames',
 		args: () => ({
 			stealing_creation: {
 				start: {}
@@ -859,7 +859,7 @@ const tripHandlers: {
 		})
 	},
 	[activity_type_enum.TinkeringWorkshop]: {
-		commandName: 'bsominigames',
+		commandName: 'bscminigames',
 		args: (data: TinkeringWorkshopOptions) => ({
 			tinkering_workshop: {
 				start: {
@@ -910,7 +910,7 @@ const tripHandlers: {
 		})
 	},
 	[activity_type_enum.BalthazarsBigBonanza]: {
-		commandName: 'bsominigames',
+		commandName: 'bscminigames',
 		args: () => ({
 			balthazars_big_bonanza: {
 				start: {}
@@ -961,7 +961,7 @@ const tripHandlers: {
 		})
 	},
 	[activity_type_enum.TuraelsTrials]: {
-		commandName: 'bsominigames',
+		commandName: 'bscminigames',
 		args: (_data: TuraelsTrialsOptions) => ({
 			turaels_trials: {
 				start: {

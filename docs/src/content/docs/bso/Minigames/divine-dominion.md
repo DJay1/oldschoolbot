@@ -4,8 +4,8 @@ title: "Divine Dominion"
 
 Divine Dominion favor is managed with:
 
-- `[/bsominigames divine_dominion check]`
-- `[/bsominigames divine_dominion sacrifice_god_item item:<item> quantity:<qty>]`
+- `[/bscminigames divine_dominion check]`
+- `[/bscminigames divine_dominion sacrifice_god_item item:<item> quantity:<qty>]`
 
 ## Mechanics
 
