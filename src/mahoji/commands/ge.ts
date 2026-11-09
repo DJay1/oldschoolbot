@@ -8,6 +8,7 @@ import type { GEListing, GETransaction } from '@/prisma/main.js';
 import { defineOption } from '@/discord/index.js';
 import { itemArr, itemOption } from '@/discord/presetCommandOptions.js';
 import { marketPricemap } from '@/lib/cache.js';
+import { drawChartOnBankBackground } from '@/lib/canvas/chartOnBankBackground.js';
 import { GeImageGenerator } from '@/lib/canvas/geImage.js';
 import { PerkTier } from '@/lib/constants.js';
 import { createGECancelButton, GrandExchange } from '@/lib/grandExchange.js';
@@ -387,7 +388,7 @@ The next buy limit reset is at: ${dateFm(GrandExchange.getInterval().end)}, it r
 				{ total_quantity_bought: number; average_price_per_item_before_tax: number; week: Date }[]
 			>(`SELECT
   DATE_TRUNC('week', sellTransactions.created_at) AS week,
-  AVG(sellTransactions.price_per_item_before_tax) AS average_price_per_item_before_tax,
+  AVG(sellTransactions.price_per_item_before_tax)::float8 AS average_price_per_item_before_tax,
   SUM(sellTransactions.quantity_bought)::int AS total_quantity_bought
 FROM
   ge_listing
@@ -408,12 +409,14 @@ ORDER BY
 			if (result[0].average_price_per_item_before_tax <= 1_000_000) {
 				result = result.filter(i => i.total_quantity_bought > 1);
 			}
-			const buffer = await createChart({
+			const chart = await createChart({
 				title: `Price History for ${item.name}`,
 				format: 'kmb',
 				values: result.map(i => [new Date(i.week).toDateString(), i.average_price_per_item_before_tax]),
-				type: 'line'
+				type: 'line',
+				dark: true
 			});
+			const buffer = await drawChartOnBankBackground({ chart, bankBackgroundId: user.user.bankBackground });
 
 			return {
 				content: baseMessage,

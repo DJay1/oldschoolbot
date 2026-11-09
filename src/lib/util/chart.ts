@@ -51,9 +51,10 @@ export interface ChartOptions {
 	title: string;
 	values: ([string, number] | [string, number, string])[];
 	format: ChartNumberFormat;
+	dark?: boolean;
 }
 
-export function createApexChartConfig({ type, title, values, format }: ChartOptions) {
+export function createApexChartConfig({ type, title, values, format, dark }: ChartOptions) {
 	const categories = values.map(([label]) => label);
 	const seriesName = title;
 
@@ -117,6 +118,15 @@ export function createApexChartConfig({ type, title, values, format }: ChartOpti
 				min: 0,
 				max: 100
 			}
+		});
+	}
+
+	if (dark) {
+		config = deepMerge(config, {
+			chart: { foreColor: '#000000' },
+			title: { style: { color: '#FF981F' } },
+			grid: { borderColor: '#B0B0B0' },
+			dataLabels: { background: { enabled: false } }
 		});
 	}
 
