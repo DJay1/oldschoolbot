@@ -25,6 +25,7 @@ import { marketPriceOfBank, marketPriceOrBotPrice } from '@/lib/marketPrices.js'
 import backgroundImages, { type BankBackground } from '@/lib/minions/data/bankBackgrounds.js';
 import { type FlagMap, type Flags, OverrideStatus } from '@/lib/minions/types.js';
 import { type BankSortMethod, BankSortMethods, sorts } from '@/lib/sorts.js';
+import { DEFAULT_NEW_CL_GLOW_COLOUR, getNewClGlowColour } from '@/lib/util/newClGlowColour.js';
 import { XPLamps } from '@/mahoji/lib/abstracted_commands/lampCommand.js';
 
 interface BankImageResult {
@@ -373,7 +374,8 @@ class BankImageTask {
 		mahojiFlags: BankFlag[] | undefined,
 		weightings: Readonly<ItemBank> | undefined,
 		verticalSpacer = 0,
-		user?: MUser
+		user?: MUser,
+		newClGlowColour: string = DEFAULT_NEW_CL_GLOW_COLOUR
 	) {
 		let xLoc = 0;
 		let yLoc = compact ? 5 : 0;
@@ -412,9 +414,9 @@ class BankImageTask {
 				itemID: item.id,
 				x: xLoc,
 				y: yLoc,
-				outline: isNewCLItem ? { outlineColor: '#ac7fff', alpha: 1 } : undefined,
+				outline: isNewCLItem ? { outlineColor: newClGlowColour, alpha: 1 } : undefined,
 				quantity,
-				textColor: isNewCLItem ? OSRSCanvas.COLORS.PURPLE : undefined,
+				textColor: isNewCLItem ? newClGlowColour : undefined,
 				user,
 				override_show_paints: paintOverride,
 				effect,
@@ -655,7 +657,8 @@ class BankImageTask {
 			opts.mahojiFlags,
 			weightings,
 			undefined,
-			user
+			user,
+			await getNewClGlowColour(user)
 		);
 
 		const image = await canvas.toScaledOutput(2);

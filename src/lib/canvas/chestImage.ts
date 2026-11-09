@@ -4,6 +4,7 @@ import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { type CanvasImage, loadImage } from '@/lib/canvas/canvasUtil.js';
 import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
 import { TOBUniques } from '@/lib/data/tob.js';
+import { getNewClGlowColour } from '@/lib/util/newClGlowColour.js';
 
 const chestLootTypes: {
 	title: string;
@@ -172,7 +173,8 @@ async function drawChestItems(
 		undefined, // mahojiFlags
 		undefined, // weightings
 		5, // verticalSpacer
-		user
+		user,
+		await getNewClGlowColour(user)
 	);
 
 	// Draw the item canvas onto the main canvas

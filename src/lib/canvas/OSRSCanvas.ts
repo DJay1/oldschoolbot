@@ -558,7 +558,7 @@ export class OSRSCanvas {
 		}
 
 		if (outline) {
-			drawImageWithOutline(this.ctx, ...args);
+			drawImageWithOutline(this.ctx, ...args, outline.outlineColor);
 		} else {
 			this.ctx.drawImage(...args);
 		}

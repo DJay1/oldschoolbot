@@ -22,6 +22,7 @@ import { Minigames } from '@/lib/settings/minigames.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
 import { isGroupActivity, isNexActivity, isRaidsActivity, isTOBOrTOAActivity } from '@/lib/util/activityTypeCheck.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
+import { newClGlowColourCommand } from '@/lib/util/newClGlowColour.js';
 import { asyncGzip, parseStaticTimeInterval, patronMsg, staticTimeIntervals } from '@/lib/util/smallUtils.js';
 import {
 	stashUnitBuildAllCommand,
@@ -970,6 +971,20 @@ export const toolsCommand = defineCommand({
 					type: 'Subcommand',
 					name: 'doubleloot',
 					description: 'Start monthly server double loot. Same as /patron double_loot.'
+				},
+				{
+					type: 'Subcommand',
+					name: 'purple_glow',
+					description: 'Change the colour new collection log items glow in your bank images (Top Dog+).',
+					options: [
+						{
+							type: 'String',
+							name: 'color',
+							description:
+								'A hex colour like #4E42F5, or "reset" for the default purple. Leave empty to see yours.',
+							required: false
+						}
+					]
 				}
 			]
 		},
@@ -1157,6 +1172,9 @@ export const toolsCommand = defineCommand({
 			}
 			if (patron.doubleloot) {
 				return triggerBscDoubleLoot(user);
+			}
+			if (patron.purple_glow) {
+				return newClGlowColourCommand(user, patron.purple_glow.color);
 			}
 		}
 		if (options.user) {

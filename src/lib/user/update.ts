@@ -59,6 +59,7 @@ type PrismaNullableStringKeys =
 	| 'minion_icon'
 	| 'minion_name'
 	| 'bank_bg_hex'
+	| 'new_cl_glow_hex'
 	| 'username'
 	| 'RSN'
 	| 'username_with_badges'
