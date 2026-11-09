@@ -168,5 +168,11 @@ export const collectables: Collectable[] = [
 		item: Items.getOrThrow('Cabbage'),
 		quantity: 28,
 		duration: 1.2 * Time.Minute
+	},
+	{
+		item: Items.getOrThrow('Swamp tar'),
+		quantity: 28,
+		duration: Time.Minute * 1.68,
+		onlyTamesCan: true
 	}
 ];
