@@ -39,6 +39,8 @@ const contractTable = new LootTable()
 	.every('Coins', [1_000_000, 3_500_000])
 	.tertiary(50, LampTable)
 	.tertiary(50, MysteryBoxes)
+	.tertiary(100, 'Double XP token')
+	.tertiary(100, 'Double loot token')
 	.add(DragonTable, [1, 2], 2)
 	.add(runeAlchablesTable, [1, 3], 3)
 	.every(runeAlchablesTable, [1, 3])
@@ -114,7 +116,7 @@ function getItemContractDetails(mUser: MUser): ItemContractDetails | null {
 		const currentItem = mUser.user.current_item_contract
 			? Items.getOrThrow(mUser.user.current_item_contract)
 			: null;
-		const durationRemaining = Date.now() - (lastDate + itemContractResetTime);
+		const durationRemaining = lastDate + itemContractResetTime - Date.now();
 		const nextContractIsReady = difference >= itemContractResetTime;
 		const { bank } = mUser;
 
@@ -287,8 +289,7 @@ async function handInContract(
 
 	if (!currentItem) {
 		await user.update({
-			current_item_contract: pickItemContract(streak),
-			last_item_contract_date: Date.now()
+			current_item_contract: pickItemContract(streak)
 		});
 		return handInContract(interaction, user, options);
 	}
@@ -329,8 +330,7 @@ async function handInContract(
 
 		if (!freshCurrentItem) {
 			await user.update({
-				current_item_contract: pickItemContract(freshStreak),
-				last_item_contract_date: Date.now()
+				current_item_contract: pickItemContract(freshStreak)
 			});
 			return 'You were given a new item contract.';
 		}
