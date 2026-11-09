@@ -1448,7 +1448,7 @@ async function statusCommand(user: MUser) {
 	if (!tame) {
 		return 'You have no tame selected.';
 	}
-	return `${tame} is currently: ${getTameStatus(activity).join('. ')}.`;
+	return `${tame} is currently: ${getTameStatus(activity, user).join('. ')}.`;
 }
 
 async function tameEquipCommand(user: MUser, itemName: string) {
