@@ -329,12 +329,39 @@ class CollectionLogTask {
 		}
 
 		const obtainableMeasure = canvas.measureText(toDraw, 'Compact');
+		const obtainedText = `${flags.missing ? '' : `${collectionLog.collectionObtained.toLocaleString()}/`}${collectionLog.collectionTotal.toLocaleString()}`;
 		canvas.drawText({
-			text: `${flags.missing ? '' : `${collectionLog.collectionObtained.toLocaleString()}/`}${collectionLog.collectionTotal.toLocaleString()}`,
+			text: obtainedText,
 			x: Math.floor(obtainableMeasure.width),
 			y: 13,
 			color
 		});
+
+		// Openable CLs: show Opens beside Obtained when Default completion is present.
+		const openedCount = collectionLog.completions?.Default;
+		if (
+			!flags.missing &&
+			type === 'collection' &&
+			openedCount !== undefined &&
+			collectionLog.isActivity
+		) {
+			const openedLabel = '  Opened: ';
+			const afterObtained = Math.floor(
+				obtainableMeasure.width + canvas.measureTextWidth(obtainedText)
+			);
+			canvas.drawText({
+				text: openedLabel,
+				x: afterObtained,
+				y: 13,
+				color: this.COLORS.ORANGEY
+			});
+			canvas.drawText({
+				text: openedCount.toLocaleString(),
+				x: afterObtained + Math.floor(canvas.measureTextWidth(openedLabel)),
+				y: 13,
+				color: this.COLORS.WHITE
+			});
+		}
 
 		if (collectionLog.completions && ['collection', 'bank', 'tame'].includes(type)) {
 			const baseText = collectionLog.isActivity ? 'Completions: ' : 'Kills: ';

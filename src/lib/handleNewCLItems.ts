@@ -8,6 +8,7 @@ import { RawSQL } from '@/lib/rawSql.js';
 import { calculateOwnCLRanking, roboChimpSyncData } from '@/lib/roboChimp.js';
 import { MUserStats } from '@/lib/structures/MUserStats.js';
 import { fetchCLLeaderboard } from '@/lib/util/clLeaderboard.js';
+import { announceNewClRares } from '@/lib/bsc/rareAnnouncements.js';
 import { insertUserEvent } from '@/lib/util/userEvents.js';
 
 async function createHistoricalData(user: MUser): Promise<Prisma.HistoricalDataUncheckedCreateInput> {
@@ -55,6 +56,11 @@ export async function handleNewCLItems({
 	}
 
 	if (!didGetNewCLItem) return;
+
+	await announceNewClRares({
+		user,
+		newItemIDs: newCLItems.items().map(([item]) => item.id)
+	});
 
 	const previousCLDetails = calcCLDetails(previousCL);
 	const previousCLRank = previousCLDetails.percent >= 80 ? await calculateOwnCLRanking(user.id) : null;

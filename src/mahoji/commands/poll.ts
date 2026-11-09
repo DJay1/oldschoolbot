@@ -1,4 +1,4 @@
-import { SpecialResponse } from '@oldschoolgg/discord';
+import { EmbedBuilder, SpecialResponse } from '@oldschoolgg/discord';
 
 export const pollCommand = defineCommand({
 	name: 'poll',
@@ -12,12 +12,18 @@ export const pollCommand = defineCommand({
 		}
 	],
 	run: async ({ interaction, channelId, user, options }) => {
+		const embed = new EmbedBuilder()
+			.setColor(0x58_65_f2)
+			.setTitle('Poll')
+			.setDescription(`**${options.question}**\n\nReact with Yes / No.`)
+			.setFooter({ text: `Asked by ${user.username}` });
+
 		const createdMessage = await interaction.replyWithResponse({
-			content: `Poll from ${user.username}: ${options.question}`
+			embeds: [embed]
 		});
 		const messageId = createdMessage!.message_id;
-		await globalClient.reactToMsg({ channelId: channelId, messageId, emojiId: 'Happy' });
-		await globalClient.reactToMsg({ channelId: channelId, messageId, emojiId: 'Sad' });
+		await globalClient.reactToMsg({ channelId: channelId, messageId, emojiId: 'Yes' });
+		await globalClient.reactToMsg({ channelId: channelId, messageId, emojiId: 'No' });
 		return SpecialResponse.RespondedManually;
 	}
 });

@@ -22,15 +22,13 @@ export type BankBackground = {
 	owners?: string[];
 	alternateImages?: { id: number }[];
 	storeBitField?: StoreBitfield;
-} & (
-	| {
-			hasPurple: true;
-			purpleImage: CanvasImage | null;
-	  }
-	| {
-			hasPurple?: null;
-	  }
-);
+	/** True when this background has a unique-drop (new CL / purple) alternate image. */
+	hasPurple?: boolean | null;
+	purpleImage?: CanvasImage | null;
+	/** Unique-drop alternate art. Loaded from {id}_unique.jpg or {id}_purple.jpg. */
+	uniqueImage?: CanvasImage | null;
+};
+
 
 const backgroundImages: BankBackground[] = [
 	{
@@ -698,6 +696,24 @@ const backgroundImages: BankBackground[] = [
 		image: null,
 		available: false,
 		owners: ['414491085172375553']
+	},
+	{
+		id: 1025,
+		name: 'DJ CustomBG',
+		image: null,
+		available: false,
+		owners: ['290167629966999552'],
+		purpleImage: null,
+		hasPurple: true
+	},
+	{
+		id: 1026,
+		name: 'Salty CustomBG',
+		image: null,
+		available: false,
+		owners: ['603327620234608661'],
+		purpleImage: null,
+		hasPurple: true
 	}
 ];
 

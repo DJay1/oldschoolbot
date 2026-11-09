@@ -2,9 +2,16 @@ import { Bank } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import { gambleCommand } from '../../../src/mahoji/commands/gamble.js';
+import { DICE_PLAYER_WIN_MIN_ROLL } from '../../../src/mahoji/lib/abstracted_commands/diceCommand.js';
 import { mockClient, mockMathRandom } from '../util.js';
 
 describe('Dice Command', async () => {
+	test('house edge is 48% player win (roll >= 52 of 0-99)', () => {
+		expect(DICE_PLAYER_WIN_MIN_ROLL).toBe(52);
+		const playerWins = 100 - DICE_PLAYER_WIN_MIN_ROLL;
+		expect(playerWins).toBe(48);
+	});
+
 	test('Lose dice', async () => {
 		const client = await mockClient();
 		const user = await client.mockUser();

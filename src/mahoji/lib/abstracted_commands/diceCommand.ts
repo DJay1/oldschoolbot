@@ -2,6 +2,9 @@ import { Bank, toKMB } from 'oldschooljs';
 
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
+/** Percentile roll (0-99). Player wins on roll >= this value => 48% win / 52% house. */
+export const DICE_PLAYER_WIN_MIN_ROLL = 52;
+
 export async function diceCommand(rng: RNGProvider, user: MUser, interaction: MInteraction, diceamount?: string) {
 	await interaction.defer();
 	const roll = rng.randInt(0, 99);
@@ -26,7 +29,7 @@ export async function diceCommand(rng: RNGProvider, user: MUser, interaction: MI
 
 	const gp = user.GP;
 	if (amount > gp) return "You don't have enough GP.";
-	const won = roll >= 50;
+	const won = roll >= DICE_PLAYER_WIN_MIN_ROLL;
 	const amountToAdd = won ? amount : -amount;
 
 	if (won) {

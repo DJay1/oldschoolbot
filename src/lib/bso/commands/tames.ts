@@ -181,7 +181,7 @@ const feedingEasterEggs: [Bank, number, tame_growth[], string][] = [
 		new Bank().add('Grapes'),
 		2,
 		[tame_growth.juvenile, tame_growth.adult],
-		'https://c.tenor.com/ZHBDNOEv_m4AAAAM/monkey-monke.gif'
+		'https://media.giphy.com/media/NMZT5hsCgmHDVfGasZ/giphy.gif'
 	]
 ];
 

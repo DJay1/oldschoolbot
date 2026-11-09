@@ -116,6 +116,7 @@ const cannonBoost: Boost = {
 				],
 				message: `${boostCannonMulti}% for Cannon in multi`,
 				changes: {
+					usingCannon: true,
 					cannonMulti: true
 				}
 			};
@@ -126,7 +127,10 @@ const cannonBoost: Boost = {
 				consumables: [
 					cannonResult.canUseSuperiorCannon ? superiorCannonSingleConsumables : cannonSingleConsumables
 				],
-				message: `${boostCannon}% for Cannon in singles`
+				message: `${boostCannon}% for Cannon in singles`,
+				changes: {
+					usingCannon: true
+				}
 			};
 		}
 

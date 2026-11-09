@@ -7,10 +7,10 @@ import { TimerManager } from '@sapphire/timer-manager';
 
 import { bulkUpdateCommands } from '@/discord/utils.js';
 import { warnBlankBscPatronRoles } from '@/lib/bsc/patronTiers.js';
-import { startupChangelog } from '@/lib/bsc/startupChangelog.js';
+import { buildStartupRestartMessage } from '@/lib/bsc/startupRestartMessage.js';
 import { ensureTripQueueStore } from '@/lib/bsc/tripQueue.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
-import { Channel, globalConfig, META_CONSTANTS, testingShortcutsEnabled } from '@/lib/constants.js';
+import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { loadSeasonalEventOverrides } from '@/lib/events/store.js';
 import { initTickers } from '@/lib/tickers.js';
 
@@ -49,12 +49,14 @@ export const onStartup = async () => {
 	}
 
 	if (globalConfig.isProduction) {
-		globalClient
-			.sendMessage(Channel.GeneralChannel, {
-				content: [`I have just turned on!`, META_CONSTANTS.RENDERED_STR, startupChangelog()]
-					.filter(Boolean)
-					.join('\n\n')
-			})
-			.catch(err => Logging.logError(err));
+		try {
+			const { embeds } = await buildStartupRestartMessage();
+			await globalClient.sendMessage(Channel.GeneralChannel, {
+				embeds,
+				allowedMentions: { parse: [], users: [], roles: [] }
+			});
+		} catch (err) {
+			Logging.logError(err as Error);
+		}
 	}
 };

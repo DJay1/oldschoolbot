@@ -40,6 +40,12 @@ export const ReactEmoji = {
 	get Sad(): string {
 		return reactionEmoji('RSSad');
 	},
+	get Yes(): string {
+		return reactionEmoji('PollYesDog');
+	},
+	get No(): string {
+		return reactionEmoji('PollNoDog');
+	},
 	Gift: '🎁'
 };
 

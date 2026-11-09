@@ -1,4 +1,4 @@
-import { Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Time } from '@oldschoolgg/toolkit';
 
 import { BitField, globalConfig, PerkTier } from '@/lib/constants.js';
 import { patreonUrl, withPatreonLink } from '@/lib/patreonLink.js';
@@ -54,7 +54,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		geSlots: 0,
 		roleEnv: 'PATRON_ROLE_PUP',
 		patreonTierIdEnv: 'PATREON_TIER_PUP_ID',
-		badge: '🐾',
+		badge: customEmoji('patron_pup'),
 		summary:
 			'+3 min max trip length, full scrollable bank (show_all) and bank page buttons, queue 3 trips every 2 days, supporter badge'
 	},
@@ -69,7 +69,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		geSlots: 2,
 		roleEnv: 'PATRON_ROLE_GOODBOY',
 		patreonTierIdEnv: 'PATREON_TIER_GOODBOY_ID',
-		badge: '🐾',
+		badge: customEmoji('patron_goodboy'),
 		summary: '+6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips every 2 days'
 	},
 	{
@@ -83,7 +83,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		geSlots: 4,
 		roleEnv: 'PATRON_ROLE_TOPDOG',
 		patreonTierIdEnv: 'PATREON_TIER_TOPDOG_ID',
-		badge: '🐶',
+		badge: customEmoji('patron_topdog'),
 		summary:
 			'+10 min trips, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots, queue 5 trips every 2 days'
 	},
@@ -98,7 +98,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		geSlots: 8,
 		roleEnv: 'PATRON_ROLE_ALPHA',
 		patreonTierIdEnv: 'PATREON_TIER_ALPHA_ID',
-		badge: '🦴',
+		badge: customEmoji('patron_alpha'),
 		summary:
 			'+15 min trips, bank backgrounds and background commands, spawn lamp and spawn box, unlimited giveaways, +8 Grand Exchange slots, queue 6 trips every 2 days'
 	},
@@ -113,7 +113,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		geSlots: 8,
 		roleEnv: 'PATRON_ROLE_PACKLEADER',
 		patreonTierIdEnv: 'PATREON_TIER_PACKLEADER_ID',
-		badge: '🐺',
+		badge: customEmoji('patron_packleader'),
 		summary:
 			'exclusive bank background, double loot once a month, gift 1 week of Good Boy once a month, queue 7 trips every 2 days'
 	},
@@ -128,7 +128,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		geSlots: 8,
 		roleEnv: 'PATRON_ROLE_BIGGESTOFDOGS',
 		patreonTierIdEnv: 'PATREON_TIER_BIGGESTOFDOGS_ID',
-		badge: '👑',
+		badge: customEmoji('patron_biggestofdogs'),
 		summary:
 			'custom bank background while you stay Pack Leader or higher, gift 1 week of Alpha once a month, queue 8 trips every 2 days'
 	}

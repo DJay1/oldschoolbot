@@ -283,9 +283,7 @@ export function newMinionKillCommand(args: MinionKillOptions): string | MinionKi
 	speedDurationResult.updateBank.itemCostBank.freeze();
 	speedDurationResult.updateBank.itemLootBank.freeze();
 
-	if (speedDurationResult.updateBank.itemCostBank.length > 0) {
-		speedDurationResult.messages.push(`Removing items: ${speedDurationResult.updateBank.itemCostBank}`);
-	}
+	// Removing-items message is added in minionKill.ts after transact (avoids duplicate).
 
 	if (monster.deathProps) {
 		const deathChance = calculateSimpleMonsterDeathChance({ ...monster.deathProps, currentKC: args.monsterKC });

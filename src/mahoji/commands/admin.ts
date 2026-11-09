@@ -46,6 +46,7 @@ import {
 	getBitFieldData,
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
+import { runAnnouncementBackfill } from '@/lib/bsc/announcementBackfill.js';
 import { assignBscCustomBackground } from '@/lib/bsc/patronPerks.js';
 import { setBscPatronOverride } from '@/lib/bsc/patronSync.js';
 import { parseBscPatronTierInput } from '@/lib/bsc/patronTiers.js';
@@ -73,9 +74,9 @@ import { safeMessage } from '@/lib/util/smallUtils.js';
 import { makeGiveawayButtons } from '@/mahoji/commands/giveaway.js';
 
 export const gifs = [
-	'https://tenor.com/view/angry-stab-monkey-knife-roof-gif-13841993',
-	'https://gfycat.com/serenegleamingfruitbat',
-	'https://tenor.com/view/monkey-monito-mask-gif-23036908'
+	'https://media.giphy.com/media/NMZT5hsCgmHDVfGasZ/giphy.gif',
+	'https://media.giphy.com/media/Y4pAQv58ETJgRwoLxj/giphy.gif',
+	'https://media.giphy.com/media/3oEduQAsYcJKQH2XsI/giphy.gif'
 ];
 
 const leaguesTaskNameByID = new Map(allLeagueTasks.map(task => [task.id, task.name] as const));
@@ -1188,6 +1189,46 @@ export const adminCommand = defineCommand({
 				}
 			]
 		},
+
+		{
+			type: 'Subcommand',
+			name: 'announce_backfill',
+			description: 'Optional dry-run or re-post Notification embeds. Catch-up is automatic on restart.',
+			options: [
+				{
+					type: 'Boolean',
+					name: 'dry_run',
+					description: 'List who would be announced without posting. Default true.',
+					required: false
+				},
+				{
+					type: 'Integer',
+					name: 'limit',
+					description: 'Optional max number of announcements this run.',
+					required: false
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'announce',
+			description: 'Post a custom notifications-channel announcement, optionally crediting a suggester.',
+			options: [
+				{
+					type: 'String',
+					name: 'message',
+					description: 'Announcement text.',
+					required: true
+				},
+				{
+					type: 'User',
+					name: 'thanks_to',
+					description: 'Optional suggester to credit as Thanks to @user.',
+					required: false
+				}
+			]
+		},
+
 		{
 			type: 'Subcommand',
 			name: 'fix_giveaways',
@@ -1374,6 +1415,25 @@ ${META_CONSTANTS.RENDERED_STR}`
 		 */
 		if (!isAdmin) {
 			return rng.pick(gifs);
+		}
+
+
+		if (options.announce_backfill) {
+			const dryRun = options.announce_backfill.dry_run !== false;
+			const limit = options.announce_backfill.limit ?? undefined;
+			const result = await runAnnouncementBackfill({ dryRun, limit });
+			return result.message;
+		}
+		if (options.announce) {
+			const thanks = options.announce.thanks_to?.user?.id;
+			const content = thanks
+				? `${options.announce.message}\n\nThanks to <@${thanks}>`
+				: options.announce.message;
+			await globalClient.sendMessage(Channel.Notifications, {
+				content,
+				allowedMentions: { parse: [], users: thanks ? [thanks] : [], roles: [] }
+			});
+			return thanks ? `Posted announcement (credited <@${thanks}>).` : 'Posted announcement.';
 		}
 
 		if (options.patron?.set) {

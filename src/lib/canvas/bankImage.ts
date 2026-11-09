@@ -307,6 +307,9 @@ class BankImageTask {
 				const purplePath = img.hasPurple
 					? `./src/lib/resources/images/bank_backgrounds/${img.id}_purple.${ext}`
 					: null;
+				const uniquePath = img.hasPurple
+					? `./src/lib/resources/images/bank_backgrounds/${img.id}_unique.${ext}`
+					: null;
 
 				if (img.alternateImages) {
 					const images = await Promise.all(
@@ -323,14 +326,18 @@ class BankImageTask {
 					this.alternateImages.push(...images);
 				}
 
+				const uniqueFile =
+					uniquePath && existsSync(uniquePath)
+						? uniquePath
+						: purplePath && existsSync(purplePath)
+							? purplePath
+							: null;
+				const uniqueImage = uniqueFile ? await loadImage(await fs.readFile(uniqueFile)) : null;
 				return {
 					...img,
 					image: existsSync(bgPath) ? await loadImage(await fs.readFile(bgPath)) : null,
-					purpleImage: purplePath
-						? existsSync(purplePath)
-							? await loadImage(await fs.readFile(purplePath))
-							: null
-						: null
+					purpleImage: uniqueImage,
+					uniqueImage
 				};
 			})
 		);
@@ -596,7 +603,8 @@ class BankImageTask {
 			iconPackId: opts.iconPackId ?? user?.iconPackId
 		});
 
-		const actualBackground = isPurple && bgImage.hasPurple ? bgImage.purpleImage! : backgroundImage;
+		const uniqueBg = bgImage.uniqueImage ?? bgImage.purpleImage;
+		const actualBackground = isPurple && bgImage.hasPurple && uniqueBg ? uniqueBg : backgroundImage;
 		let resizeBg = -1;
 		if (!wide && !useSmallBank && !isTransparent && actualBackground && canvasHeight > 331) {
 			resizeBg = Math.min(1440, canvasHeight) / actualBackground.height;

@@ -1523,6 +1523,11 @@ export const allCollectionLogs: ICollection = {
 			'Launch Box': {
 				alias: ['launch', 'launch box', 'launchbox'],
 				items: launchBoxCL,
+				isActivity: true,
+				kcActivity: {
+					Default: async (_user, _minigames, { openableScores }) =>
+						openableScores.amount(LaunchItem.LAUNCH_BOX)
+				},
 				fmtProg: ({ stats }) => `${stats.openableScores.amount(LaunchItem.LAUNCH_BOX)} Launch boxes opened`
 			},
 			'Random Events': {

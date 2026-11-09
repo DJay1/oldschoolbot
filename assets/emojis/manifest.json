@@ -3256,6 +3256,126 @@
 			"usedIn": [
 				"src/lib/util/handleTripFinish.ts"
 			]
+		},
+		{
+			"name": "patron_pup",
+			"uploadName": "patron_pup",
+			"aliases": [],
+			"fallback": "🐶",
+			"animated": false,
+			"source": null,
+			"image": "patron_pup.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Pup patron tier badge.",
+			"usedIn": [
+				"src/lib/bsc/patronTiers.ts"
+			]
+		},
+		{
+			"name": "patron_goodboy",
+			"uploadName": "patron_goodboy",
+			"aliases": [],
+			"fallback": "🐶",
+			"animated": false,
+			"source": null,
+			"image": "patron_goodboy.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Good Boy patron tier badge.",
+			"usedIn": [
+				"src/lib/bsc/patronTiers.ts"
+			]
+		},
+		{
+			"name": "patron_topdog",
+			"uploadName": "patron_topdog",
+			"aliases": [],
+			"fallback": "🐶",
+			"animated": false,
+			"source": null,
+			"image": "patron_topdog.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Top Dog patron tier badge.",
+			"usedIn": [
+				"src/lib/bsc/patronTiers.ts"
+			]
+		},
+		{
+			"name": "patron_alpha",
+			"uploadName": "patron_alpha",
+			"aliases": [],
+			"fallback": "🐶",
+			"animated": false,
+			"source": null,
+			"image": "patron_alpha.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Alpha patron tier badge.",
+			"usedIn": [
+				"src/lib/bsc/patronTiers.ts"
+			]
+		},
+		{
+			"name": "patron_packleader",
+			"uploadName": "patron_packleader",
+			"aliases": [],
+			"fallback": "🐶",
+			"animated": false,
+			"source": null,
+			"image": "patron_packleader.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Pack Leader patron tier badge.",
+			"usedIn": [
+				"src/lib/bsc/patronTiers.ts"
+			]
+		},
+		{
+			"name": "patron_biggestofdogs",
+			"uploadName": "patron_biggestofdogs",
+			"aliases": [],
+			"fallback": "🐶",
+			"animated": false,
+			"source": null,
+			"image": "patron_biggestofdogs.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Biggest of Dogs patron tier badge.",
+			"usedIn": [
+				"src/lib/bsc/patronTiers.ts"
+			]
+		},
+		{
+			"name": "PollYesDog",
+			"uploadName": "PollYesDog",
+			"aliases": [],
+			"fallback": "🐶",
+			"animated": false,
+			"source": null,
+			"image": "PollYesDog.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Poll Yes corgi reaction.",
+			"usedIn": [
+				"src/lib/data/emojis.ts"
+			]
+		},
+		{
+			"name": "PollNoDog",
+			"uploadName": "PollNoDog",
+			"aliases": [],
+			"fallback": "🐶",
+			"animated": false,
+			"source": null,
+			"image": "PollNoDog.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Poll No corgi reaction.",
+			"usedIn": [
+				"src/lib/data/emojis.ts"
+			]
 		}
 	]
 }
