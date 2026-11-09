@@ -12,20 +12,13 @@ This codebase uses the `oldschooljs` package for OSRS-related features such as s
 
 Perk tiers are on Patreon: https://patreon.com/bscbot
 
-The bot reads that page from `PATREON_URL` in `src/lib/patreonLink.ts`. Set the env var to override it. There is no oldschoolgg or magnaboy Patreon link.
-
 ## Suggestions & Bug Reports
 
-To report a bug, [click here](https://github.com/oldschoolgg/oldschoolbot/issues/new?labels=feature+request&template=bug.md).
-
-To suggest a new feature, [click here](https://github.com/oldschoolgg/oldschoolbot/issues/new?labels=feature+request&template=feature.md)
+Suggestions and bug reports go in [this channel](https://discord.com/channels/1320163629546471515/1569061653956272330) on the Discord server.
 
 ## Quality checks
 
-Bounty-board defaults are in `src/lib/qualityChecks/config.ts` and `.env.example`.
-The board channel is the Forum `#qc-bounties` (`1564459680997056604`).
-The old `#quality-checks` channel is an archive. Do not use it as the board channel.
-Guild, `#updates`, and the Quality Checkers role IDs are unchanged.
+Quality checks are carried out on all PRs by DJ or Zootr, to make sure every change stays compatible with the bot.
 
 ## Contributing
 
@@ -35,27 +28,13 @@ Anyone is free to create PRs with improvements and additions. If you have questi
 
 #### **Shared Testing Server**
 
-In addition to being able your develop on your own server as we have done above, there is a shared dev server which can be joined here: [https://discord.gg/Cup2gwUGwr](https://discord.gg/Cup2gwUGwr)
+There is a shared testing server you can join here: [https://discord.gg/9ATz5tjwH](https://discord.gg/9ATz5tjwH)
 
-You can also ask Magna to invite your Bot with your invite link above if you so wish.
+Ask DJ or Zootr to get your test bot added to it.
 
-### Contributors
+### Current Contributors
 
-- [[Ciaran](https://github.com/ciaranlangton)]
-- [[Devin](https://github.com/devin8)]
-- [[ms813](https://github.com/ms813)]
-- [[Alexsuperfly](alexsuperfly)]
-- [[Umdlye](https://github.com/umdlye)]
-- [[Kyra](https://github.com/kyranet)]
-- [[Wyatt](https://github.com/wyattos)]
-- [[coolbop32](https://github.com/coolbop32)]
-- [[duracell33](https://github.com/duracell33)]
-- [[themrrobert](https://github.com/themrrobert)]
-- [[Fishy](https://github.com/Lajnux)]
-- [[Lilylicious](https://github.com/Lilylicious)]
-- [[Gidedin](https://github.com/imgidedin)]
-- [[Andre](https://github.com/ard35)]
-- [[TastyPumPum](https://github.com/TastyPumPum)]
+- [[Zootr](https://github.com/Zootr)]
 
 ### Self Hosting
 
