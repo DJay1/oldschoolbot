@@ -6,6 +6,7 @@ import {
 	SPAWN_LAMP_COOLDOWN
 } from '@/lib/bso/bsoConstants.js';
 import { DOUBLE_LOOT_FINISH_TIME_CACHE, isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
+import { DOUBLE_XP_FINISH_TIME_CACHE, isDoubleXpActive } from '@/lib/bso/doubleXp.js';
 import { getGuthixianCacheInterval, userHasDoneCurrentGuthixianCache } from '@/lib/bso/minigames/guthixianCache.js';
 import { allIronmanMbTables, allMbTables } from '@/lib/bso/openables/mysteryBoxes.js';
 
@@ -282,6 +283,10 @@ const mentionCommands: MentionCommand[] = [
 			if (isDoubleLootActive()) {
 				const date = new Date(DOUBLE_LOOT_FINISH_TIME_CACHE);
 				content += `\n\n2️⃣🇽 **Double Loot is Active until ${time(date)} (${time(date, 'R')})**`;
+			}
+			if (isDoubleXpActive()) {
+				const date = new Date(DOUBLE_XP_FINISH_TIME_CACHE);
+				content += `\n\n2️⃣🇽 **Double XP is Active until ${time(date)} (${time(date, 'R')})**`;
 			}
 			const launch = resolveSeasonalEvent('launch');
 			if (isEventActive('launch') && launch.end !== null) {

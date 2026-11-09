@@ -1,5 +1,6 @@
 import { GLOBAL_BSO_XP_MULTIPLIER } from '@/lib/bso/bsoConstants.js';
 import { gorajanArcherOutfit, gorajanOccultOutfit, gorajanWarriorOutfit } from '@/lib/bso/collection-log/main.js';
+import { isDoubleXpActive } from '@/lib/bso/doubleXp.js';
 import { firstAgeXpBonusPercent, isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 import { resolveSkillOutfitXp } from '@/lib/bso/firstAge/skillOutfits.js';
 
@@ -146,7 +147,13 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 	if (launchBoostApplied) {
 		params.amount = increaseNumByPercent(params.amount, LAUNCH_XP_BOOST_PERCENT);
 	}
-	const launchSentence = launchBoostApplied ? ` ${LAUNCH_XP_BONUS_SENTENCE}` : '';
+	const doubleXpApplied = multiplier && isDoubleXpActive(params.duration ?? 0);
+	if (doubleXpApplied) {
+		params.amount *= 2;
+	}
+	const launchSentence = `${launchBoostApplied ? ` ${LAUNCH_XP_BONUS_SENTENCE}` : ''}${
+		doubleXpApplied ? ' You received 2x XP from Double XP.' : ''
+	}`;
 
 	// Look for Mastery skill cape:
 	let matchingCapeID: number | undefined;

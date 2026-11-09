@@ -1,7 +1,9 @@
+import { announceDoubleXpEnd, DOUBLE_XP_FINISH_TIME_CACHE, isDoubleXpActive } from '@/lib/bso/doubleXp.js';
+
 import { roleMention, time } from '@oldschoolgg/discord';
 import { formatDuration, Time } from '@oldschoolgg/toolkit';
 
-import { Channel } from '@/lib/constants.js';
+import { DOUBLE_BONUS_CHANNEL_ID } from '@/lib/constants.js';
 
 /** Optional Los Perros role to ping when double loot starts. */
 const DOUBLE_LOOT_ROLE_ID = process.env.DOUBLE_LOOT_ROLE_ID || null;
@@ -28,11 +30,13 @@ export async function addToDoubleLootTimer(amount: number, reason: string) {
 
 	const ends = new Date(newDoubleLootTimer);
 	const ping = DOUBLE_LOOT_ROLE_ID ? `${roleMention(DOUBLE_LOOT_ROLE_ID)} ` : '';
-	await globalClient.sendMessage(Channel.Notifications, {
-		content: `${ping}🎉 **${formatDuration(amount)}** added to Double Loot because: ${reason}\nDouble Loot now ends ${time(ends)} (${time(ends, 'R')}).`,
-		allowedMentions: { roles: DOUBLE_LOOT_ROLE_ID ? [DOUBLE_LOOT_ROLE_ID] : [] }
-	});
 	wasDoubleLootActive = true;
+	await globalClient
+		.sendMessage(DOUBLE_BONUS_CHANNEL_ID, {
+			content: `${ping}🎉 **${formatDuration(amount)}** added to Double Loot because: ${reason}\nDouble Loot now ends ${time(ends)} (${time(ends, 'R')}).`,
+			allowedMentions: { roles: DOUBLE_LOOT_ROLE_ID ? [DOUBLE_LOOT_ROLE_ID] : [] }
+		})
+		.catch(err => Logging.logError(err as Error));
 
 	await syncPrescence();
 }
@@ -67,15 +71,20 @@ export async function syncPrescence() {
 	const active = isDoubleLootActive();
 	if (wasDoubleLootActive === true && !active) {
 		await globalClient
-			.sendMessage(Channel.Notifications, { content: 'Double Loot has ended.' })
+			.sendMessage(DOUBLE_BONUS_CHANNEL_ID, { content: 'Double Loot has ended.' })
 			.catch(err => Logging.logError(err as Error));
 	}
 	wasDoubleLootActive = active;
+	await announceDoubleXpEnd();
 
-	const str = isDoubleLootActive()
-		? `${formatDuration(DOUBLE_LOOT_FINISH_TIME_CACHE - Date.now(), true)} Double Loot!`
-		: '/help';
+	const parts: string[] = [];
+	if (isDoubleLootActive()) {
+		parts.push(`${formatDuration(DOUBLE_LOOT_FINISH_TIME_CACHE - Date.now(), true)} Double Loot!`);
+	}
+	if (isDoubleXpActive()) {
+		parts.push(`${formatDuration(DOUBLE_XP_FINISH_TIME_CACHE - Date.now(), true)} Double XP!`);
+	}
 	await globalClient.setPresence({
-		text: str
+		text: parts.length > 0 ? parts.join(' | ') : '/help'
 	});
 }

@@ -1,4 +1,5 @@
 import { syncDoubleLoot } from '@/lib/bso/doubleLoot.js';
+import { syncDoubleXp } from '@/lib/bso/doubleXp.js';
 import { syncSlayerMaskLeaderboardCache } from '@/lib/bso/skills/slayer/slayerMaskLeaderboard.js';
 
 import { Time } from '@oldschoolgg/toolkit';
@@ -16,6 +17,7 @@ import { initTickers } from '@/lib/tickers.js';
 export const onStartup = async () => {
 	warnBlankBscPatronRoles();
 	await syncDoubleLoot();
+	await syncDoubleXp();
 	await loadSeasonalEventOverrides().catch(err => Logging.logError(err));
 	await ensureTripQueueStore().catch(err => Logging.logError(err));
 	syncSlayerMaskLeaderboardCache();

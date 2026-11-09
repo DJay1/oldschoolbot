@@ -115,14 +115,11 @@ export function rollLaunchBoxFromTrip({
 	durationMs: number;
 	doubleLoot: boolean;
 	rng: LaunchBoxRng;
-}): { found: boolean; nearMiss: boolean } {
+}): { found: boolean } {
 	const chance = launchBoxTripChance(durationMs, doubleLoot);
-	if (chance <= 0) return { found: false, nearMiss: false };
+	if (chance <= 0) return { found: false };
 	const roll = rng.randInt(1, RARE_SCALE);
-	const threshold = Math.round(chance * RARE_SCALE);
-	if (roll <= threshold) return { found: true, nearMiss: false };
-	const close = roll <= Math.min(RARE_SCALE, threshold * 2);
-	return { found: false, nearMiss: close && rng.randInt(1, 3) === 1 };
+	return { found: roll <= Math.round(chance * RARE_SCALE) };
 }
 
 export function buildFounderLaunchExtras(rng: LaunchBoxRng): Bank {
