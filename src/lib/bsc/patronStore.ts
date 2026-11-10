@@ -9,6 +9,8 @@ export interface BscPatronOverride {
 	lastGiftAt: number | null;
 	giftTier: number | null;
 	giftUntil: number | null;
+	rewardTier: number | null;
+	rewardUntil: number | null;
 	customBackground: boolean;
 	customBackgroundId: number | null;
 }
@@ -22,6 +24,8 @@ interface PatronRow {
 	last_gift_at: Date | null;
 	gift_tier: number | null;
 	gift_until: Date | null;
+	reward_tier: number | null;
+	reward_until: Date | null;
 	custom_background: boolean;
 	custom_background_id: number | null;
 }
@@ -58,6 +62,10 @@ async function ensureStore() {
 	await prisma.$executeRawUnsafe(
 		`ALTER TABLE bsc_patron_override ADD COLUMN IF NOT EXISTS custom_background_id int NULL`
 	);
+	await prisma.$executeRawUnsafe(`ALTER TABLE bsc_patron_override ADD COLUMN IF NOT EXISTS reward_tier int NULL`);
+	await prisma.$executeRawUnsafe(
+		`ALTER TABLE bsc_patron_override ADD COLUMN IF NOT EXISTS reward_until timestamptz NULL`
+	);
 	ready.done = true;
 }
 
@@ -75,6 +83,8 @@ function toRow(row: PatronRow): BscPatronOverride {
 		lastGiftAt: millis(row.last_gift_at),
 		giftTier: row.gift_tier,
 		giftUntil: millis(row.gift_until),
+		rewardTier: row.reward_tier,
+		rewardUntil: millis(row.reward_until),
 		customBackground: row.custom_background,
 		customBackgroundId: row.custom_background_id
 	};
@@ -84,7 +94,7 @@ export async function getBscPatronOverride(userId: string): Promise<BscPatronOve
 	await ensureStore();
 	const rows = await prisma.$queryRaw<PatronRow[]>`
 		SELECT user_id, tier, manual, cosmetic_claimed_at, role_missing_since, last_gift_at,
-			gift_tier, gift_until, custom_background, custom_background_id
+			gift_tier, gift_until, reward_tier, reward_until, custom_background, custom_background_id
 		FROM bsc_patron_override
 		WHERE user_id = ${userId}
 		LIMIT 1
@@ -111,6 +121,8 @@ export async function updateBscPatronOverride(
 		lastGiftAt: current?.lastGiftAt ?? null,
 		giftTier: current?.giftTier ?? null,
 		giftUntil: current?.giftUntil ?? null,
+		rewardTier: current?.rewardTier ?? null,
+		rewardUntil: current?.rewardUntil ?? null,
 		customBackground: current?.customBackground ?? false,
 		customBackgroundId: current?.customBackgroundId ?? null,
 		...patch
@@ -118,7 +130,7 @@ export async function updateBscPatronOverride(
 	await prisma.$executeRaw`
 		INSERT INTO bsc_patron_override (
 			user_id, tier, manual, cosmetic_claimed_at, role_missing_since, last_gift_at,
-			gift_tier, gift_until, custom_background, custom_background_id
+			gift_tier, gift_until, reward_tier, reward_until, custom_background, custom_background_id
 		)
 		VALUES (
 			${next.userId},
@@ -129,6 +141,8 @@ export async function updateBscPatronOverride(
 			${dateOrNull(next.lastGiftAt)},
 			${next.giftTier},
 			${dateOrNull(next.giftUntil)},
+			${next.rewardTier},
+			${dateOrNull(next.rewardUntil)},
 			${next.customBackground},
 			${next.customBackgroundId}
 		)
@@ -140,6 +154,8 @@ export async function updateBscPatronOverride(
 			last_gift_at = EXCLUDED.last_gift_at,
 			gift_tier = EXCLUDED.gift_tier,
 			gift_until = EXCLUDED.gift_until,
+			reward_tier = EXCLUDED.reward_tier,
+			reward_until = EXCLUDED.reward_until,
 			custom_background = EXCLUDED.custom_background,
 			custom_background_id = EXCLUDED.custom_background_id
 	`;

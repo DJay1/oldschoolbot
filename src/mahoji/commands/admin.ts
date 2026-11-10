@@ -51,6 +51,8 @@ import { runAnnouncementBackfill } from '@/lib/bsc/announcementBackfill.js';
 import { assignBscCustomBackground } from '@/lib/bsc/patronPerks.js';
 import { setBscPatronOverride } from '@/lib/bsc/patronSync.js';
 import { parseBscPatronTierInput } from '@/lib/bsc/patronTiers.js';
+import { getTesterPoints, giveTesterPoints, removeTesterPoints } from '@/lib/bsc/testerPoints.js';
+import { giveawayCache } from '@/lib/cache.js';
 import {
 	BadgesEnum,
 	BitField,
@@ -69,7 +71,6 @@ import { syncCustomPrices } from '@/lib/preStartup.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 import { sorts } from '@/lib/sorts.js';
 import { capCurrencyBalances } from '@/lib/util/capCurrencyBalances.js';
-import { giveawayCache } from '@/lib/cache.js';
 import { generateGiveawayContent } from '@/lib/util/giveaway.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { parseBank, parseStringBank } from '@/lib/util/parseStringBank.js';
@@ -96,7 +97,6 @@ function adminParseSpawnBank(inputStr: string): Bank | string {
 	if (itemErrors.length > 0) return `Invalid items: ${itemErrors.join(', ')}`;
 	return items;
 }
-
 
 function formatLeaguesTaskList(taskIDs: number[]) {
 	if (taskIDs.length === 0) return 'None';
@@ -1248,6 +1248,67 @@ export const adminCommand = defineCommand({
 				}
 			]
 		},
+		{
+			type: 'SubcommandGroup',
+			name: 'testerpoints',
+			description: 'Give or take tester points.',
+			options: [
+				{
+					type: 'Subcommand',
+					name: 'give',
+					description: 'Give a player tester points.',
+					options: [
+						{
+							type: 'User',
+							name: 'user',
+							description: 'The player.',
+							required: true
+						},
+						{
+							type: 'Integer',
+							name: 'amount',
+							description: 'How many points.',
+							required: true,
+							min_value: 1,
+							max_value: 100_000
+						},
+						{
+							type: 'String',
+							name: 'reason',
+							description: 'Why they are getting them (shown to the player).',
+							required: true
+						}
+					]
+				},
+				{
+					type: 'Subcommand',
+					name: 'take',
+					description: 'Take tester points from a player.',
+					options: [
+						{
+							type: 'User',
+							name: 'user',
+							description: 'The player.',
+							required: true
+						},
+						{
+							type: 'Integer',
+							name: 'amount',
+							description: 'How many points.',
+							required: true,
+							min_value: 1,
+							max_value: 100_000
+						},
+						{
+							type: 'String',
+							name: 'reason',
+							description: 'Why they are being taken.',
+							required: true
+						}
+					]
+				}
+			]
+		},
 
 		{
 			type: 'Subcommand',
@@ -1313,6 +1374,38 @@ export const adminCommand = defineCommand({
 		const adminUser = await mUserFetch(userId);
 		const isAdmin = adminUser.isAdmin();
 		const isMod = isAdmin || adminUser.isMod();
+		if (options.testerpoints) {
+			if (!isAdmin && !adminUser.isDeveloper()) return rng.pick(gifs);
+			if (!guildId || (globalConfig.isProduction && guildId.toString() !== globalConfig.supportServerID)) {
+				return rng.pick(gifs);
+			}
+			const action = options.testerpoints.give ?? options.testerpoints.take;
+			if (!action) return 'Invalid subcommand.';
+			const target = await mUserFetch(action.user.user.id);
+			const { amount, reason } = action;
+			if (options.testerpoints.give) {
+				const result = await giveTesterPoints(target.id, amount, reason, adminUser.id);
+				await globalClient
+					.sendDm(
+						target.id,
+						`You received **${amount}** tester points: ${reason}. Spend them with /testershop.`
+					)
+					.catch(noOp);
+				await globalClient.sendMessage(Channel.BotLogs, {
+					content: `${adminUser.logName} gave ${amount} tester points to ${target.logName} for ${reason} (balance now ${result.balance})`
+				});
+				return `Gave ${amount} tester points to ${target.mention}. They now have ${result.balance}.`;
+			}
+			const result = await removeTesterPoints(target.id, amount, reason, adminUser.id);
+			if (!result) {
+				const { balance } = await getTesterPoints(target.id);
+				return `${target.mention} only has ${balance} tester points.`;
+			}
+			await globalClient.sendMessage(Channel.BotLogs, {
+				content: `${adminUser.logName} took ${amount} tester points from ${target.logName} for ${reason} (balance now ${result.balance})`
+			});
+			return `Took ${amount} tester points from ${target.mention}. They now have ${result.balance}.`;
+		}
 		if (!testingShortcutsEnabled() && !isAdmin) {
 			return rng.pick(gifs);
 		}
@@ -1476,7 +1569,6 @@ ${META_CONSTANTS.RENDERED_STR}`
 			return rng.pick(gifs);
 		}
 
-
 		if (options.announce_backfill) {
 			const dryRun = options.announce_backfill.dry_run !== false;
 			const limit = options.announce_backfill.limit ?? undefined;
@@ -1485,9 +1577,7 @@ ${META_CONSTANTS.RENDERED_STR}`
 		}
 		if (options.announce) {
 			const thanks = options.announce.thanks_to?.user?.id;
-			const content = thanks
-				? `${options.announce.message}\n\nThanks to <@${thanks}>`
-				: options.announce.message;
+			const content = thanks ? `${options.announce.message}\n\nThanks to <@${thanks}>` : options.announce.message;
 			await globalClient.sendMessage(Channel.Notifications, {
 				content,
 				allowedMentions: { parse: [], users: thanks ? [thanks] : [], roles: [] }
@@ -1594,7 +1684,6 @@ ${META_CONSTANTS.RENDERED_STR}`
 			}
 			return `Added ${items} to ${targetDescription}.`;
 		}
-
 
 		if (options.giveaway) {
 			if (!guildId && !interaction.guildId) {

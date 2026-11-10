@@ -2,17 +2,12 @@ import { feedHammyCommand } from '@/lib/bso/commands/hammyCommand.js';
 import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
 
 import { bold } from '@oldschoolgg/discord';
-import {
-	FormattedCustomEmoji,
-	formatDuration,
-	formatOrdinal,
-	notEmpty,
-	roboChimpCLRankQuery
-} from '@oldschoolgg/toolkit';
+import { FormattedCustomEmoji, formatOrdinal, notEmpty, roboChimpCLRankQuery } from '@oldschoolgg/toolkit';
 import { convertLVLtoXP, Items } from 'oldschooljs';
 
 import { ownedItemOption, skillOption } from '@/discord/index.js';
 import { BSC_PATRON_TIERS } from '@/lib/bsc/patronTiers.js';
+import { bscTierDisplay } from '@/lib/bsc/tierDisplay.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { BitFieldData, MAX_LEVEL, PerkTier } from '@/lib/constants.js';
 import { degradeableItems } from '@/lib/degradeableItems.js';
@@ -22,7 +17,6 @@ import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js'
 import { blowpipeCommand, blowpipeDarts } from '@/lib/minions/functions/blowpipeCommand.js';
 import { degradeableItemsCommand } from '@/lib/minions/functions/degradeableItemsCommand.js';
 import { allPossibleStyles, trainCommand } from '@/lib/minions/functions/trainCommand.js';
-import { getRoboChimpPaidTierDisplay } from '@/lib/perkTiers.js';
 import { Minigames } from '@/lib/settings/minigames.js';
 import creatures from '@/lib/skilling/skills/hunter/creatures/index.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
@@ -91,30 +85,7 @@ export async function getUserInfo(user: MUser) {
 		2
 	);
 
-	const premiumPerkTier =
-		roboChimpUser.premium_balance_tier &&
-		roboChimpUser.premium_balance_expiry_date &&
-		roboChimpUser.premium_balance_expiry_date > Date.now()
-			? roboChimpUser.premium_balance_tier
-			: 0;
-
-	let perkTierDisplay = getRoboChimpPaidTierDisplay(roboChimpUser, { perkTier: roboChimpUser.perk_tier });
-	if (
-		roboChimpUser.premium_balance_tier &&
-		roboChimpUser.premium_balance_expiry_date &&
-		roboChimpUser.premium_balance_expiry_date > Date.now()
-	) {
-		if (roboChimpUser.premium_balance_tier > roboChimpUser.perk_tier) {
-			perkTierDisplay = `Premium __Tier ${premiumPerkTier - 1}__ - ${formatDuration(Number(roboChimpUser.premium_balance_expiry_date) - Date.now())} remaining`;
-		}
-	}
-	if (result.perkTier > roboChimpUser.perk_tier && result.perkTier > premiumPerkTier) {
-		if (user.isMod() || user.isWikiContrib() || user.isContributor() || user.isTrusted()) {
-			perkTierDisplay = `**Courtesy** __Tier ${result.perkTier - 1}__`;
-		} else {
-			perkTierDisplay = `🔴 **Expiring** __Tier ${result.perkTier - 1}__`;
-		}
-	}
+	const perkTierDisplay = await bscTierDisplay(user, result.perkTier);
 	return {
 		...result,
 		everythingString: `${user.badgedUsername}[${user.id}]

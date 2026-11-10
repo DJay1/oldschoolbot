@@ -2,6 +2,7 @@ import { isAtleastThisOld, Time } from '@oldschoolgg/toolkit';
 import { DiscordSnowflake } from '@sapphire/snowflake';
 import { Bank } from 'oldschooljs';
 
+import { giveBscPlayerRole } from '@/lib/bsc/playerRole.js';
 import { fetchUserStats } from '@/lib/util/fetchUserStats.js';
 
 export async function minionBuyCommand(user: MUser, ironman: boolean): CommandResponse {
@@ -37,6 +38,7 @@ export async function minionBuyCommand(user: MUser, ironman: boolean): CommandRe
 	}
 	// Ensure user has a userStats row
 	await fetchUserStats(user.id);
+	await giveBscPlayerRole(user.id);
 
 	return {
 		content: `You have successfully got yourself a minion, and you're ready to use **Bark School Corgo** now! Every dog has its drop.

@@ -22,6 +22,8 @@ import {
 	patronBitsForLevel,
 	warnBlankBscPatronRoles
 } from './patronTiers.js';
+import { playerRoleEnabled, syncBscPlayerRole } from './playerRole.js';
+import { staffRoleBitsEnabled, syncBscStaffBitsFromRoles } from './staffRoleBits.js';
 
 export async function applyBscPatronTier(user: MUser, level: number): Promise<void> {
 	const wanted = new Set(patronBitsForLevel(level));
@@ -145,28 +147,33 @@ export async function syncBscPatronFromRoles(userId: string, roleIds: readonly s
 	if (!rolesClean) await alignBscPatronRoles(userId, decision.level, roleIds);
 }
 
-export async function handleBscGuildMemberUpdate(member: {
-	guild_id?: string | null;
-	roles?: string[] | null;
-	user?: { id?: string | null } | null;
-}): Promise<void> {
+export async function handleBscGuildMemberUpdate(
+	member: {
+		guild_id?: string | null;
+		roles?: string[] | null;
+		user?: { id?: string | null } | null;
+	},
+	{ left = false }: { left?: boolean } = {}
+): Promise<void> {
 	const supportServer = bscSupportServerId();
 	if (member.guild_id !== supportServer) return;
 	const userId = member.user?.id;
 	if (!userId) return;
 	await syncBscPatronFromRoles(userId, member.roles ?? []);
+	await syncBscStaffBitsFromRoles(userId, member.roles ?? []);
+	if (!left) await syncBscPlayerRole(userId, member.roles ?? []);
 }
 
 export async function handleBscGuildMemberRemove(member: {
 	guild_id?: string | null;
 	user?: { id?: string | null } | null;
 }): Promise<void> {
-	await handleBscGuildMemberUpdate({ ...member, roles: [] });
+	await handleBscGuildMemberUpdate({ ...member, roles: [] }, { left: true });
 }
 
 export async function syncBscPatronGuildMembers(): Promise<void> {
 	const guildId = bscSupportServerId();
-	if (!bscPatronRolesConfigured()) return;
+	if (!bscPatronRolesConfigured() && !staffRoleBitsEnabled() && !playerRoleEnabled()) return;
 	let after: string | undefined;
 	for (let page = 0; page < 5; page++) {
 		const query = new URLSearchParams({ limit: '1000' });
@@ -178,6 +185,8 @@ export async function syncBscPatronGuildMembers(): Promise<void> {
 		for (const member of members) {
 			if (!member.user?.id) continue;
 			await syncBscPatronFromRoles(member.user.id, member.roles ?? []);
+			await syncBscStaffBitsFromRoles(member.user.id, member.roles ?? []);
+			await syncBscPlayerRole(member.user.id, member.roles ?? []);
 		}
 		if (members.length < 1000) return;
 		after = members[members.length - 1]?.user?.id;
@@ -225,7 +234,7 @@ export function parseBscPatreonMembers(body: PatreonApiBody): Map<string, BscPat
 	return result;
 }
 
-async function fetchSupportMemberRoleIds(userId: string): Promise<string[] | null> {
+export async function fetchSupportMemberRoleIds(userId: string): Promise<string[] | null> {
 	try {
 		const member = (await globalClient.rest.get(Routes.guildMember(bscSupportServerId(), userId))) as {
 			roles?: string[];

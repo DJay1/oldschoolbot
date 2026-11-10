@@ -1,7 +1,7 @@
 import { customEmoji, Emoji } from '@oldschoolgg/toolkit';
 
 import { BSC_SUPPORTER_COSMETIC, bscPatronTierFromBits } from '@/lib/bsc/patronTiers.js';
-import { BitField, badges } from '@/lib/constants.js';
+import { BadgesEnum, BitField, badges } from '@/lib/constants.js';
 import { LAUNCH_FOUNDER_BADGE } from '@/lib/events/launch/constants.js';
 
 /**
@@ -17,7 +17,11 @@ export function makeBadgeString(
 	isLaunchFounder = false,
 	patronBits: readonly number[] = []
 ) {
-	const rawBadges: string[] = (badgeIDs ?? []).map(num => badges[num]).filter(emoji => Boolean(emoji));
+	const badgeList = [...(badgeIDs ?? [])];
+	if (patronBits.includes(BitField.Developer) && !badgeList.includes(BadgesEnum.Developer)) {
+		badgeList.unshift(BadgesEnum.Developer);
+	}
+	const rawBadges: string[] = badgeList.map(num => badges[num]).filter(emoji => Boolean(emoji));
 	if (isIronman) {
 		rawBadges.push(Emoji.Ironman);
 	}

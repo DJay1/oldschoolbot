@@ -411,6 +411,9 @@ export class BaseUser {
 	isContributor(): boolean {
 		return this.bitfield.includes(BitField.Contributor);
 	}
+	isDeveloper(): boolean {
+		return this.bitfield.includes(BitField.Developer);
+	}
 
 	isAdmin(): boolean {
 		return globalConfig.adminUserIDs.includes(this.id);

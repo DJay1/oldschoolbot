@@ -57,8 +57,9 @@ const perkTierHotCache = new LRUCache<string, PerkTierHotCacheEntry>({
 	updateAgeOnGet: false
 });
 
-function setHotCache(userId: string, tier: number) {
-	perkTierHotCache.set(userId, { tier, expires: Date.now() + PerkTierHotTTL });
+function setHotCache(userId: string, tier: number, until: number | null = null) {
+	const expires = Date.now() + PerkTierHotTTL;
+	perkTierHotCache.set(userId, { tier, expires: until === null ? expires : Math.min(expires, until) });
 }
 export function getPerkTierCached(userId: string) {
 	const tierCacheEntry = perkTierHotCache.get(userId);
@@ -180,6 +181,7 @@ export async function getUsersPerkTier({
 	}
 	// END TODO
 
+	const timedEnds: number[] = [];
 	const roboChimpCached = await Cache.getRoboChimpUser(user.id);
 	if (roboChimpCached) {
 		eligibleTiers.push(roboChimpCached.perk_tier);
@@ -189,6 +191,7 @@ export async function getUsersPerkTier({
 			Number(roboChimpCached.premium_balance_expiry_date) > Date.now()
 		) {
 			eligibleTiers.push(roboChimpCached.premium_balance_tier);
+			timedEnds.push(Number(roboChimpCached.premium_balance_expiry_date));
 		}
 	}
 
@@ -210,7 +213,19 @@ export async function getUsersPerkTier({
 			patronOverride?.giftUntil ?? null,
 			Date.now()
 		);
-		if (giftedPerk > 0) eligibleTiers.push(giftedPerk);
+		if (giftedPerk > 0) {
+			eligibleTiers.push(giftedPerk);
+			timedEnds.push(patronOverride?.giftUntil ?? Date.now());
+		}
+		const rewardPerk = bscActiveGiftPerkTier(
+			patronOverride?.rewardTier ?? null,
+			patronOverride?.rewardUntil ?? null,
+			Date.now()
+		);
+		if (rewardPerk > 0) {
+			eligibleTiers.push(rewardPerk);
+			timedEnds.push(patronOverride?.rewardUntil ?? Date.now());
+		}
 	} catch (err) {
 		Logging.logDebug(`BSC patron gift lookup failed for ${user.id}`, {
 			error: err instanceof Error ? err.message : String(err)
@@ -218,7 +233,12 @@ export async function getUsersPerkTier({
 	}
 	// Server boosting perk has been eliminated
 	const tier = Math.max(...eligibleTiers, 0);
-	setHotCache(user.id, tier);
-	await Cache.setPerkTier(user.id, tier);
+	const timedUntil = timedEnds.length > 0 ? Math.min(...timedEnds) : null;
+	setHotCache(user.id, tier, timedUntil);
+	if (timedUntil === null) {
+		await Cache.setPerkTier(user.id, tier);
+	} else {
+		await Cache.resetPerkTier(user.id);
+	}
 	return tier;
 }

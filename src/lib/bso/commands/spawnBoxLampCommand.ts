@@ -43,13 +43,14 @@ const SPAWN_KINDS = {
 /** Shared readiness check for spawn lamp and spawn box (perk, channel, one cooldown). */
 export async function spawnIsReady(user: MUser, channelId: string, kind: SpawnKind): Promise<[true] | [false, string]> {
 	const cfg = SPAWN_KINDS[kind];
-	if (user.isAdmin()) return [true];
-	const perkTier = await user.fetchPerkTier();
-	if (perkTier < PerkTier.Five && !user.bitfield.includes(cfg.permanentBit)) {
-		return [false, withPatreonLink(`${cfg.perkName} is an Alpha perk.`)];
-	}
-	if (globalConfig.isProduction && channelId !== SPAWN_CHANNEL_ID) {
-		return [false, spawnChannelMessage];
+	if (!user.isAdmin()) {
+		const perkTier = await user.fetchPerkTier();
+		if (perkTier < PerkTier.Five && !user.bitfield.includes(cfg.permanentBit)) {
+			return [false, withPatreonLink(`${cfg.perkName} is an Alpha perk.`)];
+		}
+		if (globalConfig.isProduction && channelId !== SPAWN_CHANNEL_ID) {
+			return [false, spawnChannelMessage];
+		}
 	}
 	const left = cfg.cooldown - (Date.now() - cfg.lastUsed(user));
 	if (left > 0) {

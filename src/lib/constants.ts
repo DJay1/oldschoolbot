@@ -265,7 +265,8 @@ export enum BitField {
 	DisableGlowEffects = 238,
 	/** Cosmetic mark from the monthly Good Boy box. Not a tradeable item. */
 	BSCPatronCosmetic = 239,
-	ReceivedGuaranteedVorkathHead = 240
+	ReceivedGuaranteedVorkathHead = 240,
+	Developer = 241
 }
 
 export interface IBitFieldData {
@@ -578,6 +579,7 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 		protected: true,
 		userConfigurable: false
 	},
+	[BitField.Developer]: { name: 'Developer', protected: true, userConfigurable: false },
 	[BitField.DisableGlowEffects]: {
 		name: 'Disable Glow Effects',
 		protected: false,

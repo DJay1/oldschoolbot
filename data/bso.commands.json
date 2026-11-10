@@ -588,8 +588,8 @@
 	},
 	{
 		"name": "testershop",
-		"desc": "Buy things using your testing points.",
-		"subOptions": []
+		"desc": "Spend your tester points.",
+		"subOptions": ["balance", "buy"]
 	},
 	{
 		"name": "tokkulshop",
