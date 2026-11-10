@@ -69,13 +69,10 @@ export async function setFavoritePatronPet(
 	return { petId: account.favoritePetId, message: 'Favorite pet unchanged.' };
 }
 
-export async function generatePatronProfileCard(
-	user: MUser
-): Promise<{ image: Buffer; needsFavorite: boolean; caption: string }> {
+export async function generatePatronProfileCard(user: MUser): Promise<{ image: Buffer; caption: string }> {
 	const account = await getBscPatronAccount(user.id);
 	const tier = bscPatronTierFromBits(user.bitfield);
-	const needsFavorite = account.favoritePetId === null && ownedPatronPets(user).length > 0;
-	const petId = account.favoritePetId ?? defaultFavoritePet(user);
+	const petId = account.favoritePetId;
 	const rare = rarestCollectionItem(user);
 	const cl = calcCLDetails(user);
 	const months = Math.max(account.monthsTotal, account.monthsStreak);
@@ -111,7 +108,6 @@ export async function generatePatronProfileCard(
 
 	return {
 		image,
-		needsFavorite,
 		caption: buildCaption(user, tier, account.title, loyalty)
 	};
 }

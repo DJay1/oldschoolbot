@@ -232,13 +232,6 @@ export const patronCommand = defineCommand({
 				const result = await setFavoritePatronPet(user, options.profile.favorite_pet);
 				if (result.message.startsWith('Pick a pet')) return result.message;
 			}
-			const account = await getBscPatronAccount(user.id);
-			if (account.favoritePetId === null && options.profile.favorite_pet !== 'skip') {
-				const first = await generatePatronProfileCard(user);
-				if (first.needsFavorite) {
-					return 'First, pick a favorite pet you own with /patron profile favorite_pet:Pet name, or use favorite_pet:skip to use your most-used pet.';
-				}
-			}
 			const card = await generatePatronProfileCard(user);
 			return {
 				content: card.caption,

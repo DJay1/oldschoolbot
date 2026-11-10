@@ -251,7 +251,7 @@ export async function renderPatronProfileCard(data: PatronProfileCardData): Prom
 	} else {
 		drawOutlinedText(
 			ctx,
-			'No pet yet',
+			'Favorite pet: none',
 			panelX + panelW / 2,
 			panelY + Math.floor(panelH / 2) + 6,
 			'22px OSRSFontCompact',
@@ -320,7 +320,7 @@ export async function renderPatronProfileCard(data: PatronProfileCardData): Prom
 	const clText = Number.isInteger(clRounded) ? `${clRounded}%` : `${clRounded.toFixed(1)}%`;
 	const rows: Array<[string, string, string]> = [
 		['Tier', data.tierName ?? 'Not currently a patron', data.tierName ? accent : '#F5F0DC'],
-		['Favorite pet', data.favoritePetName ?? 'none yet', '#FFFFFF'],
+		['Favorite pet', data.favoritePetName ?? 'none', '#FFFFFF'],
 		['Rarest drop', data.rarestDropName ?? 'none yet', '#FFFFFF'],
 		['Total level', String(data.totalLevel), '#FFFFFF'],
 		['CL', clText, '#FFFFFF']
