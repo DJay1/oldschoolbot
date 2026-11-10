@@ -1,4 +1,10 @@
-import { ButtonBuilder, type ButtonMInteraction, ButtonStyle, dateFm } from '@oldschoolgg/discord';
+import {
+	ButtonBuilder,
+	type ButtonMInteraction,
+	ButtonStyle,
+	dateFm,
+	userIdsMentionedInContent
+} from '@oldschoolgg/discord';
 import { debounce, Time } from '@oldschoolgg/toolkit';
 import { TimerManager } from '@sapphire/timer-manager';
 
@@ -23,18 +29,28 @@ export async function makeParty(options: MakePartyOptions): Promise<MUser[]> {
 	];
 	const startTime = Date.now();
 
-	const getMessageContent = async () => ({
-		content: `${options.message}\n\n**Users Joined:** ${(
-			await Promise.all(usersWhoConfirmed.map(u => Cache.getBadgedUsername(u)))
-		).join(
-			', '
-		)}\n\nThis party will automatically depart in ${dateFm(startTime + timeout)}, or if the leader clicks the start (start early) or stop button.`,
-		components: row,
-		allowedMentions: { users: [] as string[] }
-	});
+	let isFirstPartyPost = true;
+	const getMessageContent = async () => {
+		const mentioned = userIdsMentionedInContent(options.message);
+		const invited = isFirstPartyPost
+			? [...new Set([...(options.usersAllowed ?? []), ...mentioned])].filter(id => id !== options.leader.id)
+			: [];
+		const missingMentions = invited.filter(id => !mentioned.includes(id));
+		const prefix = missingMentions.length ? `${missingMentions.map(id => `<@${id}>`).join(' ')}\n` : '';
+		return {
+			content: `${prefix}${options.message}\n\n**Users Joined:** ${(
+				await Promise.all(usersWhoConfirmed.map(u => Cache.getBadgedUsername(u)))
+			).join(
+				', '
+			)}\n\nThis party will automatically depart in ${dateFm(startTime + timeout)}, or if the leader clicks the start (start early) or stop button.`,
+			components: row,
+			allowedMentions: { users: invited }
+		};
+	};
 
 	await interaction.defer({ ephemeral: false });
 	await interaction.reply(await getMessageContent());
+	isFirstPartyPost = false;
 
 	const updateUsersIn = debounce(async () => {
 		await interaction.reply(await getMessageContent());

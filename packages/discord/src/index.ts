@@ -103,6 +103,7 @@ export {
 export * from '@discordjs/formatters';
 
 export * from './BitField.js';
+export * from './client/allowedMentions.js';
 export * from './client/DiscordClient.js';
 export * from './client/types.js';
 export * from './conversions.js';

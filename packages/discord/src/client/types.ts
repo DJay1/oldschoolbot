@@ -19,7 +19,8 @@ import {
 	type PresenceUpdateStatus,
 	type RESTPostAPIChannelMessageJSONBody
 } from 'discord-api-types/v10';
-import { merge } from 'remeda';
+
+import { resolveAllowedMentions } from './allowedMentions.js';
 
 export type SendableFile = {
 	name: string;
@@ -66,8 +67,6 @@ function resolveComponents(
 	}));
 }
 
-const DEFAULT_ALLOWED_MENTIONS: APIAllowedMentions = { users: [], roles: [], parse: [] };
-
 export async function sendableMsgToApiCreate({ msg }: { msg: SendableMessage }): Promise<APISendableMessage> {
 	if (typeof msg === 'string') {
 		return sendableMsgToApiCreate({ msg: { content: msg } });
@@ -83,7 +82,7 @@ export async function sendableMsgToApiCreate({ msg }: { msg: SendableMessage }):
 		components: resolveComponents(msg.components),
 		embeds: msg.embeds?.map(embed => embed.toJSON()),
 		flags: msg.ephemeral ? MessageFlags.Ephemeral : undefined,
-		allowed_mentions: merge(DEFAULT_ALLOWED_MENTIONS, msg.allowedMentions),
+		allowed_mentions: resolveAllowedMentions(msg.content, msg.allowedMentions),
 		message_reference: msg.messageReference
 	};
 

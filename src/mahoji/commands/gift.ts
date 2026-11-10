@@ -267,7 +267,10 @@ ${items}`
 				},
 				select: { id: true }
 			});
-			return `You sent the gift box to ${recipient.badgedUsername}!`;
+			return {
+				content: `You sent the gift box to ${recipient.mention}!`,
+				allowedMentions: { users: [recipient.id] }
+			};
 		}
 
 		return 'Invalid options.';

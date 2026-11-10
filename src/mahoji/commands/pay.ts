@@ -97,6 +97,9 @@ export const payCommand = defineCommand({
 		globalClient.emit(Events.EconomyLog, `${user.mention} paid ${amount} GP to ${recipient.mention}.`);
 		await ClientSettings.addToGPTaxBalance(user, amount);
 
-		return `You sent ${amount.toLocaleString()} GP to ${recipient}.`;
+		return {
+			content: `You sent ${amount.toLocaleString()} GP to ${recipient.mention}.`,
+			allowedMentions: { users: [recipient.id] }
+		};
 	}
 });
