@@ -13,7 +13,7 @@ class STameActivityManager {
 	private inFlight = new Map<number, Promise<void>>();
 
 	async completeTameActivity(task: DueTameActivity): Promise<void> {
-		const { deferredTripMessages } = await runInActivityTransaction(async tx => {
+		const { deferredTripMessages, deferredTripFinishes } = await runInActivityTransaction(async tx => {
 			return completeLockedTameActivity({
 				tx,
 				activityId: task.id,
@@ -29,6 +29,18 @@ class STameActivityManager {
 				}
 			});
 		});
+
+		for (const run of deferredTripFinishes) {
+			try {
+				await run();
+			} catch (err) {
+				Logging.logError(err as Error, {
+					source: 'deferredTameTripFinish',
+					user_id: String(task.user_id),
+					activity_id: String(task.id)
+				});
+			}
+		}
 
 		for (const pending of deferredTripMessages) {
 			await deliverTripFinishMessage(pending.userId, pending.channelId, pending.message);

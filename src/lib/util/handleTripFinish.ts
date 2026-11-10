@@ -19,7 +19,6 @@ import { Bank, EItem, itemID, toKMB } from 'oldschooljs';
 import { activity_type_enum } from '@/prisma/main.js';
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
 import { tryStartQueuedTrip } from '@/lib/bsc/tripQueue.js';
-import { deliverTripFinishMessage } from '@/lib/util/deliverTripFinishMessage.js';
 import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { buildClueButtons } from '@/lib/clues/clueUtils.js';
@@ -36,6 +35,8 @@ import { triggerRandomEvent } from '@/lib/randomEvents.js';
 import { canShowAutoFarmButton } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import type { ActivityTaskData } from '@/lib/types/minions.js';
 import { MUserClass } from '@/lib/user/MUser.js';
+import { deferTripFinish } from '@/lib/util/activityTransaction.js';
+import { deliverTripFinishMessage } from '@/lib/util/deliverTripFinishMessage.js';
 import {
 	makeAutoContractButton,
 	makeAutoFarmButton,
@@ -712,6 +713,25 @@ export async function handleTripFinish(
 				messages: _messages
 			}
 		: userOrParams;
+
+	// Many tasks fire handleTripFinish without awaiting it. If we keep running
+	// inside the activity transaction, the loot write can commit first and later
+	// prisma calls (portents, trip queue) hit a closed transaction client.
+	// Defer the whole finish until after commit, then use the normal client.
+	if (
+		deferTripFinish(() =>
+			handleTripFinish({
+				user,
+				channelId,
+				message: inputMessage,
+				data,
+				loot,
+				messages: inputMessages
+			})
+		)
+	) {
+		return;
+	}
 
 	Logging.logDebug(`Handling trip finish for ${user.logName} (${data.type})`);
 	const message =

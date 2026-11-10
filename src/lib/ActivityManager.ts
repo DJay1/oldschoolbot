@@ -72,7 +72,7 @@ class SActivityManager {
 
 		const user = await mUserFetch(activity.userID);
 
-		const { result, deferredTripMessages } = await runInActivityTransaction(async tx => {
+		const { result, deferredTripMessages, deferredTripFinishes } = await runInActivityTransaction(async tx => {
 			return completeLockedActivity({
 				tx,
 				activityId: _activity.id,
@@ -103,6 +103,19 @@ class SActivityManager {
 
 		if (result === 'completed') {
 			await onMinionActivityFinish(activity);
+		}
+
+		for (const run of deferredTripFinishes) {
+			try {
+				await run();
+			} catch (err) {
+				Logging.logError(err as Error, {
+					source: 'deferredTripFinish',
+					user_id: activity.userID,
+					activity_type: activity.type,
+					activity_id: String(activity.id)
+				});
+			}
 		}
 
 		for (const pending of deferredTripMessages) {
