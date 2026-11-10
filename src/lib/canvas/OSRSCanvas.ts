@@ -591,6 +591,37 @@ export class OSRSCanvas {
 		}
 	}
 
+	private tintImage(image: Image | Canvas, color: string, width: number, height: number): Canvas {
+		const canvas = new SkiaCanvas(width, height);
+		canvas.gpu = false;
+		const ctx = canvas.getContext('2d');
+		ctx.imageSmoothingEnabled = false;
+		ctx.drawImage(image, 0, 0, width, height);
+		ctx.globalCompositeOperation = 'multiply';
+		ctx.fillStyle = color;
+		ctx.fillRect(0, 0, width, height);
+		ctx.globalCompositeOperation = 'destination-in';
+		ctx.drawImage(image, 0, 0, width, height);
+		ctx.globalCompositeOperation = 'source-over';
+		return canvas;
+	}
+
+	private drawPatronDyeSparkles(centerX: number, centerY: number, color: string) {
+		this.ctx.save();
+		this.ctx.imageSmoothingEnabled = false;
+		for (const sparkle of PATRON_DYE_SPARKLE_OFFSETS) {
+			const x = Math.round(centerX + sparkle.x);
+			const y = Math.round(centerY + sparkle.y);
+			const arm = Math.max(1, Math.round(sparkle.size));
+			this.ctx.fillStyle = color;
+			this.ctx.fillRect(x - arm, y, arm * 2 + 1, 1);
+			this.ctx.fillRect(x, y - arm, 1, arm * 2 + 1);
+			this.ctx.fillStyle = '#FFFFFF';
+			this.ctx.fillRect(x, y, 1, 1);
+		}
+		this.ctx.restore();
+	}
+
 	public drawGlowingBlur(x: number, y: number, radius: number, color: string, blur: number, intensity = 1) {
 		this.ctx.save();
 		const filters = [
