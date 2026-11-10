@@ -14,7 +14,12 @@ import {
 	Canvas as SkiaCanvas
 } from 'skia-canvas';
 
-import { getCachedPatronDye, PATRON_DYE_SPARKLE_OFFSETS, resolvePatronDyeAppearance } from '@/lib/bsc/patronDyes.js';
+import {
+	getCachedPatronDye,
+	PATRON_DYE_SPARKLE_OFFSETS,
+	type PatronItemDye,
+	resolvePatronDyeAppearance
+} from '@/lib/bsc/patronDyes.js';
 import { CanvasModule } from '@/lib/canvas/CanvasModule.js';
 import type { CanvasSpritesheet, SpriteData } from '@/lib/canvas/CanvasSpritesheet.js';
 import {
@@ -531,6 +536,7 @@ export class OSRSCanvas {
 		user,
 		override_show_paints: show_paints,
 		effect,
+		patronDyeOverride,
 		networkTimeoutMs = OSRSCanvas.iconFetchBudgetMs
 	}: {
 		itemID: number;
@@ -548,6 +554,7 @@ export class OSRSCanvas {
 		user?: MUser | null | undefined;
 		override_show_paints?: boolean | undefined;
 		effect?: Image | undefined;
+		patronDyeOverride?: PatronItemDye | null;
 		networkTimeoutMs?: number;
 	}) {
 		const itemIcon: Image | Canvas = await OSRSCanvas.getItemImage({ itemID, iconPackId, networkTimeoutMs });
@@ -573,7 +580,7 @@ export class OSRSCanvas {
 			itemIcon.height
 		] as const;
 
-		const patronDye = user ? getCachedPatronDye(user.id, itemID) : null;
+		const patronDye = patronDyeOverride ?? (user ? getCachedPatronDye(user.id, itemID) : null);
 		const appearance = resolvePatronDyeAppearance(patronDye);
 		const tintItem = Boolean(
 			appearance && patronDye && (patronDye.mode === 'recolour' || patronDye.mode === 'recolour_glow')

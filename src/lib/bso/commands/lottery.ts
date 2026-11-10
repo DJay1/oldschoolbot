@@ -1,4 +1,3 @@
-import { userHasPatronDyeLock } from '@/lib/bsc/patronDyes.js';
 import { isSuperUntradeable } from '@/lib/bso/bsoUtil.js';
 import { Herb } from '@/lib/bso/skills/invention/groups/Herb.js';
 
@@ -258,14 +257,13 @@ const LOTTERY_ITEM_BANK_TRANSFORMER = async (args: LotteryItemBankTransformerArg
 	return args.itemBank.clone();
 };
 
-function removeIneligibleLotteryItems(input: Bank, userId?: string) {
+function removeIneligibleLotteryItems(input: Bank, _userId?: string) {
 	const cleaned = input.clone();
 	for (const [item] of cleaned.items()) {
 		if (
 			isSuperUntradeable(item.id) ||
 			item.id === LOTTERY_TICKET_ITEM.id ||
-			item.name === 'Coins' ||
-			userHasPatronDyeLock(userId, item.id)
+			item.name === 'Coins'
 		) {
 			cleaned.clear(item);
 		}

@@ -1,4 +1,4 @@
-import { Bank, Items } from 'oldschooljs';
+import { Bank } from 'oldschooljs';
 
 import { ensurePatronRevampStore } from '@/lib/bsc/patronAccount.js';
 import {
@@ -80,7 +80,7 @@ export async function buyPatronDye(user: MUser, dyeInput: string): Promise<strin
 	if (!debit.ok) return debit.message;
 
 	try {
-		await user.addItemsToBank({ itemsToAdd: new Bank().add(dye.itemID, 1), collectionLog: true });
+		await user.addItemsToBank({ items: new Bank().add(dye.itemID, 1), collectionLog: true });
 	} catch (err) {
 		const balance = await refundPatronPoints(user.id, dye.points, `refund_dye:${dye.key}`);
 		Logging.logError(err as Error, { user_id: user.id, source: 'buyPatronDye' });
@@ -111,15 +111,22 @@ export async function usePatronDye(
 	const item = resolveItemFromInput(itemInput);
 	if (!item) return "That's not a valid item.";
 	if (patronDyeById(item.id)) return 'You cannot dye a dye.';
-	if (user.bank.amount(item.id) < 1) return `You do not have any ${item.name} in your bank.`;
-	if (user.bank.amount(dye.itemID) < 1)
-		return `You do not have any ${dye.itemName}. Buy one with /patron dyes buy:${dye.name}.`;
 
 	const customRequested =
 		Boolean(options?.glowHex) || Boolean(options?.recolourHex) || options?.sparkle !== undefined;
 	if (customRequested && !dye.customizable) {
 		return 'glow_hex, recolour_hex, and sparkle are only for Golden Corgo dye.';
 	}
+
+	await ensurePatronRevampStore();
+	const existingRows = await prisma.$queryRaw<DyeRow[]>`
+		SELECT user_id, item_id, dye_key, mode, glow_hex, recolour_hex, sparkle
+		FROM bsc_patron_item_dyes
+		WHERE user_id = ${user.id} AND item_id = ${item.id}
+	`;
+	const existing = existingRows[0] ? toDye(existingRows[0]) : null;
+	const sameDye = existing?.dyeKey === dye.key;
+	const previousDye = existing ? patronDyeByKey(existing.dyeKey) : null;
 
 	let glowHex: string | null = null;
 	let recolourHex: string | null = null;
@@ -128,18 +135,47 @@ export async function usePatronDye(
 		if (options?.glowHex) {
 			glowHex = parseHexColor(options.glowHex);
 			if (!glowHex) return 'glow_hex must be a 6-digit hex colour like #FF9A3C.';
+		} else if (sameDye) {
+			glowHex = existing?.glowHex ?? null;
 		}
 		if (options?.recolourHex) {
 			recolourHex = parseHexColor(options.recolourHex);
 			if (!recolourHex) return 'recolour_hex must be a 6-digit hex colour like #D4A017.';
+		} else if (sameDye) {
+			recolourHex = existing?.recolourHex ?? null;
 		}
-		sparkle = options?.sparkle ?? false;
+		if (options?.sparkle !== undefined) {
+			sparkle = options.sparkle;
+		} else if (sameDye) {
+			sparkle = existing?.sparkle ?? false;
+		} else {
+			sparkle = false;
+		}
 	}
 
-	const removed = await user.transactItems({ itemsToRemove: new Bank().add(dye.itemID, 1) });
-	if (!removed) return `Could not consume ${dye.itemName}.`;
+	let swappedFrom: string | null = null;
+	if (!sameDye) {
+		if (user.bank.amount(dye.itemID) < 1) {
+			return `You do not have any ${dye.itemName}. Buy one with /patron dyes buy:${dye.name}.`;
+		}
+		const removed = await user.transactItems({ itemsToRemove: new Bank().add(dye.itemID, 1) });
+		if (!removed) return `Could not consume ${dye.itemName}.`;
+		if (previousDye) {
+			try {
+				await user.addItemsToBank({ items: new Bank().add(previousDye.itemID, 1), collectionLog: false });
+				swappedFrom = previousDye.itemName;
+			} catch (err) {
+				try {
+					await user.addItemsToBank({ items: new Bank().add(dye.itemID, 1), collectionLog: false });
+				} catch (refundErr) {
+					Logging.logError(refundErr as Error, { user_id: user.id, source: 'usePatronDyeRefund' });
+				}
+				Logging.logError(err as Error, { user_id: user.id, source: 'usePatronDyeSwap' });
+				return `Could not return ${previousDye.itemName} to your bank. The new dye was not applied.`;
+			}
+		}
+	}
 
-	await ensurePatronRevampStore();
 	await prisma.$executeRaw`
 		INSERT INTO bsc_patron_item_dyes (user_id, item_id, dye_key, mode, applied_at, glow_hex, recolour_hex, sparkle)
 		VALUES (${user.id}, ${item.id}, ${dye.key}, ${mode}, NOW(), ${glowHex}, ${recolourHex}, ${sparkle})
@@ -173,9 +209,16 @@ export async function usePatronDye(
 		dye.customizable && (glowHex || recolourHex)
 			? ` Custom colours: glow ${glowHex ?? dye.glow}, recolour ${recolourHex ?? dye.color}.`
 			: '';
-	return `You used ${dye.itemName} on your ${item.name} (${mode.replaceAll('_', ' ')}). That item is untradeable while dyed. Undyeing returns the dye to your bank.${sparkleNote}${customNote}`;
+	const ownedNote =
+		user.bank.amount(item.id) < 1
+			? ` You do not currently have ${item.name} in your bank. The dye will show when you do.`
+			: '';
+	const swapNote = swappedFrom ? ` ${swappedFrom} was returned to your bank.` : '';
+	const action = sameDye ? 'updated' : 'used';
+	return `You ${action} ${dye.itemName} on ${item.name} (${mode.replaceAll('_', ' ')}). This cosmetic stays on your account, so the item stays tradeable. Claim the dye back with /patron dyeclaim.${swapNote}${sparkleNote}${customNote}${ownedNote}`;
 }
 
+/** Claim the dye bottle back and delete the cosmetic record. Works even if the item is no longer in the bank. */
 export async function undyePatronItem(user: MUser, itemInput: string): Promise<string> {
 	const item = resolveItemFromInput(itemInput);
 	if (!item) return "That's not a valid item.";
@@ -189,7 +232,7 @@ export async function undyePatronItem(user: MUser, itemInput: string): Promise<s
 	const dye = patronDyeByKey(existing[0].dye_key);
 	if (dye) {
 		try {
-			await user.addItemsToBank({ itemsToAdd: new Bank().add(dye.itemID, 1), collectionLog: false });
+			await user.addItemsToBank({ items: new Bank().add(dye.itemID, 1), collectionLog: false });
 		} catch (err) {
 			Logging.logError(err as Error, { user_id: user.id, source: 'undyePatronItem' });
 			return `Could not return ${dye.itemName} to your bank. The dye was left on ${item.name}.`;
@@ -201,12 +244,14 @@ export async function undyePatronItem(user: MUser, itemInput: string): Promise<s
 	`;
 	uncachePatronDye(user.id, item.id);
 	const refundNote = dye ? ` ${dye.itemName} was returned to your bank.` : '';
-	return `You removed the patron dye from ${item.name}.${refundNote} That item is tradeable again.`;
+	return `You claimed the patron dye back from ${item.name}.${refundNote}`;
 }
+
+export const claimPatronDye = undyePatronItem;
 
 export function formatPatronDyeShop(points: number, applied: PatronItemDye[]): string {
 	const catalog = [
-		'Patron dye shop (Pup and up). Spend monthly patron points to dye one item ID in your bank. Glow uses the same seer-style effect as the Seer highlight, in that the dye colour. Dyed items are untradeable until you undye, which returns the dye to your bank.',
+		'Patron dye shop (Pup and up). Spend monthly patron points to dye an item ID on your account. The dye is a cosmetic on your account, so dyed items stay tradeable. Glow uses the same seer-style effect as the Seer highlight, in that the dye colour. You can apply or change a dye even if you do not currently have the item; it shows in your bank when you do. Claim the bottle back anytime with /patron dyeclaim or /patron undye. Preview all five dyes for free with /patron dye_preview.',
 		`Your balance: ${points} patron points.`,
 		'',
 		'Biscuit dye — 5 points, burnt orange, seer-style glow.',
@@ -217,15 +262,16 @@ export function formatPatronDyeShop(points: number, applied: PatronItemDye[]): s
 		'',
 		'Modes: recolour, glow, or recolour_glow (default).',
 		'Check points or buy: /patron dyes  or  /patron dyes buy:Biscuit',
-		'Use a dye: /patron dye item:Bandos chestplate dye:Fetch mode:recolour_glow',
+		'Preview all dyes (free, anyone): /patron dye_preview item:Bandos chestplate',
+		'Use or change a dye: /patron dye item:Bandos chestplate dye:Fetch mode:recolour_glow',
 		'Golden Corgo: /patron dye item:Bandos chestplate dye:Golden Corgo glow_hex:#FF00AA recolour_hex:#00FFCC sparkle:True',
-		'Undye (returns the dye): /patron undye item:Bandos chestplate'
+		'Claim the dye back (returns the bottle): /patron dyeclaim item:Bandos chestplate'
 	];
 	if (applied.length > 0) {
 		catalog.push('');
 		catalog.push('Currently dyed:');
 		for (const row of applied) {
-			const name = Items.get(row.itemID)?.name ?? String(row.itemID);
+			const name = resolveItemFromInput(String(row.itemID))?.name ?? String(row.itemID);
 			const extras = [
 				row.glowHex ? `glow ${row.glowHex}` : null,
 				row.recolourHex ? `recolour ${row.recolourHex}` : null,

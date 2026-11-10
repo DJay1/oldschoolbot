@@ -605,7 +605,7 @@ Player commands:
 /patron dyes
 ```
 
-`/patron dyes` sells Biscuit, Fetch, Pawberry, Midnight Pup, and Golden Corgo dyes. The first four have distinct seer-style glow colours; Midnight Pup always sparkles. Golden Corgo is a catch-all: players set `glow_hex` and `recolour_hex` (`#RRGGBB`) and can toggle `sparkle`. Undyeing returns the dye to the bank. Apply `prisma/sql/bsc_patron_dye_custom.sql` with `prisma db execute` (never `db push`) before using custom Golden Corgo colours in production.
+`/patron dyes` sells Biscuit, Fetch, Pawberry, Midnight Pup, and Golden Corgo dyes. The first four have distinct seer-style glow colours; Midnight Pup always sparkles. Golden Corgo is a catch-all: players set `glow_hex` and `recolour_hex` (`#RRGGBB`) and can toggle `sparkle`. Dyes are an account cosmetic, so dyed items stay tradeable. `/patron dye` can be used even if the item is not in the bank. `/patron dyeclaim` (or `/patron undye`) returns the bottle and removes the record. `/patron dye_preview` shows all five dyes on a chosen item, with a Golden Corgo note that it can use any glow colour, any dye colour, and sparkle on or off. Apply `prisma/sql/bsc_patron_dye_custom.sql` with `prisma db execute` (never `db push`) before using custom Golden Corgo colours in production.
 
 ```
 /patron gift user:@Friend

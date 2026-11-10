@@ -8,8 +8,7 @@ import {
 	parseHexColor,
 	parsePatronDyeMode,
 	patronDyeByKey,
-	resolvePatronDyeAppearance,
-	userHasPatronDyeLock
+	resolvePatronDyeAppearance
 } from '@/lib/bsc/patronDyes.js';
 import { sanitizePatronFlair } from '@/lib/bsc/patronFlair.js';
 import {
@@ -144,20 +143,17 @@ test('flair is sanitized and titles come from the locked list', () => {
 	expect(parsePatronTitle('Dragon Slayer')).toBeNull();
 });
 
-test('dyed item IDs are untradeable for that user until undyed', () => {
+test('dyed item IDs stay tradeable because the dye is an account cosmetic', () => {
 	clearPatronDyeCache();
 	const userId = '123';
 	const itemID = 4587; // Dragon scimitar
-	expect(userHasPatronDyeLock(userId, itemID)).toBe(false);
 	expect(itemIsTradeable(itemID, true, userId)).toBe(true);
 
 	cachePatronDye(userId, { itemID, dyeKey: 'golden', mode: 'recolour_glow' });
-	expect(userHasPatronDyeLock(userId, itemID)).toBe(true);
-	expect(itemIsTradeable(itemID, true, userId)).toBe(false);
+	expect(itemIsTradeable(itemID, true, userId)).toBe(true);
 	expect(itemIsTradeable(itemID, true, 'someone-else')).toBe(true);
 
 	clearPatronDyeCache(userId);
-	expect(userHasPatronDyeLock(userId, itemID)).toBe(false);
 	expect(itemIsTradeable(itemID, true, userId)).toBe(true);
 });
 

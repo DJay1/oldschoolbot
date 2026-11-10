@@ -1,6 +1,5 @@
 import { PerkTier } from '@oldschoolgg/toolkit';
-import { Items } from 'oldschooljs';
-
+import { itemArr } from '@/discord/presetCommandOptions.js';
 import { getBscPatronAccount, updateBscPatronAccount } from '@/lib/bsc/patronAccount.js';
 import {
 	buyPatronDye,
@@ -9,11 +8,12 @@ import {
 	undyePatronItem,
 	usePatronDye
 } from '@/lib/bsc/patronDyeShop.js';
-import { PATRON_DYE_ITEM_IDS, PATRON_DYES, patronDyeById } from '@/lib/bsc/patronDyes.js';
+import { PATRON_DYE_ITEM_IDS, PATRON_DYES, patronDyeById, resolveItemFromInput } from '@/lib/bsc/patronDyes.js';
 import { sanitizePatronFlair } from '@/lib/bsc/patronFlair.js';
 import { loyaltyBadgeLabel } from '@/lib/bsc/patronLoyalty.js';
 import { performBscPatronGift, triggerBscDoubleLoot } from '@/lib/bsc/patronPerks.js';
 import { generatePatronProfileCard, setFavoritePatronPet } from '@/lib/bsc/patronProfile.js';
+import { renderPatronDyeGrid } from '@/lib/bsc/renderPatronDyeGrid.js';
 import { getBscPatronOverride } from '@/lib/bsc/patronStore.js';
 import {
 	bscPatronLevelFromBits,
@@ -22,7 +22,10 @@ import {
 	planBscPatronGift
 } from '@/lib/bsc/patronTiers.js';
 import { formatPatronTitleList, parsePatronTitle } from '@/lib/bsc/patronTitles.js';
+import { patreonUrl } from '@/lib/patreonLink.js';
 import { patronMsg } from '@/lib/util/smallUtils.js';
+
+const DYE_SUBSCRIBE_MSG = `Patron dyes are for Pup and up. Subscribe at ${patreonUrl()}`;
 
 async function patronOverview(user: MUser) {
 	const [state, account] = await Promise.all([getBscPatronOverride(user.id), getBscPatronAccount(user.id)]);
@@ -51,6 +54,58 @@ async function requirePatron(user: MUser) {
 	return (await user.fetchPerkTier()) < PerkTier.Two ? patronMsg(PerkTier.Two) : null;
 }
 
+async function dyedItemAutocomplete(value: string | undefined, user: MUser) {
+	const q = (value ?? '').toLowerCase();
+	const applied = await loadPatronDyesForUser(user.id);
+	const choices: { name: string; value: string }[] = [];
+	for (const row of applied) {
+		const item = resolveItemFromInput(String(row.itemID));
+		const name = item?.name ?? `Item ${row.itemID}`;
+		if (q && !name.toLowerCase().includes(q) && String(row.itemID) !== q) continue;
+		choices.push({
+			name: `${name} (${row.dyeKey.replaceAll('_', ' ')})`,
+			value: String(row.itemID)
+		});
+		if (choices.length >= 25) break;
+	}
+	return choices;
+}
+
+function isDyeItem(itemID: number) {
+	return Boolean(patronDyeById(itemID) || PATRON_DYE_ITEM_IDS.has(itemID));
+}
+
+async function dyeTargetAutocomplete(value: string | undefined, user: MUser) {
+	const q = (value ?? '').toLowerCase();
+	const applied = await loadPatronDyesForUser(user.id);
+	const choices: { name: string; value: string }[] = [];
+	const seen = new Set<number>();
+
+	const add = (itemID: number, name: string, suffix?: string) => {
+		if (seen.has(itemID) || isDyeItem(itemID)) return;
+		if (q && !name.toLowerCase().includes(q) && String(itemID) !== q) return;
+		seen.add(itemID);
+		choices.push({ name: suffix ? `${name} (${suffix})` : name, value: String(itemID) });
+	};
+
+	for (const row of applied) {
+		const item = resolveItemFromInput(String(row.itemID));
+		add(row.itemID, item?.name ?? `Item ${row.itemID}`, 'dyed');
+		if (choices.length >= 25) return choices;
+	}
+	for (const [item, qty] of user.bank.items()) {
+		add(item.id, item.name, String(qty));
+		if (choices.length >= 25) return choices;
+	}
+	if (q) {
+		for (const item of itemArr) {
+			add(item.id, item.name);
+			if (choices.length >= 25) break;
+		}
+	}
+	return choices;
+}
+
 export const patronCommand = defineCommand({
 	name: 'patron',
 	description: 'Bark School Corgo patron tiers, cosmetics, dyes, gifts, and double loot.',
@@ -62,6 +117,8 @@ export const patronCommand = defineCommand({
 			'/patron profile',
 			'/patron dyes buy:Biscuit',
 			'/patron dye item:Bandos chestplate dye:Fetch',
+			'/patron dyeclaim item:Bandos chestplate',
+			'/patron dye_preview item:Bandos chestplate',
 			'/patron gift user:@Friend',
 			'/patron double_loot'
 		]
@@ -133,41 +190,31 @@ export const patronCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'dye',
-			description: 'Use a patron dye on an item in your bank. Pup and up.',
+			description: 'Use or update a patron dye on an item. You do not need to own the item. Pup and up.',
 			options: [
 				{
 					type: 'String',
 					name: 'item',
-					description: 'The bank item to dye.',
+					description: 'The item to dye. You do not need to have it in your bank.',
 					required: true,
-					autocomplete: async ({ value, user }: StringAutoComplete) => {
-						const q = (value ?? '').toLowerCase();
-						return user.bank
-							.items()
-							.filter(([item]) => !patronDyeById(item.id) && !PATRON_DYE_ITEM_IDS.has(item.id))
-							.filter(
-								([item]) =>
-									!q ||
-									item.name.toLowerCase().includes(q) ||
-									String(item.id) === q
-							)
-							.slice(0, 25)
-							.map(([item, qty]) => ({ name: `${item.name} (${qty})`, value: String(item.id) }));
-					}
+					autocomplete: async ({ value, user }: StringAutoComplete) => dyeTargetAutocomplete(value, user)
 				},
 				{
 					type: 'String',
 					name: 'dye',
-					description: 'The dye you own.',
+					description: 'The dye to use, or the dye already applied if you are changing colours.',
 					required: true,
 					autocomplete: async ({ value, user }: StringAutoComplete) => {
 						const q = (value ?? '').toLowerCase();
-						return PATRON_DYES.filter(dye => user.bank.amount(dye.itemID) > 0)
+						const applied = await loadPatronDyesForUser(user.id);
+						const appliedKeys = new Set(applied.map(row => row.dyeKey));
+						return PATRON_DYES.filter(dye => user.bank.amount(dye.itemID) > 0 || appliedKeys.has(dye.key))
 							.filter(dye => !q || dye.name.toLowerCase().includes(q) || dye.key.includes(q))
-							.map(dye => ({
-								name: `${dye.name} (${user.bank.amount(dye.itemID)} in bank)`,
-								value: dye.key
-							}));
+							.map(dye => {
+								const owned = user.bank.amount(dye.itemID);
+								const suffix = owned > 0 ? `${owned} in bank` : 'already applied';
+								return { name: `${dye.name} (${suffix})`, value: dye.key };
+							});
 					}
 				},
 				{
@@ -198,30 +245,49 @@ export const patronCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'dyeclaim',
+			description: 'Claim a used dye back, even if you no longer have the item. Pup and up.',
+			options: [
+				{
+					type: 'String',
+					name: 'item',
+					description: 'The dyed item record to claim the bottle back from.',
+					required: true,
+					autocomplete: async ({ value, user }: StringAutoComplete) => dyedItemAutocomplete(value, user)
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'dye_preview',
+			description: 'Preview all five patron dyes on an item. Free, and open to everyone.',
+			options: [
+				{
+					type: 'String',
+					name: 'item',
+					description: 'The item to preview. You do not need to own it.',
+					required: true,
+					autocomplete: async ({ value }: StringAutoComplete) => {
+						const q = (value ?? '').toLowerCase();
+						return itemArr
+							.filter(item => !q || item.key.includes(q) || String(item.id) === q)
+							.slice(0, 25)
+							.map(item => ({ name: item.name, value: String(item.id) }));
+					}
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
 			name: 'undye',
-			description: 'Remove a patron dye from an item and return the dye to your bank. Pup and up.',
+			description: 'Remove a patron dye from an item and return the dye to your bank. Same as /patron dyeclaim.',
 			options: [
 				{
 					type: 'String',
 					name: 'item',
 					description: 'The dyed item to restore.',
 					required: true,
-					autocomplete: async ({ value, user }: StringAutoComplete) => {
-						const q = (value ?? '').toLowerCase();
-						const applied = await loadPatronDyesForUser(user.id);
-						const choices: { name: string; value: string }[] = [];
-						for (const row of applied) {
-							const item = Items.get(row.itemID);
-							const name = item?.name ?? `Item ${row.itemID}`;
-							if (q && !name.toLowerCase().includes(q) && String(row.itemID) !== q) continue;
-							choices.push({
-								name: `${name} (${row.dyeKey.replaceAll('_', ' ')})`,
-								value: String(row.itemID)
-							});
-							if (choices.length >= 25) break;
-						}
-						return choices;
-					}
+					autocomplete: async ({ value, user }: StringAutoComplete) => dyedItemAutocomplete(value, user)
 				}
 			]
 		},
@@ -310,15 +376,35 @@ export const patronCommand = defineCommand({
 				files: [{ name: 'patron-profile.png', buffer: card.image }]
 			};
 		}
+		if (options.dye_preview) {
+			const item = resolveItemFromInput(options.dye_preview.item);
+			if (!item) return "That's not a valid item.";
+			const buffer = await renderPatronDyeGrid({ item });
+			return {
+				content: `Dye previews for ${item.name}. Golden Corgo: any glow colour, any dye colour, sparkle on/off.`,
+				files: [{ buffer, name: 'dye-preview.png' }]
+			};
+		}
 		if (options.dye) {
 			const isPatron = (await user.fetchPerkTier()) >= PerkTier.Two;
 			const ownsDye = PATRON_DYES.some(dye => user.bank.amount(dye.itemID) > 0);
-			if (!isPatron && !ownsDye) return DYE_SUBSCRIBE_MSG;
+			if (!isPatron && !ownsDye) {
+				const applied = await loadPatronDyesForUser(user.id);
+				if (applied.length === 0) return DYE_SUBSCRIBE_MSG;
+			}
 			return usePatronDye(user, options.dye.dye, options.dye.item, options.dye.mode, {
 				glowHex: options.dye.glow_hex,
 				recolourHex: options.dye.recolour_hex,
 				sparkle: options.dye.sparkle
 			});
+		}
+		if (options.dyeclaim) {
+			const isPatron = (await user.fetchPerkTier()) >= PerkTier.Two;
+			if (!isPatron) {
+				const applied = await loadPatronDyesForUser(user.id);
+				if (applied.length === 0) return DYE_SUBSCRIBE_MSG;
+			}
+			return undyePatronItem(user, options.dyeclaim.item);
 		}
 		if (options.undye) {
 			const isPatron = (await user.fetchPerkTier()) >= PerkTier.Two;

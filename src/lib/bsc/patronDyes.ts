@@ -76,6 +76,8 @@ export const PATRON_DYES: readonly PatronDyeDefinition[] = [
 
 export const PATRON_DYE_ITEM_IDS = new Set(PATRON_DYES.map(dye => dye.itemID));
 
+export const PATRON_DYE_PREVIEW_NOTE = 'Golden Corgo: any glow colour, any dye colour, sparkle on/off';
+
 export interface PatronItemDye {
 	itemID: number;
 	dyeKey: PatronDyeDefinition['key'];
@@ -97,7 +99,7 @@ export function resolveItemFromInput(input: string | undefined | null) {
 	if (Number.isInteger(asId) && asId > 0) {
 		return Items.get(asId) ?? Items.getItem(trimmed) ?? null;
 	}
-	return Items.getItem(trimmed) ?? Items.get(trimmed) ?? null;
+	return Items.getItem(trimmed) ?? null;
 }
 
 export function patronDyeByKey(key: string): PatronDyeDefinition | null {
@@ -146,12 +148,6 @@ export function cachePatronDye(userId: string, dye: PatronItemDye) {
 
 export function uncachePatronDye(userId: string, itemID: number) {
 	dyeCache.get(userId)?.delete(itemID);
-}
-
-/** True when this player has a patron dye on this item ID, making it untradeable for them. */
-export function userHasPatronDyeLock(userId: string | undefined, itemID: number): boolean {
-	if (!userId) return false;
-	return dyeCache.get(userId)?.has(itemID) ?? false;
 }
 
 export function parsePatronDyeMode(input: string | undefined): PatronDyeMode | null {

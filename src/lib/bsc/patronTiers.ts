@@ -603,7 +603,7 @@ export function formatBscPatronOverview(input: {
 	}
 	lines.push('');
 	lines.push(
-		'Commands: /patron info, /patron title, /patron flair, /patron profile, /patron dyes, /patron dye, /patron undye, /patron double_loot, /patron gift user:@friend'
+		'Commands: /patron info, /patron title, /patron flair, /patron profile, /patron dyes, /patron dye, /patron dyeclaim, /patron dye_preview, /patron undye, /patron double_loot, /patron gift user:@friend'
 	);
 	return lines.join('\n');
 }

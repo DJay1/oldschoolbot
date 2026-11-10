@@ -1,4 +1,3 @@
-import { userHasPatronDyeLock } from '@/lib/bsc/patronDyes.js';
 import { isSuperUntradeable } from '@/lib/bso/bsoUtil.js';
 
 import { Bank } from 'oldschooljs';
@@ -222,7 +221,7 @@ export const gambleCommand = defineCommand({
 			await senderUser.sync();
 			const bank = senderUser.bank
 				.items()
-				.filter(i => !isSuperUntradeable(i[0].id) && !userHasPatronDyeLock(senderUser.id, i[0].id))
+				.filter(i => !isSuperUntradeable(i[0].id))
 				.filter(i => !user.user.favoriteItems.includes(i[0].id));
 			const entry = rng.pick(bank);
 			if (!entry) return 'You have no items you can give away!';

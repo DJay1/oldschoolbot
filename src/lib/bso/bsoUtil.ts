@@ -1,4 +1,3 @@
-import { userHasPatronDyeLock } from '@/lib/bsc/patronDyes.js';
 import { doaCL } from '@/lib/bso/collection-log/main.js';
 
 import { CollectionLog } from '@oldschoolgg/collectionlog';
@@ -60,10 +59,9 @@ export function usingPet(
 	return isUsingPet;
 }
 
-export function isGEUntradeable(item: number | Item, userId?: string) {
+export function isGEUntradeable(item: number | Item, _userId?: string) {
 	const fullItem = typeof item === 'number' ? Items.get(item) : item;
 	if (!fullItem) return true;
-	if (userHasPatronDyeLock(userId, fullItem.id)) return true;
 	if (fullItem.customItemData) {
 		const { dontTradeOnGE, superUntradeableButTradeableOnGE, isSuperUntradeable } = fullItem.customItemData;
 		// This order is important: use order as defined in the deconstruction.
