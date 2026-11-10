@@ -27,6 +27,7 @@ import { patreonUrl } from '@/lib/patreonLink.js';
 import { roboChimpSyncData } from '@/lib/roboChimp.js';
 import type { ActivityTaskData } from '@/lib/types/minions.js';
 import { claimDiscordEvent } from '@/lib/util/discordEventGate.js';
+import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { minionStatsEmbed } from '@/lib/util/minionStatsEmbed.js';
 import { refreshUserCache } from '@/lib/util/refreshCache.js';
@@ -282,16 +283,16 @@ const mentionCommands: MentionCommand[] = [
 
 			if (isDoubleLootActive()) {
 				const date = new Date(DOUBLE_LOOT_FINISH_TIME_CACHE);
-				content += `\n\n2️⃣🇽 **Double Loot is Active until ${time(date)} (${time(date, 'R')})**`;
+				content += `\n\n${itemStatusIcon('double_loot_token')}**Double Loot is Active until ${time(date)} (${time(date, 'R')})**`;
 			}
 			if (isDoubleXpActive()) {
 				const date = new Date(DOUBLE_XP_FINISH_TIME_CACHE);
-				content += `\n\n2️⃣🇽 **Double XP is Active until ${time(date)} (${time(date, 'R')})**`;
+				content += `\n\n${itemStatusIcon('double_xp_token')}**Double XP is Active until ${time(date)} (${time(date, 'R')})**`;
 			}
 			const launch = resolveSeasonalEvent('launch');
 			if (isEventActive('launch') && launch.end !== null) {
 				const launchEnd = new Date(launch.end);
-				content += `\n**Launch event: +25% XP and Launch boxes until ${time(launchEnd)} (${time(launchEnd, 'R')})**`;
+				content += `\n${itemStatusIcon('launchbox')}**Launch event: +25% XP and Launch boxes until ${time(launchEnd)} (${time(launchEnd, 'R')})**`;
 			}
 
 			return {

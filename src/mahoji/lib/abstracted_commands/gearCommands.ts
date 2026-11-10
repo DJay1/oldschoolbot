@@ -12,7 +12,7 @@ import getUserBestGearFromBank from '@/lib/minions/functions/getUserBestGearFrom
 import { unEquipAllCommand } from '@/lib/minions/functions/unequipAllCommand.js';
 import { Gear } from '@/lib/structures/Gear.js';
 import calculateGearLostOnDeathWilderness from '@/lib/util/calculateGearLostOnDeathWilderness.js';
-import { gearEquipMultiImpl } from '@/lib/util/equipMulti.js';
+import { formatGearEquipFailures, gearEquipMultiImpl } from '@/lib/util/equipMulti.js';
 import { assert } from '@/lib/util/logError.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 
@@ -136,17 +136,15 @@ async function gearEquipMultiCommand(user: MUser, setup: string, items: string) 
 	const {
 		success: resultSuccess,
 		failMsg,
-		skillFailBank,
+		failReasons = [],
 		equippedGear,
 		equipBank,
 		unequipBank
 	} = gearEquipMultiImpl(user, setup, items);
 	if (!resultSuccess) return failMsg!;
+	const failureText = formatGearEquipFailures(failReasons);
 	if ((!equipBank || equipBank.length === 0) && (!unequipBank || unequipBank.length === 0)) {
-		if (skillFailBank && skillFailBank.length > 0) {
-			return `These items failed to be equipped as you don't have the requirements: ${skillFailBank}.`;
-		}
-		return 'No items were equipped.';
+		return failureText || 'No items were equipped.';
 	}
 
 	const dbKey = `gear_${setup}` as const;
@@ -161,8 +159,8 @@ async function gearEquipMultiCommand(user: MUser, setup: string, items: string) 
 
 	const image = await user.generateGearImage({ setupType: setup });
 	let content = `You equipped ${equipBank} on your ${setup} setup, and unequipped ${unequipBank}.`;
-	if (skillFailBank!.length > 0) {
-		content += `\nThese items failed to be equipped as you don't have the requirements: ${skillFailBank}.`;
+	if (failureText) {
+		content += `\n${failureText}`;
 	}
 
 	if (setup === 'wildy') {

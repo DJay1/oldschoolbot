@@ -220,8 +220,41 @@ describe('Multi-equip Gear Test', () => {
 		expect(top.success).toEqual(true);
 		expect(top.equipBank!.length).toEqual(0);
 		expect(top.skillFailBank!.toString()).toEqual("1x Karil's leathertop");
+		expect(top.failReasons).toEqual(["Karil's leathertop needs 70 Ranged and 70 Defence."]);
 		expect(skirt.equipBank!.length).toEqual(0);
 		expect(skirt.skillFailBank!.toString()).toEqual("1x Karil's leatherskirt");
+		expect(skirt.failReasons).toEqual(["Karil's leatherskirt needs 70 Ranged and 70 Defence."]);
+	});
+
+
+	test('explains each /gear equip failure reason', () => {
+		const user = mockMUser({
+			skills_ranged: convertLVLtoXP(99),
+			skills_defence: convertLVLtoXP(99),
+			bank: new Bank().add("Karil's leathertop").add('Twisted bow').add('Rune arrow', 10).add('Coal').add('Bronze kiteshield')
+		});
+
+		const missing = gearEquipMultiImpl(user, 'range', "1 Karil's leatherskirt");
+		expect(missing.equipBank!.length).toEqual(0);
+		expect(missing.failReasons).toEqual(["You don't have Karil's leatherskirt."]);
+
+		const notEnough = gearEquipMultiImpl(user, 'range', '50 Rune arrow');
+		expect(notEnough.equipBank!.length).toEqual(0);
+		expect(notEnough.failReasons).toEqual(['You need 50x Rune arrow, but you only have 10x.']);
+
+		const unknown = gearEquipMultiImpl(user, 'range', '1 totally fake item');
+		expect(unknown.equipBank!.length).toEqual(0);
+		expect(unknown.failReasons).toEqual(['Couldn\'t find an item named "1 totally fake item".']);
+
+		const unequippable = gearEquipMultiImpl(user, 'range', '1 Coal');
+		expect(unequippable.equipBank!.length).toEqual(0);
+		expect(unequippable.failReasons).toEqual(["Coal isn't equippable."]);
+
+		const conflict = gearEquipMultiImpl(user, 'range', "Karil's leathertop, Twisted bow, Bronze kiteshield");
+		expect(conflict.equipBank!.toString()).toEqual("1x Karil's leathertop, 1x Twisted bow");
+		expect(conflict.failReasons).toEqual([
+			'Bronze kiteshield conflicts with Twisted bow, which is two-handed.'
+		]);
 	});
 
 });

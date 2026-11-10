@@ -3254,7 +3254,9 @@
 			"wiki": null,
 			"notes": "Launch box item icon (bso_icons 74200).",
 			"usedIn": [
-				"src/lib/util/handleTripFinish.ts"
+				"src/lib/util/handleTripFinish.ts",
+				"src/lib/events.ts",
+				"src/lib/bsc/startupActiveBoosts.ts"
 			]
 		},
 		{
@@ -3375,6 +3377,42 @@
 			"notes": "Poll No corgi reaction.",
 			"usedIn": [
 				"src/lib/data/emojis.ts"
+			]
+		},
+		{
+			"name": "double_loot_token",
+			"uploadName": "double_loot_token",
+			"aliases": [
+				"doubleloot"
+			],
+			"fallback": "",
+			"animated": false,
+			"source": null,
+			"image": "double_loot_token.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Double loot token item icon (bso_icons 52616).",
+			"usedIn": [
+				"src/lib/events.ts",
+				"src/lib/bsc/startupActiveBoosts.ts"
+			]
+		},
+		{
+			"name": "double_xp_token",
+			"uploadName": "double_xp_token",
+			"aliases": [
+				"doublexp"
+			],
+			"fallback": "",
+			"animated": false,
+			"source": null,
+			"image": "double_xp_token.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Double XP token item icon (bso_icons 74202).",
+			"usedIn": [
+				"src/lib/events.ts",
+				"src/lib/bsc/startupActiveBoosts.ts"
 			]
 		}
 	]
