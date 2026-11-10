@@ -637,7 +637,7 @@ export const MAX_TOTAL_LEVEL = SkillsArray.length * MAX_LEVEL;
 export const SILENT_ERROR = 'SILENT_ERROR';
 
 export const PATRON_ONLY_GEAR_SETUP =
-	'Sorry - but the `other` gear setup is only available for Tier 3 Patrons (and higher) to use.';
+	'Sorry - the `other` gear setup is only available for Top Dog patrons or higher to use.';
 
 export const NMZ_STRATEGY = ['experience', 'points'] as const;
 export type NMZStrategy = (typeof NMZ_STRATEGY)[number];

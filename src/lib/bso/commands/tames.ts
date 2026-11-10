@@ -1435,7 +1435,7 @@ async function viewCommand(interaction: MInteraction, user: MUser, tameID: numbe
 			.join(', ')}`;
 	}
 	if (!isTierThree) {
-		content += `\n${withPatreonLink('You need to be a Tier 3 patron to see all the loot your tame has collected.')}`;
+		content += `\n${withPatreonLink('You need to be a Top Dog patron to see all the loot your tame has collected.')}`;
 	}
 	return {
 		content,
@@ -2001,7 +2001,7 @@ export const tamesCommand = defineCommand({
 		}
 		if (options.set_custom_image) {
 			if ((await user.fetchPerkTier()) < PerkTier.Four) {
-				return withPatreonLink('You need to be a Tier 3 patron to set a custom image for your tame.');
+				return withPatreonLink('You need to be a Top Dog patron to set a custom image for your tame.');
 			}
 
 			// Handle resetting the custom image:

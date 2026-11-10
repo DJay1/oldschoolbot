@@ -1,3 +1,4 @@
+import { formatBscPatronRequirement } from '@/lib/bsc/patronTiers.js';
 import {
 	calculateAllFletchedItems,
 	calculateChargedItems,
@@ -1586,7 +1587,7 @@ export async function statsCommand(user: MUser, type: string): Promise<SendableM
 	if (!dataPoint) return 'Invalid stat name.';
 	const { perkTierNeeded } = dataPoint;
 	if (perkTierNeeded !== null && (await user.fetchPerkTier()) < perkTierNeeded) {
-		return withPatreonLink(`Sorry, you need to be a Tier ${perkTierNeeded - 1} Patron to see this stat.`);
+		return withPatreonLink(formatBscPatronRequirement(perkTierNeeded));
 	}
 	const userStats = await fetchUserStats(user.id);
 	return dataPoint.run(user, userStats);

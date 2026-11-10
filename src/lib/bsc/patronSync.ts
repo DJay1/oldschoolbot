@@ -4,6 +4,7 @@ import { GE_SLOTS_CACHE } from '@/lib/cache.js';
 import { BitField } from '@/lib/constants.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
 import { type BscPatronOverride, getBscPatronOverride, updateBscPatronOverride } from './patronStore.js';
+import { creditMonthlyPatronRewards } from '@/lib/bsc/patronPoints.js';
 import {
 	BSC_COSMETIC_COOLDOWN,
 	BSC_PATRON_BITS,
@@ -144,6 +145,7 @@ export async function syncBscPatronFromRoles(userId: string, roleIds: readonly s
 		roleMissingSince: decision.roleMissingSince,
 		customBackground: decision.customBackground
 	});
+	if (paidLevel > 0) await creditMonthlyPatronRewards(userId, paidLevel);
 	if (!rolesClean) await alignBscPatronRoles(userId, decision.level, roleIds);
 }
 
@@ -270,6 +272,7 @@ export async function syncBscPatreonApi(): Promise<'skipped' | 'synced'> {
 			roleMissingSince: null,
 			customBackground: nextBscCustomBackground(level, override?.customBackground ?? false)
 		});
+		if (level > 0) await creditMonthlyPatronRewards(userId, level);
 	}
 	return 'synced';
 }

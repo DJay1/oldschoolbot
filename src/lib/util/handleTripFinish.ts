@@ -1,4 +1,7 @@
 import { tearsOfGuthixIronmanReqs, tearsOfGuthixSkillReqs } from '@/lib/bso/commands/tearsOfGuthixCommand.js';
+import { getBscPatronAccount } from '@/lib/bsc/patronAccount.js';
+import { formatTripFlairLine } from '@/lib/bsc/patronFlair.js';
+import { bscPatronLevelFromBits } from '@/lib/bsc/patronTiers.js';
 import { isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
 import { consolidateSkillXpBonusLines } from '@/lib/bso/firstAge/skillOutfits.js';
 import { gods } from '@/lib/bso/minigames/divineDominion.js';
@@ -850,5 +853,16 @@ export async function handleTripFinish(
 		Logging.logError(err as Error);
 	}
 
+	if (bscPatronLevelFromBits(user.bitfield) >= 3) {
+		try {
+			const account = await getBscPatronAccount(user.id);
+			const flair = formatTripFlairLine(account.flair);
+			if (flair) message.addContent(`\n${flair}`);
+		} catch (err) {
+			Logging.logError(err as Error, { user_id: user.id, source: 'patronTripFlair' });
+		}
+	}
+
 	await deliverTripFinishMessage(user.id, channelId, message);
 }
+

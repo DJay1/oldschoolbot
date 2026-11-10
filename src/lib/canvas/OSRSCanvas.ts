@@ -1,6 +1,7 @@
 import { isPlaceholderItem, PLACEHOLDER_FIRST_ID } from '@/lib/bso/bankPlaceholders.js';
 import { applyCustomItemEffects } from '@/lib/bso/canvas/customItemEffects.js';
 import { handleSlayerMaskGlow } from '@/lib/bso/skills/slayer/slayerMaskHelms.js';
+import { PATRON_DYE_SPARKLE_OFFSETS, getCachedPatronDye, patronDyeByKey } from '@/lib/bsc/patronDyes.js';
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -550,20 +551,34 @@ export class OSRSCanvas {
 		}
 		glow = handleSlayerMaskGlow({ itemID, user, glow });
 
-		if (glow) {
-			this.drawGlowingBlur(
-				destX + itemIcon.width / 2,
-				destY + itemIcon.height / 2,
-				glow.radius,
-				glow.color,
-				glow.blur
-			);
+		const patronDye = user ? getCachedPatronDye(user.id, itemID) : null;
+		const patronDyeDef = patronDye ? patronDyeByKey(patronDye.dyeKey) : null;
+		const tintItem = Boolean(patronDyeDef && (patronDye.mode === 'recolour' || patronDye.mode === 'recolour_glow'));
+		if (patronDyeDef && (patronDye?.mode === 'glow' || patronDye?.mode === 'recolour_glow')) {
+			glow = {
+				color: patronDyeDef.glow,
+				radius: Math.max(18, Math.round(Math.max(itemIcon.width, itemIcon.height) * 0.6)),
+				blur: 8
+			};
 		}
 
+		const centerX = destX + itemIcon.width / 2;
+		const centerY = destY + itemIcon.height / 2;
+
+		if (glow) {
+			this.drawGlowingBlur(centerX, centerY, glow.radius, glow.color, glow.blur);
+			if (patronDyeDef?.sparkles) {
+				this.drawPatronDyeSparkles(centerX, centerY, glow.color);
+			}
+		}
+
+		const sprite = tintItem && patronDyeDef ? this.tintImage(args[0], patronDyeDef.color, itemIcon.width, itemIcon.height) : args[0];
+		const drawnArgs = [sprite, args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]] as const;
+
 		if (outline) {
-			drawImageWithOutline(this.ctx, ...args, outline.outlineColor);
+			drawImageWithOutline(this.ctx, ...drawnArgs, outline.outlineColor);
 		} else {
-			this.ctx.drawImage(...args);
+			this.ctx.drawImage(...drawnArgs);
 		}
 
 		if (quantity) {

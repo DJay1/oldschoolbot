@@ -200,7 +200,7 @@ export const minionCommand = defineCommand({
 							.filter(bg => (!value ? true : bg.name.toLowerCase().includes(value.toLowerCase())))
 							.map(i => {
 								const name = i.perkTierNeeded
-									? `${i.name} (Tier ${i.perkTierNeeded - 1} patrons)`
+									? `${i.name} (${bscPatronNameForPerkTier(i.perkTierNeeded) ?? 'patron'} or higher)`
 									: i.name;
 								return { name, value: i.name };
 							});

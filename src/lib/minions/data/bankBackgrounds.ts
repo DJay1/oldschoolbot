@@ -73,9 +73,9 @@ const backgroundImages: BankBackground[] = [
 		name: 'Barrows',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Six,
-		gpCost: 10_000_000,
-		storeBitField: StoreBitfield.HasSetTwoDarkPermanentBankBackgrounds
+		perkTierNeeded: PerkTier.Two,
+		hasPurple: true,
+		purpleImage: null
 	},
 	{
 		id: 7,
@@ -672,7 +672,9 @@ const backgroundImages: BankBackground[] = [
 		name: 'Good Boy',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Three
+		perkTierNeeded: PerkTier.Three,
+		hasPurple: true,
+		purpleImage: null
 	},
 	{
 		id: 1020,
@@ -714,6 +716,15 @@ const backgroundImages: BankBackground[] = [
 		owners: ['603327620234608661'],
 		purpleImage: null,
 		hasPurple: true
+	},
+	{
+		id: 1027,
+		name: 'Verzik',
+		image: null,
+		available: true,
+		perkTierNeeded: PerkTier.Six,
+		hasPurple: true,
+		purpleImage: null
 	}
 ];
 

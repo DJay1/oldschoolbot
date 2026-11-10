@@ -184,12 +184,12 @@ ${truncateString(giftsOwnedButNotOpened.map(g => `${g.name ? `${g.name} (${g.id}
 
 			for (const [item] of items.items()) {
 				if (BOT_TYPE === 'OSB') {
-					if (!itemIsTradeable(item.id, true)) {
+					if (!itemIsTradeable(item.id, true, user.id)) {
 						return `You cannot put ${item.name} in a gift box.`;
 					}
 				}
 
-				if (isSuperUntradeable(item.id)) {
+				if (isSuperUntradeable(item.id) || !itemIsTradeable(item.id, true, user.id)) {
 					return `You cannot put ${item.name} in a gift box.`;
 				}
 			}

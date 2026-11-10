@@ -306,7 +306,7 @@ class GrandExchangeSingleton {
 			return { error: 'Cannot buy or sell coins.' };
 		}
 
-		if (isGEUntradeable(item.id)) {
+		if (isGEUntradeable(item.id, user.id)) {
 			return { error: 'Item is not tradeable on the GE.' };
 		}
 

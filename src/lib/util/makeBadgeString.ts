@@ -1,6 +1,6 @@
 import { customEmoji, Emoji } from '@oldschoolgg/toolkit';
 
-import { BSC_SUPPORTER_COSMETIC, bscPatronTierFromBits } from '@/lib/bsc/patronTiers.js';
+import { bscPatronTierFromBits } from '@/lib/bsc/patronTiers.js';
 import { BadgesEnum, BitField, badges } from '@/lib/constants.js';
 import { LAUNCH_FOUNDER_BADGE } from '@/lib/events/launch/constants.js';
 
@@ -26,7 +26,7 @@ export function makeBadgeString(
 		rawBadges.push(Emoji.Ironman);
 	}
 	if (patronBits.includes(BitField.BSCPatronCosmetic)) {
-		rawBadges.unshift(BSC_SUPPORTER_COSMETIC);
+		rawBadges.unshift(customEmoji('patron_collar'));
 	}
 	const patron = bscPatronTierFromBits(patronBits);
 	if (patron) {

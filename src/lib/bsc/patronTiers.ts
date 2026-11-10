@@ -56,7 +56,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		patreonTierIdEnv: 'PATREON_TIER_PUP_ID',
 		badge: customEmoji('patron_pup'),
 		summary:
-			'+3 min max trip length, full scrollable bank (show_all) and bank page buttons, queue 3 trips every 2 days, supporter badge'
+			'+3 min max trip length, full scrollable bank (show_all) and bank page buttons, queue 3 trips every 2 days, Barrows bank background, supporter collar badge, loyalty badges, 3 patron points each month'
 	},
 	{
 		level: 2,
@@ -70,7 +70,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_GOODBOY',
 		patreonTierIdEnv: 'PATREON_TIER_GOODBOY_ID',
 		badge: customEmoji('patron_goodboy'),
-		summary: '+6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips every 2 days'
+		summary: '+6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips every 2 days, Good Boy bank background (normal and celebratory), 5 patron points each month'
 	},
 	{
 		level: 3,
@@ -85,7 +85,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		patreonTierIdEnv: 'PATREON_TIER_TOPDOG_ID',
 		badge: customEmoji('patron_topdog'),
 		summary:
-			'+10 min trips, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots, queue 5 trips every 2 days'
+			'+10 min trips, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots, queue 5 trips every 2 days, custom minion icon, custom tame image, /patron title, /patron flair, /patron profile, patron dye shop, 10 patron points each month'
 	},
 	{
 		level: 4,
@@ -100,7 +100,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		patreonTierIdEnv: 'PATREON_TIER_ALPHA_ID',
 		badge: customEmoji('patron_alpha'),
 		summary:
-			'+15 min trips, bank backgrounds and background commands, spawn lamp and spawn box, unlimited giveaways, +8 Grand Exchange slots, queue 6 trips every 2 days'
+			'+15 min trips, all paid bank backgrounds, custom bank colour, spawn lamp and spawn box, unlimited giveaways, +8 Grand Exchange slots, queue 6 trips every 2 days, 15 patron points each month'
 	},
 	{
 		level: 5,
@@ -109,13 +109,13 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		priceUsd: 25,
 		bit: BitField.PatronTier5,
 		perkTier: PerkTier.Six,
-		tripBonusMs: Time.Minute * 15,
+		tripBonusMs: Time.Minute * 18,
 		geSlots: 8,
 		roleEnv: 'PATRON_ROLE_PACKLEADER',
 		patreonTierIdEnv: 'PATREON_TIER_PACKLEADER_ID',
 		badge: customEmoji('patron_packleader'),
 		summary:
-			'exclusive bank background, double loot once a month, gift 1 week of Good Boy once a month, queue 7 trips every 2 days'
+			'+18 min trips, Verzik bank background, 40 min server double loot once every 31 days, gift 1 week of Good Boy once a month, queue 7 trips every 2 days, 25 patron points each month'
 	},
 	{
 		level: 6,
@@ -124,13 +124,13 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		priceUsd: 50,
 		bit: BitField.PatronTier6,
 		perkTier: PerkTier.Seven,
-		tripBonusMs: Time.Minute * 15,
+		tripBonusMs: Time.Minute * 20,
 		geSlots: 8,
 		roleEnv: 'PATRON_ROLE_BIGGESTOFDOGS',
 		patreonTierIdEnv: 'PATREON_TIER_BIGGESTOFDOGS_ID',
 		badge: customEmoji('patron_biggestofdogs'),
 		summary:
-			'custom bank background while you stay Pack Leader or higher, gift 1 week of Alpha once a month, queue 8 trips every 2 days'
+			'+20 min trips, fully custom bank background while you stay Pack Leader or higher, 90 min server double loot once every 31 days, gift 1 week of Alpha once a month, queue 8 trips every 2 days, 50 patron points each month'
 	}
 ] as const;
 
@@ -206,6 +206,15 @@ export function bscPatronTierByKey(key: string): BscPatronTier | null {
 
 export function bscPatronNameForPerkTier(perkTier: number): string | null {
 	return BSC_PATRON_TIERS.find(tier => tier.perkTier === perkTier)?.name ?? null;
+}
+
+/** Player-facing denial: names the required BSC tier and its current perks. */
+export function formatBscPatronRequirement(perkTierNeeded: number): string {
+	const tier = BSC_PATRON_TIERS.find(entry => entry.perkTier === perkTierNeeded);
+	if (!tier) {
+		return 'You need to be a Bark School Corgo patron to use this.';
+	}
+	return `This needs ${tier.name} or higher. ${tier.name} ($${tier.priceUsd}) includes: ${tier.summary}.`;
 }
 
 function clampLevel(level: number): BscPatronLevel {
@@ -526,6 +535,12 @@ export function formatBscPatronOverview(input: {
 	customBackground: boolean;
 	lastDoubleLootAt: number | null;
 	now?: number;
+	title?: string | null;
+	flair?: string | null;
+	points?: number | null;
+	monthsTotal?: number | null;
+	monthsStreak?: number | null;
+	loyaltyLabel?: string | null;
 }): string {
 	const now = input.now ?? Date.now();
 	const bitLevel = bscPatronLevelFromBits(input.bits);
@@ -545,6 +560,10 @@ export function formatBscPatronOverview(input: {
 		lines.push(
 			`You are ${tier.name} ($${tier.priceUsd}). Trip bonus: +${tier.tripBonusMs / Time.Minute} min. Extra Grand Exchange slots: ${tier.geSlots}.${giftNote}`
 		);
+		if (input.title) lines.push(`Title: ${input.title}`);
+		if (input.flair) lines.push(`Trip flair: ${input.flair}`);
+		if (input.loyaltyLabel) lines.push(`Loyalty: ${input.loyaltyLabel}`);
+		if (typeof input.points === 'number') lines.push(`Patron points: ${input.points}`);
 	}
 	if (input.customBackground && effective >= 5) {
 		lines.push('Your custom bank background is active while you stay Pack Leader or higher.');
@@ -573,6 +592,6 @@ export function formatBscPatronOverview(input: {
 		lines.push(`${entry.name} ($${entry.priceUsd}) — ${entry.summary}`);
 	}
 	lines.push('');
-	lines.push('Commands: /patron info, /patron double_loot, /patron gift user:@friend');
+	lines.push('Commands: /patron info, /patron title, /patron flair, /patron profile, /patron dyes, /patron double_loot, /patron gift user:@friend');
 	return lines.join('\n');
 }

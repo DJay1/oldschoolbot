@@ -151,7 +151,7 @@ export const giveawayCommand = defineCommand({
 				return "You don't own those items.";
 			}
 
-			if (bank.items().some(i => !itemIsTradeable(i[0].id, true))) {
+			if (bank.items().some(i => !itemIsTradeable(i[0].id, true, user.id))) {
 				return "You can't giveaway untradeable items.";
 			}
 

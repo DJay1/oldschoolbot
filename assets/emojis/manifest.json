@@ -3414,6 +3414,81 @@
 				"src/lib/events.ts",
 				"src/lib/bsc/startupActiveBoosts.ts"
 			]
+		},
+		{
+			"name": "patron_collar",
+			"uploadName": "patron_collar",
+			"aliases": [],
+			"fallback": "🦴",
+			"animated": false,
+			"source": null,
+			"image": "patron_collar.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Supporter box collar badge.",
+			"usedIn": [
+				"src/lib/util/makeBadgeString.ts"
+			]
+		},
+		{
+			"name": "patron_loyalty_1",
+			"uploadName": "patron_loyalty_1",
+			"aliases": [],
+			"fallback": "🥉",
+			"animated": false,
+			"source": null,
+			"image": "patron_loyalty_1.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "1 month patron loyalty badge.",
+			"usedIn": [
+				"src/lib/bsc/patronLoyalty.ts"
+			]
+		},
+		{
+			"name": "patron_loyalty_3",
+			"uploadName": "patron_loyalty_3",
+			"aliases": [],
+			"fallback": "🥈",
+			"animated": false,
+			"source": null,
+			"image": "patron_loyalty_3.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "3 month patron loyalty badge.",
+			"usedIn": [
+				"src/lib/bsc/patronLoyalty.ts"
+			]
+		},
+		{
+			"name": "patron_loyalty_6",
+			"uploadName": "patron_loyalty_6",
+			"aliases": [],
+			"fallback": "🥇",
+			"animated": false,
+			"source": null,
+			"image": "patron_loyalty_6.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "6 month patron loyalty badge.",
+			"usedIn": [
+				"src/lib/bsc/patronLoyalty.ts"
+			]
+		},
+		{
+			"name": "patron_loyalty_12",
+			"uploadName": "patron_loyalty_12",
+			"aliases": [],
+			"fallback": "💜",
+			"animated": false,
+			"source": null,
+			"image": "patron_loyalty_12.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "12 month patron loyalty badge.",
+			"usedIn": [
+				"src/lib/bsc/patronLoyalty.ts"
+			]
 		}
 	]
 }

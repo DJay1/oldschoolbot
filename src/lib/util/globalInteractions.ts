@@ -1,3 +1,4 @@
+import { formatBscPatronRequirement } from '@/lib/bsc/patronTiers.js';
 import { ItemContracts } from '@/lib/bso/itemContracts.js';
 import { repeatTameTrip } from '@/lib/bso/tames/tameTasks.js';
 
@@ -375,7 +376,7 @@ async function globalButtonInteractionHandler({
 	if (id === 'DO_FISHING_CONTEST') {
 		if ((await user.fetchPerkTier()) < PerkTier.Four) {
 			return {
-				content: withPatreonLink('You need to be a Tier 3 patron to use this button.'),
+				content: withPatreonLink(formatBscPatronRequirement(PerkTier.Four)),
 				ephemeral: true
 			};
 		}

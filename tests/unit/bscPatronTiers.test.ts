@@ -93,8 +93,8 @@ test('trip length and grand exchange slots follow the ladder totals', () => {
 	expect(bscPatronTripBonusMs([BitField.PatronTier2])).toBe(Time.Minute * 6);
 	expect(bscPatronTripBonusMs([BitField.PatronTier3])).toBe(Time.Minute * 10);
 	expect(bscPatronTripBonusMs([BitField.PatronTier4])).toBe(Time.Minute * 15);
-	expect(bscPatronTripBonusMs([BitField.PatronTier5])).toBe(Time.Minute * 15);
-	expect(bscPatronTripBonusMs([BitField.PatronTier6])).toBe(Time.Minute * 15);
+	expect(bscPatronTripBonusMs([BitField.PatronTier5])).toBe(Time.Minute * 18);
+	expect(bscPatronTripBonusMs([BitField.PatronTier6])).toBe(Time.Minute * 20);
 	expect(bscPatronTripBonusMs([BitField.BSCEarlySupporter])).toBe(0);
 	for (const tier of BSC_PATRON_TIERS) {
 		expect(bscTripBonusForPerkTier(tier.perkTier)).toBe(tier.tripBonusMs);
@@ -272,9 +272,9 @@ test('Patreon entitled tier ids map by env, and the patron page stays centralize
 		]
 	});
 	expect(members.get('42')).toBe(1);
-	expect(makeBadgeString([], false, false, false, [BitField.PatronTier1])).toBe('🐾');
+	expect(makeBadgeString([], false, false, false, [BitField.PatronTier1])).toBe('🐶');
 	expect(makeBadgeString([], false, true, false, [BitField.PatronTier3, BitField.BSCPatronCosmetic])).toContain('🐶');
-	expect(makeBadgeString([], false, false, false, [BitField.PatronTier6])).toBe('👑');
+	expect(makeBadgeString([], false, false, false, [BitField.PatronTier6])).toBe('🐶');
 	const overview = formatBscPatronOverview({
 		bits: [BitField.PatronTier4],
 		giftTier: null,

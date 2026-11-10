@@ -536,12 +536,12 @@ Perks, as totals for that tier:
 
 | Tier | Perks |
 | --- | --- |
-| Pup | +3 min max trip, supporter badge |
-| Good Boy | +6 min, Discord role, higher sim caps, +2 Grand Exchange slots |
-| Top Dog | +10 min, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots |
-| Alpha | +15 min, bank backgrounds and background commands, spawn lamp, spawn box, unlimited giveaways, +8 Grand Exchange slots |
-| Pack Leader | exclusive bank background (Barrows), `/patron double_loot` once a month (40 min, server-wide), gift 1 week of Good Boy once a month |
-| Biggest of Dogs | custom bank background while they stay Pack Leader or higher, `/patron double_loot` once a month (90 min), gift 1 week of Alpha once a month |
+| Pup | +3 min max trip, Barrows bank background, supporter collar badge, loyalty badges, 3 patron points each month |
+| Good Boy | +6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips, Good Boy bank background (normal and celebratory), 5 patron points each month |
+| Top Dog | +10 min trips, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots, queue 5 trips, custom minion icon, custom tame image, `/patron title`, `/patron flair`, `/patron profile`, patron dye shop, 10 patron points each month |
+| Alpha | +15 min trips, all paid bank backgrounds, custom bank colour, spawn lamp and spawn box, unlimited giveaways, +8 Grand Exchange slots, queue 6 trips, 15 patron points each month |
+| Pack Leader | +18 min trips, Verzik bank background, 40 min server `/patron double_loot` once every 31 days, gift 1 week of Good Boy once a month, queue 7 trips, 25 patron points each month |
+| Biggest of Dogs | +20 min trips, fully custom bank background while they stay Pack Leader or higher, 90 min server `/patron double_loot` once every 31 days, gift 1 week of Alpha once a month, queue 8 trips, 50 patron points each month |
 
 ### Checklist for DJ
 
@@ -595,6 +595,14 @@ Player commands:
 
 ```
 /patron info
+
+/patron title
+
+/patron flair
+
+/patron profile
+
+/patron dyes
 ```
 
 ```

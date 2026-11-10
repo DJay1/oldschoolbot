@@ -61,7 +61,7 @@ export const lootCommand = defineCommand({
 				}
 			});
 			return withPatreonLink(
-				`You need to be a Tier 3 Patron to use this feature. You have ${res}x loot trackers stored currently.`
+				`You need to be a Top Dog patron or higher to use this feature. You have ${res}x loot trackers stored currently.`
 			);
 		}
 

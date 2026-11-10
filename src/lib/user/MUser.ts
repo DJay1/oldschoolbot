@@ -78,6 +78,7 @@ import type { GearColumns, GearWithSetupType, HasDiaryDiaryKey } from '@/lib/use
 import { calcMaxTripLength } from '@/lib/util/calcMaxTripLength.js';
 import { determineRunes } from '@/lib/util/determineRunes.js';
 import { fetchUserStats } from '@/lib/util/fetchUserStats.js';
+import { hydratePatronDyeCache } from '@/lib/bsc/patronDyeShop.js';
 import { getKCByName } from '@/lib/util/getKCByName.js';
 import { hasMonsterRequirements } from '@/lib/util/hasMonsterRequirements.js';
 import { hasSkillReqsRaw } from '@/lib/util/smallUtils.js';
@@ -1298,7 +1299,9 @@ export async function srcMUserFetch(userID: string, updates?: Prisma.UserUpdateI
 		return srcMUserFetch(userID, {});
 	}
 	user.username = await Cache.getUsername(user.id);
-	return new MUserClass(user);
+	const mUser = new MUserClass(user);
+	await hydratePatronDyeCache(user.id).catch(() => null);
+	return mUser;
 }
 
 global.mUserFetch = srcMUserFetch;

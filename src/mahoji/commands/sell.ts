@@ -1,3 +1,4 @@
+import { userHasPatronDyeLock } from '@/lib/bsc/patronDyes.js';
 import { calcPercentOfNum, customEmoji, ellipsize, reduceNumByPercent } from '@oldschoolgg/toolkit';
 import { Bank, type Item, type ItemBank, itemID, MAX_INT_JAVA, toKMB } from 'oldschooljs';
 import { clamp } from 'remeda';
@@ -290,6 +291,9 @@ export const sellCommand = defineCommand({
 		const botItemSellData: Prisma.BotItemSellCreateManyInput[] = [];
 
 		for (const [item, qty] of bankToSell.items()) {
+			if (userHasPatronDyeLock(user.id, item.id)) {
+				return `You cannot sell ${item.name} while it has a patron dye. Undye it first with /patron dyes action:undye.`;
+			}
 			const specialPrice = specialSoldItems.get(item.id);
 			let pricePerStack = -1;
 			if (specialPrice) {
