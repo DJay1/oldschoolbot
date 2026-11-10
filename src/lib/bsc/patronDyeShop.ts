@@ -205,17 +205,17 @@ export async function undyePatronItem(user: MUser, itemInput: string): Promise<s
 
 export function formatPatronDyeShop(points: number, applied: PatronItemDye[]): string {
 	const catalog = [
-		'Patron dye shop. One dye applies to one item ID in your bank. Dyed items are untradeable until you undye, which returns the dye to your bank.',
+		'Patron dye shop (Top Dog and above). Spend monthly patron points to dye one item ID in your bank. Glow uses the same seer-style effect as the Seer highlight, in that the dye colour. Dyed items are untradeable until you undye, which returns the dye to your bank.',
 		`Your balance: ${points} patron points.`,
 		'',
 		'Biscuit dye — 5 points, burnt orange, seer-style glow.',
 		'Fetch dye — 8 points, tennis-ball green, seer-style glow.',
 		'Pawberry dye — 12 points, hot pink, seer-style glow.',
-		'Midnight Pup dye — 18 points, indigo, glow with sparkles.',
-		'Golden Corgo dye — 25 points, catch-all. Pick any glow_hex and recolour_hex (#RRGGBB), and toggle sparkle on or off. Defaults to gold with sparkles off.',
+		'Midnight Pup dye — 18 points, indigo, seer-style glow with sparkles.',
+		'Golden Corgo dye — 25 points, catch-all. Set glow_hex and recolour_hex (#RRGGBB) and toggle sparkle on or off. Defaults to gold with sparkles off.',
 		'',
 		'Modes: recolour, glow, or recolour_glow (default).',
-		'Commands: /patron dyes action:buy dye:Biscuit | action:use dye:Fetch item:Dragon scimitar mode:recolour_glow | action:use dye:Golden Corgo item:Dragon scimitar glow_hex:#FF00AA recolour_hex:#00FFCC sparkle:true | action:undye item:Dragon scimitar'
+		'Check points: /patron dyes (or action:balance). Buy: /patron dyes action:buy dye:Biscuit. Use: /patron dyes action:use dye:Fetch item:Dragon scimitar mode:recolour_glow. Golden Corgo: /patron dyes action:use dye:Golden Corgo item:Dragon scimitar glow_hex:#FF00AA recolour_hex:#00FFCC sparkle:true. Undye (returns the dye): /patron dyes action:undye item:Dragon scimitar'
 	];
 	if (applied.length > 0) {
 		catalog.push('');

@@ -536,12 +536,12 @@ Perks, as totals for that tier:
 
 | Tier | Perks |
 | --- | --- |
-| Pup | +3 min max trip, Barrows bank background, supporter collar badge, loyalty badges, /tools patron purple_glow, 3 patron points each month |
-| Good Boy | +6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips, Good Boy bank background (normal and celebratory), 5 patron points each month |
-| Top Dog | +10 min trips, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots, queue 5 trips, custom minion icon, custom tame image, `/patron title`, `/patron flair`, `/patron profile`, patron dye shop, 10 patron points each month |
-| Alpha | +15 min trips, all paid bank backgrounds, custom bank colour, spawn lamp and spawn box, unlimited giveaways, +8 Grand Exchange slots, queue 6 trips, 15 patron points each month |
-| Pack Leader | +18 min trips, Verzik bank background, 40 min server `/patron double_loot` once every 31 days, gift 1 week of Good Boy once a month, queue 7 trips, 25 patron points each month |
-| Biggest of Dogs | +20 min trips, fully custom bank background while they stay Pack Leader or higher, 90 min server `/patron double_loot` once every 31 days, gift 1 week of Alpha once a month, queue 8 trips, 50 patron points each month |
+| Pup | +3 min trips, scrollable bank, queue 3 trips every 2 days, 3 pts/mo, loyalty badges (1-month right away; 3/6/12 with a continuous paid streak), `/tools patron purple_glow`, Barrows bank background (night, bright day sky on a good drop) |
+| Good Boy | All Pup perks, plus +6 min trips, +2 GE slots, 5 pts/mo, queue 4 trips every 2 days, Good Boy bank background pair, Corgo collar badge, Discord role, higher sim caps |
+| Top Dog | All Good Boy perks, plus +10 min trips, +4 GE slots, 10 pts/mo, queue 5 trips every 2 days, give a mystery box (23.5 hour cooldown), trip-repeat buttons, custom minion icon and tame image, `/patron title`, `/patron flair`, `/patron profile`, dye shop |
+| Alpha | All Top Dog perks, plus +15 min trips, +8 GE slots, 15 pts/mo, queue 6 trips every 2 days, every paid bank background plus custom colour, spawn lamp and spawn box, unlimited giveaways |
+| Pack Leader | All Alpha perks, plus +18 min trips, 25 pts/mo, queue 7 trips every 2 days, Verzik bank background (fight, purple chest on a good drop), 40 min server `/patron double_loot` once every 31 days, gift 1 week of Good Boy once a month |
+| Biggest of Dogs | All Pack Leader perks, plus +20 min trips, 50 pts/mo, queue 8 trips every 2 days, fully custom background while they stay Pack Leader or higher, 90 min server `/patron double_loot` once every 31 days, gift 1 week of Alpha once a month |
 
 ### Checklist for DJ
 
