@@ -1,7 +1,5 @@
 import { syncPrescence } from '@/lib/bso/doubleLoot.js';
 import { syncSlayerMaskLeaderboardCache } from '@/lib/bso/skills/slayer/slayerMaskLeaderboard.js';
-import { MTame } from '@/lib/bso/structures/MTame.js';
-import { runTameTask } from '@/lib/bso/tames/tameTasks.js';
 
 import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
 import { stringMatches, Time } from '@oldschoolgg/toolkit';
@@ -21,6 +19,7 @@ import { runCommand } from '@/lib/settings/settings.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
 import type { FarmingPatchName, FarmingPatchSettingsKey } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import type { IPatchData } from '@/lib/skilling/skills/farming/utils/types.js';
+import { TameActivityManager } from '@/lib/TameActivityManager.js';
 import { MUserClass } from '@/lib/user/MUser.js';
 import { handleGiveawayCompletion } from '@/lib/util/giveaway.js';
 
@@ -235,35 +234,7 @@ LIMIT 10;`);
 		timer: null,
 		interval: Time.Second * 5,
 		cb: async () => {
-			const tameTasks = await prisma.tameActivity.findMany({
-				where: {
-					finish_date: testingShortcutsEnabled()
-						? undefined
-						: {
-								lt: new Date()
-							},
-					completed: false
-				},
-				include: {
-					tame: true
-				},
-				take: 5
-			});
-
-			await prisma.tameActivity.updateMany({
-				where: {
-					id: {
-						in: tameTasks.map(i => i.id)
-					}
-				},
-				data: {
-					completed: true
-				}
-			});
-
-			for (const task of tameTasks) {
-				await runTameTask(task, new MTame(task.tame));
-			}
+			await TameActivityManager.processPendingActivities();
 		}
 	},
 	{

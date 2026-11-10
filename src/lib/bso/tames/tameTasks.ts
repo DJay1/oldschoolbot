@@ -28,6 +28,7 @@ import { runCommand } from '@/lib/settings/settings.js';
 import { getTemporossLoot } from '@/lib/simulation/tempoross.js';
 import { WintertodtCrate } from '@/lib/simulation/wintertodt.js';
 import type { ActivityTaskData } from '@/lib/types/minions.js';
+import { deliverTripFinishMessage } from '@/lib/util/deliverTripFinishMessage.js';
 import { makeTameRepeatTripButton } from '@/lib/util/interactions.js';
 import { assert } from '@/lib/util/logError.js';
 import { collectables } from '@/mahoji/lib/collectables.js';
@@ -79,7 +80,7 @@ export async function handleFinish({
 			previousCL: previousTameCl
 		});
 
-	return globalClient.sendMessageOrWebhook(activity.channel_id, res);
+	return deliverTripFinishMessage(user.id, activity.channel_id, res);
 }
 
 export const arbitraryTameActivities: ArbitraryTameActivity[] = [
@@ -90,7 +91,7 @@ export const arbitraryTameActivities: ArbitraryTameActivity[] = [
 		run: async ({ handleFinish, user, duration, tame, previousTameCL, activity }) => {
 			const quantity = Math.ceil(duration / (Time.Minute * 5));
 			const loot = getTemporossLoot(quantity, tame.maxGathererLevel + 15, previousTameCL);
-			void handleFinish({
+			await handleFinish({
 				lootToAdd: loot,
 				message: `${user}, ${tame} finished defeating Tempoross ${quantity}x times.`,
 				user,
@@ -117,7 +118,7 @@ export const arbitraryTameActivities: ArbitraryTameActivity[] = [
 					})
 				);
 			}
-			void handleFinish({
+			await handleFinish({
 				lootToAdd: loot,
 				message: `${user}, ${tame} finished defeating Wintertodt ${quantity}x times.`,
 				user,
