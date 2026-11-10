@@ -8,6 +8,7 @@ import { PrismaPGlite } from 'pglite-prisma-adapter';
 import { PrismaClient as RobochimpPrismaClient } from '@/prisma/clients/robochimp/client.js';
 import { PrismaClient } from '@/prisma/main.js';
 import { BOT_TYPE, globalConfig } from '@/lib/constants.js';
+import { wrapPrismaClientWithActivityTx } from '@/lib/util/activityTransaction.js';
 
 function poolSize(name: string, fallback: number): number {
 	const raw = process.env[name];
@@ -103,7 +104,9 @@ async function makeRobochimpPrismaClient(): Promise<RoboChimpDB> {
 }
 
 export async function createDb() {
-	global.prisma = global.prisma || (await makePrismaClient()).prismaClient;
+	if (!global.prisma) {
+		global.prisma = wrapPrismaClientWithActivityTx((await makePrismaClient()).prismaClient);
+	}
 	global.roboChimpClient = global.roboChimpClient || (await makeRobochimpPrismaClient()).prismaClient;
 	return { prisma: global.prisma, roboChimpClient: global.roboChimpClient };
 }

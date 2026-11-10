@@ -7,10 +7,15 @@ import type { OSInteraction } from '@/lib/structures/OSInteraction.js';
 import { allTasks } from '@/lib/Task.js';
 import type { PrismaCompatibleJsonObject } from '@/lib/types/index.js';
 import type { ActivityTaskData } from '@/lib/types/minions.js';
+import { completeLockedActivity } from '@/lib/util/activityCompletion.js';
+import { runInActivityTransaction } from '@/lib/util/activityTransaction.js';
 import addSubTaskToActivityTask from '@/lib/util/addSubTaskToActivityTask.js';
+import { deliverTripFinishMessage } from '@/lib/util/deliverTripFinishMessage.js';
 import { handleTripFinish } from '@/lib/util/handleTripFinish.js';
 
 class SActivityManager {
+	private inFlight = new Map<number, Promise<void>>();
+
 	private async getGuildIdForActivityError(channelId: string): Promise<string | null> {
 		try {
 			const channel = await Cache.getChannel(channelId);
@@ -52,65 +57,84 @@ class SActivityManager {
 			data: _activity.data,
 			user_id: _activity.user_id
 		});
-		const activity = this.convertStoredActivityToFlatActivity(_activity);
 
 		if (_activity.completed) {
 			Logging.logError(new Error('Tried to complete an already completed task.'));
 			return;
 		}
 
-		const task = allTasks.find(i => i.type === activity.type)!;
-		if (!task && 1) {
+		const activity = this.convertStoredActivityToFlatActivity(_activity);
+		const task = allTasks.find(i => i.type === activity.type);
+		if (!task) {
 			Logging.logError(new Error('Missing task'));
 			return;
 		}
 
 		const user = await mUserFetch(activity.userID);
 
-		try {
-			await task.run(
-				{ ...activity, channelId: activity.channelId },
-				{
-					user,
-					handleTripFinish,
-					rng: cryptoRng
+		const { result, deferredTripMessages } = await runInActivityTransaction(async tx => {
+			return completeLockedActivity({
+				tx,
+				activityId: _activity.id,
+				run: () =>
+					task.run(
+						{ ...activity, channelId: activity.channelId },
+						{
+							user,
+							handleTripFinish,
+							rng: cryptoRng
+						}
+					),
+				onError: async err => {
+					const date = new Date();
+					Logging.logError(err, {
+						type: 'ACTIVITY_ERROR',
+						user_id: activity.userID,
+						activity_type: activity.type,
+						activity_id: activity.id,
+						channel_id: activity.channelId,
+						guild_id: await this.getGuildIdForActivityError(activity.channelId),
+						datetime: date.toISOString(),
+						timestamp: date.getTime()
+					});
 				}
-			);
-		} catch (err) {
-			const date = new Date();
-			Logging.logError(err as Error, {
-				type: 'ACTIVITY_ERROR',
-				user_id: activity.userID,
-				activity_type: activity.type,
-				activity_id: activity.id,
-				channel_id: activity.channelId,
-				guild_id: await this.getGuildIdForActivityError(activity.channelId),
-				datetime: date.toISOString(),
-				timestamp: date.getTime()
 			});
-		} finally {
+		});
+
+		if (result === 'completed') {
 			await onMinionActivityFinish(activity);
+		}
+
+		for (const pending of deferredTripMessages) {
+			await deliverTripFinishMessage(pending.userId, pending.channelId, pending.message);
 		}
 	}
 
 	async processPendingActivities(): Promise<void> {
+		if (typeof globalThis.globalClient !== 'undefined' && globalClient.isShuttingDown) {
+			return;
+		}
+
 		const activities: Activity[] = testingShortcutsEnabled()
 			? await prisma.$queryRaw`SELECT * FROM activity WHERE completed = false;`
 			: await prisma.$queryRaw`SELECT * FROM activity WHERE completed = false AND finish_date < NOW() LIMIT 5;`;
 
-		if (activities.length > 0) {
-			await prisma.activity.updateMany({
-				where: {
-					id: {
-						in: activities.map(i => i.id)
-					}
-				},
-				data: {
-					completed: true
-				}
-			});
-			await Promise.all(activities.map(_act => this.completeActivity(_act)));
-		}
+		await Promise.all(
+			activities.map(act => {
+				const existing = this.inFlight.get(act.id);
+				if (existing) return existing;
+				const work = this.completeActivity(act).finally(() => this.inFlight.delete(act.id));
+				this.inFlight.set(act.id, work);
+				return work;
+			})
+		);
+	}
+
+	async drain(options?: { timeoutMs?: number }): Promise<void> {
+		const pending = [...this.inFlight.values()];
+		if (pending.length === 0) return;
+		const timeoutMs = options?.timeoutMs ?? 25_000;
+		await Promise.race([Promise.allSettled(pending), new Promise<void>(resolve => setTimeout(resolve, timeoutMs))]);
 	}
 
 	async minionIsBusy(userID: string | string): Promise<boolean> {

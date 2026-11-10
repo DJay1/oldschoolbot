@@ -385,7 +385,9 @@ async function runTicker(ticker: (typeof tickers)[number]): Promise<void> {
 		Logging.logError(err as Error);
 	} finally {
 		if (ticker.timer) TimerManager.clearTimeout(ticker.timer);
-		ticker.timer = TimerManager.setTimeout(runTicker, ticker.interval, ticker);
+		if (!globalClient.isShuttingDown) {
+			ticker.timer = TimerManager.setTimeout(runTicker, ticker.interval, ticker);
+		}
 	}
 }
 

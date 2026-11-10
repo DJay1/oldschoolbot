@@ -1,6 +1,7 @@
 import { Time } from '@oldschoolgg/toolkit';
 
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import { deferTripFinishMessage } from '@/lib/util/activityTransaction.js';
 
 function sleep(ms: number) {
 	return new Promise(resolve => setTimeout(resolve, ms));
@@ -20,6 +21,10 @@ function pendingNoticeText(message: MessageBuilderClass): string {
  * user's next command. Never credits loot.
  */
 export async function deliverTripFinishMessage(userId: string, channelId: string, message: MessageBuilderClass) {
+	if (deferTripFinishMessage(userId, channelId, message)) {
+		return;
+	}
+
 	const attempts = 3;
 	for (let i = 0; i < attempts; i++) {
 		if (i > 0) await sleep(Time.Second * 2);

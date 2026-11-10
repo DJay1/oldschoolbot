@@ -25,4 +25,13 @@ process.on('unhandledRejection', err => {
 	Logging.logError(err as Error);
 });
 
+function requestGracefulShutdown() {
+	if (typeof globalThis.globalClient !== 'undefined') {
+		globalClient.isShuttingDown = true;
+	}
+}
+
+process.on('SIGINT', requestGracefulShutdown);
+process.on('SIGTERM', requestGracefulShutdown);
+
 main();
