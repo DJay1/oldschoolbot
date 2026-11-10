@@ -1,10 +1,10 @@
 import { Routes } from '@oldschoolgg/discord';
 
+import { creditMonthlyPatronRewards } from '@/lib/bsc/patronPoints.js';
 import { GE_SLOTS_CACHE } from '@/lib/cache.js';
 import { BitField } from '@/lib/constants.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
 import { type BscPatronOverride, getBscPatronOverride, updateBscPatronOverride } from './patronStore.js';
-import { creditMonthlyPatronRewards } from '@/lib/bsc/patronPoints.js';
 import {
 	BSC_COSMETIC_COOLDOWN,
 	BSC_PATRON_BITS,
@@ -139,7 +139,10 @@ export async function syncBscPatronFromRoles(userId: string, roleIds: readonly s
 	const sameGrace = (decision.roleMissingSince ?? null) === (state?.roleMissingSince ?? null);
 	const sameCustom = decision.customBackground === (state?.customBackground ?? false);
 	const rolesClean = !changes.add && changes.remove.length === 0;
-	if (sameLevel && sameGrace && sameCustom && rolesClean) return;
+	if (sameLevel && sameGrace && sameCustom && rolesClean) {
+		if (paidLevel > 0) await creditMonthlyPatronRewards(userId, paidLevel);
+		return;
+	}
 
 	await persistPatronLevel(user, decision.level, {
 		roleMissingSince: decision.roleMissingSince,
