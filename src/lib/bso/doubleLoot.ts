@@ -4,6 +4,7 @@ import { roleMention, time } from '@oldschoolgg/discord';
 import { formatDuration, Time } from '@oldschoolgg/toolkit';
 
 import { DOUBLE_BONUS_CHANNEL_ID } from '@/lib/constants.js';
+import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
 
 /** Optional Los Perros role to ping when double loot starts. */
 const DOUBLE_LOOT_ROLE_ID = process.env.DOUBLE_LOOT_ROLE_ID || null;
@@ -33,7 +34,7 @@ export async function addToDoubleLootTimer(amount: number, reason: string) {
 	wasDoubleLootActive = true;
 	await globalClient
 		.sendMessage(DOUBLE_BONUS_CHANNEL_ID, {
-			content: `${ping}🎉 **${formatDuration(amount)}** added to Double Loot because: ${reason}\nDouble Loot now ends ${time(ends)} (${time(ends, 'R')}).`,
+			content: `${ping}${itemStatusIcon('double_loot_token')}**${formatDuration(amount)}** added to Double Loot because: ${reason}\nDouble Loot now ends ${time(ends)} (${time(ends, 'R')}).`,
 			allowedMentions: { roles: DOUBLE_LOOT_ROLE_ID ? [DOUBLE_LOOT_ROLE_ID] : [] }
 		})
 		.catch(err => Logging.logError(err as Error));
@@ -71,7 +72,7 @@ export async function syncPrescence() {
 	const active = isDoubleLootActive();
 	if (wasDoubleLootActive === true && !active) {
 		await globalClient
-			.sendMessage(DOUBLE_BONUS_CHANNEL_ID, { content: 'Double Loot has ended.' })
+			.sendMessage(DOUBLE_BONUS_CHANNEL_ID, { content: `${itemStatusIcon('double_loot_token')}Double Loot has ended.` })
 			.catch(err => Logging.logError(err as Error));
 	}
 	wasDoubleLootActive = active;

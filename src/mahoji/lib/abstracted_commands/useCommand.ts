@@ -15,6 +15,7 @@ import { BitField } from '@/lib/constants.js';
 import { easterUseTrollResponse } from '@/lib/events/easter/use.js';
 import { getLydiaQuote } from '@/lib/events/summer/summerDays.js';
 import { assert } from '@/lib/util/logError.js';
+import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
 import { flowerTable } from '@/mahoji/lib/abstracted_commands/hotColdCommand.js';
 
 const messageInABottleMessages = [
@@ -675,7 +676,7 @@ usables.push({
 	run: async (user: MUser) => {
 		await user.removeItemsFromBank(new Bank().add('Double loot token'));
 		await addToDoubleLootTimer(Time.Minute * randInt(6, 36), `${user} used a Double Loot token!`);
-		return 'You used your Double Loot Token!';
+		return `${itemStatusIcon('double_loot_token')}You used your Double Loot Token!`;
 	}
 });
 usables.push({
@@ -684,7 +685,7 @@ usables.push({
 		await user.removeItemsFromBank(new Bank().add('Double XP token'));
 		const minutes = randInt(6, 36);
 		await addToDoubleXpTimer(Time.Minute * minutes, `${user} used a Double XP token!`);
-		return `You used your Double XP Token! It added ${minutes} minutes of Double XP.`;
+		return `${itemStatusIcon('double_xp_token')}You used your Double XP Token! It added ${minutes} minutes of Double XP.`;
 	}
 });
 

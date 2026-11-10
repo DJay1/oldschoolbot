@@ -2,6 +2,7 @@ import { time } from '@oldschoolgg/discord';
 import { formatDuration } from '@oldschoolgg/toolkit';
 
 import { DOUBLE_BONUS_CHANNEL_ID } from '@/lib/constants.js';
+import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
 
 export let DOUBLE_XP_FINISH_TIME_CACHE = 0;
 
@@ -27,7 +28,7 @@ export async function addToDoubleXpTimer(amount: number, reason: string) {
 	wasDoubleXpActive = true;
 	await globalClient
 		.sendMessage(DOUBLE_BONUS_CHANNEL_ID, {
-			content: `🎉 **${formatDuration(amount)}** added to Double XP because: ${reason}\nDouble XP now ends ${time(ends)} (${time(ends, 'R')}).`
+			content: `${itemStatusIcon('double_xp_token')}**${formatDuration(amount)}** added to Double XP because: ${reason}\nDouble XP now ends ${time(ends)} (${time(ends, 'R')}).`
 		})
 		.catch(err => Logging.logError(err as Error));
 }
@@ -46,7 +47,7 @@ export async function announceDoubleXpEnd() {
 	const active = isDoubleXpActive();
 	if (wasDoubleXpActive === true && !active) {
 		await globalClient
-			.sendMessage(DOUBLE_BONUS_CHANNEL_ID, { content: 'Double XP has ended.' })
+			.sendMessage(DOUBLE_BONUS_CHANNEL_ID, { content: `${itemStatusIcon('double_xp_token')}Double XP has ended.` })
 			.catch(err => Logging.logError(err as Error));
 	}
 	wasDoubleXpActive = active;

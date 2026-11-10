@@ -38,6 +38,7 @@ import type { MonsterActivityTaskOptions } from '@/lib/types/minions.js';
 import { ashSanctifierEffect } from '@/lib/util/ashSanctifier.js';
 import calculateGearLostOnDeathWilderness from '@/lib/util/calculateGearLostOnDeathWilderness.js';
 import { increaseWildEvasionXp } from '@/lib/util/calcWildyPkChance.js';
+import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { calculateSimpleMonsterDeathChance } from '@/lib/util/smallUtils.js';
 
@@ -389,7 +390,7 @@ export function doMonsterTrip(data: newOptions) {
 		: monster.table.kill(oriEffect({ gearBank, quantity: finalQuantity, duration, messages }), killOptions);
 	if (isDoubleLootActive(duration)) {
 		loot.multiply(2);
-		messages.push('**Double loot activated!**');
+		messages.push(`${itemStatusIcon('double_loot_token')}**Double loot activated!**`);
 	}
 
 	if (!wiped) {
