@@ -27,6 +27,7 @@ export function defineCommand<const T extends AnyArr<unknown>>(
 	cmd: Readonly<{
 		name: string;
 		flags?: CommandFlag[];
+		privateSubcommands?: readonly string[];
 		attributes?: Omit<AbstractCommandAttributes, 'description'>;
 		description: string;
 		options: T;
@@ -69,6 +70,7 @@ type CommandFlag = 'REQUIRES_LOCK';
 export type AnyCommand = Readonly<{
 	name: string;
 	flags?: CommandFlag[];
+	privateSubcommands?: readonly string[];
 	attributes?: Omit<AbstractCommandAttributes, 'description'>;
 	description: string;
 	options: readonly CommandOption[];

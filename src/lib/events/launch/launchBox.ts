@@ -220,7 +220,7 @@ export function openLaunchBoxes({
 	const closeness = CLOSENESS_NAMES.map(name => closenessLine(name, tracks[name])).join('\n');
 	return {
 		bank: loot,
-		message: `${loot}\nYour best rolls (hit the top number to win):\n${closeness}`
+		message: `Your best rolls (hit the top number to win):\n${closeness}`
 	};
 }
 

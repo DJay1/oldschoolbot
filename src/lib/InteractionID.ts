@@ -64,6 +64,7 @@ export const InteractionID = {
 		// BSO
 		RepeatTameTrip: 'REPEAT_TAME_TRIP',
 		SpawnLamp: 'SPAWN_LAMP',
+		SpawnBox: 'SPAWN_BOX',
 		SendItemContract: 'ITEM_CONTRACT_SEND',
 		DoFishingContest: 'DO_FISHING_CONTEST',
 		WhaleTrade: 'WHALE_TRADE'

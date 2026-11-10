@@ -165,6 +165,52 @@ export async function claimAchievementDiaryCommand(user: MUser, diaryName: strin
 	return `You have already completed the entire ${diary.name} diary!`;
 }
 
+export async function claimAllAchievementDiariesCommand(user: MUser) {
+	const [stats, minigameScores] = await Promise.all([user.fetchMStats(), user.fetchMinigames()]);
+
+	await user.syncCompletedAchievementDiaries({ stats, minigameScores }).catch(err => Logging.logError(err));
+
+	const allItems = user.allItemsOwned;
+	const { cl } = user;
+	const loot = new Bank();
+	const claimed: string[] = [];
+
+	for (const tier of ['easy', 'medium', 'hard', 'elite'] as const) {
+		const hasCompleted = howManyOfTierCompleted({
+			user,
+			minigameScores,
+			stats,
+			tiers: diaries.map(d => d[tier])
+		});
+		const lamp = lampRewards[diaries[0][tier].name];
+		let lampsOwed = hasCompleted - cl.amount(lamp);
+
+		for (const diary of diaries) {
+			const diaryTier = diary[tier];
+			if (!userhasDiaryTierSync(user, diaryTier, { stats, minigameScores }).hasDiary) continue;
+			const missing = diaryTier.items.filter(item => !allItems.has(item.id) && !loot.has(item.id));
+			if (missing.length === 0) continue;
+			for (const item of missing) loot.add(item.id);
+			if (lampsOwed > 0) {
+				loot.add(lamp);
+				lampsOwed--;
+			}
+			claimed.push(`${toTitleCase(diaryTier.name)} ${diary.name}`);
+		}
+	}
+
+	if (claimed.length === 0) {
+		return 'You have no completed achievement diaries to claim.';
+	}
+
+	await user.addItemsToBank({
+		items: loot,
+		collectionLog: true
+	});
+
+	return `You claimed ${claimed.length} achievement ${claimed.length === 1 ? 'diary' : 'diaries'} (${claimed.join(', ')}) and received ${loot}.`;
+}
+
 export function calculateAchievementDiaryProgress(user: MUser, stats: MUserStats, minigameScores: Minigame) {
 	let totalDiaries = 0;
 	let totalCompleted = 0;

@@ -50,6 +50,7 @@ function makeGiveawayRepeatButton(giveawayID: number) {
 export const giveawayCommand = defineCommand({
 	name: 'giveaway',
 	flags: ['REQUIRES_LOCK'],
+	privateSubcommands: ['list'],
 	description: 'Giveaway items from your bank to other players.',
 	attributes: {
 		requiresMinion: true,
@@ -254,9 +255,9 @@ export const giveawayCommand = defineCommand({
 
 			function entryMarker(giveaway: Giveaway) {
 				if (giveaway.user_id === user.id || giveaway.users_entered.includes(user.id)) {
-					return `${Emoji.Green} entered`;
+					return Emoji.Green;
 				}
-				return `${Emoji.RedX} not entered`;
+				return Emoji.RedX;
 			}
 
 			const lines = giveaways.map(

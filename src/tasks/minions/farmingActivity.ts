@@ -398,8 +398,14 @@ export const farmingTask: MinionTask = {
 		if (result.attachment) {
 			files.push(result.attachment);
 		}
-		if (shouldRenderCombinedSummary && totalLoot && totalLoot.length > 0) {
-			files.push(await makeBankImage({ bank: totalLoot, title: 'Loot From Auto Farming', user }));
+		if (totalLoot && totalLoot.length > 0) {
+			files.push(
+				await makeBankImage({
+					bank: totalLoot,
+					title: shouldRenderCombinedSummary ? 'Loot From Auto Farming' : 'Loot From Farming',
+					user
+				})
+			);
 		}
 		const message = files.length > 0 ? { content: finalContent, files } : finalContent;
 		const tripFinishData = shouldRenderCombinedSummary

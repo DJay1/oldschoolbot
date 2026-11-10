@@ -133,6 +133,14 @@ export function makeSpawnLampButton() {
 		.setStyle(ButtonStyle.Secondary);
 }
 
+export function makeSpawnBoxButton() {
+	return new ButtonBuilder()
+		.setCustomId(InteractionID.Commands.SpawnBox)
+		.setLabel('Spawn Box')
+		.setEmoji(buttonEmoji('mysterybox'))
+		.setStyle(ButtonStyle.Secondary);
+}
+
 export function makeFishingContestButton() {
 	return new ButtonBuilder()
 		.setCustomId(InteractionID.Commands.DoFishingContest)

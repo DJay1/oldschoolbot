@@ -345,6 +345,14 @@ async function globalButtonInteractionHandler({
 			...options
 		});
 	}
+
+	if (id === 'SPAWN_BOX') {
+		return runCommand({
+			commandName: 'tools',
+			args: { patron: { spawnbox: {} } },
+			...options
+		});
+	}
 	if (id === 'REPEAT_TAME_TRIP') {
 		return repeatTameTrip({ ...options });
 	}

@@ -34,7 +34,8 @@ import { refreshUserCache } from '@/lib/util/refreshCache.js';
 import { isValidNickname, patronMsg } from '@/lib/util/smallUtils.js';
 import {
 	achievementDiaryCommand,
-	claimAchievementDiaryCommand
+	claimAchievementDiaryCommand,
+	claimAllAchievementDiariesCommand
 } from '@/mahoji/lib/abstracted_commands/achievementDiaryCommand.js';
 import { bankBgCommand } from '@/mahoji/lib/abstracted_commands/bankBgCommand.js';
 import { cancelTaskCommand } from '@/mahoji/lib/abstracted_commands/cancelTaskCommand.js';
@@ -189,6 +190,12 @@ export const minionCommand = defineCommand({
 					type: 'Boolean',
 					name: 'claim',
 					description: 'Claim your rewards?',
+					required: false
+				},
+				{
+					type: 'Boolean',
+					name: 'claim_all',
+					description: 'Claim the rewards for every diary you have completed?',
 					required: false
 				}
 			]
@@ -483,6 +490,9 @@ export const minionCommand = defineCommand({
 		}
 
 		if (options.achievementdiary) {
+			if (options.achievementdiary.claim_all) {
+				return claimAllAchievementDiariesCommand(user);
+			}
 			if (options.achievementdiary.claim) {
 				return claimAchievementDiaryCommand(user, options.achievementdiary.diary ?? '');
 			}

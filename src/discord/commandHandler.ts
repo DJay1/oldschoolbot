@@ -86,7 +86,8 @@ export async function rawCommandHandlerInner({
 
 		const requiresLock = Boolean('flags' in command && command.flags?.includes('REQUIRES_LOCK'));
 		if (requiresLock) {
-			await interaction.defer();
+			const isPrivate = Boolean(command.privateSubcommands?.some(name => name in options));
+			await interaction.defer({ ephemeral: isPrivate });
 		}
 		const response: Awaited<CommandResponse> = requiresLock
 			? await user.withLock(command.name, runClosure)

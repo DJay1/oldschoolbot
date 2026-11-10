@@ -1,4 +1,4 @@
-import { spawnLampIsReady } from '@/lib/bso/commands/spawnBoxLampCommand.js';
+import { spawnBoxIsReady, spawnLampIsReady } from '@/lib/bso/commands/spawnBoxLampCommand.js';
 import { ItemContracts, resetBrokenContracts } from '@/lib/bso/itemContracts.js';
 import { getUsersFishingContestDetails } from '@/lib/bso/minigames/fishingContest.js';
 import { shortTameTripDesc, tameLastFinishedActivity } from '@/lib/bso/tames/tameUtil.js';
@@ -17,6 +17,7 @@ import {
 	makeClaimDailyButton,
 	makeFishingContestButton,
 	makeSendICButton,
+	makeSpawnBoxButton,
 	makeSpawnLampButton
 } from '@/lib/util/interactions.js';
 import { minionStatus } from '@/lib/util/minionStatus.js';
@@ -173,6 +174,11 @@ export async function minionStatusCommand(
 	const [spawnLampReady] = await spawnLampIsReady(user, channelId);
 	if (spawnLampReady) {
 		buttons.push(makeSpawnLampButton());
+	}
+
+	const [spawnBoxReady] = await spawnBoxIsReady(user, channelId);
+	if (spawnBoxReady) {
+		buttons.push(makeSpawnBoxButton());
 	}
 
 	const icDetails = ItemContracts.getItemContractDetails(user);

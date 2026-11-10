@@ -62,6 +62,10 @@ export function spawnLampIsReady(user: MUser, channelId: string) {
 	return spawnIsReady(user, channelId, 'lamp');
 }
 
+export function spawnBoxIsReady(user: MUser, channelId: string) {
+	return spawnIsReady(user, channelId, 'box');
+}
+
 /**
  * Four button choices. `answers[0]` is the real level; the picker shuffles them.
  */

@@ -264,10 +264,6 @@ async function handlePlantingOnlyStep(options: PlantingOnlyOptions): Promise<Far
 		loot.set('Plopper', 1);
 	}
 
-	if (loot.length > 0) {
-		message += `\n\nYou received: ${loot}.`;
-	}
-
 	await ClientSettings.updateBankSetting('farming_loot_bank', loot);
 	await user.transactItems({
 		collectionLog: true,
@@ -1100,10 +1096,6 @@ export async function executeFarmingStep({
 	const boostLine = formatFarmingBoosts(boosts, { prefix: '\n' });
 	if (boostLine) {
 		infoStr.push(boostLine);
-	}
-
-	if (loot.length > 0) {
-		infoStr.push(`\nYou received: ${loot}.`);
 	}
 
 	const reminder = !planting
