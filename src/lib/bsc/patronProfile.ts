@@ -21,7 +21,8 @@ export function ownedPatronPets(user: MUser): number[] {
 export function parseFavoritePetInput(user: MUser, input: string | undefined): number | 'skip' | null {
 	if (!input || /^skip|none|clear$/i.test(input.trim()))
 		return input && /^skip|none|clear$/i.test(input.trim()) ? 'skip' : null;
-	const item = Items.get(input);
+	const trimmed = input.trim();
+	const item = Items.getItem(trimmed) ?? Items.get(Number(trimmed));
 	if (!item) return null;
 	if (!PET_ID_SET.has(item.id)) return null;
 	if (!ownedPatronPets(user).includes(item.id)) return null;
