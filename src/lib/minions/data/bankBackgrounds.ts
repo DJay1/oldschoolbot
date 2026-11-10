@@ -681,7 +681,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Krypt CustomBG',
 		image: null,
 		available: false,
-		owners: ['611598764574114049']
+		owners: ['611598764574114049'],
 		purpleImage: null,
 		hasPurple: true
 	},
