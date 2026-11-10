@@ -586,7 +586,6 @@ LIMIT 10;`);
 	});
 }
 
-
 const EASTERN_FERRET_ID = 91_938;
 const SAND_GECKO_ID = 3251;
 const VARROCK_COURSE_ID = 4;
@@ -598,7 +597,9 @@ function creatureDryStreakEntity(name: string, creatureId: number, items: number
 		name,
 		items,
 		run: async ({ item, ironmanOnly }) => {
-			const result = await prisma.$queryRawUnsafe<{ id: string; val: number }[]>(`SELECT users.id, ("creature_scores"->>'${creatureId}')::int AS val
+			const result = await prisma.$queryRawUnsafe<
+				{ id: string; val: number }[]
+			>(`SELECT users.id, ("creature_scores"->>'${creatureId}')::int AS val
 FROM users
 INNER JOIN "user_stats" ON "user_stats"."user_id"::text = "users"."id"
 WHERE "collectionLogBank"->>'${item.id}' IS NULL
@@ -623,7 +624,9 @@ function activityMinutesDryStreakEntity(
 		name,
 		items,
 		run: async ({ item, ironmanOnly }) => {
-			const result = await prisma.$queryRawUnsafe<{ id: string; val: number }[]>(`SELECT user_id::text AS id, (SUM(duration) / 60000)::int AS val
+			const result = await prisma.$queryRawUnsafe<
+				{ id: string; val: number }[]
+			>(`SELECT user_id::text AS id, (SUM(duration) / 60000)::int AS val
 FROM activity
 WHERE type IN (${typeList})
 AND completed = true
@@ -647,7 +650,9 @@ function activityTripsDryStreakEntity(name: string, activityType: string, items:
 		name,
 		items,
 		run: async ({ item, ironmanOnly }) => {
-			const result = await prisma.$queryRawUnsafe<{ id: string; val: number }[]>(`SELECT user_id::text AS id, COUNT(1)::int AS val
+			const result = await prisma.$queryRawUnsafe<
+				{ id: string; val: number }[]
+			>(`SELECT user_id::text AS id, COUNT(1)::int AS val
 FROM activity
 WHERE type = '${activityType}'
 AND completed = true
@@ -670,7 +675,9 @@ function lapsDryStreakEntity(name: string, courseId: number, items: number[]): D
 		name,
 		items,
 		run: async ({ item, ironmanOnly }) => {
-			const result = await prisma.$queryRawUnsafe<{ id: string; val: number }[]>(`SELECT users.id, ("laps_scores"->>'${courseId}')::int AS val
+			const result = await prisma.$queryRawUnsafe<
+				{ id: string; val: number }[]
+			>(`SELECT users.id, ("laps_scores"->>'${courseId}')::int AS val
 FROM users
 INNER JOIN "user_stats" ON "user_stats"."user_id"::text = "users"."id"
 WHERE "collectionLogBank"->>'${item.id}' IS NULL
@@ -688,11 +695,21 @@ const bsoActivityPetDryStreaks: DrystreakEntity[] = [
 	creatureDryStreakEntity('Zippy (Eastern Ferrets)', EASTERN_FERRET_ID, resolveItems(['Zippy'])),
 	activityTripsDryStreakEntity('Zippy (Questing)', 'Questing', resolveItems(['Zippy'])),
 	creatureDryStreakEntity('Sandy (Sand Geckos)', SAND_GECKO_ID, resolveItems(['Sandy'])),
-	activityMinutesDryStreakEntity('Doug (Mining)', ['Mining', 'MotherlodeMining'], resolveItems(['Doug']), 'minutes mining'),
+	activityMinutesDryStreakEntity(
+		'Doug (Mining)',
+		['Mining', 'MotherlodeMining'],
+		resolveItems(['Doug']),
+		'minutes mining'
+	),
 	activityMinutesDryStreakEntity('Remy (Cooking)', ['Cooking'], resolveItems(['Remy']), 'minutes cooking'),
 	activityMinutesDryStreakEntity('Shelldon (Fishing)', ['Fishing'], resolveItems(['Shelldon']), 'minutes fishing'),
 	activityMinutesDryStreakEntity('Zak (Smelting)', ['Smelting'], resolveItems(['Zak']), 'minutes smelting'),
-	activityMinutesDryStreakEntity('Peky (Woodcutting)', ['Woodcutting'], resolveItems(['Peky']), 'minutes woodcutting'),
+	activityMinutesDryStreakEntity(
+		'Peky (Woodcutting)',
+		['Woodcutting'],
+		resolveItems(['Peky']),
+		'minutes woodcutting'
+	),
 	activityMinutesDryStreakEntity('Obis (Runecraft)', ['Runecraft'], resolveItems(['Obis']), 'minutes runecrafting'),
 	activityMinutesDryStreakEntity('Wilvus (Thieving)', ['Pickpocket'], resolveItems(['Wilvus']), 'minutes thieving'),
 	activityMinutesDryStreakEntity('Lil Lamb (Alching)', ['Alching'], resolveItems(['Lil lamb']), 'minutes alching'),
@@ -1094,7 +1111,7 @@ export const toolsCommand = defineCommand({
 				{
 					type: 'Subcommand',
 					name: 'purple_glow',
-					description: 'Change the colour new collection log items glow in your bank images (Top Dog+).',
+					description: 'Change the colour new collection log items glow in your bank images (Pup and up).',
 					options: [
 						{
 							type: 'String',

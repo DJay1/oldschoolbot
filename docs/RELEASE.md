@@ -536,7 +536,7 @@ Perks, as totals for that tier:
 
 | Tier | Perks |
 | --- | --- |
-| Pup | +3 min max trip, Barrows bank background, supporter collar badge, loyalty badges, 3 patron points each month |
+| Pup | +3 min max trip, Barrows bank background, supporter collar badge, loyalty badges, /tools patron purple_glow, 3 patron points each month |
 | Good Boy | +6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips, Good Boy bank background (normal and celebratory), 5 patron points each month |
 | Top Dog | +10 min trips, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots, queue 5 trips, custom minion icon, custom tame image, `/patron title`, `/patron flair`, `/patron profile`, patron dye shop, 10 patron points each month |
 | Alpha | +15 min trips, all paid bank backgrounds, custom bank colour, spawn lamp and spawn box, unlimited giveaways, +8 Grand Exchange slots, queue 6 trips, 15 patron points each month |

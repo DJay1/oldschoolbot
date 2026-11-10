@@ -56,7 +56,7 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		patreonTierIdEnv: 'PATREON_TIER_PUP_ID',
 		badge: customEmoji('patron_pup'),
 		summary:
-			'+3 min max trip length, full scrollable bank (show_all) and bank page buttons, queue 3 trips every 2 days, Barrows bank background, supporter collar badge, loyalty badges, 3 patron points each month'
+			'+3 min max trip length, full scrollable bank (show_all) and bank page buttons, queue 3 trips every 2 days, Barrows bank background, supporter collar badge, loyalty badges, /tools patron purple_glow, 3 patron points each month'
 	},
 	{
 		level: 2,
@@ -70,7 +70,8 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_GOODBOY',
 		patreonTierIdEnv: 'PATREON_TIER_GOODBOY_ID',
 		badge: customEmoji('patron_goodboy'),
-		summary: '+6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips every 2 days, Good Boy bank background (normal and celebratory), 5 patron points each month'
+		summary:
+			'+6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips every 2 days, Good Boy bank background (normal and celebratory), 5 patron points each month'
 	},
 	{
 		level: 3,
@@ -592,6 +593,8 @@ export function formatBscPatronOverview(input: {
 		lines.push(`${entry.name} ($${entry.priceUsd}) — ${entry.summary}`);
 	}
 	lines.push('');
-	lines.push('Commands: /patron info, /patron title, /patron flair, /patron profile, /patron dyes, /patron double_loot, /patron gift user:@friend');
+	lines.push(
+		'Commands: /patron info, /patron title, /patron flair, /patron profile, /patron dyes, /patron double_loot, /patron gift user:@friend'
+	);
 	return lines.join('\n');
 }

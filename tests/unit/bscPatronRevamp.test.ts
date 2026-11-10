@@ -199,5 +199,5 @@ test('patron dye catalog matches the shop prices and sparkle rules', () => {
 		glow: '#F5D76A',
 		sparkles: false
 	});
-	expect(NEW_CL_GLOW_PERK_TIER).toBe(PerkTier.Five);
+	expect(NEW_CL_GLOW_PERK_TIER).toBe(PerkTier.Two);
 });
