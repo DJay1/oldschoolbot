@@ -1,8 +1,5 @@
-import { PerkTier } from '@oldschoolgg/toolkit';
-
 import type { InhibitorResult } from '@/discord/preCommand.js';
 import { BadgesEnum, Channel, globalConfig } from '@/lib/constants.js';
-import { withPatreonLink } from '@/lib/patreonLink.js';
 import { minionBuyButton } from '@/lib/sharedComponents.js';
 
 type InhibitorRunOptions = {
@@ -71,21 +68,6 @@ const inhibitors: Inhibitor[] = [
 			}
 			return false;
 		}
-	},
-	{
-		name: 'commandRoleLimit',
-		run: async ({ interaction, user }) => {
-			if (!interaction.guildId || interaction.guildId !== globalConfig.supportServerID || !interaction.channelId)
-				return false;
-			if (interaction.channelId !== Channel.ServerGeneral) return false;
-			const perkTier = await user.fetchPerkTier();
-			if (interaction.member && perkTier >= PerkTier.Two) {
-				return false;
-			}
-
-			return { content: withPatreonLink("You cannot use commands in the general channel unless you're a patron.") };
-		},
-		silent: true
 	},
 	{
 		name: 'onlyStaffCanUseCommands',
