@@ -193,4 +193,35 @@ describe('Multi-equip Gear Test', () => {
 
 		expect(resultGear.get('weapon')!.quantity).toEqual(2222);
 	});
+
+	const karilBank = new Bank().add("Karil's leathertop").add("Karil's leatherskirt");
+
+	test('equips Karil leather with the apostrophe in the name', () => {
+		const karilUser = mockMUser({
+			skills_ranged: convertLVLtoXP(70),
+			skills_defence: convertLVLtoXP(70),
+			bank: karilBank
+		});
+		const result = gearEquipMultiImpl(karilUser, 'range', "1 Karil's leathertop");
+		expect(result.success).toEqual(true);
+		expect(result.equipBank!.toString()).toEqual("1x Karil's leathertop");
+		expect(result.skillFailBank!.toString()).toEqual('No items');
+		expect(new Gear(result.equippedGear).toString()).toEqual("Karil's leathertop");
+	});
+
+	test('reports missing requirements for Karil leather instead of equipping', () => {
+		const karilUser = mockMUser({
+			skills_ranged: convertLVLtoXP(60),
+			skills_defence: convertLVLtoXP(60),
+			bank: karilBank
+		});
+		const top = gearEquipMultiImpl(karilUser, 'range', "1 Karil's leathertop");
+		const skirt = gearEquipMultiImpl(karilUser, 'range', "1 Karil's leatherskirt");
+		expect(top.success).toEqual(true);
+		expect(top.equipBank!.length).toEqual(0);
+		expect(top.skillFailBank!.toString()).toEqual("1x Karil's leathertop");
+		expect(skirt.equipBank!.length).toEqual(0);
+		expect(skirt.skillFailBank!.toString()).toEqual("1x Karil's leatherskirt");
+	});
+
 });
