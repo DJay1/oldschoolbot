@@ -194,7 +194,8 @@ if (testPotatoCommand) {
 }
 
 // testpotato stays on the live bot, hidden and owner-only (see testpotato.ts and discord/utils.ts).
-const devOnlyCommandNames = new Set(['qualitycheck', 'testershop']);
+// testershop is a live command (tester points / shop). qualitycheck stays test-bot only.
+const devOnlyCommandNames = new Set(['qualitycheck']);
 if (!testingShortcutsEnabled()) {
 	for (let i = allCommandsDONTIMPORT.length - 1; i >= 0; i--) {
 		if (devOnlyCommandNames.has(allCommandsDONTIMPORT[i].name)) {
