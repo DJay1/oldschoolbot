@@ -8,6 +8,7 @@ import {
 	type PatronDyeMode,
 	type PatronItemDye,
 	parseHexColor,
+	resolveItemFromInput,
 	parsePatronDyeMode,
 	patronDyeById,
 	patronDyeByKey,
@@ -86,7 +87,7 @@ export async function buyPatronDye(user: MUser, dyeInput: string): Promise<strin
 		return `Could not add ${dye.itemName} to your bank. Your ${dye.points} points were refunded (balance: ${balance}).`;
 	}
 
-	return `You bought ${dye.itemName} for ${dye.points} patron points. Balance: ${debit.balance}. Use it with /patron dyes action:use.`;
+	return `You bought ${dye.itemName} for ${dye.points} patron points. Balance: ${debit.balance}. Use it with /patron dye.`;
 }
 
 export interface UsePatronDyeOptions {
@@ -102,17 +103,17 @@ export async function usePatronDye(
 	modeInput?: string,
 	options?: UsePatronDyeOptions
 ): Promise<string> {
-	const dye = patronDyeByKey(dyeInput) ?? patronDyeById(Items.get(dyeInput)?.id ?? -1);
+	const dye = patronDyeByKey(dyeInput) ?? patronDyeById(resolveItemFromInput(dyeInput)?.id ?? -1);
 	if (!dye) return 'Pick a dye you own: Biscuit, Fetch, Pawberry, Midnight Pup, or Golden Corgo.';
 	const mode = parsePatronDyeMode(modeInput) ?? 'recolour_glow';
 	if (!isPatronDyeMode(mode)) return 'Mode must be recolour, glow, or recolour_glow.';
 
-	const item = Items.get(itemInput);
+	const item = resolveItemFromInput(itemInput);
 	if (!item) return "That's not a valid item.";
 	if (patronDyeById(item.id)) return 'You cannot dye a dye.';
 	if (user.bank.amount(item.id) < 1) return `You do not have any ${item.name} in your bank.`;
 	if (user.bank.amount(dye.itemID) < 1)
-		return `You do not have any ${dye.itemName}. Buy one with /patron dyes action:buy.`;
+		return `You do not have any ${dye.itemName}. Buy one with /patron dyes buy:${dye.name}.`;
 
 	const customRequested =
 		Boolean(options?.glowHex) || Boolean(options?.recolourHex) || options?.sparkle !== undefined;
@@ -176,7 +177,7 @@ export async function usePatronDye(
 }
 
 export async function undyePatronItem(user: MUser, itemInput: string): Promise<string> {
-	const item = Items.get(itemInput);
+	const item = resolveItemFromInput(itemInput);
 	if (!item) return "That's not a valid item.";
 	await ensurePatronRevampStore();
 	const existing = await prisma.$queryRaw<{ item_id: number; dye_key: string }[]>`
@@ -215,7 +216,10 @@ export function formatPatronDyeShop(points: number, applied: PatronItemDye[]): s
 		'Golden Corgo dye — 25 points, catch-all. Set glow_hex and recolour_hex (#RRGGBB) and toggle sparkle on or off. Defaults to gold with sparkles off.',
 		'',
 		'Modes: recolour, glow, or recolour_glow (default).',
-		'Check points: /patron dyes (or action:balance). Buy: /patron dyes action:buy dye:Biscuit. Use: /patron dyes action:use dye:Fetch item:Dragon scimitar mode:recolour_glow. Golden Corgo: /patron dyes action:use dye:Golden Corgo item:Dragon scimitar glow_hex:#FF00AA recolour_hex:#00FFCC sparkle:true. Undye (returns the dye): /patron dyes action:undye item:Dragon scimitar'
+		'Check points or buy: /patron dyes  or  /patron dyes buy:Biscuit',
+		'Use a dye: /patron dye item:Bandos chestplate dye:Fetch mode:recolour_glow',
+		'Golden Corgo: /patron dye item:Bandos chestplate dye:Golden Corgo glow_hex:#FF00AA recolour_hex:#00FFCC sparkle:True',
+		'Undye (returns the dye): /patron undye item:Bandos chestplate'
 	];
 	if (applied.length > 0) {
 		catalog.push('');

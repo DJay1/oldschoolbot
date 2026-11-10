@@ -1,4 +1,5 @@
 import { PerkTier } from '@oldschoolgg/toolkit';
+import { Items } from 'oldschooljs';
 
 import { getBscPatronAccount, updateBscPatronAccount } from '@/lib/bsc/patronAccount.js';
 import {
@@ -8,6 +9,7 @@ import {
 	undyePatronItem,
 	usePatronDye
 } from '@/lib/bsc/patronDyeShop.js';
+import { PATRON_DYE_ITEM_IDS, PATRON_DYES, patronDyeById } from '@/lib/bsc/patronDyes.js';
 import { sanitizePatronFlair } from '@/lib/bsc/patronFlair.js';
 import { loyaltyBadgeLabel } from '@/lib/bsc/patronLoyalty.js';
 import { performBscPatronGift, triggerBscDoubleLoot } from '@/lib/bsc/patronPerks.js';
@@ -45,6 +47,10 @@ async function requireTopDog(user: MUser) {
 	return (await user.fetchPerkTier()) < PerkTier.Four ? patronMsg(PerkTier.Four) : null;
 }
 
+async function requirePatron(user: MUser) {
+	return (await user.fetchPerkTier()) < PerkTier.Two ? patronMsg(PerkTier.Two) : null;
+}
+
 export const patronCommand = defineCommand({
 	name: 'patron',
 	description: 'Bark School Corgo patron tiers, cosmetics, dyes, gifts, and double loot.',
@@ -54,7 +60,8 @@ export const patronCommand = defineCommand({
 			'/patron title title:Fetch Master',
 			'/patron flair text:Back from a treat run',
 			'/patron profile',
-			'/patron dyes action:buy dye:Biscuit',
+			'/patron dyes buy:Biscuit',
+			'/patron dye item:Bandos chestplate dye:Fetch',
 			'/patron gift user:@Friend',
 			'/patron double_loot'
 		]
@@ -94,7 +101,7 @@ export const patronCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'profile',
-			description: 'Show your shareable patron profile card. Top Dog and above.',
+			description: 'Show your shareable patron profile card. Pup and up, including gift and staff patrons.',
 			options: [
 				{
 					type: 'String',
@@ -107,30 +114,66 @@ export const patronCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'dyes',
-			description: 'Check your patron points, or buy, use, or undye a patron dye.',
+			description: 'Check your patron points, browse the dye shop, or buy a dye.',
 			options: [
 				{
 					type: 'String',
-					name: 'action',
-					description: 'balance, buy, use, or undye. Defaults to balance.',
-					required: false
+					name: 'buy',
+					description: 'Buy this dye with patron points.',
+					required: false,
+					autocomplete: async ({ value }: StringAutoComplete) => {
+						const q = (value ?? '').toLowerCase();
+						return PATRON_DYES.filter(
+							dye => !q || dye.name.toLowerCase().includes(q) || dye.key.includes(q)
+						).map(dye => ({ name: `${dye.name} (${dye.points} pts)`, value: dye.key }));
+					}
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'dye',
+			description: 'Use a patron dye on an item in your bank. Top Dog and above.',
+			options: [
+				{
+					type: 'String',
+					name: 'item',
+					description: 'The bank item to dye.',
+					required: true,
+					autocomplete: async ({ value, user }: StringAutoComplete) => {
+						const q = (value ?? '').toLowerCase();
+						return user.bank
+							.items()
+							.filter(([item]) => !patronDyeById(item.id) && !PATRON_DYE_ITEM_IDS.has(item.id))
+							.filter(
+								([item]) =>
+									!q ||
+									item.name.toLowerCase().includes(q) ||
+									String(item.id) === q
+							)
+							.slice(0, 25)
+							.map(([item, qty]) => ({ name: `${item.name} (${qty})`, value: String(item.id) }));
+					}
 				},
 				{
 					type: 'String',
 					name: 'dye',
-					description: 'Biscuit, Fetch, Pawberry, Midnight Pup, or Golden Corgo.',
-					required: false
-				},
-				{
-					type: 'String',
-					name: 'item',
-					description: 'The bank item to dye or undye.',
-					required: false
+					description: 'The dye you own.',
+					required: true,
+					autocomplete: async ({ value, user }: StringAutoComplete) => {
+						const q = (value ?? '').toLowerCase();
+						return PATRON_DYES.filter(dye => user.bank.amount(dye.itemID) > 0)
+							.filter(dye => !q || dye.name.toLowerCase().includes(q) || dye.key.includes(q))
+							.map(dye => ({
+								name: `${dye.name} (${user.bank.amount(dye.itemID)} in bank)`,
+								value: dye.key
+							}));
+					}
 				},
 				{
 					type: 'String',
 					name: 'mode',
-					description: 'recolour, glow, or recolour_glow.',
+					description: 'recolour, glow, or recolour_glow (default).',
 					required: false
 				},
 				{
@@ -150,6 +193,35 @@ export const patronCommand = defineCommand({
 					name: 'sparkle',
 					description: 'Golden Corgo only: turn sparkles on or off.',
 					required: false
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'undye',
+			description: 'Remove a patron dye from an item and return the dye to your bank.',
+			options: [
+				{
+					type: 'String',
+					name: 'item',
+					description: 'The dyed item to restore.',
+					required: true,
+					autocomplete: async ({ value, user }: StringAutoComplete) => {
+						const q = (value ?? '').toLowerCase();
+						const applied = await loadPatronDyesForUser(user.id);
+						const choices: { name: string; value: string }[] = [];
+						for (const row of applied) {
+							const item = Items.get(row.itemID);
+							const name = item?.name ?? `Item ${row.itemID}`;
+							if (q && !name.toLowerCase().includes(q) && String(row.itemID) !== q) continue;
+							choices.push({
+								name: `${name} (${row.dyeKey.replaceAll('_', ' ')})`,
+								value: String(row.itemID)
+							});
+							if (choices.length >= 25) break;
+						}
+						return choices;
+					}
 				}
 			]
 		},
@@ -226,7 +298,7 @@ export const patronCommand = defineCommand({
 			return `Your trip-return flair is now: ${parsed.flair}`;
 		}
 		if (options.profile) {
-			const gated = await requireTopDog(user);
+			const gated = await requirePatron(user);
 			if (gated) return gated;
 			if (options.profile.favorite_pet) {
 				const result = await setFavoritePatronPet(user, options.profile.favorite_pet);
@@ -238,26 +310,25 @@ export const patronCommand = defineCommand({
 				files: [{ name: 'patron-profile.png', buffer: card.image }]
 			};
 		}
+		if (options.dye) {
+			const gated = await requireTopDog(user);
+			if (gated) return gated;
+			return usePatronDye(user, options.dye.dye, options.dye.item, options.dye.mode, {
+				glowHex: options.dye.glow_hex,
+				recolourHex: options.dye.recolour_hex,
+				sparkle: options.dye.sparkle
+			});
+		}
+		if (options.undye) {
+			const gated = await requireTopDog(user);
+			if (gated) return gated;
+			return undyePatronItem(user, options.undye.item);
+		}
 		if (options.dyes) {
-			const action = (options.dyes.action ?? 'balance').trim().toLowerCase();
-			if (action === 'buy') {
-				if (!options.dyes.dye)
-					return 'Name the dye to buy: Biscuit, Fetch, Pawberry, Midnight Pup, or Golden Corgo.';
-				return buyPatronDye(user, options.dyes.dye);
-			}
-			if (action === 'use') {
-				if (!options.dyes.dye || !options.dyes.item) {
-					return 'Use a dye with /patron dyes action:use dye:Biscuit item:Dragon scimitar mode:recolour_glow.';
-				}
-				return usePatronDye(user, options.dyes.dye, options.dyes.item, options.dyes.mode, {
-					glowHex: options.dyes.glow_hex,
-					recolourHex: options.dyes.recolour_hex,
-					sparkle: options.dyes.sparkle
-				});
-			}
-			if (action === 'undye') {
-				if (!options.dyes.item) return 'Name the item to undye.';
-				return undyePatronItem(user, options.dyes.item);
+			if (options.dyes.buy) {
+				const gated = await requireTopDog(user);
+				if (gated) return gated;
+				return buyPatronDye(user, options.dyes.buy);
 			}
 			const [account, applied] = await Promise.all([
 				getBscPatronAccount(user.id),

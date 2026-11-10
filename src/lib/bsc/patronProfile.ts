@@ -117,6 +117,6 @@ function buildCaption(user: MUser, tier: BscPatronTier | null, title: string | n
 	return bits.join(' · ');
 }
 
-export function profileRequiresTopDog(perkTier: number) {
-	return perkTier >= PerkTier.Four;
+export function profileRequiresPatron(perkTier: number) {
+	return perkTier >= PerkTier.Two;
 }

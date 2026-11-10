@@ -1,4 +1,4 @@
-import { Bank } from 'oldschooljs';
+import { Bank, Items } from 'oldschooljs';
 
 export const PATRON_DYE_MODES = ['recolour', 'glow', 'recolour_glow'] as const;
 export type PatronDyeMode = (typeof PATRON_DYE_MODES)[number];
@@ -86,6 +86,19 @@ export interface PatronItemDye {
 }
 
 const dyeCache = new Map<string, Map<number, PatronItemDye>>();
+
+
+/** Resolve a bank item from a name or numeric id. Use this instead of Items.get for custom and vanilla names. */
+export function resolveItemFromInput(input: string | undefined | null) {
+	if (!input) return null;
+	const trimmed = input.trim();
+	if (!trimmed) return null;
+	const asId = Number(trimmed);
+	if (Number.isInteger(asId) && asId > 0) {
+		return Items.get(asId) ?? Items.getItem(trimmed) ?? null;
+	}
+	return Items.getItem(trimmed) ?? Items.get(trimmed) ?? null;
+}
 
 export function patronDyeByKey(key: string): PatronDyeDefinition | null {
 	const normalized = key
