@@ -137,11 +137,19 @@ export async function commandHandler(
 		rng: cryptoRng
 	});
 	if (
-		response === SpecialResponse.PaginatedMessageResponse ||
-		response === SpecialResponse.SilentErrorResponse ||
-		response === SpecialResponse.RespondedManually
+		response !== SpecialResponse.PaginatedMessageResponse &&
+		response !== SpecialResponse.SilentErrorResponse &&
+		response !== SpecialResponse.RespondedManually
 	) {
-		return;
+		await interaction.reply(response);
 	}
-	await interaction.reply(response);
+
+	try {
+		const pending = await Cache.takePendingTripNotices(interaction.userId);
+		if (pending.length > 0 && interaction.channelId) {
+			await globalClient.sendMessageOrWebhook(interaction.channelId, pending.join('\n\n'));
+		}
+	} catch (err) {
+		Logging.logError(err as Error, { source: 'pendingTripNotices', user_id: interaction.userId });
+	}
 }

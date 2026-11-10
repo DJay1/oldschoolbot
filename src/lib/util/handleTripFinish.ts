@@ -19,6 +19,7 @@ import { Bank, EItem, itemID, toKMB } from 'oldschooljs';
 import { activity_type_enum } from '@/prisma/main.js';
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
 import { tryStartQueuedTrip } from '@/lib/bsc/tripQueue.js';
+import { deliverTripFinishMessage } from '@/lib/util/deliverTripFinishMessage.js';
 import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { buildClueButtons } from '@/lib/clues/clueUtils.js';
@@ -763,7 +764,11 @@ export async function handleTripFinish(
 	}
 
 	if (itemsToAddWithCL.length > 0 || itemsToRemove.length > 0) {
-		await user.transactItems({ itemsToAdd: itemsToAddWithCL, collectionLog: true, itemsToRemove });
+		try {
+			await user.transactItems({ itemsToAdd: itemsToAddWithCL, collectionLog: true, itemsToRemove });
+		} catch (err) {
+			Logging.logError(err as Error, { user_id: user.id, source: 'tripFinishTransactExtras' });
+		}
 	}
 
 	if (contentAppendices.length > 0) {
@@ -825,5 +830,5 @@ export async function handleTripFinish(
 		Logging.logError(err as Error);
 	}
 
-	await globalClient.sendMessageOrWebhook(channelId, message);
+	await deliverTripFinishMessage(user.id, channelId, message);
 }

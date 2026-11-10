@@ -220,7 +220,16 @@ export class OldSchoolBotClient extends DiscordClient {
 		for (const part of splitMessages) {
 			let response = await this.sendToWebhook(channelId, part);
 			if (!response) {
-				response = await this.sendMessage(channelId, part).catch(() => null);
+				response = await this.sendMessage(channelId, part).catch(err => {
+					Logging.logError(err as Error, { source: 'sendMessageOrWebhook', channel_id: channelId });
+					return null;
+				});
+			}
+			if (!response) {
+				Logging.logError(new Error('Failed to deliver message to channel'), {
+					source: 'sendMessageOrWebhook',
+					channel_id: channelId
+				});
 			}
 			firstResponse ??= response;
 		}

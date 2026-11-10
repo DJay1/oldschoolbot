@@ -632,6 +632,26 @@ class CacheManager {
 		return permissions;
 	}
 
+	private pendingTripNoticeKey(userId: string) {
+		return BOT_TYPE + ':pendingTripNotice:' + userId;
+	}
+
+	async addPendingTripNotice(userId: string, content: string): Promise<void> {
+		const key = this.pendingTripNoticeKey(userId);
+		const existing = (await this.getJson<string[]>(key)) ?? [];
+		existing.push(content);
+		await this.setJsonWithTTL(key, existing.slice(-10), TTL.Day * 7);
+	}
+
+	async takePendingTripNotices(userId: string): Promise<string[]> {
+		const key = this.pendingTripNoticeKey(userId);
+		const existing = (await this.getJson<string[]>(key)) ?? [];
+		if (existing.length > 0) {
+			await this.client.del(key);
+		}
+		return existing;
+	}
+
 	async close() {
 		await this.client.quit();
 	}

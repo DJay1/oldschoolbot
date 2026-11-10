@@ -498,7 +498,11 @@ Charge your items using ${globalClient.mentionCommand('minion', 'charge')}.`
 			items: itemsToAdd
 		});
 		await this.update({ ...updates, ...otherUpdates });
-		await handleNewCLItems({ itemsAdded: itemsToAdd, user: this, newCL: this.cl, previousCL });
+		try {
+			await handleNewCLItems({ itemsAdded: itemsToAdd, user: this, newCL: this.cl, previousCL });
+		} catch (err) {
+			Logging.logError(err as Error, { user_id: this.id, source: 'handleNewCLItems' });
+		}
 	}
 
 	async specialRemoveItems(bankToRemove: Bank, options?: { isInWilderness?: boolean }) {

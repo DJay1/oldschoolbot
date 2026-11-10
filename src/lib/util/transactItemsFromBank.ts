@@ -159,7 +159,13 @@ export async function unqueuedTransactItems({
 	}
 
 	if (!neverUpdateHistory) {
-		await handleNewCLItems({ itemsAdded, user: user, previousCL, newCL });
+		try {
+			await handleNewCLItems({ itemsAdded, user: user, previousCL, newCL });
+		} catch (err) {
+			// Items are already saved; a CL-announcement error must not roll back loot
+			// or prevent the trip-finish message.
+			Logging.logError(err as Error, { user_id: user.id, source: 'handleNewCLItems' });
+		}
 	}
 
 	return {
