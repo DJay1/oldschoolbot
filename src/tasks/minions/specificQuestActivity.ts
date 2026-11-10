@@ -1,4 +1,5 @@
 import { bold } from '@oldschoolgg/discord';
+import { Items } from 'oldschooljs';
 
 import { quests } from '@/lib/minions/data/quests.js';
 import type { SkillNameType } from '@/lib/skilling/types.js';
@@ -16,6 +17,22 @@ export const specificQuestTask: MinionTask = {
 		if (quest.rewards) {
 			await user.transactItems({ itemsToAdd: quest.rewards, collectionLog: true });
 			completionMessage += ` You received ${quest.rewards}.`;
+		}
+
+		for (const itemID of quest.reclaimableRewards ?? []) {
+			const item = Items.getOrThrow(itemID);
+			await prisma.reclaimableItem.upsert({
+				where: { user_id_key: { user_id: user.id, key: `quest_${quest.id}_${itemID}` } },
+				create: {
+					user_id: user.id,
+					key: `quest_${quest.id}_${itemID}`,
+					name: item.name,
+					description: `Reward from ${quest.name}`,
+					item_id: itemID,
+					quantity: 1
+				},
+				update: {}
+			});
 		}
 
 		if (quest.skillsRewards) {

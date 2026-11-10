@@ -1,6 +1,7 @@
 import { sumArr, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
+import { BloodMoonItem } from '@/lib/customItems/bloodMoon.js';
 import type { Skills } from '@/lib/types/index.js';
 
 interface Quest {
@@ -14,6 +15,7 @@ interface Quest {
 	skillsRewards?: Partial<Skills>;
 	combatLevelReq?: number;
 	prerequisitesQuests?: QuestID[];
+	reclaimableRewards?: number[];
 	calcTime: (user: MUser) => number;
 }
 
@@ -35,7 +37,8 @@ export enum QuestID {
 	TheFinalDawn = 15,
 	'Scrambled!' = 16,
 	ShadowsOfCustodia = 17,
-	TutorialIsland = 18
+	TutorialIsland = 18,
+	TheBloodMoonRises = 19
 }
 
 export const quests: Quest[] = [
@@ -453,6 +456,36 @@ export const quests: Quest[] = [
 			.add(995, 25),
 		calcTime: () => {
 			return Time.Minute * 7;
+		}
+	},
+	{
+		id: QuestID.TheBloodMoonRises,
+		qp: 4,
+		name: 'The Blood Moon Rises',
+		skillReqs: {
+			slayer: 74,
+			woodcutting: 74,
+			smithing: 72,
+			cooking: 72,
+			fletching: 70,
+			mining: 66,
+			hunter: 65,
+			crafting: 64,
+			herblore: 64,
+			magic: 57
+		},
+		rewards: new Bank()
+			.add(BloodMoonItem.HALLOWED_FLAIL)
+			.add(BloodMoonItem.SUNSPEAR)
+			.add(BloodMoonItem.TOME_OF_EXPERIENCE, 6)
+			.freeze(),
+		reclaimableRewards: [BloodMoonItem.HALLOWED_FLAIL, BloodMoonItem.SUNSPEAR],
+		calcTime: (user: MUser) => {
+			let duration = Time.Hour * 3;
+			if (user.combatLevel < 110) {
+				duration += Time.Minute * 30;
+			}
+			return duration;
 		}
 	}
 ];

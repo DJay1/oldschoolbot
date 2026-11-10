@@ -3,6 +3,7 @@ import { Bank, Monsters } from 'oldschooljs';
 
 import { isEventActive } from '@/lib/events/registry.js';
 import { getEclipsePetName } from '@/lib/events/summer/summerDays.js';
+import { QuestID } from '@/lib/minions/data/quests.js';
 import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
 import {
 	anglerItemsArr,
@@ -89,6 +90,9 @@ export const fishCommand = defineCommand({
 
 		if (spot.qpRequired && user.QP < spot.qpRequired) {
 			return `You need ${spot.qpRequired} qp to catch those!`;
+		}
+		if (spot.name === 'Leechfin' && !user.user.finished_quest_ids.includes(QuestID.TheBloodMoonRises)) {
+			return 'You need to complete The Blood Moon Rises to fish leechfins.';
 		}
 
 		if (spot.name === 'Infernal eel') {

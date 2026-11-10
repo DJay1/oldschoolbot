@@ -26,6 +26,8 @@ import './summoning.js';
 import './firstAge.js';
 import '../events/launch/items.js';
 import './bankPlaceholders.js';
+import './slayer2026.js';
+import './bloodMoon.js';
 
 import { EquipmentSlot } from '@oldschoolgg/gear';
 import { type ItemRequirements, Items, resolveItems } from 'oldschooljs';

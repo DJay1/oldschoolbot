@@ -1,5 +1,3 @@
-import { Monsters } from 'oldschooljs';
-
 import { choicesOf } from '@/discord/index.js';
 import { autoslayChoices, slayerMasterChoices } from '@/lib/slayer/constants.js';
 import { SlayerRewardsShop } from '@/lib/slayer/slayerUnlocks.js';
@@ -10,6 +8,7 @@ import {
 	slayerShopListRewards
 } from '@/mahoji/lib/abstracted_commands/slayerShopCommand.js';
 import {
+	slayerBlockedTaskChoices,
 	slayerListBlocksCommand,
 	slayerNewTaskCommand,
 	slayerSkipTaskCommand,
@@ -129,17 +128,7 @@ export const slayerCommand = defineCommand({
 							description: 'Assignment to unblock',
 							required: true,
 							autocomplete: async ({ value, user }: StringAutoComplete) => {
-								if (user.user.slayer_blocked_ids.length === 0) {
-									return [{ name: "You don't have any monsters blocked", value: '' }];
-								}
-								const blockedMonsters = user.user.slayer_blocked_ids.map(
-									mId => Monsters.find(m => m.id === mId)!
-								);
-								return blockedMonsters
-									.filter(m => (!value ? true : m?.name.toLowerCase().includes(value.toLowerCase())))
-									.map(m => {
-										return { name: m?.name, value: m?.name };
-									});
+								return slayerBlockedTaskChoices(user.id, value);
 							}
 						}
 					]

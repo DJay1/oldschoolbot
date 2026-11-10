@@ -1,10 +1,12 @@
 import { NexMonster } from '@/lib/bso/monsters/nex.js';
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
 
 import { Time } from '@oldschoolgg/toolkit';
 import { EMonster, ItemGroups, Monsters, resolveItems } from 'oldschooljs';
 
 import { anyoneDiedInTOARaid, isCertainMonsterTrip } from '@/lib/combat_achievements/caUtils.js';
 import type { CombatAchievement } from '@/lib/combat_achievements/combatAchievements.js';
+import { BloodMoonItem, MaggotKingItem } from '@/lib/customItems/bloodMoon.js';
 import { Requirements } from '@/lib/structures/Requirements.js';
 import type {
 	GauntletOptions,
@@ -1802,6 +1804,34 @@ export const eliteCombatAchievements: CombatAchievement[] = [
 				isCertainMonsterTrip(Monsters.Branda.id)(data) ||
 				isCertainMonsterTrip(Monsters.Eldric.id)(data) ||
 				isCertainMonsterTrip(Monsters.RoyalTitans.id)(data)
+		}
+	},
+	{
+		id: 1155,
+		name: 'Maggot Exterminator',
+		desc: 'Kill the Maggot King 25 times.',
+		type: 'kill_count',
+		monster: 'Maggot King',
+		requirements: new Requirements().add({
+			kcRequirement: {
+				[Slayer2026MonsterID.MAGGOT_KING]: 25
+			}
+		})
+	},
+	{
+		id: 1156,
+		name: 'Trying to fit in',
+		desc: 'Kill the Maggot King using only weapons that can be found in Vampyrium.',
+		type: 'restriction',
+		monster: 'Maggot King',
+		details: 'You must have a Hallowed flail, Sunspear or Crimson kisten equipped.',
+		rng: {
+			chancePerKill: 5,
+			hasChance: (data, user) =>
+				isCertainMonsterTrip(Slayer2026MonsterID.MAGGOT_KING)(data) &&
+				[BloodMoonItem.HALLOWED_FLAIL, BloodMoonItem.SUNSPEAR, MaggotKingItem.CRIMSON_KISTEN].some(i =>
+					user.hasEquipped(i)
+				)
 		}
 	}
 ];

@@ -10,6 +10,8 @@ import { caTiers } from '@/lib/combat_achievements/combatAchievements.js';
 import { BitField, type PvMMethod } from '@/lib/constants.js';
 import type { KillableMonster } from '@/lib/minions/types.js';
 import { autoslayModes } from '@/lib/slayer/constants.js';
+import { MORTIMER_ID, userCanUseMortimer } from '@/lib/slayer/mortimer.js';
+import { getSlayerBlocks } from '@/lib/slayer/slayerBlocks.js';
 import { slayerMasters } from '@/lib/slayer/slayerMasters.js';
 import { SlayerRewardsShop, SlayerTaskUnlocksEnum } from '@/lib/slayer/slayerUnlocks.js';
 import { bossTasks, wildernessBossTasks } from '@/lib/slayer/tasks/bossTasks.js';
@@ -131,6 +133,7 @@ function weightedPick(rng: RNGProvider, filteredTasks: AssignableSlayerTask[]) {
 }
 
 export function userCanUseMaster(user: MUser, master: SlayerMaster) {
+	if (master.id === MORTIMER_ID) return userCanUseMortimer(user);
 	return (
 		user.QP >= (master.questPoints ?? 0) &&
 		user.skillsAsLevels.slayer >= (master.slayerLvl ?? 0) &&
@@ -138,7 +141,13 @@ export function userCanUseMaster(user: MUser, master: SlayerMaster) {
 	);
 }
 
-function userCanUseTask(user: MUser, task: AssignableSlayerTask, master: SlayerMaster, allowBossTasks = false) {
+function userCanUseTask(
+	user: MUser,
+	task: AssignableSlayerTask,
+	master: SlayerMaster,
+	blocked: readonly number[],
+	allowBossTasks = false
+) {
 	if (task.isBoss && !allowBossTasks) return false;
 	if (task.dontAssign) return false;
 	const myLastTask = user.user.slayer_last_task;
@@ -148,8 +157,7 @@ function userCanUseTask(user: MUser, task: AssignableSlayerTask, master: SlayerM
 	if (task.requiredQuests?.find(quest => !user.user.finished_quest_ids.includes(quest))) return false;
 	if (task.slayerLevel && task.slayerLevel > user.skillsAsLevels.slayer) return false;
 	if (task.levelRequirements && !user.hasSkillReqs(task.levelRequirements)) return false;
-	const myBlockList = user.user.slayer_blocked_ids ?? [];
-	if (myBlockList.includes(task.monster.id)) return false;
+	if (blocked.includes(task.monster.id)) return false;
 	const myUnlocks = user.user.slayer_unlocks;
 	// Slayer unlock restrictions:
 	const lmon = task.monster.name.toLowerCase();
@@ -171,8 +179,19 @@ function userCanUseTask(user: MUser, task: AssignableSlayerTask, master: SlayerM
 	if (lmon === 'grotesque guardians' && !user.bank.has('Brittle key')) return false;
 	if (lmon === 'lizardman' && !myUnlocks.includes(SlayerTaskUnlocksEnum.ReptileGotRipped)) return false;
 	if (lmon === 'red dragon' && !myUnlocks.includes(SlayerTaskUnlocksEnum.SeeingRed)) return false;
-	if (lmon === 'mithril dragon' && !myUnlocks.includes(SlayerTaskUnlocksEnum.IHopeYouMithMe)) return false;
 	if (lmon === 'aviansie' && !myUnlocks.includes(SlayerTaskUnlocksEnum.WatchTheBirdie)) return false;
+	if (
+		lmon === 'gryphon' &&
+		(lmast === 'nieve' || lmast === 'duradel') &&
+		!myUnlocks.includes(SlayerTaskUnlocksEnum.WingsSpread)
+	)
+		return false;
+	if (
+		lmon === 'aquanite' &&
+		(lmast === 'nieve' || lmast === 'duradel') &&
+		!myUnlocks.includes(SlayerTaskUnlocksEnum.LuredIn)
+	)
+		return false;
 	if (lmon === 'tzhaar-ket' && !myUnlocks.includes(SlayerTaskUnlocksEnum.HotStuff)) return false;
 	if (lmon === 'spitting wyvern' && myUnlocks.includes(SlayerTaskUnlocksEnum.StopTheWyvern)) return false;
 	if (
@@ -201,7 +220,8 @@ function userCanUseTask(user: MUser, task: AssignableSlayerTask, master: SlayerM
 
 export async function assignNewSlayerTask({ user, rng }: { user: MUser; rng: RNGProvider }, master: SlayerMaster) {
 	// assignedTask is the task object, currentTask is the database row.
-	const baseTasks = [...master.tasks].filter(t => userCanUseTask(user, t, master, false));
+	const blocked = await getSlayerBlocks(user.id, master.id);
+	const baseTasks = [...master.tasks].filter(t => userCanUseTask(user, t, master, blocked, false));
 	let bossTask = false;
 	let wildyBossTask = false;
 	if (
@@ -222,14 +242,14 @@ export async function assignNewSlayerTask({ user, rng }: { user: MUser; rng: RNG
 	let assignedTask: AssignableSlayerTask | null = null;
 
 	if (bossTask) {
-		const baseBossTasks = bossTasks.filter(t => userCanUseTask(user, t, master, true));
+		const baseBossTasks = bossTasks.filter(t => userCanUseTask(user, t, master, blocked, true));
 		if (baseBossTasks.length > 0) {
 			assignedTask = weightedPick(rng, baseBossTasks);
 		}
 	}
 
 	if (wildyBossTask) {
-		const baseWildyBossTasks = wildernessBossTasks.filter(t => userCanUseTask(user, t, master, true));
+		const baseWildyBossTasks = wildernessBossTasks.filter(t => userCanUseTask(user, t, master, blocked, true));
 		if (baseWildyBossTasks.length > 0) {
 			assignedTask = weightedPick(rng, baseWildyBossTasks);
 		}
@@ -348,6 +368,9 @@ export function getCommonTaskName(task: Monster | CustomMonster) {
 			break;
 		case Monsters.DagannothPrime.id:
 			commonName = 'Dagannoth Kings';
+			break;
+		case Monsters.BronzeDragon.id:
+			commonName = 'Metal Dragon';
 			break;
 		default:
 	}

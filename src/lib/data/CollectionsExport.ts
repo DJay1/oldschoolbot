@@ -6,6 +6,7 @@ import { LampTable } from '@/lib/bso/xpLamps.js';
 import { Bank, ItemGroups } from 'oldschooljs';
 
 import type { Minigame } from '@/prisma/main.js';
+import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import {
 	gracefulCapes,
 	gracefulFeet,
@@ -1862,7 +1863,12 @@ export const slayerCL = resolveItems([
 	// EItem.EARTHBOUND_TECPATL, // Currently unobtainable.
 	EItem.ANTLER_GUARD,
 	EItem.ALCHEMISTS_SIGNET,
-	EItem.BROKEN_ANTLER
+	EItem.BROKEN_ANTLER,
+	'Aquanite tendon',
+	Slayer2026Item.HORN_OF_PLENTY_EMPTY,
+	'Gryphon feather',
+	Slayer2026Item.VENATOR_TOOTH,
+	Slayer2026Item.VENATOR_FANG
 ]);
 
 export const tormentedDemonCL = resolveItems(['Tormented synapse', 'Burning claw', 'Guthixian temple teleport']);

@@ -1,6 +1,7 @@
 import { EMonster, Monsters } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
+import { getSlayerBlocks } from '@/lib/slayer/slayerBlocks.js';
 import { slayerCommand } from '@/mahoji/commands/slayer.js';
 import { createTestUser, mockClient, mockMathRandom } from '../util.js';
 
@@ -31,21 +32,21 @@ describe('Slayer Tasks', async () => {
 		const res5: any = await user.runCommand(slayerCommand, { new_task: {} });
 		expect(res5.content).toContain('has assigned you to kill');
 		expect(Math.random()).toEqual(0.1);
-		await user.update({ QP: 150 });
+		await user.update({ QP: 150, slayer_points: 30 });
 		const res6 = await user.runCommand(slayerCommand, { manage: { command: 'block' } });
-		expect(res6).toContain('You need 100 points to block, you only have: 70');
+		expect(res6).toContain('You need 40 points to block, you only have: 30');
 
 		await user.update({ slayer_points: 150 });
 		const res7 = await user.runCommand(slayerCommand, { manage: { command: 'block' } });
-		expect(res7).toContain('Your task has been blocked.');
+		expect(res7).toContain('Your task has been blocked for Turael.');
 		await user.sync();
 		expect(Math.random()).toEqual(0.1);
-		expect(user.user.slayer_blocked_ids).toHaveLength(1);
-		expect(user.user.slayer_blocked_ids[0]).toEqual(655);
-		expect(user.user.slayer_points).toEqual(50);
+		expect(await getSlayerBlocks(user.id, 1)).toEqual([655]);
+		expect(await getSlayerBlocks(user.id, 2)).toEqual([]);
+		expect(user.user.slayer_points).toEqual(110);
 
 		expect(await user.runCommand(slayerCommand, { status: {} })).toContain(
-			'You have 50 slayer points, and have completed 0 tasks in a row and 0 wilderness tasks in a row.'
+			'You have 110 slayer points, and have completed 0 tasks in a row and 0 wilderness tasks in a row.'
 		);
 
 		expect(((await user.runCommand(slayerCommand, { new_task: {} })) as any).content).toContain(

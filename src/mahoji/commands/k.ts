@@ -79,6 +79,12 @@ export const minionKCommand = defineCommand({
 			name: 'solo',
 			description: 'Solo (if its a group boss)',
 			required: false
+		},
+		{
+			type: 'Boolean',
+			name: 'take_eggs',
+			description: 'Maggot King only: take its eggs instead of the loot, for a better pet chance.',
+			required: false
 		}
 	],
 	run: async ({ options, user, channelId, interaction, rng }) => {
@@ -93,7 +99,8 @@ export const minionKCommand = defineCommand({
 			options.wilderness,
 			options.solo,
 			// @ts-expect-error: Passed by the bot only
-			options.onTask
+			options.onTask,
+			options.take_eggs
 		);
 	}
 });

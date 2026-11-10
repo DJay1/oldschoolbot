@@ -17,6 +17,7 @@ import { withPatreonLink } from '@/lib/patreonLink.js';
 import { handleQualityCheckButton } from '@/lib/qualityChecks/buttons.js';
 import { type RunCommandArgs, runCommand } from '@/lib/settings/settings.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
+import { MORTIMER_PICK_PREFIX, pickMortimerOffer } from '@/lib/slayer/mortimer.js';
 import { updateGiveawayMessage } from '@/lib/util/giveaway.js';
 import { fetchRepeatTrips, repeatTrip } from '@/lib/util/repeatStoredTrip.js';
 import { autoSlayCommand } from '@/mahoji/lib/abstracted_commands/autoSlayCommand.js';
@@ -266,6 +267,11 @@ async function globalButtonInteractionHandler({
 
 	if (await user.getIsLocked()) {
 		return { content: 'You cannot use a command right now.', ephemeral: true };
+	}
+
+	if (id.startsWith(MORTIMER_PICK_PREFIX)) {
+		const index = Number(id.slice(MORTIMER_PICK_PREFIX.length));
+		return user.withLock('mortimer_pick', () => pickMortimerOffer(user, index));
 	}
 
 	const options: Pick<RunCommandArgs, 'user' | 'interaction' | 'continueDeltaMillis' | 'ignoreUserIsBusy'> = {

@@ -57,6 +57,10 @@ export const fletchCommand = defineCommand({
 			}
 		}
 
+		if (fletchable.requiredQuests?.some(quest => !user.user.finished_quest_ids.includes(quest))) {
+			return `You need to complete The Blood Moon Rises to fletch ${fletchable.name}.`;
+		}
+
 		const userBank = user.bank;
 		const hasFletchingKnife = user.hasEquippedOrInBank('Fletching knife');
 

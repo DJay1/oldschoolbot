@@ -4,6 +4,7 @@ import { duradelTasks } from '@/lib/slayer/tasks/duradelTasks.js';
 import { konarTasks } from '@/lib/slayer/tasks/konarTasks.js';
 import { krystiliaTasks } from '@/lib/slayer/tasks/krystiliaTasks.js';
 import { mazchnaTasks } from '@/lib/slayer/tasks/mazchnaTasks.js';
+import { mortimerTasks } from '@/lib/slayer/tasks/mortimerTasks.js';
 import { nieveTasks } from '@/lib/slayer/tasks/nieveTasks.js';
 import { turaelTasks } from '@/lib/slayer/tasks/turaelTasks.js';
 import { vannakaTasks } from '@/lib/slayer/tasks/vannakaTasks.js';
@@ -18,7 +19,8 @@ export const allSlayerTasks: AssignableSlayerTask[] = [
 	...turaelTasks,
 	...vannakaTasks,
 	...duradelTasks,
-	...krystiliaTasks
+	...krystiliaTasks,
+	...mortimerTasks
 ];
 
 export const allSlayerMonsters = allSlayerTasks.map(m => m.monster);

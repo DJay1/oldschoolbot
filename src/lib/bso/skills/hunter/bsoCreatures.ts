@@ -2,9 +2,42 @@ import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 
 import { Bank, LootTable } from 'oldschooljs';
 
+import { VampyriumItem } from '@/lib/customItems/bloodMoon.js';
+import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { type Creature, HunterTechniqueEnum } from '@/lib/skilling/types.js';
 
+export const VAMPYRIUM_CREATURE_IDS = [940_101, 940_102];
+
 export const bsoCreatures: Creature[] = [
+	{
+		name: 'Letvek',
+		id: 940_101,
+		aliases: ['letvek', 'letveks'],
+		level: 76,
+		hunterXP: 200,
+		table: new LootTable().every(Slayer2026Item.LETVEK),
+		huntTechnique: HunterTechniqueEnum.BoxTrapping,
+		multiTraps: true,
+		catchTime: 25,
+		slope: 1.22,
+		intercept: -31.33
+	},
+	{
+		name: 'Stymphike',
+		id: 940_102,
+		aliases: ['stymphike', 'stymphikes'],
+		level: 82,
+		hunterXP: 1725,
+		table: new LootTable()
+			.every(Slayer2026Item.STYMPHIKE_FEATHER, 15)
+			.every('Bones')
+			.every(VampyriumItem.STYMPHIKE_CARCASS),
+		huntTechnique: HunterTechniqueEnum.Tracking,
+		catchTime: 43,
+		slope: 0,
+		intercept: 99,
+		bait: qty => new Bank().add(Slayer2026Item.LETVEK, qty)
+	},
 	{
 		name: 'Sand Gecko',
 		id: 3251,

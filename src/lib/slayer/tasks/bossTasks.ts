@@ -1,11 +1,30 @@
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
+import { MaggotKing } from '@/lib/bso/monsters/bosses/MaggotKing.js';
 import { BSOMonsters } from '@/lib/bso/monsters/customMonsters.js';
+import { ShellbaneGryphon } from '@/lib/bso/monsters/slayer2026Monsters.js';
 
 import { Monsters } from 'oldschooljs';
 
+import { QuestID } from '@/lib/minions/data/quests.js';
 import type { AssignableSlayerTask } from '@/lib/slayer/types.js';
 
 export const bossTasks: AssignableSlayerTask[] = [
+	{
+		monster: MaggotKing,
+		amount: [3, 25],
+		weight: 1,
+		monsters: [MaggotKing.id],
+		requiredQuests: [QuestID.TheBloodMoonRises],
+		isBoss: true
+	},
+	{
+		monster: ShellbaneGryphon,
+		amount: [3, 25],
+		weight: 1,
+		monsters: [ShellbaneGryphon.id],
+		slayerLevel: 51,
+		isBoss: true
+	},
 	{
 		monster: Monsters.AbyssalSire,
 		amount: [3, 35],

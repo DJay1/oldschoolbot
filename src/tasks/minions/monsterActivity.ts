@@ -1,5 +1,7 @@
 import { isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
+import { CUSTOM_KONAR_KEY_RATES, rollMaggotKingEggs } from '@/lib/bso/monsters/bosses/MaggotKing.js';
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import {
 	type MidPVMEffectArgs,
@@ -28,6 +30,13 @@ import { addMonsterXPRaw } from '@/lib/minions/functions/addMonsterXPRaw.js';
 import announceLoot from '@/lib/minions/functions/announceLoot.js';
 import type { AttackStyles } from '@/lib/minions/functions/index.js';
 import type { KillableMonster } from '@/lib/minions/types.js';
+import {
+	bonusRolls,
+	getTaskModifier,
+	incrementMortimerTasks,
+	MORTIMER_ID,
+	type MortimerModifier
+} from '@/lib/slayer/mortimer.js';
 import { SlayerTaskUnlocksEnum } from '@/lib/slayer/slayerUnlocks.js';
 import { type CurrentSlayerInfo, calculateSlayerPoints } from '@/lib/slayer/slayerUtil.js';
 import type { SlayerMaster } from '@/lib/slayer/types.js';
@@ -49,16 +58,23 @@ function handleSlayerTaskCompletion({
 	updateBank,
 	hasKourendElite,
 	monster,
-	slayerMaster
+	slayerMaster,
+	slayerModifier
 }: {
 	hasKourendElite: boolean;
 	slayerContext: ReturnType<typeof getSlayerContext>;
 	updateBank: UpdateBank;
 	monster: KillableMonster;
 	slayerMaster: SlayerMaster;
+	slayerModifier: MortimerModifier | null;
 }) {
 	if (!slayerContext.isOnTask) {
 		throw new Error('handleSlayerTaskCompletion called when not on task.');
+	}
+	if (slayerMaster.id === MORTIMER_ID) {
+		const mortimerPoints = slayerModifier?.kind === 'points' ? slayerModifier.value : 0;
+		updateBank.userUpdates.slayer_points = { increment: mortimerPoints };
+		return `**You've completed your Mortimer task and received ${mortimerPoints} points; giving you a total of ${slayerContext.slayerPoints + mortimerPoints}; return to a Slayer master.**`;
 	}
 	const isWildyTask = slayerContext.isUsingKrystilia;
 	const key = isWildyTask ? 'slayer_wildy_task_streak' : 'slayer_task_streak';
@@ -172,6 +188,8 @@ interface newOptions {
 	kcBank: KCBank;
 	gearBank: GearBank;
 	slayerInfo: CurrentSlayerInfo;
+	slayerModifier?: MortimerModifier | null;
+	takeEggs?: boolean;
 	slayerUnlocks: SlayerTaskUnlocksEnum[];
 	tertiaryItemPercentageChanges: ReturnType<MUser['buildTertiaryItemChanges']>;
 	attackStyles: AttackStyles[];
@@ -199,6 +217,7 @@ export function doMonsterTrip(data: newOptions) {
 		gearBank,
 		tertiaryItemPercentageChanges,
 		slayerInfo,
+		slayerModifier,
 		slayerUnlocks,
 		hasKourendElite,
 		attackStyles,
@@ -385,9 +404,15 @@ export function doMonsterTrip(data: newOptions) {
 	// Loot
 	const finalQuantity = quantity - newSuperiorCount;
 
+	const takingEggs = Boolean(data.takeEggs) && monster.id === Slayer2026MonsterID.MAGGOT_KING;
 	const loot = wiped
 		? new Bank()
-		: monster.table.kill(oriEffect({ gearBank, quantity: finalQuantity, duration, messages }), killOptions);
+		: takingEggs
+			? rollMaggotKingEggs(finalQuantity, rng)
+			: monster.table.kill(oriEffect({ gearBank, quantity: finalQuantity, duration, messages }), killOptions);
+	if (takingEggs && !wiped) {
+		messages.push('You took the eggs instead of the normal loot.');
+	}
 	if (isDoubleLootActive(duration)) {
 		loot.multiply(2);
 		messages.push(`${itemStatusIcon('double_loot_token')}**Double loot activated!**`);
@@ -426,6 +451,14 @@ export function doMonsterTrip(data: newOptions) {
 			if (isInWilderness) loot.add("Larran's key", newSuperiorCount);
 			if (killOptions.slayerMaster === MonsterSlayerMaster.Konar) loot.add('Brimstone key', newSuperiorCount);
 		}
+		const customKonarKeyRate = CUSTOM_KONAR_KEY_RATES.get(monster.id);
+		if (customKonarKeyRate && slayerContext.isOnTask && killOptions.slayerMaster === MonsterSlayerMaster.Konar) {
+			let keys = 0;
+			for (let i = 0; i < finalQuantity; i++) {
+				if (rng.roll(customKonarKeyRate)) keys++;
+			}
+			if (keys > 0) loot.add('Brimstone key', keys);
+		}
 		if (isInWilderness && monster.name === 'Hill giant') {
 			for (let i = 0; i < quantity; i++) {
 				if (rng.roll(128)) {
@@ -445,23 +478,50 @@ export function doMonsterTrip(data: newOptions) {
 			);
 		}
 
+		const taskModifier = slayerContext.isOnTask ? slayerModifier : null;
+		if (taskModifier?.kind === 'superior' && newSuperiorCount > 0 && superiorTable) {
+			const extra = bonusRolls(rng, newSuperiorCount, taskModifier.value);
+			if (extra > 0) {
+				loot.add(superiorTable.kill(extra).set('Brimstone key', 0));
+				messages.push(`Mortimer's modifier gave you ${extra}x extra superior loot.`);
+			}
+		}
+		if (taskModifier?.kind === 'clue') {
+			let extraClues = 0;
+			for (const [item, qty] of loot.items()) {
+				if (!item.name.startsWith('Clue scroll')) continue;
+				const extra = bonusRolls(rng, qty, taskModifier.value);
+				if (extra > 0) {
+					loot.add(item.id, extra);
+					extraClues += extra;
+				}
+			}
+			if (extraClues > 0) messages.push(`Mortimer's modifier gave you ${extraClues}x extra clue scrolls.`);
+		}
+
 		updateBank.itemLootBank.add(loot);
-		updateBank.xpBank.add(
-			addMonsterXPRaw({
-				rng,
-				monsterID: monster.id,
-				quantity,
-				duration,
-				isOnTask: slayerContext.isOnTask,
-				taskQuantity: slayerContext.isOnTask ? slayerContext.quantitySlayed : null,
-				minimal: true,
-				usingCannon,
-				cannonMulti,
-				burstOrBarrage,
-				superiorCount: newSuperiorCount,
-				attackStyles
-			})
-		);
+		const monsterXP = addMonsterXPRaw({
+			rng,
+			monsterID: monster.id,
+			quantity,
+			duration,
+			isOnTask: slayerContext.isOnTask,
+			taskQuantity: slayerContext.isOnTask ? slayerContext.quantitySlayed : null,
+			minimal: true,
+			usingCannon,
+			cannonMulti,
+			burstOrBarrage,
+			superiorCount: newSuperiorCount,
+			attackStyles
+		});
+		updateBank.xpBank.add(monsterXP);
+		if (taskModifier?.kind === 'xp') {
+			const bonusXP = Math.floor((monsterXP.amount('slayer') * taskModifier.value) / 100);
+			if (bonusXP > 0) {
+				updateBank.xpBank.add('slayer', bonusXP);
+				messages.push(`Mortimer's modifier gave you ${bonusXP.toLocaleString()} bonus Slayer XP.`);
+			}
+		}
 		if (hasKourendHard) {
 			const ashSanctifierResult = ashSanctifierEffect({
 				hasKourendElite,
@@ -491,7 +551,8 @@ export function doMonsterTrip(data: newOptions) {
 					updateBank,
 					hasKourendElite,
 					monster,
-					slayerMaster: slayerContext.slayerMaster
+					slayerMaster: slayerContext.slayerMaster,
+					slayerModifier: slayerModifier ?? null
 				})
 			);
 		} else {
@@ -582,6 +643,10 @@ export const monsterTask: MinionTask = {
 			update: {}
 		});
 		const slayerInfo = await user.fetchSlayerInfo();
+		const slayerModifier =
+			slayerInfo.currentTask && slayerInfo.slayerMaster?.id === MORTIMER_ID
+				? await getTaskModifier(slayerInfo.currentTask.id)
+				: null;
 		const monster = killableMonsters.find(mon => mon.id === data.mi)!;
 		const attackStyles = data.attackStyles ?? user.getAttackStyles();
 		const { slayerContext, quantity, newKC, messages, updateBank } = doMonsterTrip({
@@ -597,6 +662,7 @@ export const monsterTask: MinionTask = {
 			hasKourendHard: user.hasDiary('kourend&kebos.hard'),
 			hasKourendElite: user.hasDiary('kourend&kebos.elite'),
 			slayerInfo,
+			slayerModifier,
 			slayerUnlocks: user.user.slayer_unlocks,
 			attackStyles,
 			hasEliteCA: user.hasCompletedCATier('elite'),
@@ -618,6 +684,10 @@ export const monsterTask: MinionTask = {
 					quantity_remaining: slayerContext.quantityLeft
 				}
 			});
+			if (slayerContext.quantityLeft === 0 && slayerContext.slayerMaster.id === MORTIMER_ID) {
+				const completed = await incrementMortimerTasks(user.id);
+				messages.push(`You have now completed ${completed} Mortimer tasks.`);
+			}
 		}
 
 		if (data.isInWilderness) {

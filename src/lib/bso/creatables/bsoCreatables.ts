@@ -689,30 +689,6 @@ const bsoArmorSets: Createable[] = [
 		outputItems: {
 			[itemID('Trailblazer relichunter (t3) armour set')]: 1
 		}
-	},
-	{
-		// TODO - Move to main createables when released
-		name: "Unpack dagon'hai robes set",
-		inputItems: {
-			[itemID("Dagon'hai robes set")]: 1
-		},
-		outputItems: {
-			[itemID("Dagon'hai hat")]: 1,
-			[itemID("Dagon'hai robe top")]: 1,
-			[itemID("Dagon'hai robe bottom")]: 1
-		},
-		noCl: true
-	},
-	{
-		name: "Dagon'hai robes set",
-		inputItems: {
-			[itemID("Dagon'hai hat")]: 1,
-			[itemID("Dagon'hai robe top")]: 1,
-			[itemID("Dagon'hai robe bottom")]: 1
-		},
-		outputItems: {
-			[itemID("Dagon'hai robes set")]: 1
-		}
 	}
 ];
 

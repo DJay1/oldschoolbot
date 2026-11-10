@@ -2,6 +2,7 @@ import { GearStat } from '@oldschoolgg/gear';
 import { Time } from '@oldschoolgg/toolkit';
 import { Bank, itemID, Monsters } from 'oldschooljs';
 
+import { BloodMoonItem } from '@/lib/customItems/bloodMoon.js';
 import type { KillableMonster } from '@/lib/minions/types.js';
 
 export const mazchnaMonsters: KillableMonster[] = [
@@ -101,7 +102,9 @@ export const mazchnaMonsters: KillableMonster[] = [
 		itemInBankBoosts: [
 			{
 				[itemID('Ivandis flail')]: 12,
-				[itemID('Blisterwood flail')]: 15
+				[itemID('Blisterwood flail')]: 15,
+				[BloodMoonItem.HALLOWED_FLAIL]: 20,
+				[BloodMoonItem.SUNSPEAR]: 25
 			}
 		],
 
@@ -389,7 +392,9 @@ export const mazchnaMonsters: KillableMonster[] = [
 		itemInBankBoosts: [
 			{
 				[itemID('Ivandis flail')]: 12,
-				[itemID('Blisterwood flail')]: 15
+				[itemID('Blisterwood flail')]: 15,
+				[BloodMoonItem.HALLOWED_FLAIL]: 20,
+				[BloodMoonItem.SUNSPEAR]: 25
 			}
 		],
 
@@ -407,7 +412,9 @@ export const mazchnaMonsters: KillableMonster[] = [
 		itemInBankBoosts: [
 			{
 				[itemID('Ivandis flail')]: 12,
-				[itemID('Blisterwood flail')]: 15
+				[itemID('Blisterwood flail')]: 15,
+				[BloodMoonItem.HALLOWED_FLAIL]: 20,
+				[BloodMoonItem.SUNSPEAR]: 25
 			}
 		],
 
@@ -428,7 +435,9 @@ export const mazchnaMonsters: KillableMonster[] = [
 		itemInBankBoosts: [
 			{
 				[itemID('Ivandis flail')]: 12,
-				[itemID('Blisterwood flail')]: 15
+				[itemID('Blisterwood flail')]: 15,
+				[BloodMoonItem.HALLOWED_FLAIL]: 20,
+				[BloodMoonItem.SUNSPEAR]: 25
 			}
 		],
 		difficultyRating: 5,

@@ -1,6 +1,7 @@
 import { Emoji } from '@oldschoolgg/toolkit';
 import { itemID } from 'oldschooljs';
 
+import { VampyriumItem } from '@/lib/customItems/bloodMoon.js';
 import { defineSkill, type Fish } from '@/lib/skilling/types.js';
 import { calcFishingTripResult } from './fishingTrip.js';
 import { calcFishingTripStart } from './fishingTripStart.js';
@@ -315,6 +316,24 @@ const fishes: Fish[] = [
 		canPowerfish: true,
 		powerfishTicks: 2,
 		powerfishLostTicks: 0.05
+	},
+	{
+		name: 'Leechfin',
+		alias: ['leechfin', 'leechfins', 'leech'],
+		subfishes: [
+			{
+				id: VampyriumItem.LEECHFIN,
+				level: 78,
+				xp: 33.2,
+				intercept: 0.1086,
+				slope: 0.00762
+			}
+		],
+		petChance: 160_000,
+		clueScrollChance: 165_000,
+		lostTicks: 0.1,
+		bankingTime: 0,
+		ticksPerRoll: 3
 	},
 	{
 		name: 'Infernal eel',

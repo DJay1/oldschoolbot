@@ -1,4 +1,5 @@
 import { monkeyTiers } from '@/lib/bso/minigames/monkey-rumble/monkeyRumble.js';
+import { VAMPYRIUM_CREATURE_IDS } from '@/lib/bso/skills/hunter/bsoCreatures.js';
 import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
 
 import { formatDuration, reduceNumByPercent, stringMatches, Time } from '@oldschoolgg/toolkit';
@@ -7,6 +8,7 @@ import { Bank, ECreature, type ItemBank, itemID } from 'oldschooljs';
 import { hasWildyHuntGearEquipped } from '@/lib/gear/functions/hasWildyHuntGearEquipped.js';
 import type { UserFullGearSetup } from '@/lib/gear/types.js';
 import { trackLoot } from '@/lib/lootTrack.js';
+import { QuestID } from '@/lib/minions/data/quests.js';
 import { soteSkillRequirements } from '@/lib/skilling/functions/questRequirements.js';
 import Hunter from '@/lib/skilling/skills/hunter/hunter.js';
 import { type Creature, HunterTechniqueEnum } from '@/lib/skilling/types.js';
@@ -91,6 +93,12 @@ export function calculateHunterInput({
 
 	if (creature.qpRequired && QP < creature.qpRequired) {
 		return `You need ${creature.qpRequired} QP to hunt ${creature.name}.`;
+	}
+	if (
+		VAMPYRIUM_CREATURE_IDS.includes(creature.id) &&
+		!user.user.finished_quest_ids.includes(QuestID.TheBloodMoonRises)
+	) {
+		return `You need to complete The Blood Moon Rises to hunt ${creature.name}.`;
 	}
 
 	if (creature.prayerLvl && skillsAsLevels.prayer < creature.prayerLvl) {

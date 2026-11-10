@@ -1,7 +1,29 @@
 import { BitField } from '@/lib/constants.js';
+import { VampyriumItem } from '@/lib/customItems/bloodMoon.js';
+import { QuestID } from '@/lib/minions/data/quests.js';
 import type { Log } from '@/lib/skilling/types.js';
 
 export const bsoLogs: Log[] = [
+	{
+		level: 77,
+		xp: 700,
+		id: VampyriumItem.BUCKET_OF_BLOODWOOD_SAP,
+		name: 'Bloodwood tree',
+		petChance: 72_321,
+		aliases: ['bloodwood', 'bloodwood sap', 'bucket of bloodwood sap', 'sap'],
+		findNewTreeTime: 4,
+		bankingTime: 20,
+		slope: 0.04,
+		intercept: -1.4,
+		depletionChance: 100 * (1 / 30),
+		wcGuild: false,
+		qpRequired: 0,
+		customReq: user => {
+			if (!user.user.finished_quest_ids.includes(QuestID.TheBloodMoonRises)) {
+				return 'You need to complete The Blood Moon Rises to chop bloodwood trees.';
+			}
+		}
+	},
 	{
 		level: 80,
 		xp: 550,

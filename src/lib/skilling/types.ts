@@ -213,6 +213,7 @@ export interface Fletchable {
 	tickRate: number;
 	outputMultiple?: number;
 	requiredSlayerUnlocks?: SlayerTaskUnlocksEnum[];
+	requiredQuests?: QuestID[];
 	craftingXp?: number;
 }
 

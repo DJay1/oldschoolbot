@@ -1,5 +1,6 @@
 import { itemID } from 'oldschooljs';
 
+import { MaggotKingItem } from '@/lib/customItems/bloodMoon.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 
 export interface Eatable {
@@ -22,6 +23,12 @@ export const Eatables: readonly Eatable[] = [
 		name: 'Shrimps',
 		id: itemID('Shrimps'),
 		healAmount: 3,
+		raw: null
+	},
+	{
+		name: 'Stymphike tartare',
+		id: MaggotKingItem.STYMPHIKE_TARTARE,
+		healAmount: 26,
 		raw: null
 	},
 	{

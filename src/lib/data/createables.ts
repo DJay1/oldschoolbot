@@ -4,6 +4,8 @@ import type { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 import { Bank, deepResolveItems, EItem, type ItemBank, Items, itemID } from 'oldschooljs';
 
 import { BitField } from '@/lib/constants.js';
+import { MaggotKingItem, SEEKING_ARROWS, SeekingFletchItem, VampyriumItem } from '@/lib/customItems/bloodMoon.js';
+import { ShellbaneItem, Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { chambersOfXericMetamorphPets, tobMetamorphPets } from '@/lib/data/CollectionsExport.js';
 import { amrodCreatables } from '@/lib/data/creatables/amrod.js';
 import { armorAndItemPacks } from '@/lib/data/creatables/armorPacks.js';
@@ -1461,6 +1463,47 @@ const Reverteables: Createable[] = [
 ];
 
 const Createables: Createable[] = [
+	...SEEKING_ARROWS.map(
+		(arrow): Createable => ({
+			name: arrow.name,
+			inputItems: new Bank().add(VampyriumItem.BUCKET_OF_BLOODWOOD_SAP).add(arrow.base, 15),
+			outputItems: new Bank().add(arrow.id, 15),
+			noCreatablesCl: true
+		})
+	),
+	{
+		name: 'Sap-treated redwood logs',
+		inputItems: new Bank().add('Redwood logs').add(VampyriumItem.BUCKET_OF_BLOODWOOD_SAP),
+		outputItems: new Bank().add(SeekingFletchItem.SAP_TREATED_REDWOOD_LOGS),
+		noCreatablesCl: true
+	},
+	{
+		name: "Belle's folly",
+		inputItems: new Bank().add(ShellbaneItem.BELLES_FOLLY_TARNISHED),
+		outputItems: new Bank().add(ShellbaneItem.BELLES_FOLLY),
+		requiredSkills: { smithing: 70 },
+		noCreatablesCl: true
+	},
+	{
+		name: 'Vial of blood',
+		inputItems: new Bank().add(Slayer2026Item.BLOOD_SAC, 50),
+		outputItems: new Bank().add('Vial of blood'),
+		noCreatablesCl: true
+	},
+	{
+		name: 'Etched elder venator fang',
+		inputItems: new Bank().add(MaggotKingItem.ELDER_VENATOR_FANG),
+		outputItems: new Bank().add(MaggotKingItem.ETCHED_ELDER_VENATOR_FANG),
+		requiredSkills: { crafting: 84 },
+		noCreatablesCl: true
+	},
+	{
+		name: 'Necklace of rupture',
+		inputItems: new Bank().add('Necklace of anguish').add(MaggotKingItem.ETCHED_ELDER_VENATOR_FANG),
+		outputItems: new Bank().add(MaggotKingItem.NECKLACE_OF_RUPTURE),
+		requiredSkills: { crafting: 84 },
+		noCreatablesCl: true
+	},
 	{
 		name: 'Godsword blade',
 		inputItems: {

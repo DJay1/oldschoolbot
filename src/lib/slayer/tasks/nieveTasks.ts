@@ -1,9 +1,10 @@
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
+import { Aquanite, Gryphon, ShellbaneGryphon } from '@/lib/bso/monsters/slayer2026Monsters.js';
 import { polyporeTasks } from '@/lib/bso/skills/slayer/polyporeTasks.js';
 
 import { EMonster, Monsters } from 'oldschooljs';
 
-import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 import { SlayerTaskUnlocksEnum } from '@/lib/slayer/slayerUnlocks.js';
 import { bossTasks } from '@/lib/slayer/tasks/bossTasks.js';
@@ -35,13 +36,21 @@ export const nieveTasks: AssignableSlayerTask[] = [
 		unlocked: true
 	},
 	{
-		monster: Monsters.AdamantDragon,
-		amount: [3, 7],
-		extendedAmount: [20, 30],
-		extendedUnlockId: SlayerTaskUnlocksEnum.AdamindSomeMore,
-		weight: 2,
-		monsters: [Monsters.AdamantDragon.id],
-		questPoints: 205,
+		monster: Monsters.BronzeDragon,
+		amount: [30, 40],
+		weight: 12,
+		monsters: [
+			Monsters.BronzeDragon.id,
+			Monsters.IronDragon.id,
+			Monsters.SteelDragon.id,
+			Monsters.MithrilDragon.id,
+			Monsters.AdamantDragon.id,
+			Monsters.RuneDragon.id
+		],
+		extendedAmount: [150, 200],
+		extendedUnlockId: SlayerTaskUnlocksEnum.PedalToTheMetals,
+		combatLevel: 85,
+		questPoints: 34,
 		unlocked: true
 	},
 	{
@@ -284,17 +293,6 @@ export const nieveTasks: AssignableSlayerTask[] = [
 		unlocked: true
 	},
 	{
-		monster: Monsters.IronDragon,
-		amount: [30, 60],
-		extendedAmount: [60, 100],
-		extendedUnlockId: SlayerTaskUnlocksEnum.PedalToTheMetals,
-		weight: 5,
-		monsters: [Monsters.IronDragon.id],
-		combatLevel: 80,
-		questPoints: 34,
-		unlocked: true
-	},
-	{
 		monster: Monsters.JuvenileCustodianStalker,
 		amount: [110, 170],
 		extendedAmount: [200, 250],
@@ -351,15 +349,6 @@ export const nieveTasks: AssignableSlayerTask[] = [
 		unlocked: true
 	},
 	{
-		monster: Monsters.MithrilDragon,
-		amount: [4, 8],
-		extendedAmount: [25, 35],
-		extendedUnlockId: SlayerTaskUnlocksEnum.IReallyMithYou,
-		weight: 5,
-		monsters: [Monsters.MithrilDragon.id],
-		unlocked: false
-	},
-	{
 		monster: Monsters.Zygomite,
 		amount: [10, 25],
 		weight: 2,
@@ -389,16 +378,6 @@ export const nieveTasks: AssignableSlayerTask[] = [
 		questPoints: 34,
 		combatLevel: 68,
 		unlocked: false
-	},
-	{
-		monster: Monsters.RuneDragon,
-		amount: [3, 6],
-		extendedAmount: [30, 60],
-		extendedUnlockId: SlayerTaskUnlocksEnum.RUUUUUNE,
-		weight: 2,
-		monsters: [Monsters.RuneDragon.id],
-		questPoints: 205,
-		unlocked: true
 	},
 	{
 		monster: Monsters.SkeletalWyvern,
@@ -431,18 +410,6 @@ export const nieveTasks: AssignableSlayerTask[] = [
 		combatLevel: 60,
 		slayerLevel: 63,
 		questPoints: 3,
-		unlocked: true
-	},
-	{
-		monster: Monsters.SteelDragon,
-		amount: [30, 60],
-		extendedAmount: [40, 60],
-		extendedUnlockId: SlayerTaskUnlocksEnum.PedalToTheMetals,
-		weight: 5,
-		monsters: [Monsters.SteelDragon.id],
-		levelRequirements: killableMonsters.find(k => k.id === Monsters.SteelDragon.id)?.levelRequirements,
-		combatLevel: 85,
-		questPoints: 34,
 		unlocked: true
 	},
 	{
@@ -491,7 +458,8 @@ export const nieveTasks: AssignableSlayerTask[] = [
 			Monsters.VampyreJuvinate.id,
 			Monsters.Vyrewatch.id,
 			Monsters.VyrewatchSentinel.id,
-			EBSOMonster.VLADIMIR_DRAKAN
+			EBSOMonster.VLADIMIR_DRAKAN,
+			Slayer2026MonsterID.VENATOR
 		],
 		questPoints: 1,
 		unlocked: false
@@ -525,5 +493,24 @@ export const nieveTasks: AssignableSlayerTask[] = [
 		slayerLevel: 56,
 		requiredQuests: [QuestID.ThePathOfGlouphrie]
 	},
-	...bossTasks
+	{
+		monster: Gryphon,
+		amount: [110, 170],
+		extendedAmount: [190, 250],
+		extendedUnlockId: SlayerTaskUnlocksEnum.GryphonAndOn,
+		weight: 7,
+		monsters: [Gryphon.id, ShellbaneGryphon.id],
+		slayerLevel: 51,
+		unlocked: true
+	},
+	{
+		monster: Aquanite,
+		amount: [40, 60],
+		extendedAmount: [150, 200],
+		extendedUnlockId: SlayerTaskUnlocksEnum.LetsStayAllAquanite,
+		weight: 6,
+		monsters: [Aquanite.id],
+		slayerLevel: 78,
+		unlocked: true
+	}
 ];

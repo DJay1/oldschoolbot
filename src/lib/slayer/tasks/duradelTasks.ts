@@ -1,8 +1,9 @@
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
+import { Aquanite, Gryphon, ShellbaneGryphon } from '@/lib/bso/monsters/slayer2026Monsters.js';
 
 import { EMonster, Monsters } from 'oldschooljs';
 
-import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 import { SlayerTaskUnlocksEnum } from '@/lib/slayer/slayerUnlocks.js';
 import { bossTasks } from '@/lib/slayer/tasks/bossTasks.js';
@@ -34,13 +35,21 @@ export const duradelTasks: AssignableSlayerTask[] = [
 		unlocked: true
 	},
 	{
-		monster: Monsters.AdamantDragon,
-		amount: [4, 9],
-		weight: 2,
-		monsters: [Monsters.AdamantDragon.id],
-		extendedAmount: [20, 30],
-		extendedUnlockId: SlayerTaskUnlocksEnum.AdamindSomeMore,
-		questPoints: 205,
+		monster: Monsters.BronzeDragon,
+		amount: [35, 45],
+		weight: 14,
+		monsters: [
+			Monsters.BronzeDragon.id,
+			Monsters.IronDragon.id,
+			Monsters.SteelDragon.id,
+			Monsters.MithrilDragon.id,
+			Monsters.AdamantDragon.id,
+			Monsters.RuneDragon.id
+		],
+		extendedAmount: [150, 200],
+		extendedUnlockId: SlayerTaskUnlocksEnum.PedalToTheMetals,
+		combatLevel: 85,
+		questPoints: 34,
 		unlocked: true
 	},
 	{
@@ -274,17 +283,6 @@ export const duradelTasks: AssignableSlayerTask[] = [
 		unlocked: true
 	},
 	{
-		monster: Monsters.IronDragon,
-		amount: [40, 60],
-		weight: 5,
-		monsters: [Monsters.IronDragon.id],
-		extendedAmount: [60, 100],
-		extendedUnlockId: SlayerTaskUnlocksEnum.PedalToTheMetals,
-		combatLevel: 80,
-		questPoints: 34,
-		unlocked: true
-	},
-	{
 		monster: Monsters.KalphiteWorker,
 		amount: [130, 200],
 		weight: 9,
@@ -312,15 +310,6 @@ export const duradelTasks: AssignableSlayerTask[] = [
 		amount: [130, 210],
 		weight: 10,
 		monsters: [Monsters.Lizardman.id, Monsters.LizardmanBrute.id, Monsters.LizardmanShaman.id],
-		unlocked: false
-	},
-	{
-		monster: Monsters.MithrilDragon,
-		amount: [5, 10],
-		weight: 9,
-		monsters: [Monsters.MithrilDragon.id],
-		extendedAmount: [25, 35],
-		extendedUnlockId: SlayerTaskUnlocksEnum.IReallyMithYou,
 		unlocked: false
 	},
 	{
@@ -352,16 +341,6 @@ export const duradelTasks: AssignableSlayerTask[] = [
 		monsters: [Monsters.RedDragon.id, Monsters.BabyRedDragon.id, Monsters.BrutalRedDragon.id],
 		questPoints: 34,
 		unlocked: false
-	},
-	{
-		monster: Monsters.RuneDragon,
-		amount: [3, 8],
-		weight: 2,
-		monsters: [Monsters.RuneDragon.id],
-		extendedAmount: [30, 60],
-		extendedUnlockId: SlayerTaskUnlocksEnum.RUUUUUNE,
-		questPoints: 205,
-		unlocked: true
 	},
 	{
 		monster: Monsters.SkeletalWyvern,
@@ -400,18 +379,6 @@ export const duradelTasks: AssignableSlayerTask[] = [
 		unlocked: true
 	},
 	{
-		monster: Monsters.SteelDragon,
-		amount: [10, 20],
-		weight: 7,
-		monsters: [Monsters.SteelDragon.id],
-		levelRequirements: killableMonsters.find(k => k.id === Monsters.SteelDragon.id)?.levelRequirements,
-		extendedAmount: [40, 60],
-		extendedUnlockId: SlayerTaskUnlocksEnum.PedalToTheMetals,
-		combatLevel: 85,
-		questPoints: 34,
-		unlocked: true
-	},
-	{
 		monster: Monsters.Suqah,
 		amount: [60, 90],
 		weight: 8,
@@ -446,7 +413,8 @@ export const duradelTasks: AssignableSlayerTask[] = [
 			Monsters.VampyreJuvinate.id,
 			Monsters.Vyrewatch.id,
 			Monsters.VyrewatchSentinel.id,
-			EBSOMonster.VLADIMIR_DRAKAN
+			EBSOMonster.VLADIMIR_DRAKAN,
+			Slayer2026MonsterID.VENATOR
 		],
 		extendedAmount: [200, 250],
 		extendedUnlockId: SlayerTaskUnlocksEnum.MoreAtStake,
@@ -488,5 +456,25 @@ export const duradelTasks: AssignableSlayerTask[] = [
 		slayerLevel: 56,
 		requiredQuests: [QuestID.ThePathOfGlouphrie]
 	},
-	...bossTasks
+	...bossTasks,
+	{
+		monster: Gryphon,
+		amount: [100, 210],
+		extendedAmount: [180, 290],
+		extendedUnlockId: SlayerTaskUnlocksEnum.GryphonAndOn,
+		weight: 8,
+		monsters: [Gryphon.id, ShellbaneGryphon.id],
+		slayerLevel: 51,
+		unlocked: true
+	},
+	{
+		monster: Aquanite,
+		amount: [30, 50],
+		extendedAmount: [150, 200],
+		extendedUnlockId: SlayerTaskUnlocksEnum.LetsStayAllAquanite,
+		weight: 6,
+		monsters: [Aquanite.id],
+		slayerLevel: 78,
+		unlocked: true
+	}
 ];

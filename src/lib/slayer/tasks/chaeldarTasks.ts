@@ -1,4 +1,6 @@
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
+import { Gryphon, ShellbaneGryphon } from '@/lib/bso/monsters/slayer2026Monsters.js';
 
 import { EMonster, Monsters } from 'oldschooljs';
 
@@ -395,7 +397,8 @@ export const chaeldarTasks: AssignableSlayerTask[] = [
 			Monsters.VampyreJuvinate.id,
 			Monsters.Vyrewatch.id,
 			Monsters.VyrewatchSentinel.id,
-			EBSOMonster.VLADIMIR_DRAKAN
+			EBSOMonster.VLADIMIR_DRAKAN,
+			Slayer2026MonsterID.VENATOR
 		],
 		combatLevel: 35,
 		questPoints: 1,
@@ -426,5 +429,15 @@ export const chaeldarTasks: AssignableSlayerTask[] = [
 		slayerLevel: 56,
 		requiredQuests: [QuestID.ThePathOfGlouphrie]
 	},
-	...bossTasks
+	...bossTasks,
+	{
+		monster: Gryphon,
+		amount: [60, 100],
+		extendedAmount: [140, 180],
+		extendedUnlockId: SlayerTaskUnlocksEnum.GryphonAndOn,
+		weight: 8,
+		monsters: [Gryphon.id, ShellbaneGryphon.id],
+		slayerLevel: 51,
+		unlocked: true
+	}
 ];
