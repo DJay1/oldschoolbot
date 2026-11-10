@@ -162,10 +162,10 @@ export class BaseInteraction {
 
 	/**
 	 * Discord does not send mention notifications for edited messages. After a
-	 * defer, the first reply that needs to ping users is posted as a follow-up
-	 * (a new message). Later replies edit that follow-up, unless they need to
-	 * ping additional users, in which case a new follow-up is created and the
-	 * previous message is removed so confirmation buttons do not linger.
+	 * defer, the first reply edits the original message so earlier replies are
+	 * never deleted. If a later reply needs to ping additional users, a
+	 * follow-up is posted and the previous message is left in place with its
+	 * buttons disabled.
 	 */
 	async baseReply(
 		options: SendableMessage
@@ -175,28 +175,19 @@ export class BaseInteraction {
 			const users = prepared.message.allowed_mentions?.users ?? [];
 			const newPings = users.filter(id => !this._pingedUserIds.has(id));
 
-			if (newPings.length > 0) {
-				if (this._deferred && !this._replied) {
-					try {
-						await this.sendWebhookEdit('@original', { content: '\u200b', components: [] });
-					} catch {}
-					this._replied = true;
-				}
+			if (newPings.length > 0 && this._replied) {
 				const created = await this.sendWebhookCreate(options);
 				this.rememberPingedUsers(prepared.message.allowed_mentions);
-				const previousNotify = this._notifyMessageId;
-				this._notifyMessageId = created.id;
+				const previousId = this._notifyMessageId ?? '@original';
 				try {
-					await this.deleteReply('@original');
+					await this.sendWebhookEdit(previousId, { components: [] });
 				} catch {}
-				if (previousNotify) {
-					try {
-						await this.deleteReply(previousNotify);
-					} catch {}
-				}
+				this._notifyMessageId = created.id;
 				return created;
 			}
 
+			this.rememberPingedUsers(prepared.message.allowed_mentions);
+			this._replied = true;
 			if (this._notifyMessageId) {
 				return this.sendWebhookEdit(this._notifyMessageId, options);
 			}
