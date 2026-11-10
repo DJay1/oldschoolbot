@@ -2,13 +2,13 @@ import { Events, formatOrdinal, roboChimpCLRankQuery, sumArr } from '@oldschoolg
 import type { Bank } from 'oldschooljs';
 
 import { type Prisma, UserEventType } from '@/prisma/main.js';
+import { announceNewClRares } from '@/lib/bsc/rareAnnouncements.js';
 import { allCLItems, allCollectionLogsFlat, calcCLDetails } from '@/lib/data/Collections.js';
 import { calculateMastery } from '@/lib/mastery.js';
 import { RawSQL } from '@/lib/rawSql.js';
 import { calculateOwnCLRanking, roboChimpSyncData } from '@/lib/roboChimp.js';
 import { MUserStats } from '@/lib/structures/MUserStats.js';
 import { fetchCLLeaderboard } from '@/lib/util/clLeaderboard.js';
-import { announceNewClRares } from '@/lib/bsc/rareAnnouncements.js';
 import { insertUserEvent } from '@/lib/util/userEvents.js';
 
 async function createHistoricalData(user: MUser): Promise<Prisma.HistoricalDataUncheckedCreateInput> {
@@ -75,7 +75,7 @@ export async function handleNewCLItems({
 	const milestonePercentages = [25, 50, 70, 80, 90, 95, 100];
 	for (const milestone of milestonePercentages) {
 		if (previousCLDetails.percent < milestone && newCLDetails.percent >= milestone) {
-			newCLPercentMessage = `${user} just reached ${milestone}% Collection Log completion, after receiving ${newCLItems.toString().slice(0, 500)}!`;
+			newCLPercentMessage = `${user.notificationName} just reached ${milestone}% Collection Log completion, after receiving ${newCLItems.toString().slice(0, 500)}!`;
 			if (previousCLRank !== newCLRank && newCLRank !== null && previousCLRank !== null) {
 				newCLPercentMessage += ` In the overall CL leaderboard, they went from rank ${previousCLRank} to rank ${newCLRank}.`;
 			}
@@ -93,9 +93,7 @@ export async function handleNewCLItems({
 
 	// Find CLs with the newly added items, that weren't completed in the previous CL, and now are completed.
 	const newlyCompletedCLs = clsWithTheseItems.filter(cl => {
-		return (
-			[...cl.items].some(item => !previousCL.has(item)) && [...cl.items].every(item => newCL.has(item))
-		);
+		return [...cl.items].some(item => !previousCL.has(item)) && [...cl.items].every(item => newCL.has(item));
 	});
 
 	for (const finishedCL of newlyCompletedCLs) {
@@ -126,7 +124,7 @@ export async function handleNewCLItems({
 
 		globalClient.emit(
 			Events.ServerNotification,
-			`${user.badgedUsername} just finished the ${finishedCL.name} collection log!${placeStr} ${kcString}`
+			`${user.notificationName} just finished the ${finishedCL.name} collection log!${placeStr} ${kcString}`
 		);
 	}
 }

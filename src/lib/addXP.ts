@@ -4,7 +4,6 @@ import { isDoubleXpActive } from '@/lib/bso/doubleXp.js';
 import { firstAgeXpBonusPercent, isWearingFullFirstAgeMaxSet } from '@/lib/bso/firstAge/shards.js';
 import { resolveSkillOutfitXp } from '@/lib/bso/firstAge/skillOutfits.js';
 
-import { bold } from '@oldschoolgg/discord';
 import {
 	Events,
 	formatOrdinal,
@@ -54,9 +53,7 @@ async function howManyMaxed() {
 async function onMax(user: MUser) {
 	const { normies, irons } = await howManyMaxed();
 
-	const str = `🎉 ${
-		user.usernameOrMention
-	}'s minion just achieved level 120 in every skill, they are the **${formatOrdinal(normies)}** minion to be maxed${
+	const str = `${user.notificationName} just achieved level 120 in every skill, they are the **${formatOrdinal(normies)}** minion to be maxed${
 		user.isIronman ? `, and the **${formatOrdinal(irons)}** ironman to max.` : '.'
 	} 🎉`;
 
@@ -263,9 +260,7 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 			if (currentXP < XPMilestone && newXP >= XPMilestone) {
 				globalClient.emit(
 					Events.ServerNotification,
-					`${skill.emoji} **${user.badgedUsername}'s** minion, ${
-						user.minionName
-					}, just achieved ${newXP.toLocaleString()} XP in ${toTitleCase(params.skillName)}!`
+					`${user.notificationName} just achieved ${newXP.toLocaleString()} XP in ${toTitleCase(params.skillName)}!`
 				);
 				break;
 			}
@@ -325,16 +320,12 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 		if (type === 'lvl') {
 			await insertUserEvent({ userID: user.id, type: UserEventType.MaxLevel, skill: skill.id });
 			queryValue = convertLVLtoXP(value);
-			resultStr += `${skill.emoji} **${user.usernameOrMention}'s** minion, ${
-				user.minionName
-			}, just achieved level ${value} in ${skillNameCased}! They are the {nthUser} to get level ${value} in ${skillNameCased}.${
+			resultStr += `${user.notificationName} just achieved level ${value} in ${skillNameCased}! They are the {nthUser} to get level ${value} in ${skillNameCased}.${
 				!user.isIronman ? '' : ` They are the {nthIron} Ironman to get level ${value} in ${skillNameCased}`
 			}`;
 		} else {
 			queryValue = value;
-			resultStr += `${skill.emoji} **${user.usernameOrMention}'s** minion, ${
-				user.minionName
-			}, just achieved ${toKMB(value)} XP in ${skillNameCased}! They are the {nthUser} to get ${toKMB(
+			resultStr += `${user.notificationName} just achieved ${toKMB(value)} XP in ${skillNameCased}! They are the {nthUser} to get ${toKMB(
 				value
 			)} in ${skillNameCased}.${
 				!user.isIronman ? '' : ` They are the {nthIron} Ironman to get ${toKMB(value)} XP in ${skillNameCased}`
@@ -395,9 +386,7 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 	if (currentXP < MAX_XP && newXP === MAX_XP && Object.values(user.skillsAsXP).every(xp => xp === MAX_XP)) {
 		globalClient.emit(
 			Events.ServerNotification,
-			bold(
-				`🎉 ${skill.emoji}** ${user.badgedUsername}'s** minion, ${user.minionName}, just achieved the maximum possible total XP!`
-			)
+			`${user.notificationName} just achieved the maximum possible total XP!`
 		);
 		await insertUserEvent({ userID: user.id, type: UserEventType.MaxTotalXP });
 	}

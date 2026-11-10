@@ -1,4 +1,4 @@
-import { Emoji, Events, sleep } from '@oldschoolgg/toolkit';
+import { Events, sleep } from '@oldschoolgg/toolkit';
 import { Bank, toKMB } from 'oldschooljs';
 
 import { BOT_TYPE } from '@/lib/constants.js';
@@ -142,9 +142,7 @@ export async function duelCommand(
 	if (amount >= 1_000_000_000) {
 		globalClient.emit(
 			Events.ServerNotification,
-			`${Emoji.MoneyBag} **${winner.badgedUsername}** just won a **${toKMB(
-				amount
-			)}** GP duel against ${loser.badgedUsername}.`
+			`${winner.notificationName} just won a **${toKMB(amount)}** GP duel against ${loser.badgedUsername}.`
 		);
 	}
 

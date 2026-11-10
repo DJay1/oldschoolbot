@@ -193,7 +193,7 @@ export const infernoTask: MinionTask = {
 			if (baseBank.has('Jal-MejJak')) {
 				globalClient.emit(
 					Events.ServerNotification,
-					`**${user.usernameOrMention}** just received their ${formatOrdinal(
+					`${user.notificationName} just received their ${formatOrdinal(
 						user.cl.amount('Jal-MejJak') + 1
 					)} Jal-MejJak pet by killing TzKal-Zuk's final form, on their ${formatOrdinal(
 						await user.fetchMinigameScore('emerged_inferno')
@@ -207,7 +207,7 @@ export const infernoTask: MinionTask = {
 				const usersWithInfernalCape = await countUsersWithItemInCl(itemID('Infernal cape'), false);
 				globalClient.emit(
 					Events.ServerNotification,
-					`**${user.badgedUsername}** just received their first Infernal cape on their ${formatOrdinal(
+					`${user.notificationName} just received their first Infernal cape on their ${formatOrdinal(
 						newInfernoAttempts
 					)} attempt! They are the ${formatOrdinal(
 						usersWithInfernalCape + 1
@@ -229,7 +229,7 @@ export const infernoTask: MinionTask = {
 				);
 				globalClient.emit(
 					Events.ServerNotification,
-					`**${user.usernameOrMention}** just defeated the Emerged Zuk Inferno on their ${formatOrdinal(
+					`${user.notificationName} just defeated the Emerged Zuk Inferno on their ${formatOrdinal(
 						user.user.emerged_inferno_attempts
 					)} attempt! They are the ${formatOrdinal(
 						usersDefeatedEmergedZuk

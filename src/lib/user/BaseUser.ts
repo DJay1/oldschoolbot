@@ -204,9 +204,13 @@ export class BaseUser {
 		return this.skillsAsLevels[skill];
 	}
 
+	get minionIcon() {
+		return this.user.minion_icon ? resolveEmojiText(this.user.minion_icon) : Emoji.Minion;
+	}
+
 	get minionName() {
 		const prefix = this.isIronman ? Emoji.Ironman : '';
-		const icon = this.user.minion_icon ? resolveEmojiText(this.user.minion_icon) : Emoji.Minion;
+		const icon = this.minionIcon;
 
 		const strPrefix = prefix ? `${prefix} ` : '';
 
@@ -232,6 +236,10 @@ export class BaseUser {
 
 	get badgedUsername() {
 		return `${this.badgesString} ${this.usernameOrMention}`.trim();
+	}
+
+	get notificationName() {
+		return `**${this.badgedUsername}'s** minion, ${this.minionName},`;
 	}
 
 	toString() {

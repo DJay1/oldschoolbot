@@ -40,7 +40,7 @@ export const gloryChargingTask: MinionTask = {
 			str += '\n**Your minion received an Amulet of eternal glory.**';
 			globalClient.emit(
 				Events.ServerNotification,
-				`**${user.badgedUsername}'s** minion, ${user.minionName}, just received **${loot.amount(
+				`${user.notificationName} just received **${loot.amount(
 					'Amulet of eternal glory'
 				)}x Amulet of eternal glory**!`
 			);

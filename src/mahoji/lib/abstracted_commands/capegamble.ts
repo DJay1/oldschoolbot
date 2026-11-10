@@ -98,7 +98,7 @@ export async function capeGambleCommand(
 	if (gotPet) {
 		globalClient.emit(
 			Events.ServerNotification,
-			`**${user.badgedUsername}'s** just received their ${formatOrdinal(
+			`${user.notificationName} just received their ${formatOrdinal(
 				user.cl.amount(pet.id)
 			)} ${pet.name} pet by sacrificing a ${item.name} for the ${formatOrdinal(newSacrificedCount)} time!`
 		);

@@ -187,9 +187,7 @@ export const doaTask: MinionTask = {
 					const itemsToAnnounce = itemsAdded.filter(item => doaCL.includes(item.id));
 					globalClient.emit(
 						Events.ServerNotification,
-						`${Emoji.Purple} ${
-							user.badgedUsername
-						} just received **${itemsToAnnounce}** on their ${formatOrdinal(
+						`${user.notificationName} just received **${itemsToAnnounce}** on their ${formatOrdinal(
 							minigameIncrementResult[0].newScore
 						)} raid.`
 					);

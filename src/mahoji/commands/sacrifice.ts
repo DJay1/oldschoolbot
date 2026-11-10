@@ -149,7 +149,7 @@ export const sacrificeCommand = defineCommand({
 		const messages: string[] = [];
 
 		if (totalPrice > 5_000_000_000) {
-			globalClient.emit(Events.ServerNotification, `${user.usernameOrMention} just sacrificed ${bankToSac}!`);
+			globalClient.emit(Events.ServerNotification, `${user.notificationName} just sacrificed ${bankToSac}!`);
 		}
 		const hasSkipper = user.usingPet('Skipper') || user.owns('Skipper');
 		if (hasSkipper) {
@@ -194,7 +194,7 @@ export const sacrificeCommand = defineCommand({
 					messages.push(`You have now unlocked the **${icon.name}** minion icon!`);
 					globalClient.emit(
 						Events.ServerNotification,
-						`**${user.badgedUsername}** just unlocked the ${icon.emoji} icon for their minion.`
+						`${user.notificationName} just unlocked the ${icon.emoji} icon for their minion.`
 					);
 					break;
 				}

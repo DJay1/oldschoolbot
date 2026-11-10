@@ -1,6 +1,6 @@
 import { skillXpBonusClauses } from '@/lib/bso/firstAge/skillOutfits.js';
 
-import { Emoji, Events } from '@oldschoolgg/toolkit';
+import { Events } from '@oldschoolgg/toolkit';
 import { EItem } from 'oldschooljs';
 
 import { applySummerFishingLoot } from '@/lib/events/summer/fishing.js';
@@ -160,7 +160,7 @@ export const fishingTask: MinionTask = {
 		if (itemTransactionResult?.itemsAdded.has(EItem.HERON)) {
 			globalClient.emit(
 				Events.ServerNotification,
-				`${Emoji.Fishing} **${user.badgedUsername}'s** minion, ${user.minionName}, just received a Heron while fishing ${fish.name} at level ${user.skillsAsLevels.fishing} Fishing!`
+				`${user.notificationName} just received a Heron while fishing ${fish.name} at level ${user.skillsAsLevels.fishing} Fishing!`
 			);
 		}
 		return handleTripFinish(user, channelId, message, data, result.updateBank.itemLootBank);

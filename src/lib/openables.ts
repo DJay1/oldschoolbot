@@ -239,7 +239,7 @@ for (const clueTier of ClueTiers) {
 			if (announcedLoot.length > 0) {
 				globalClient.emit(
 					Events.ServerNotification,
-					`**${user.badgedUsername}'s** minion, ${user.minionName}, just opened their ${formatOrdinal(
+					`${user.notificationName} just opened their ${formatOrdinal(
 						nthCasket
 					)} ${clueTier.name} casket and received **${announcedLoot}**!`
 				);

@@ -106,7 +106,7 @@ export const shadesOfMortonTask: MinionTask = {
 			const kcGot = rng.randInt(scoreUpdate.newScore - quantity + 1, scoreUpdate.newScore);
 			globalClient.emit(
 				Events.ServerNotification,
-				`**${user.badgedUsername}'s** minion, ${user.minionName}, just received their ${formatOrdinal(
+				`${user.notificationName} just received their ${formatOrdinal(
 					user.cl.amount('Gary')
 				)} Gary on their ${formatOrdinal(kcGot)} Shades of Mort'ton game!`
 			);

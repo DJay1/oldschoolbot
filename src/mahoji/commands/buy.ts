@@ -191,7 +191,7 @@ export const buyCommand = defineCommand({
 				countUsersWithItemInCl(itemID(buyable.name), true)
 			]);
 
-			let announcement = `**${user.badgedUsername}'s** minion, ${user.minionName}, just purchased their first ${
+			let announcement = `${user.notificationName} just purchased their first ${
 				buyable.name
 			}! They are the ${formatOrdinal(count + 1)} player to buy one.`;
 

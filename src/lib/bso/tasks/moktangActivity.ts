@@ -78,7 +78,7 @@ export const moktangTask: MinionTask = {
 			if (loot.has(item)) {
 				globalClient.emit(
 					Events.ServerNotification,
-					`**${user.usernameOrMention}'s** minion just received their ${formatOrdinal(
+					`${user.notificationName} just received their ${formatOrdinal(
 						user.cl.amount(item)
 					)} ${Items.itemNameFromId(item)} on their ${formatOrdinal(randInt(newKC - qty, newKC))} kill!`
 				);

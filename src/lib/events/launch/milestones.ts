@@ -19,7 +19,10 @@ async function notifyLaunchOwner(text: string): Promise<void> {
 	const channelId = process.env.NOTIFICATIONS_CHANNEL_ID || process.env.LOG_CHANNEL_ID;
 	if (!channelId) return;
 	await globalClient
-		.sendMessage(channelId, { content: `<@${LAUNCH_GIFT_OWNER_ID}> ${text}`, allowedMentions: { users: [LAUNCH_GIFT_OWNER_ID] } })
+		.sendMessage(channelId, {
+			content: `<@${LAUNCH_GIFT_OWNER_ID}> ${text}`,
+			allowedMentions: { users: [LAUNCH_GIFT_OWNER_ID] }
+		})
 		.catch(() => null);
 }
 
@@ -85,9 +88,11 @@ export async function maybeAnnounceLaunchFirst99(user: MUser, skill: string): Pr
 	if (!claimed) return;
 	globalClient.emit(
 		Events.ServerNotification,
-		`${launchFirst99Announcement(user.usernameOrMention, toTitleCase(skill))} Tag <@${LAUNCH_GIFT_OWNER_ID}> to claim a special gift for everyone!`
+		`${launchFirst99Announcement(user.notificationName, toTitleCase(skill))} Tag <@${LAUNCH_GIFT_OWNER_ID}> to claim a special gift for everyone!`
 	);
-	await notifyLaunchOwner(`First 99 ${toTitleCase(skill)}: ${user.usernameOrMention} (${user.id}). Time to spawn the community gift.`);
+	await notifyLaunchOwner(
+		`First 99 ${toTitleCase(skill)}: ${user.usernameOrMention} (${user.id}). Time to spawn the community gift.`
+	);
 }
 
 export async function maybeAnnounceLaunchFirstMax(user: MUser, maxedAccounts: number): Promise<void> {
@@ -99,5 +104,5 @@ export async function maybeAnnounceLaunchFirstMax(user: MUser, maxedAccounts: nu
 	}
 	const claimed = await claimLaunchMilestone(LAUNCH_MAX_MILESTONE_ID, user.id);
 	if (!claimed) return;
-	globalClient.emit(Events.ServerNotification, launchFirstMaxAnnouncement(user.usernameOrMention));
+	globalClient.emit(Events.ServerNotification, launchFirstMaxAnnouncement(user.notificationName));
 }

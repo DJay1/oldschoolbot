@@ -75,7 +75,7 @@ export const kingGoldemarTask: MinionTask = {
 		if (gotDWWH && dwwhRecipient) {
 			globalClient.emit(
 				Events.ServerNotification,
-				`**${dwwhRecipient?.usernameOrMention}** just received a **Broken dwarven warhammer** in a team of ${users.length}!`
+				`${dwwhRecipient.notificationName} just received a **Broken dwarven warhammer** in a team of ${users.length}!`
 			);
 		}
 

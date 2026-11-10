@@ -95,7 +95,10 @@ async function view(user: MUser) {
 		const newUserTame = await generateNewTame(user, specie);
 
 		if (newUserTame.species_variant === specie.shinyVariant) {
-			globalClient.emit(Events.ServerNotification, `**${user}** just hatched a shiny ${specie.name}!`);
+			globalClient.emit(
+				Events.ServerNotification,
+				`${user.notificationName} just hatched a shiny ${specie.name}!`
+			);
 		}
 
 		return `Your ${specie.name} Egg has hatched! You now have a ${specie.name} Baby.`;

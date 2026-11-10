@@ -4,7 +4,7 @@ import { mutations } from '@/lib/bso/skills/farming/mutations.js';
 import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
 
 import type { IFarmingContract } from '@oldschoolgg/schemas';
-import { customEmoji, Emoji, Events, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, Events, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, type RNGProvider } from 'node-rng';
 import { Bank, Items, increaseBankQuantitesByPercent, itemID, Monsters } from 'oldschooljs';
 
@@ -751,7 +751,7 @@ async function applySpecialFarmingLoot(options: {
 	if (loot.has('Tangleroot')) {
 		globalClient.emit(
 			Events.ServerNotification,
-			`${Emoji.Farming} **${user.badgedUsername}'s** minion, ${user.minionName}, just received a Tangleroot while farming ${patchType.lastPlanted} at level ${currentFarmingLevel} Farming!`
+			`${user.notificationName} just received a Tangleroot while farming ${patchType.lastPlanted} at level ${currentFarmingLevel} Farming!`
 		);
 	}
 
@@ -783,7 +783,7 @@ async function applyBSOPostHarvestLoot(options: {
 	if (loot.has('Plopper')) {
 		loot.set('Plopper', 1);
 		infoStr.push(
-			customEmoji('plopper') + ' You found a pig on a farm and have adopted it to help you with farming.'
+			`${customEmoji('plopper')} You found a pig on a farm and have adopted it to help you with farming.`
 		);
 	}
 
