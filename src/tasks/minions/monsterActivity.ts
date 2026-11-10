@@ -556,9 +556,16 @@ export const monsterTask: MinionTask = {
 	async run(data: MonsterActivityTaskOptions, { user, handleTripFinish, rng }) {
 		const { duration } = data;
 		if (data.mi === EBSOMonster.KOSCHEI) {
-			await globalClient.sendMessageOrWebhook(data.channelId, {
-				content: `${user}, ${user.minionName} failed to defeat Koschei the deathless.`
-			});
+			try {
+				await globalClient.sendMessageOrWebhook(data.channelId, {
+					content: `${user}, ${user.minionName} failed to defeat Koschei the deathless.`
+				});
+			} catch (err) {
+				Logging.logError(err as Error, {
+					source: 'koscheiTripMessage',
+					channel_id: data.channelId
+				});
+			}
 			return;
 		}
 		const stats = await prisma.userStats.upsert({

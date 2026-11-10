@@ -216,22 +216,38 @@ export class OldSchoolBotClient extends DiscordClient {
 		const message = await resolveBotSendableMessage(rawMessage);
 		const splitMessages = splitSendableMessage(message);
 		let firstResponse: IMessage | null = null;
+		let lastError: Error | null = null;
 
 		for (const part of splitMessages) {
 			let response = await this.sendToWebhook(channelId, part);
 			if (!response) {
-				response = await this.sendMessage(channelId, part).catch(err => {
-					Logging.logError(err as Error, { source: 'sendMessageOrWebhook', channel_id: channelId });
-					return null;
-				});
+				try {
+					response = await this.sendMessage(channelId, part);
+				} catch (err) {
+					lastError = err as Error;
+					const code = (lastError as { code?: unknown }).code;
+					Logging.logError(lastError, {
+						source: 'sendMessageOrWebhook',
+						channel_id: channelId,
+						discord_code: typeof code === 'number' || typeof code === 'string' ? String(code) : 'none'
+					});
+					response = null;
+				}
 			}
 			if (!response) {
-				Logging.logError(new Error('Failed to deliver message to channel'), {
+				Logging.logError(lastError ?? new Error('Failed to deliver message to channel'), {
 					source: 'sendMessageOrWebhook',
-					channel_id: channelId
+					channel_id: channelId,
+					discord_code:
+						lastError && typeof (lastError as { code?: unknown }).code !== 'undefined'
+							? String((lastError as { code?: unknown }).code)
+							: 'none'
 				});
 			}
 			firstResponse ??= response;
+		}
+		if (!firstResponse && lastError) {
+			throw lastError;
 		}
 		return firstResponse;
 	}
