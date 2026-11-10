@@ -1,7 +1,13 @@
 import { PerkTier } from '@oldschoolgg/toolkit';
 
 import { getBscPatronAccount, updateBscPatronAccount } from '@/lib/bsc/patronAccount.js';
-import { formatPatronDyeShop, buyPatronDye, loadPatronDyesForUser, undyePatronItem, usePatronDye } from '@/lib/bsc/patronDyeShop.js';
+import {
+	buyPatronDye,
+	formatPatronDyeShop,
+	loadPatronDyesForUser,
+	undyePatronItem,
+	usePatronDye
+} from '@/lib/bsc/patronDyeShop.js';
 import { sanitizePatronFlair } from '@/lib/bsc/patronFlair.js';
 import { loyaltyBadgeLabel } from '@/lib/bsc/patronLoyalty.js';
 import { performBscPatronGift, triggerBscDoubleLoot } from '@/lib/bsc/patronPerks.js';
@@ -126,6 +132,24 @@ export const patronCommand = defineCommand({
 					name: 'mode',
 					description: 'recolour, glow, or recolour_glow.',
 					required: false
+				},
+				{
+					type: 'String',
+					name: 'glow_hex',
+					description: 'Golden Corgo only: glow colour as #RRGGBB.',
+					required: false
+				},
+				{
+					type: 'String',
+					name: 'recolour_hex',
+					description: 'Golden Corgo only: item recolour as #RRGGBB.',
+					required: false
+				},
+				{
+					type: 'Boolean',
+					name: 'sparkle',
+					description: 'Golden Corgo only: turn sparkles on or off.',
+					required: false
 				}
 			]
 		},
@@ -224,14 +248,19 @@ export const patronCommand = defineCommand({
 		if (options.dyes) {
 			const action = (options.dyes.action ?? 'balance').trim().toLowerCase();
 			if (action === 'buy') {
-				if (!options.dyes.dye) return 'Name the dye to buy: Biscuit, Fetch, Pawberry, Midnight Pup, or Golden Corgo.';
+				if (!options.dyes.dye)
+					return 'Name the dye to buy: Biscuit, Fetch, Pawberry, Midnight Pup, or Golden Corgo.';
 				return buyPatronDye(user, options.dyes.dye);
 			}
 			if (action === 'use') {
 				if (!options.dyes.dye || !options.dyes.item) {
 					return 'Use a dye with /patron dyes action:use dye:Biscuit item:Dragon scimitar mode:recolour_glow.';
 				}
-				return usePatronDye(user, options.dyes.dye, options.dyes.item, options.dyes.mode);
+				return usePatronDye(user, options.dyes.dye, options.dyes.item, options.dyes.mode, {
+					glowHex: options.dyes.glow_hex,
+					recolourHex: options.dyes.recolour_hex,
+					sparkle: options.dyes.sparkle
+				});
 			}
 			if (action === 'undye') {
 				if (!options.dyes.item) return 'Name the item to undye.';

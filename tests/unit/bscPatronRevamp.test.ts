@@ -4,16 +4,28 @@ import { expect, test } from 'vitest';
 import {
 	cachePatronDye,
 	clearPatronDyeCache,
+	PATRON_DYES,
+	parseHexColor,
 	parsePatronDyeMode,
 	patronDyeByKey,
-	PATRON_DYES,
+	resolvePatronDyeAppearance,
 	userHasPatronDyeLock
 } from '@/lib/bsc/patronDyes.js';
 import { sanitizePatronFlair } from '@/lib/bsc/patronFlair.js';
-import { loyaltyTierForMonths } from '@/lib/bsc/patronLoyalty.js';
-import { planMonthlyPatronGrant, pointsForPaidLevel, previousUtcMonthKey, utcMonthKey } from '@/lib/bsc/patronPoints.js';
-import { parsePatronTitle, PATRON_TITLES } from '@/lib/bsc/patronTitles.js';
+import {
+	DJ_PATRON_USER_ID,
+	earnedLoyaltyBadges,
+	loyaltyTierForMonths,
+	patronLoyaltySource
+} from '@/lib/bsc/patronLoyalty.js';
+import {
+	planMonthlyPatronGrant,
+	pointsForPaidLevel,
+	previousUtcMonthKey,
+	utcMonthKey
+} from '@/lib/bsc/patronPoints.js';
 import { BSC_PATRON_TIERS, bscPatronTripBonusMs, bscTripBonusForPerkTier } from '@/lib/bsc/patronTiers.js';
+import { PATRON_TITLES, parsePatronTitle } from '@/lib/bsc/patronTitles.js';
 import { BitField, PerkTier } from '@/lib/constants.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
 import { NEW_CL_GLOW_PERK_TIER } from '@/lib/util/newClGlowColour.js';
@@ -96,6 +108,29 @@ test('loyalty badges use total or streak months', () => {
 	expect(loyaltyTierForMonths(2, 6)?.months).toBe(6);
 });
 
+test('paid patrons earn higher badges from a continuous streak; bitfield-only patrons get 1 month only', () => {
+	const now = Date.UTC(2026, 10, 10, 12);
+	expect(patronLoyaltySource({ userId: '1', lastCreditedMonth: '2026-11', isPatron: true, now })).toBe('paid');
+	expect(patronLoyaltySource({ userId: '1', lastCreditedMonth: '2026-10', isPatron: true, now })).toBe('bitfield');
+	expect(patronLoyaltySource({ userId: '1', lastCreditedMonth: null, isPatron: true, now })).toBe('bitfield');
+	expect(patronLoyaltySource({ userId: '1', lastCreditedMonth: '2026-11', isPatron: false, now })).toBe('none');
+	expect(patronLoyaltySource({ userId: DJ_PATRON_USER_ID, lastCreditedMonth: null, isPatron: true, now })).toBe('dj');
+
+	expect(earnedLoyaltyBadges({ source: 'none', monthsTotal: 12, monthsStreak: 12 }).map(b => b.months)).toEqual([]);
+	expect(earnedLoyaltyBadges({ source: 'bitfield', monthsTotal: 12, monthsStreak: 12 }).map(b => b.months)).toEqual([
+		1
+	]);
+	expect(earnedLoyaltyBadges({ source: 'paid', monthsTotal: 1, monthsStreak: 1 }).map(b => b.months)).toEqual([1]);
+	expect(earnedLoyaltyBadges({ source: 'paid', monthsTotal: 12, monthsStreak: 1 }).map(b => b.months)).toEqual([1]);
+	expect(earnedLoyaltyBadges({ source: 'paid', monthsTotal: 6, monthsStreak: 6 }).map(b => b.months)).toEqual([
+		1, 3, 6
+	]);
+	expect(earnedLoyaltyBadges({ source: 'dj', monthsTotal: 0, monthsStreak: 0 }).map(b => b.months)).toEqual([1]);
+	expect(earnedLoyaltyBadges({ source: 'dj', monthsTotal: 12, monthsStreak: 0 }).map(b => b.months)).toEqual([
+		1, 3, 6, 12
+	]);
+});
+
 test('flair is sanitized and titles come from the locked list', () => {
 	expect(sanitizePatronFlair('  Back from a treat run  ').ok).toBe(true);
 	expect(sanitizePatronFlair('hello @everyone').ok).toBe(false);
@@ -109,7 +144,7 @@ test('flair is sanitized and titles come from the locked list', () => {
 	expect(parsePatronTitle('Dragon Slayer')).toBeNull();
 });
 
-test('dyed item IDs are untradeable for that user until undyed, with no refund', () => {
+test('dyed item IDs are untradeable for that user until undyed', () => {
 	clearPatronDyeCache();
 	const userId = '123';
 	const itemID = 4587; // Dragon scimitar
@@ -127,15 +162,42 @@ test('dyed item IDs are untradeable for that user until undyed, with no refund',
 });
 
 test('patron dye catalog matches the shop prices and sparkle rules', () => {
-	expect(PATRON_DYES.map(dye => [dye.itemID, dye.points, dye.sparkles])).toEqual([
-		[74_014, 5, false],
-		[74_015, 8, false],
-		[74_016, 12, false],
-		[74_017, 18, true],
-		[74_018, 25, true]
+	expect(PATRON_DYES.map(dye => [dye.itemID, dye.points, dye.sparkles, Boolean(dye.customizable)])).toEqual([
+		[74_014, 5, false, false],
+		[74_015, 8, false, false],
+		[74_016, 12, false, false],
+		[74_017, 18, true, false],
+		[74_018, 25, false, true]
 	]);
 	expect(patronDyeByKey('Midnight Pup')?.key).toBe('midnight');
-	expect(patronDyeByKey('golden corgo')?.sparkles).toBe(true);
+	expect(patronDyeByKey('golden corgo')?.customizable).toBe(true);
 	expect(parsePatronDyeMode('recolor+glow')).toBe('recolour_glow');
+	const firstFour = PATRON_DYES.slice(0, 4);
+	expect(new Set(firstFour.map(dye => dye.color.toLowerCase())).size).toBe(4);
+	expect(new Set(firstFour.map(dye => dye.glow.toLowerCase())).size).toBe(4);
+	expect(parseHexColor('#ff00aa')).toBe('#FF00AA');
+	expect(parseHexColor('00FFCC')).toBe('#00FFCC');
+	expect(parseHexColor('#fff')).toBeNull();
+	expect(parseHexColor('not-a-color')).toBeNull();
+	expect(resolvePatronDyeAppearance({ itemID: 1, dyeKey: 'midnight', mode: 'recolour_glow' })).toEqual({
+		color: '#1A1466',
+		glow: '#4A3DFF',
+		sparkles: true
+	});
+	expect(
+		resolvePatronDyeAppearance({
+			itemID: 1,
+			dyeKey: 'golden',
+			mode: 'recolour_glow',
+			glowHex: '#00FFCC',
+			recolourHex: '#FF00AA',
+			sparkle: true
+		})
+	).toEqual({ color: '#FF00AA', glow: '#00FFCC', sparkles: true });
+	expect(resolvePatronDyeAppearance({ itemID: 1, dyeKey: 'golden', mode: 'glow' })).toEqual({
+		color: '#D4A017',
+		glow: '#F5D76A',
+		sparkles: false
+	});
 	expect(NEW_CL_GLOW_PERK_TIER).toBe(PerkTier.Five);
 });

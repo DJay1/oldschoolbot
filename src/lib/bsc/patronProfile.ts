@@ -2,11 +2,11 @@ import { PerkTier } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
 
 import { getBscPatronAccount, updateBscPatronAccount } from '@/lib/bsc/patronAccount.js';
-import { loyaltyBadgeEmoji, loyaltyBadgeLabel } from '@/lib/bsc/patronLoyalty.js';
+import { earnedLoyaltyBadges, patronLoyaltySource } from '@/lib/bsc/patronLoyalty.js';
 import { renderPatronProfileCard } from '@/lib/bsc/patronProfileCard.js';
-import { bscPatronTierFromBits, type BscPatronTier } from '@/lib/bsc/patronTiers.js';
-import { allPetIDs } from '@/lib/data/CollectionsExport.js';
+import { type BscPatronTier, bscPatronTierFromBits } from '@/lib/bsc/patronTiers.js';
 import { calcCLDetails } from '@/lib/data/Collections.js';
+import { allPetIDs } from '@/lib/data/CollectionsExport.js';
 
 const PET_ID_SET = new Set(allPetIDs);
 
@@ -19,7 +19,8 @@ export function ownedPatronPets(user: MUser): number[] {
 }
 
 export function parseFavoritePetInput(user: MUser, input: string | undefined): number | 'skip' | null {
-	if (!input || /^skip|none|clear$/i.test(input.trim())) return input && /^skip|none|clear$/i.test(input.trim()) ? 'skip' : null;
+	if (!input || /^skip|none|clear$/i.test(input.trim()))
+		return input && /^skip|none|clear$/i.test(input.trim()) ? 'skip' : null;
 	const item = Items.get(input);
 	if (!item) return null;
 	if (!PET_ID_SET.has(item.id)) return null;
@@ -45,7 +46,10 @@ export function rarestCollectionItem(user: MUser): { id: number; name: string; p
 	return best;
 }
 
-export async function setFavoritePatronPet(user: MUser, input: string | undefined): Promise<{ petId: number | null; message: string }> {
+export async function setFavoritePatronPet(
+	user: MUser,
+	input: string | undefined
+): Promise<{ petId: number | null; message: string }> {
 	const parsed = parseFavoritePetInput(user, input);
 	if (parsed === 'skip') {
 		const fallback = defaultFavoritePet(user);
@@ -64,7 +68,9 @@ export async function setFavoritePatronPet(user: MUser, input: string | undefine
 	return { petId: account.favoritePetId, message: 'Favorite pet unchanged.' };
 }
 
-export async function generatePatronProfileCard(user: MUser): Promise<{ image: Buffer; needsFavorite: boolean; caption: string }> {
+export async function generatePatronProfileCard(
+	user: MUser
+): Promise<{ image: Buffer; needsFavorite: boolean; caption: string }> {
 	const account = await getBscPatronAccount(user.id);
 	const tier = bscPatronTierFromBits(user.bitfield);
 	const needsFavorite = account.favoritePetId === null && ownedPatronPets(user).length > 0;
@@ -72,8 +78,18 @@ export async function generatePatronProfileCard(user: MUser): Promise<{ image: B
 	const rare = rarestCollectionItem(user);
 	const cl = calcCLDetails(user);
 	const months = Math.max(account.monthsTotal, account.monthsStreak);
-	const loyalty = loyaltyBadgeLabel(account.monthsTotal, account.monthsStreak);
-	const loyaltyEmoji = loyaltyBadgeEmoji(account.monthsTotal, account.monthsStreak);
+	const isPatron = Boolean(tier);
+	const source = patronLoyaltySource({
+		userId: user.id,
+		lastCreditedMonth: account.lastCreditedMonth,
+		isPatron
+	});
+	const loyaltyBadges = earnedLoyaltyBadges({
+		source,
+		monthsTotal: account.monthsTotal,
+		monthsStreak: account.monthsStreak
+	});
+	const loyalty = loyaltyBadges.length ? `${loyaltyBadges.map(badge => badge.label).join(', ')} loyalty` : null;
 
 	const image = await renderPatronProfileCard({
 		username: user.username ?? 'Adventurer',
@@ -82,6 +98,7 @@ export async function generatePatronProfileCard(user: MUser): Promise<{ image: B
 		title: account.title,
 		flair: account.flair,
 		months,
+		loyaltyBadgeFiles: loyaltyBadges.map(badge => badge.key),
 		totalLevel: user.totalLevel,
 		clPercent: cl.percent,
 		favoritePetId: petId,
@@ -91,7 +108,6 @@ export async function generatePatronProfileCard(user: MUser): Promise<{ image: B
 		bankBackgroundId: user.user.bankBackground
 	});
 
-	void loyaltyEmoji;
 	return {
 		image,
 		needsFavorite,

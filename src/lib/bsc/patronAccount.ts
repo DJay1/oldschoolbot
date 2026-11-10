@@ -73,6 +73,12 @@ export async function ensurePatronRevampStore() {
 		CREATE INDEX IF NOT EXISTS bsc_patron_item_dyes_user_idx
 			ON bsc_patron_item_dyes (user_id)
 	`);
+	await prisma.$executeRawUnsafe(`
+		ALTER TABLE bsc_patron_item_dyes
+			ADD COLUMN IF NOT EXISTS glow_hex text,
+			ADD COLUMN IF NOT EXISTS recolour_hex text,
+			ADD COLUMN IF NOT EXISTS sparkle boolean
+	`);
 	ready.done = true;
 }
 
@@ -127,7 +133,10 @@ export async function ensureBscPatronAccount(userId: string): Promise<BscPatronA
 export async function updateBscPatronAccount(
 	userId: string,
 	patch: Partial<
-		Pick<BscPatronAccount, 'title' | 'flair' | 'favoritePetId' | 'pointsBalance' | 'monthsTotal' | 'monthsStreak' | 'lastCreditedMonth'>
+		Pick<
+			BscPatronAccount,
+			'title' | 'flair' | 'favoritePetId' | 'pointsBalance' | 'monthsTotal' | 'monthsStreak' | 'lastCreditedMonth'
+		>
 	>
 ): Promise<BscPatronAccount> {
 	await ensureBscPatronAccount(userId);

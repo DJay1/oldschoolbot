@@ -3,7 +3,6 @@ import path from 'node:path';
 import type { Image } from 'skia-canvas';
 import { loadImage } from 'skia-canvas';
 
-import { loyaltyTierForMonths } from '@/lib/bsc/patronLoyalty.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import type { IconPackID } from '@/lib/canvas/iconPacks.js';
 import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
@@ -34,6 +33,8 @@ export interface PatronProfileCardData {
 	title: string | null;
 	flair: string | null;
 	months: number;
+	/** Emoji file stems for every earned loyalty badge, e.g. patron_loyalty_1. */
+	loyaltyBadgeFiles?: string[];
 	totalLevel: number;
 	clPercent: number;
 	favoritePetId: number | null;
@@ -57,6 +58,11 @@ export function profileCardAccent(tierKey: string | null): string {
 
 function integerScale(srcW: number, srcH: number, maxW: number, maxH: number): number {
 	return Math.max(1, Math.floor(Math.min(maxW / srcW, maxH / srcH)));
+}
+
+function fitSize(srcW: number, srcH: number, maxW: number, maxH: number) {
+	const scale = Math.min(maxW / srcW, maxH / srcH);
+	return { w: Math.max(1, Math.round(srcW * scale)), h: Math.max(1, Math.round(srcH * scale)) };
 }
 
 function drawOutlinedText(
@@ -90,15 +96,7 @@ function drawOutlinedText(
 	ctx.fillText(text, drawX, drawY);
 }
 
-function ring(
-	ctx: OSRSCanvas['ctx'],
-	x: number,
-	y: number,
-	w: number,
-	h: number,
-	thickness: number,
-	color: string
-) {
+function ring(ctx: OSRSCanvas['ctx'], x: number, y: number, w: number, h: number, thickness: number, color: string) {
 	ctx.fillStyle = color;
 	ctx.fillRect(x, y, w, thickness);
 	ctx.fillRect(x, y + h - thickness, w, thickness);
@@ -171,11 +169,6 @@ async function loadEmojiPng(name: string): Promise<Image | null> {
 	const filePath = path.resolve(`assets/emojis/${name}.png`);
 	if (!existsSync(filePath)) return null;
 	return loadImage(filePath);
-}
-
-function loyaltyBadgeFile(months: number): string | null {
-	const tier = loyaltyTierForMonths(months, months);
-	return tier ? tier.key : null;
 }
 
 export async function renderPatronProfileCard(data: PatronProfileCardData): Promise<Buffer> {
@@ -297,23 +290,32 @@ export async function renderPatronProfileCard(data: PatronProfileCardData): Prom
 	}
 
 	const collar = data.tierKey ? await loadEmojiPng('patron_collar') : null;
-	const loyaltyFile = loyaltyBadgeFile(data.months);
-	const loyaltyIcon = loyaltyFile ? await loadEmojiPng(loyaltyFile) : null;
-	let badgeX = headerX;
+	const loyaltyIcons: Image[] = [];
+	for (const file of data.loyaltyBadgeFiles ?? []) {
+		const icon = await loadEmojiPng(file);
+		if (icon) loyaltyIcons.push(icon);
+	}
+	const badges = [collar, ...loyaltyIcons].filter((badge): badge is Image => Boolean(badge));
 	const badgeY = cursorY;
-	for (const badge of [collar, loyaltyIcon]) {
-		if (!badge) continue;
-		const scale = integerScale(badge.width, badge.height, 36, 36);
-		const dw = badge.width * scale;
-		const dh = badge.height * scale;
+	const badgeGap = 8;
+	const badgeMax = 56;
+	const badgeAvail = Math.max(1, headerRight - headerX);
+	const count = badges.length;
+	const target = count === 0 ? badgeMax : Math.floor((badgeAvail - badgeGap * Math.max(0, count - 1)) / count);
+	const badgeSize = Math.max(1, Math.min(badgeMax, target));
+	let badgeX = headerX;
+	let badgeRowH = 0;
+	for (const badge of badges) {
+		const { w: dw, h: dh } = fitSize(badge.width, badge.height, badgeSize, badgeSize);
 		ctx.save();
 		ctx.imageSmoothingEnabled = false;
 		ctx.drawImage(badge, badgeX, badgeY, dw, dh);
 		ctx.restore();
-		badgeX += dw + 10;
+		badgeX += dw + badgeGap;
+		badgeRowH = Math.max(badgeRowH, dh);
 	}
 
-	const statsY = Math.max(panelY + panelH + 40, badgeY + 68);
+	const statsY = Math.max(panelY + panelH + 40, badgeY + badgeRowH + 24);
 	const clRounded = Math.round(data.clPercent * 10) / 10;
 	const clText = Number.isInteger(clRounded) ? `${clRounded}%` : `${clRounded.toFixed(1)}%`;
 	const rows: Array<[string, string, string]> = [
@@ -332,26 +334,11 @@ export async function renderPatronProfileCard(data: PatronProfileCardData): Prom
 	const footerY = HEIGHT - FRAME - 26;
 	const monthsY = footerY - 38;
 	const months = Math.max(0, data.months);
-	const monthsText =
-		months <= 0 ? 'Patron' : months === 1 ? 'Patron for 1 month' : `Patron for ${months} months`;
-	ctx.font = '24px OSRSFontCompact';
-	const monthsWidth = ctx.measureText(monthsText).width;
-	const badgePad = loyaltyIcon ? 56 : 0;
-	drawOutlinedText(ctx, monthsText, WIDTH / 2 - badgePad / 2, monthsY, '24px OSRSFontCompact', '#F5F0DC', {
+	const monthsText = months <= 0 ? 'Patron' : months === 1 ? 'Patron for 1 month' : `Patron for ${months} months`;
+	drawOutlinedText(ctx, monthsText, WIDTH / 2, monthsY, '24px OSRSFontCompact', '#F5F0DC', {
 		center: true,
 		shadow: 2
 	});
-	if (loyaltyIcon) {
-		const scale = integerScale(loyaltyIcon.width, loyaltyIcon.height, 44, 44);
-		const dw = loyaltyIcon.width * scale;
-		const dh = loyaltyIcon.height * scale;
-		const bx = Math.floor(WIDTH / 2 - badgePad / 2 + monthsWidth / 2 + 14);
-		const by = Math.floor(monthsY - dh + 10);
-		ctx.save();
-		ctx.imageSmoothingEnabled = false;
-		ctx.drawImage(loyaltyIcon, bx, by, dw, dh);
-		ctx.restore();
-	}
 
 	drawOutlinedText(ctx, 'Bark School Corgo', WIDTH / 2, footerY, '16px OSRSFontCompact', '#C4B089', {
 		center: true

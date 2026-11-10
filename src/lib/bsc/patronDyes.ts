@@ -13,8 +13,10 @@ export interface PatronDyeDefinition {
 	color: string;
 	/** Soft glow drawn behind the icon. */
 	glow: string;
-	/** Tiny twinkle points in the glow, Midnight Pup and Golden Corgo only. */
+	/** Tiny twinkle points in the glow. Midnight Pup always sparkles; Golden Corgo can toggle this. */
 	sparkles: boolean;
+	/** Golden Corgo is a catch-all: players pick glow/recolour hex and a sparkle toggle. */
+	customizable?: boolean;
 }
 
 /** Custom IDs 74014-74018 were unused in this repo. */
@@ -25,8 +27,8 @@ export const PATRON_DYES: readonly PatronDyeDefinition[] = [
 		itemName: 'Biscuit dye',
 		itemID: 74_014,
 		points: 5,
-		color: '#E8C99A',
-		glow: '#F0D7B0',
+		color: '#D36B1E',
+		glow: '#FF9A3C',
 		sparkles: false
 	},
 	{
@@ -35,8 +37,8 @@ export const PATRON_DYES: readonly PatronDyeDefinition[] = [
 		itemName: 'Fetch dye',
 		itemID: 74_015,
 		points: 8,
-		color: '#9BCB3C',
-		glow: '#C5E86A',
+		color: '#2EAF1A',
+		glow: '#7DFF3D',
 		sparkles: false
 	},
 	{
@@ -45,8 +47,8 @@ export const PATRON_DYES: readonly PatronDyeDefinition[] = [
 		itemName: 'Pawberry dye',
 		itemID: 74_016,
 		points: 12,
-		color: '#C84E9A',
-		glow: '#E889C2',
+		color: '#E2187A',
+		glow: '#FF5CB3',
 		sparkles: false
 	},
 	{
@@ -55,8 +57,8 @@ export const PATRON_DYES: readonly PatronDyeDefinition[] = [
 		itemName: 'Midnight Pup dye',
 		itemID: 74_017,
 		points: 18,
-		color: '#1C3F8A',
-		glow: '#4F7FE8',
+		color: '#1A1466',
+		glow: '#4A3DFF',
 		sparkles: true
 	},
 	{
@@ -67,7 +69,8 @@ export const PATRON_DYES: readonly PatronDyeDefinition[] = [
 		points: 25,
 		color: '#D4A017',
 		glow: '#F5D76A',
-		sparkles: true
+		sparkles: false,
+		customizable: true
 	}
 ];
 
@@ -77,12 +80,18 @@ export interface PatronItemDye {
 	itemID: number;
 	dyeKey: PatronDyeDefinition['key'];
 	mode: PatronDyeMode;
+	glowHex?: string | null;
+	recolourHex?: string | null;
+	sparkle?: boolean | null;
 }
 
 const dyeCache = new Map<string, Map<number, PatronItemDye>>();
 
 export function patronDyeByKey(key: string): PatronDyeDefinition | null {
-	const normalized = key.trim().toLowerCase().replace(/[\s_-]+/g, '');
+	const normalized = key
+		.trim()
+		.toLowerCase()
+		.replace(/[\s_-]+/g, '');
 	return (
 		PATRON_DYES.find(
 			dye =>
@@ -134,10 +143,47 @@ export function userHasPatronDyeLock(userId: string | undefined, itemID: number)
 
 export function parsePatronDyeMode(input: string | undefined): PatronDyeMode | null {
 	if (!input) return null;
-	const normalized = input.trim().toLowerCase().replace(/[\s-]+/g, '_');
+	const normalized = input
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, '_');
 	if (normalized === 'recolor') return 'recolour';
-	if (normalized === 'recolor_glow' || normalized === 'recolour+glow' || normalized === 'recolor+glow' || normalized === 'both') return 'recolour_glow';
+	if (
+		normalized === 'recolor_glow' ||
+		normalized === 'recolour+glow' ||
+		normalized === 'recolor+glow' ||
+		normalized === 'both'
+	)
+		return 'recolour_glow';
 	return isPatronDyeMode(normalized) ? normalized : null;
+}
+
+/** Accept #RRGGBB or RRGGBB and return a normalized #RRGGBB, or null if invalid. */
+export function parseHexColor(input: string | undefined | null): string | null {
+	if (!input) return null;
+	const match = /^#?([0-9a-fA-F]{6})$/.exec(input.trim());
+	return match ? `#${match[1].toUpperCase()}` : null;
+}
+
+export interface PatronDyeAppearance {
+	color: string;
+	glow: string;
+	sparkles: boolean;
+}
+
+/** Resolved tint, seer-style glow colour, and sparkle flag for a dyed item. */
+export function resolvePatronDyeAppearance(dye: PatronItemDye | null | undefined): PatronDyeAppearance | null {
+	if (!dye) return null;
+	const def = patronDyeByKey(dye.dyeKey);
+	if (!def) return null;
+	if (def.customizable) {
+		return {
+			color: dye.recolourHex ?? def.color,
+			glow: dye.glowHex ?? def.glow,
+			sparkles: dye.sparkle ?? false
+		};
+	}
+	return { color: def.color, glow: def.glow, sparkles: def.sparkles };
 }
 
 export function patronDyeCostBank(dye: PatronDyeDefinition, quantity = 1): Bank {

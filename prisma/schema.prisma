@@ -2048,11 +2048,14 @@ model BscPatronPointsLog {
 }
 
 model BscPatronItemDye {
-  user_id    String
-  item_id    Int
-  dye_key    String
-  mode       String
-  applied_at DateTime @default(now()) @db.Timestamptz(6)
+  user_id       String
+  item_id       Int
+  dye_key       String
+  mode          String
+  glow_hex      String?
+  recolour_hex  String?
+  sparkle       Boolean?
+  applied_at    DateTime @default(now()) @db.Timestamptz(6)
 
   @@id([user_id, item_id])
   @@index([user_id])

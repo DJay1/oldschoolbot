@@ -1,7 +1,6 @@
 import { isPlaceholderItem, PLACEHOLDER_FIRST_ID } from '@/lib/bso/bankPlaceholders.js';
 import { applyCustomItemEffects } from '@/lib/bso/canvas/customItemEffects.js';
 import { handleSlayerMaskGlow } from '@/lib/bso/skills/slayer/slayerMaskHelms.js';
-import { PATRON_DYE_SPARKLE_OFFSETS, getCachedPatronDye, patronDyeByKey } from '@/lib/bsc/patronDyes.js';
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -15,6 +14,7 @@ import {
 	Canvas as SkiaCanvas
 } from 'skia-canvas';
 
+import { getCachedPatronDye, PATRON_DYE_SPARKLE_OFFSETS, resolvePatronDyeAppearance } from '@/lib/bsc/patronDyes.js';
 import { CanvasModule } from '@/lib/canvas/CanvasModule.js';
 import type { CanvasSpritesheet, SpriteData } from '@/lib/canvas/CanvasSpritesheet.js';
 import {
@@ -65,6 +65,37 @@ export class OSRSCanvas {
 		LIGHT_CHOCOLATE: '#494034'
 	};
 	private static tinyPixelYOffset: number | null = null;
+	private static whiteGlowImage: Image | null | undefined;
+	private static tintedGlowCache = new Map<string, Canvas>();
+
+	/** Load the shared white-glow sprite used by Seer and patron dyes. */
+	private static async loadWhiteGlow(): Promise<Image | null> {
+		if (OSRSCanvas.whiteGlowImage !== undefined) return OSRSCanvas.whiteGlowImage;
+		try {
+			OSRSCanvas.whiteGlowImage = await loadImage(await readFile('./src/lib/resources/images/white-glow.png'));
+		} catch {
+			OSRSCanvas.whiteGlowImage = null;
+		}
+		return OSRSCanvas.whiteGlowImage;
+	}
+
+	/** Tint white-glow.png with source-in, matching BSO getCustomPurpleEffect. */
+	private static async getSeerStyleGlow(color: string): Promise<Canvas | null> {
+		const key = color.toLowerCase();
+		const cached = OSRSCanvas.tintedGlowCache.get(key);
+		if (cached) return cached;
+		const white = await OSRSCanvas.loadWhiteGlow();
+		if (!white) return null;
+		const canvas = createCanvas(white.width, white.height);
+		const ctx = canvas.getContext('2d');
+		ctx.imageSmoothingEnabled = false;
+		ctx.drawImage(white, 0, 0);
+		ctx.globalCompositeOperation = 'source-in';
+		ctx.fillStyle = color;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		OSRSCanvas.tintedGlowCache.set(key, canvas);
+		return canvas;
+	}
 
 	public sprite: IBgSprite | null = null;
 	public ctx: CanvasContext;
@@ -542,37 +573,42 @@ export class OSRSCanvas {
 			itemIcon.height
 		] as const;
 
-		if (effect) {
-			const centerX = destX + itemIcon.width / 2;
-			const centerY = destY + itemIcon.height / 2;
-			const effectX = centerX - effect.width / 2;
-			const effectY = centerY - effect.height / 2;
-			this.ctx.drawImage(effect, effectX, effectY, effect.width, effect.height);
-		}
-		glow = handleSlayerMaskGlow({ itemID, user, glow });
-
 		const patronDye = user ? getCachedPatronDye(user.id, itemID) : null;
-		const patronDyeDef = patronDye ? patronDyeByKey(patronDye.dyeKey) : null;
-		const tintItem = Boolean(patronDyeDef && (patronDye.mode === 'recolour' || patronDye.mode === 'recolour_glow'));
-		if (patronDyeDef && (patronDye?.mode === 'glow' || patronDye?.mode === 'recolour_glow')) {
-			glow = {
-				color: patronDyeDef.glow,
-				radius: Math.max(18, Math.round(Math.max(itemIcon.width, itemIcon.height) * 0.6)),
-				blur: 8
-			};
-		}
+		const appearance = resolvePatronDyeAppearance(patronDye);
+		const tintItem = Boolean(
+			appearance && patronDye && (patronDye.mode === 'recolour' || patronDye.mode === 'recolour_glow')
+		);
+		const useDyeGlow = Boolean(
+			appearance && patronDye && (patronDye.mode === 'glow' || patronDye.mode === 'recolour_glow')
+		);
+		const dyeGlowEffect = useDyeGlow && appearance ? await OSRSCanvas.getSeerStyleGlow(appearance.glow) : null;
 
 		const centerX = destX + itemIcon.width / 2;
 		const centerY = destY + itemIcon.height / 2;
 
-		if (glow) {
-			this.drawGlowingBlur(centerX, centerY, glow.radius, glow.color, glow.blur);
-			if (patronDyeDef?.sparkles) {
-				this.drawPatronDyeSparkles(centerX, centerY, glow.color);
+		if (effect) {
+			const effectX = centerX - effect.width / 2;
+			const effectY = centerY - effect.height / 2;
+			this.ctx.drawImage(effect, effectX, effectY, effect.width, effect.height);
+		}
+		if (dyeGlowEffect) {
+			const effectX = centerX - dyeGlowEffect.width / 2;
+			const effectY = centerY - dyeGlowEffect.height / 2;
+			this.ctx.drawImage(dyeGlowEffect, effectX, effectY, dyeGlowEffect.width, dyeGlowEffect.height);
+			if (appearance?.sparkles) {
+				this.drawPatronDyeSparkles(centerX, centerY, appearance.glow);
 			}
 		}
 
-		const sprite = tintItem && patronDyeDef ? this.tintImage(args[0], patronDyeDef.color, itemIcon.width, itemIcon.height) : args[0];
+		glow = handleSlayerMaskGlow({ itemID, user, glow });
+		if (glow && !dyeGlowEffect) {
+			this.drawGlowingBlur(centerX, centerY, glow.radius, glow.color, glow.blur);
+		}
+
+		const sprite =
+			tintItem && appearance
+				? this.tintImage(args[0], appearance.color, itemIcon.width, itemIcon.height)
+				: args[0];
 		const drawnArgs = [sprite, args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]] as const;
 
 		if (outline) {
