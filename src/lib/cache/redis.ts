@@ -22,6 +22,7 @@ import type { Guild, Prisma } from '@/prisma/main.js';
 import { BitField, BOT_TYPE, globalConfig } from '@/lib/constants.js';
 import type { RobochimpUser } from '@/lib/roboChimp.js';
 import { makeBadgeString } from '@/lib/util/makeBadgeString.js';
+import { resolveEmojiText } from '@oldschoolgg/toolkit';
 
 type LockStatus = 'locked' | 'unlocked';
 
@@ -425,7 +426,7 @@ class CacheManager {
 		}
 		const key = BotKeys.User.BadgedUsername(userId);
 		const cached = await this.getExpiringString(key);
-		if (cached) return cached;
+		if (cached) return resolveEmojiText(cached);
 
 		const username = await this.getUsername(userId);
 		const user = await prisma.user.findUnique({

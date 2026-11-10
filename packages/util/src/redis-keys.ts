@@ -7,7 +7,7 @@ export const RedisKeys = {
 	},
 	OSB: {
 		User: {
-			BadgedUsername: (id: string): string => `osb:user:${id.toString()}:badged_username`,
+			BadgedUsername: (id: string): string => `osb:user:${id.toString()}:badged_username:v2`,
 			LockStatus: (id: string): string => `osb:user:${id.toString()}:lock_status`,
 			Ratelimit: (id: string, type: string): string => `osb:user:${id.toString()}:ratelimit:${type}`
 		},
@@ -18,7 +18,7 @@ export const RedisKeys = {
 	},
 	BSO: {
 		User: {
-			BadgedUsername: (id: string): string => `bso:user:${id.toString()}:badged_username`,
+			BadgedUsername: (id: string): string => `bso:user:${id.toString()}:badged_username:v2`,
 			LockStatus: (id: string): string => `bso:user:${id.toString()}:lock_status`,
 			Ratelimit: (id: string, type: string): string => `bso:user:${id.toString()}:ratelimit:${type}`
 		},
