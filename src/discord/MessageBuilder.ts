@@ -9,6 +9,7 @@ export class MessageBuilderClass {
 	private chatHeadImagePromise?: Promise<SendableFile>;
 	private bankImagePromise?: Promise<SendableFile>;
 	private chestLootImagePromise?: Promise<SendableFile>;
+	private _built = false;
 
 	constructor(startingMessage: BaseSendableMessage = {}) {
 		this._message = startingMessage;
@@ -104,16 +105,28 @@ export class MessageBuilderClass {
 	}
 
 	async build(): Promise<SendableMessage> {
-		if (this.chatHeadImagePromise) {
-			const chatHeadImage = await this.chatHeadImagePromise;
-			this.addFile(chatHeadImage);
+		// sendableMsgToApiCreate / interaction replies may call build() more than
+		// once on the same instance. Adding generated images only on the first
+		// call keeps a single attachment per image.
+		if (this._built) {
+			return this._message;
 		}
-		if (this.bankImagePromise) {
-			const bankImage = await this.bankImagePromise;
-			this.addFile(bankImage);
-		}
-		if (this.chestLootImagePromise) {
-			this.addFile(await this.chestLootImagePromise);
+		this._built = true;
+		try {
+			if (this.chatHeadImagePromise) {
+				const chatHeadImage = await this.chatHeadImagePromise;
+				this.addFile(chatHeadImage);
+			}
+			if (this.bankImagePromise) {
+				const bankImage = await this.bankImagePromise;
+				this.addFile(bankImage);
+			}
+			if (this.chestLootImagePromise) {
+				this.addFile(await this.chestLootImagePromise);
+			}
+		} catch (error) {
+			this._built = false;
+			throw error;
 		}
 		return this._message;
 	}
