@@ -114,7 +114,7 @@ export const patronCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'dyes',
-			description: 'Check your patron points, browse the dye shop, or buy a dye.',
+			description: 'Check your patron points, browse the dye shop, or buy a dye. Pup and up.',
 			options: [
 				{
 					type: 'String',
@@ -133,7 +133,7 @@ export const patronCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'dye',
-			description: 'Use a patron dye on an item in your bank. Top Dog and above.',
+			description: 'Use a patron dye on an item in your bank. Pup and up.',
 			options: [
 				{
 					type: 'String',
@@ -199,7 +199,7 @@ export const patronCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'undye',
-			description: 'Remove a patron dye from an item and return the dye to your bank.',
+			description: 'Remove a patron dye from an item and return the dye to your bank. Pup and up.',
 			options: [
 				{
 					type: 'String',
@@ -311,8 +311,9 @@ export const patronCommand = defineCommand({
 			};
 		}
 		if (options.dye) {
-			const gated = await requireTopDog(user);
-			if (gated) return gated;
+			const isPatron = (await user.fetchPerkTier()) >= PerkTier.Two;
+			const ownsDye = PATRON_DYES.some(dye => user.bank.amount(dye.itemID) > 0);
+			if (!isPatron && !ownsDye) return DYE_SUBSCRIBE_MSG;
 			return usePatronDye(user, options.dye.dye, options.dye.item, options.dye.mode, {
 				glowHex: options.dye.glow_hex,
 				recolourHex: options.dye.recolour_hex,
@@ -320,16 +321,16 @@ export const patronCommand = defineCommand({
 			});
 		}
 		if (options.undye) {
-			const gated = await requireTopDog(user);
-			if (gated) return gated;
+			const isPatron = (await user.fetchPerkTier()) >= PerkTier.Two;
+			if (!isPatron) {
+				const applied = await loadPatronDyesForUser(user.id);
+				if (applied.length === 0) return DYE_SUBSCRIBE_MSG;
+			}
 			return undyePatronItem(user, options.undye.item);
 		}
 		if (options.dyes) {
-			if (options.dyes.buy) {
-				const gated = await requireTopDog(user);
-				if (gated) return gated;
-				return buyPatronDye(user, options.dyes.buy);
-			}
+			if ((await user.fetchPerkTier()) < PerkTier.Two) return DYE_SUBSCRIBE_MSG;
+			if (options.dyes.buy) return buyPatronDye(user, options.dyes.buy);
 			const [account, applied] = await Promise.all([
 				getBscPatronAccount(user.id),
 				loadPatronDyesForUser(user.id)

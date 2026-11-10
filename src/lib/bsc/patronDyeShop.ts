@@ -206,7 +206,7 @@ export async function undyePatronItem(user: MUser, itemInput: string): Promise<s
 
 export function formatPatronDyeShop(points: number, applied: PatronItemDye[]): string {
 	const catalog = [
-		'Patron dye shop (Top Dog and above). Spend monthly patron points to dye one item ID in your bank. Glow uses the same seer-style effect as the Seer highlight, in that the dye colour. Dyed items are untradeable until you undye, which returns the dye to your bank.',
+		'Patron dye shop (Pup and up). Spend monthly patron points to dye one item ID in your bank. Glow uses the same seer-style effect as the Seer highlight, in that the dye colour. Dyed items are untradeable until you undye, which returns the dye to your bank.',
 		`Your balance: ${points} patron points.`,
 		'',
 		'Biscuit dye — 5 points, burnt orange, seer-style glow.',
