@@ -7,6 +7,7 @@ import {
 	maxQueuedTripsForPerkTier,
 	QUEUE_RESET_MS,
 	queueResetAtMs,
+	refundUnstartedTrips,
 	utcDayStartMs
 } from '@/lib/bsc/tripQueueLimits.js';
 import { PerkTier } from '@/lib/constants.js';
@@ -51,5 +52,34 @@ describe('trip queue limits', () => {
 			dailyUsed: 0,
 			dailyReset: start + QUEUE_RESET_MS
 		});
+	});
+});
+
+describe('refundUnstartedTrips', () => {
+	test('returns unused remaining trips to the allowance', () => {
+		const result = refundUnstartedTrips({
+			trip: { activityId: 1470, type: 'MonsterKilling' },
+			remaining: 5,
+			dailyUsed: 5
+		});
+		expect(result.refunded).toBe(5);
+		expect(result.state).toEqual({
+			trip: { activityId: 1470, type: 'MonsterKilling' },
+			remaining: 0,
+			dailyUsed: 0
+		});
+	});
+
+	test('does not drop the allowance below zero', () => {
+		const result = refundUnstartedTrips({ remaining: 3, dailyUsed: 1 });
+		expect(result.refunded).toBe(3);
+		expect(result.state.remaining).toBe(0);
+		expect(result.state.dailyUsed).toBe(0);
+	});
+
+	test('refunds nothing when the queue is empty', () => {
+		const result = refundUnstartedTrips({ remaining: 0, dailyUsed: 2, trip: null });
+		expect(result.refunded).toBe(0);
+		expect(result.state.dailyUsed).toBe(2);
 	});
 });

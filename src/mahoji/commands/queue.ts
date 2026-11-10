@@ -1,9 +1,10 @@
 import { addTripsToQueue, clearTripQueue, describeTripQueue } from '@/lib/bsc/tripQueue.js';
+import { formatQueuedTripLabel } from '@/lib/bsc/tripQueueDisplay.js';
 import { fetchRepeatTrips } from '@/lib/util/repeatStoredTrip.js';
 
 export const queueCommand = defineCommand({
 	name: 'queue',
-	description: 'Line up repeats of a recent trip. Free players get 2 every 2 days; each patron tier adds 1.',
+	description: 'Queue repeats of a recent trip. Starts after your current trip, or immediately if you are idle.',
 	attributes: {
 		examples: ['/queue add trip:MonsterKilling times:3', '/queue view', '/queue clear']
 	},
@@ -11,20 +12,28 @@ export const queueCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'add',
-			description: 'Queue repeats of one of your recent trips.',
+			description: 'Repeat a recent trip. Kill trips list the monster name. Starts now if you are idle.',
 			options: [
 				{
 					type: 'String',
 					name: 'trip',
-					description: 'The recent trip to repeat.',
+					description:
+						'The recent trip to repeat. Monster trips show the monster name, not just Monster Killing.',
 					required: true,
 					autocomplete: async ({ userId, value }: StringAutoComplete) => {
 						const user = await mUserFetch(userId);
 						const trips = await fetchRepeatTrips(user);
 						const search = value?.toLowerCase() ?? '';
 						return trips
-							.filter(trip => !search || trip.type.toLowerCase().includes(search))
-							.map(trip => ({ name: trip.type, value: trip.type }));
+							.map(trip => ({
+								trip,
+								label: formatQueuedTripLabel(trip.type, trip.data)
+							}))
+							.filter(({ trip, label }) => {
+								if (!search) return true;
+								return label.toLowerCase().includes(search) || trip.type.toLowerCase().includes(search);
+							})
+							.map(({ trip, label }) => ({ name: label, value: trip.type }));
 					}
 				},
 				{
@@ -40,21 +49,25 @@ export const queueCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'view',
-			description: 'See what is in your trip queue.'
+			description: 'See your queued trips, remaining allowance, and when it refills.'
 		},
 		{
 			type: 'Subcommand',
 			name: 'clear',
-			description: 'Clear your trip queue.'
+			description: 'Cancel queued trips and refund the unused allowance.'
 		}
 	],
-	run: async ({ options, user }) => {
+	run: async ({ options, user, channelId }) => {
 		if (options.add) {
-			return addTripsToQueue(user, options.add.trip, options.add.times);
+			return addTripsToQueue(user, options.add.trip, options.add.times, channelId);
 		}
 		if (options.clear) {
-			const hadQueue = await clearTripQueue(user.id);
-			return hadQueue ? 'Cleared your trip queue.' : 'Your trip queue was already empty.';
+			const { cleared, refunded } = await clearTripQueue(user.id);
+			if (!cleared) return 'Your trip queue was already empty.';
+			if (refunded > 0) {
+				return `Cleared your trip queue and refunded ${refunded} unused queue point${refunded === 1 ? '' : 's'}.`;
+			}
+			return 'Cleared your trip queue.';
 		}
 		return describeTripQueue(user);
 	}

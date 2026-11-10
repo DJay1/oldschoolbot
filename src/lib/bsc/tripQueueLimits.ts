@@ -37,3 +37,18 @@ export function applyQueueDailyReset<T extends { dailyUsed: number; dailyReset: 
 	if (row.dailyReset === start) return row;
 	return { ...row, dailyUsed: 0, dailyReset: start };
 }
+
+/** Refund still-queued trips back to the 2-day allowance and empty the queue. */
+export function refundUnstartedTrips<T extends { remaining: number; dailyUsed: number }>(
+	state: T
+): { refunded: number; state: T } {
+	const refunded = Math.max(0, state.remaining);
+	return {
+		refunded,
+		state: {
+			...state,
+			remaining: 0,
+			dailyUsed: Math.max(0, state.dailyUsed - refunded)
+		}
+	};
+}

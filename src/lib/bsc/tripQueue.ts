@@ -1,10 +1,12 @@
 import { UserError } from '@oldschoolgg/toolkit';
 
+import { formatQueuedTripLabel } from '@/lib/bsc/tripQueueDisplay.js';
 import {
 	applyQueueDailyReset,
 	dailyQueueAllowance,
 	maxQueuedTripsForPerkTier,
 	queueResetAtMs,
+	refundUnstartedTrips,
 	utcDayStartMs
 } from '@/lib/bsc/tripQueueLimits.js';
 import { fetchRepeatTrips, startRepeatTripFromActivity } from '@/lib/util/repeatStoredTrip.js';
@@ -115,20 +117,34 @@ export async function getTripQueueState(userId: string, now = Date.now()): Promi
 	return state;
 }
 
-export async function clearTripQueue(userId: string): Promise<boolean> {
+export async function clearTripQueue(userId: string): Promise<{ cleared: boolean; refunded: number }> {
 	const state = await getTripQueueState(userId);
-	const hadQueue = Boolean(state.trip && state.remaining > 0);
-	state.trip = null;
-	state.remaining = 0;
-	await saveState(state);
-	return hadQueue;
+	if (!state.trip || state.remaining <= 0) {
+		return { cleared: false, refunded: 0 };
+	}
+	const { refunded, state: cleared } = refundUnstartedTrips(state);
+	cleared.trip = null;
+	await saveState(cleared);
+	return { cleared: true, refunded };
 }
 
-function formatTripName(type: string): string {
-	return type.replaceAll(/([a-z])([A-Z])/g, '$1 $2');
+function prettyTrip(type: string, data?: unknown): string {
+	return formatQueuedTripLabel(type, data);
 }
 
-export async function addTripsToQueue(user: MUser, activityType: string, times: number): Promise<string> {
+async function refundAndClear(state: TripQueueState): Promise<number> {
+	const { refunded, state: cleared } = refundUnstartedTrips(state);
+	cleared.trip = null;
+	await saveState(cleared);
+	return refunded;
+}
+
+export async function addTripsToQueue(
+	user: MUser,
+	activityType: string,
+	times: number,
+	channelId: string
+): Promise<string> {
 	if (!Number.isInteger(times) || times < 1) {
 		return 'How many trips to queue must be a whole number of at least 1.';
 	}
@@ -173,8 +189,18 @@ export async function addTripsToQueue(user: MUser, activityType: string, times: 
 	state.dailyUsed += times;
 	await saveState(state);
 
-	const pretty = formatTripName(activity.type);
-	const dailyNote = ` You have ${dailyCap - state.dailyUsed} left until they refill ${resetAt}.`;
+	const pretty = prettyTrip(activity.type, activity.data);
+	const dailyLeftAfter = dailyCap - state.dailyUsed;
+	const dailyNote = ` You have ${dailyLeftAfter} left until they refill ${resetAt}.`;
+
+	if (await user.minionIsBusy()) {
+		return `Queued ${times} ${pretty} trip${times === 1 ? '' : 's'}. They will start automatically when your current trip finishes. ${state.remaining} in the queue.${dailyNote}`;
+	}
+
+	const startNote = await tryStartQueuedTrip(user, channelId);
+	if (startNote) {
+		return `${startNote}${dailyNote}`;
+	}
 	return `Queued ${times} ${pretty} trip${times === 1 ? '' : 's'}. ${state.remaining} in the queue.${dailyNote}`;
 }
 
@@ -186,15 +212,19 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 
 	const lines: string[] = [];
 	if (state.trip && state.remaining > 0) {
+		const activity = await loadQueuedActivity(state, user);
+		const pretty = prettyTrip(state.trip.type, activity?.data);
 		lines.push(
-			`Queued: ${state.remaining} ${formatTripName(state.trip.type)} trip${state.remaining === 1 ? '' : 's'}.`
+			`Queued: ${state.remaining} ${pretty} trip${state.remaining === 1 ? '' : 's'}. They start when your current trip finishes, or immediately if you are idle.`
 		);
 	} else {
-		lines.push('Your trip queue is empty.');
+		lines.push(
+			'Your trip queue is empty. Finish a trip, then use /queue add and pick it from the list. If you are idle, the first queued trip starts right away; otherwise they start when your current trip finishes.'
+		);
 	}
 	lines.push(`You can have up to ${maxAtOnce} trips queued at once.`);
 	lines.push(
-		`You get ${dailyCap} queued trips every 2 days and have used ${state.dailyUsed} (refills <t:${Math.floor(queueResetAtMs(Date.now()) / 1000)}:R>).`
+		`You get ${dailyCap} queued trips every 2 days and have used ${state.dailyUsed} (refills <t:${Math.floor(queueResetAtMs(Date.now()) / 1000)}:R>). Clearing unused trips refunds those points.`
 	);
 	return lines.join(' ');
 }
@@ -241,21 +271,24 @@ export async function tryStartQueuedTrip(user: MUser, channelId: string): Promis
 		if (!state.trip || state.remaining <= 0) return null;
 
 		if (await user.minionIsBusy()) {
-			await clearTripQueue(user.id);
-			return 'Your trip queue was cleared because your minion was still busy.';
+			return null;
 		}
 
 		const activity = await loadQueuedActivity(state, user);
 		if (!activity) {
-			await clearTripQueue(user.id);
-			return 'Your trip queue was cleared because that trip could no longer be repeated.';
+			const refunded = await refundAndClear(state);
+			return refunded > 0
+				? `Your trip queue was cleared and ${refunded} unused queue point${refunded === 1 ? '' : 's'} were refunded because that trip could no longer be repeated.`
+				: 'Your trip queue was cleared because that trip could no longer be repeated.';
 		}
 
 		const interaction = makeSilentQueueInteraction(user, channelId);
 		const result = await startRepeatTripFromActivity(user, activity, interaction);
 		if (!result.ok) {
-			await clearTripQueue(user.id);
-			return `Your trip queue was cleared: ${result.message}`;
+			const refunded = await refundAndClear(state);
+			const refundNote =
+				refunded > 0 ? ` ${refunded} unused queue point${refunded === 1 ? '' : 's'} were refunded.` : '';
+			return `Your trip queue was cleared: ${result.message}.${refundNote}`;
 		}
 
 		state.remaining -= 1;
@@ -266,22 +299,25 @@ export async function tryStartQueuedTrip(user: MUser, channelId: string): Promis
 		}
 		await saveState(state);
 
-		const pretty = formatTripName(activity.type);
+		const pretty = prettyTrip(activity.type, activity.data);
 		if (remaining <= 0) {
 			return `Started your last queued ${pretty} trip.`;
 		}
 		return `Started your next queued ${pretty} trip. ${remaining} left in the queue.`;
 	} catch (err) {
+		let refunded = 0;
+		try {
+			const latest = await getTripQueueState(user.id);
+			if (latest.trip && latest.remaining > 0) {
+				refunded = await refundAndClear(latest);
+			}
+		} catch {}
+		const refundNote =
+			refunded > 0 ? ` ${refunded} unused queue point${refunded === 1 ? '' : 's'} were refunded.` : '';
 		if (err instanceof UserError) {
-			try {
-				await clearTripQueue(user.id);
-			} catch {}
-			return `Your trip queue was cleared: ${err.message}`;
+			return `Your trip queue was cleared: ${err.message}.${refundNote}`;
 		}
 		Logging.logError(err as Error);
-		try {
-			await clearTripQueue(user.id);
-		} catch {}
-		return 'Your trip queue was cleared because the next trip could not be started.';
+		return `Your trip queue was cleared because the next trip could not be started.${refundNote}`;
 	}
 }

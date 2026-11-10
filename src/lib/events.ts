@@ -26,14 +26,13 @@ import { isEventActive, resolveSeasonalEvent } from '@/lib/events/registry.js';
 import { patreonUrl } from '@/lib/patreonLink.js';
 import { roboChimpSyncData } from '@/lib/roboChimp.js';
 import type { ActivityTaskData } from '@/lib/types/minions.js';
+import { mentionUsageHelp, parseBotMention } from '@/lib/util/botMention.js';
 import { claimDiscordEvent } from '@/lib/util/discordEventGate.js';
 import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { minionStatsEmbed } from '@/lib/util/minionStatsEmbed.js';
 import { refreshUserCache } from '@/lib/util/refreshCache.js';
 import { minionStatusCommand } from '@/mahoji/lib/abstracted_commands/minionStatusCommand.js';
-
-const mentionText = `<@${globalConfig.clientID}>`;
 
 interface CooldownFnParams {
 	user: MUser;
@@ -332,41 +331,46 @@ export async function onMessage(msg: IMessage) {
 		}
 		return;
 	}
-	if (!content.includes(mentionText)) return;
 
-	const statusRegex = new RegExp(`^(\\s*<@&?[0-9]+>)*\\s*<@${globalConfig.clientID}>\\s*(<@&?[0-9]+>\\s*)*$`);
-	const commandRegex = new RegExp(
-		`^(?:\\s*<@&?[0-9]+>)*\\s*<@${globalConfig.clientID}>\\s*(?:\\s*<@&?[0-9]+>\\s*)*(${commandList.join('|')})\\s*(.*)$`
-	);
-	const commandMatch = content.match(commandRegex);
-	const statusMatch = content.match(statusRegex);
-	if (!commandMatch && !statusMatch) return;
+	const parsed = parseBotMention(content, globalConfig.clientID, commandList);
+	if (parsed.kind === 'none') return;
 
-	const sendable = await globalClient.channelIsSendable(msg.channel_id);
-	if (!sendable) return;
+	let sendable = false;
+	try {
+		sendable = await globalClient.channelIsSendable(msg.channel_id);
+	} catch (err) {
+		Logging.logError(err instanceof Error ? err : new Error('channelIsSendable failed for a bot mention'));
+		return;
+	}
+	if (!sendable) {
+		Logging.logDebug(
+			`Ignored bot mention from ${msg.author_id} in ${msg.guild_id ?? 'DM'}/${msg.channel_id}: channel is not sendable`
+		);
+		return;
+	}
 
 	const user = await mUserFetch(msg.author_id);
 	const result = await minionStatusCommand(user, msg.channel_id);
 
-	if (commandMatch) {
-		const command = mentionCommands.find(i => [i.name, ...i.aliases].includes(commandMatch[1].toLowerCase()));
-		if (!command) return 'This really should not happen...';
-		Logging.logDebug(`${msg.author_id} used the ${command.name} mention command`);
-		const args = commandMatch[2] ?? '';
-		await prisma.commandUsage.create({
-			data: {
-				user_id: BigInt(user.id),
-				channel_id: BigInt(msg.channel_id),
-				guild_id: msg.guild_id ? BigInt(msg.guild_id) : undefined,
-				command_name: command.name,
-				args,
-				inhibited: false,
-				is_mention_command: true
-			},
-			select: { id: true }
-		});
+	try {
+		if (parsed.kind === 'command') {
+			const command = mentionCommands.find(i => [i.name, ...i.aliases].includes(parsed.name));
+			if (!command) return 'This really should not happen...';
+			Logging.logDebug(`${msg.author_id} used the ${command.name} mention command`);
+			const args = parsed.args ?? '';
+			await prisma.commandUsage.create({
+				data: {
+					user_id: BigInt(user.id),
+					channel_id: BigInt(msg.channel_id),
+					guild_id: msg.guild_id ? BigInt(msg.guild_id) : undefined,
+					command_name: command.name,
+					args,
+					inhibited: false,
+					is_mention_command: true
+				},
+				select: { id: true }
+			});
 
-		try {
 			const response = await command.run({
 				user,
 				components: result.components,
@@ -375,21 +379,30 @@ export async function onMessage(msg: IMessage) {
 				guildId: msg.guild_id
 			});
 			await globalClient.replyToMessage(msg, response);
-		} catch (err) {
-			let errMsg = 'There was an error running that command.';
-			if (typeof err === 'string') errMsg = err;
-			await globalClient.replyToMessage(msg, { content: errMsg });
-			Logging.logError(err instanceof Error ? err : new Error(errMsg));
+			return;
 		}
-		return;
-	}
 
-	await globalClient.replyToMessage(msg, {
-		content: result.content,
-		components: result.components
-	});
-	Logging.logDebug(`${msg.author_id} used the status mention command`);
-	return;
+		if (parsed.kind === 'unknown') {
+			Logging.logDebug(`${msg.author_id} used an unrecognized mention command`);
+			await globalClient.replyToMessage(msg, {
+				content: `${mentionUsageHelp()}\n${result.content}`,
+				components: result.components
+			});
+			return;
+		}
+
+		await globalClient.replyToMessage(msg, {
+			content: result.content,
+			components: result.components
+		});
+		Logging.logDebug(`${msg.author_id} used the status mention command`);
+	} catch (err) {
+		const errMsg = typeof err === 'string' ? err : 'There was an error running that command.';
+		try {
+			await globalClient.replyToMessage(msg, { content: errMsg });
+		} catch {}
+		Logging.logError(err instanceof Error ? err : new Error(errMsg));
+	}
 }
 
 export async function onMinionActivityFinish(activity: ActivityTaskData) {
