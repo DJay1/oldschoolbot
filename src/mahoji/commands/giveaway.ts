@@ -19,6 +19,7 @@ import { parseBank } from '@/lib/util/parseStringBank.js';
 async function userHasUnlimitedGiveaways(user: MUser) {
 	const perkTier = user.perkTierIsCached ? user.perkTier : await user.fetchPerkTier();
 	return (
+		user.isAdmin() ||
 		user.isTrusted() ||
 		user.bitfield.includes(BitField.UnlimitedGiveaways) ||
 		perkTier >= patronFeatures.UnlimitedGiveaways.tier

@@ -34,6 +34,7 @@ import {
 	Time,
 	uniqueArr
 } from '@oldschoolgg/toolkit';
+import { Duration } from '@sapphire/time-utilities';
 import { gracefulExit } from 'exit-hook';
 import { Bank, type ItemBank, Items, toKMB } from 'oldschooljs';
 
@@ -68,8 +69,10 @@ import { syncCustomPrices } from '@/lib/preStartup.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 import { sorts } from '@/lib/sorts.js';
 import { capCurrencyBalances } from '@/lib/util/capCurrencyBalances.js';
+import { giveawayCache } from '@/lib/cache.js';
+import { generateGiveawayContent } from '@/lib/util/giveaway.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
-import { parseBank } from '@/lib/util/parseStringBank.js';
+import { parseBank, parseStringBank } from '@/lib/util/parseStringBank.js';
 import { safeMessage } from '@/lib/util/smallUtils.js';
 import { makeGiveawayButtons } from '@/mahoji/commands/giveaway.js';
 
@@ -81,6 +84,19 @@ export const gifs = [
 
 const leaguesTaskNameByID = new Map(allLeagueTasks.map(task => [task.id, task.name] as const));
 const adminGiveItemDestinations = ['Lottery Bank'] as const;
+
+function adminParseSpawnBank(inputStr: string): Bank | string {
+	const parsed = parseStringBank(inputStr, undefined, true);
+	const items = new Bank();
+	for (const [item, qty] of parsed) {
+		items.add(item.id, qty && qty > 0 ? qty : 1);
+	}
+	if (items.length === 0) return 'No items were given.';
+	const itemErrors = items.validate();
+	if (itemErrors.length > 0) return `Invalid items: ${itemErrors.join(', ')}`;
+	return items;
+}
+
 
 function formatLeaguesTaskList(taskIDs: number[]) {
 	if (taskIDs.length === 0) return 'None';
@@ -1005,6 +1021,49 @@ export const adminCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'give',
+			description: 'Spawn items into a player bank.',
+			options: [
+				{
+					type: 'User',
+					name: 'user',
+					description: 'The user to give the items to',
+					required: true
+				},
+				{
+					type: 'String',
+					name: 'items',
+					description: 'The items to give (e.g. 1 Trout, 5 Coal)',
+					required: true
+				},
+				{
+					type: 'String',
+					name: 'reason',
+					description: 'The reason'
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'giveaway',
+			description: 'Start a giveaway with spawned items (not taken from your bank).',
+			options: [
+				{
+					type: 'String',
+					name: 'duration',
+					description: 'The duration of the giveaway (e.g. 1h, 1d).',
+					required: true
+				},
+				{
+					type: 'String',
+					name: 'items',
+					description: 'The items to spawn into the giveaway.',
+					required: true
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
 			name: 'bury_in_sand',
 			description: 'Add items to the buried treasure bank',
 			options: [
@@ -1248,7 +1307,7 @@ export const adminCommand = defineCommand({
 			]
 		}
 	],
-	run: async ({ options, userId, interaction, guildId, rng }) => {
+	run: async ({ options, userId, interaction, guildId, channelId, rng }) => {
 		await interaction.defer();
 
 		const adminUser = await mUserFetch(userId);
@@ -1493,14 +1552,13 @@ ${META_CONSTANTS.RENDERED_STR}`
 			});
 		}
 
-		if (options.give_items) {
-			const items = parseBank({ inputStr: options.give_items.items, noDuplicateItems: true });
-			if (items.length === 0) return 'No items were given.';
-			const itemErrors = items.validate();
-			if (itemErrors.length > 0) return `Invalid items: ${itemErrors.join(', ')}`;
+		if (options.give || options.give_items) {
+			const giveOptions = options.give ?? options.give_items;
+			const items = adminParseSpawnBank(giveOptions.items);
+			if (typeof items === 'string') return items;
 
-			const destination = options.give_items.destination;
-			const targetUser = options.give_items.user ? await mUserFetch(options.give_items.user.user.id) : null;
+			const destination = options.give_items?.destination;
+			const targetUser = giveOptions.user ? await mUserFetch(giveOptions.user.user.id) : null;
 
 			if (!destination) {
 				if (!targetUser) return 'You need to specify a user or a destination.';
@@ -1509,7 +1567,7 @@ ${META_CONSTANTS.RENDERED_STR}`
 				);
 				await globalClient.sendMessage(Channel.BotLogs, {
 					content: `${adminUser.logName} sent \`${items}\` to ${targetUser.logName} for ${
-						options.give_items.reason ?? 'No reason'
+						giveOptions.reason ?? 'No reason'
 					}`
 				});
 
@@ -1525,7 +1583,7 @@ ${META_CONSTANTS.RENDERED_STR}`
 			await interaction.confirmation(`Are you sure you want to add ${items} to ${targetDescription}?`);
 			await globalClient.sendMessage(Channel.BotLogs, {
 				content: `${adminUser.logName} sent \`${items}\` to ${targetUser?.logName ?? 'the lottery bank'} for ${
-					options.give_items.reason ?? 'No reason'
+					giveOptions.reason ?? 'No reason'
 				}`
 			});
 
@@ -1535,6 +1593,75 @@ ${META_CONSTANTS.RENDERED_STR}`
 				await addToLotteryPrizePool(items);
 			}
 			return `Added ${items} to ${targetDescription}.`;
+		}
+
+
+		if (options.giveaway) {
+			if (!guildId && !interaction.guildId) {
+				return 'You cannot make a giveaway outside a server.';
+			}
+			const guild_id = guildId ?? interaction.guildId ?? undefined;
+			const items = adminParseSpawnBank(options.giveaway.items);
+			if (typeof items === 'string') return items;
+
+			const duration = new Duration(options.giveaway.duration);
+			const ms = duration.offset;
+			if (!ms || ms > Time.Day * 7 || ms < Time.Second * 5) {
+				return 'Your giveaway cannot last longer than 7 days, or be faster than 5 seconds.';
+			}
+
+			await interaction.confirmation(
+				`Are you sure you want to start an admin giveaway with these spawned items? They are not taken from your bank: ${items}`
+			);
+
+			const giveawayID = rng.randInt(1, 500_000_000);
+			const message = await globalClient.sendMessage(channelId, {
+				content: generateGiveawayContent(adminUser.id, duration.fromNow, []),
+				files: [
+					await makeBankImage({
+						bank: items,
+						title: 'Admin Giveaway'
+					})
+				],
+				components: makeGiveawayButtons(giveawayID)
+			});
+			if (!message) {
+				return `There was an error sending the giveaway message. Please ensure I have permission to send messages and attach files in <#${channelId}>.`;
+			}
+
+			try {
+				const giveaway = await prisma.giveaway.create({
+					data: {
+						id: giveawayID,
+						guild_id,
+						channel_id: channelId.toString(),
+						start_date: new Date(),
+						finish_date: duration.fromNow,
+						completed: false,
+						loot: items.toJSON(),
+						user_id: adminUser.id,
+						duration: duration.offset,
+						message_id: message.id,
+						users_entered: []
+					}
+				});
+				giveawayCache.set(giveaway.id, giveaway);
+			} catch (err: unknown) {
+				Logging.logError(err as Error, {
+					user_id: adminUser.id,
+					giveaway: items.toString()
+				});
+				return 'Error starting giveaway.';
+			}
+
+			await globalClient.sendMessage(Channel.BotLogs, {
+				content: `${adminUser.logName} started an admin giveaway of \`${items}\` lasting ${options.giveaway.duration}.`
+			});
+
+			return {
+				content: 'Admin giveaway started. The items were spawned and were not taken from your bank.',
+				ephemeral: true
+			};
 		}
 
 		if (options.bury_in_sand) {
