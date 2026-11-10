@@ -4,7 +4,8 @@ const untradeable = {
 	tradeable: false,
 	tradeable_on_ge: false,
 	customItemData: {
-		cantDropFromMysteryBoxes: true
+		cantDropFromMysteryBoxes: true,
+		isSuperUntradeable: true
 	}
 };
 
