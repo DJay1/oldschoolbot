@@ -1,5 +1,6 @@
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
+import { launchPetRate } from '@/lib/util.js';
 
 import { Emoji } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
@@ -47,7 +48,7 @@ export const questingTask: MinionTask = {
 			str += `${Emoji.Herblore} You received 250 Herblore XP for completing Druidic Ritual.`;
 		}
 
-		if (rng.roll(globalDroprates.zippyQuesting.baseRate)) {
+		if (rng.roll(launchPetRate(globalDroprates.zippyQuesting.baseRate))) {
 			str += `\n${BSOEmoji.Zippy} While you walk through the forest north of falador, a small ferret jumps onto your back and joins you on your adventures!`;
 			await user.addItemsToBank({ items: new Bank().add('Zippy'), collectionLog: true });
 		}
