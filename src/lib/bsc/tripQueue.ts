@@ -231,8 +231,21 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 }
 
 export async function describeQueuedTripsForCooldown(user: MUser, now = Date.now()): Promise<string | null> {
+	const perkTier = await user.fetchPerkTier();
+	const allowanceMax = dailyQueueAllowance(perkTier);
 	const state = await getTripQueueState(user.id, now);
-	if (!state.trip || state.remaining <= 0) return null;
+	const allowanceLeft = Math.max(0, allowanceMax - state.dailyUsed);
+	const refillsAtFormatted = dateFm(new Date(queueResetAtMs(now)));
+
+	if (!state.trip || state.remaining <= 0) {
+		return formatQueuedTripsForCooldownList({
+			trips: [],
+			startsAtFormatted: null,
+			allowanceLeft,
+			allowanceMax,
+			refillsAtFormatted
+		});
+	}
 
 	const activity = await loadQueuedActivity(state, user);
 	const current = await ActivityManager.getActivityOfUser(user.id);

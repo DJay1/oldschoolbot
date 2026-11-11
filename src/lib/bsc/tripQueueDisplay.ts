@@ -42,16 +42,32 @@ export interface QueuedTripCooldownItem {
 	remaining: number;
 }
 
+function formatEmptyQueueLine(options: {
+	allowanceLeft?: number;
+	allowanceMax?: number;
+	refillsAtFormatted?: string | null;
+}): string | null {
+	if (options.allowanceLeft == null || options.allowanceMax == null) return null;
+	const qty = `${Math.max(0, options.allowanceLeft)}/${options.allowanceMax} left`;
+	if (options.refillsAtFormatted) {
+		return `Queue: No trips queued (${qty}, refills ${options.refillsAtFormatted})`;
+	}
+	return `Queue: No trips queued (${qty})`;
+}
+
 /**
- * One cd-list section for the user's trip queue. Returns null when empty
- * so the command can omit it entirely.
+ * One cd-list section for the user's trip queue. Returns null only when the
+ * queue is empty and no allowance info was provided, so the command can omit it.
  */
 export function formatQueuedTripsForCooldownList(options: {
 	trips: QueuedTripCooldownItem[];
 	startsAtFormatted: string | null;
+	allowanceLeft?: number;
+	allowanceMax?: number;
+	refillsAtFormatted?: string | null;
 }): string | null {
 	const trips = options.trips.filter(trip => trip.remaining > 0 && trip.label.length > 0);
-	if (trips.length === 0) return null;
+	if (trips.length === 0) return formatEmptyQueueLine(options);
 
 	const listed = trips
 		.map(trip => `${trip.remaining} ${trip.label} trip${trip.remaining === 1 ? '' : 's'}`)

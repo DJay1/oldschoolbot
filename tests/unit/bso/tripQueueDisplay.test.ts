@@ -25,7 +25,7 @@ describe('queued trip labels', () => {
 });
 
 describe('queued trips on the cd list', () => {
-	test('omits the section when the queue is empty', () => {
+	test('omits the section when the queue is empty and no allowance is given', () => {
 		expect(
 			formatQueuedTripsForCooldownList({ trips: [], startsAtFormatted: '4:23 PM (in 12 minutes)' })
 		).toBeNull();
@@ -35,6 +35,39 @@ describe('queued trips on the cd list', () => {
 				startsAtFormatted: null
 			})
 		).toBeNull();
+	});
+
+	test('shows no trips queued plus allowance and refill when empty', () => {
+		expect(
+			formatQueuedTripsForCooldownList({
+				trips: [],
+				startsAtFormatted: null,
+				allowanceLeft: 2,
+				allowanceMax: 2,
+				refillsAtFormatted: '4:23 PM (in 12 minutes)'
+			})
+		).toBe('Queue: No trips queued (2/2 left, refills 4:23 PM (in 12 minutes))');
+		expect(
+			formatQueuedTripsForCooldownList({
+				trips: [{ label: 'Offering', remaining: 0 }],
+				startsAtFormatted: null,
+				allowanceLeft: 0,
+				allowanceMax: 8,
+				refillsAtFormatted: '6:00 PM (in 2 days)'
+			})
+		).toBe('Queue: No trips queued (0/8 left, refills 6:00 PM (in 2 days))');
+	});
+
+	test('omits the refill clause when no refill time is given', () => {
+		expect(
+			formatQueuedTripsForCooldownList({
+				trips: [],
+				startsAtFormatted: null,
+				allowanceLeft: 1,
+				allowanceMax: 3,
+				refillsAtFormatted: null
+			})
+		).toBe('Queue: No trips queued (1/3 left)');
 	});
 
 	test('lists remaining trips and when the next one starts', () => {
