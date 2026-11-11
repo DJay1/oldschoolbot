@@ -19,6 +19,7 @@ import { Bank, type ItemBank, Items, toKMB } from 'oldschooljs';
 import type { command_name_enum } from '@/prisma/main.js';
 import { mentionCommand } from '@/discord/utils.js';
 import { PATRON_DOUBLE_LOOT_COOLDOWN } from '@/lib/bsc/patronTiers.js';
+import { describeQueuedTripsForCooldown } from '@/lib/bsc/tripQueue.js';
 import { lastRoboChimpSyncCache } from '@/lib/cache.js';
 import { CONSTANTS, globalConfig } from '@/lib/constants.js';
 import { customItems } from '@/lib/customItems/util.js';
@@ -278,6 +279,11 @@ const mentionCommands: MentionCommand[] = [
 				content += `Guthixian Cache: ${time(currentGuthixCacheInterval.end)}`;
 			} else {
 				content += bold(`Guthixian Cache: Ready ${mentionCommand('bscminigames', 'guthixian_cache', 'join')}`);
+			}
+
+			const queueLine = await describeQueuedTripsForCooldown(user);
+			if (queueLine) {
+				content += `\n${queueLine}`;
 			}
 
 			if (isDoubleLootActive()) {

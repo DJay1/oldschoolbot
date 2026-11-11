@@ -36,3 +36,28 @@ export function formatQueuedTripLabel(type: string, data?: unknown): string {
 	}
 	return formatActivityTypeName(type);
 }
+
+export interface QueuedTripCooldownItem {
+	label: string;
+	remaining: number;
+}
+
+/**
+ * One cd-list section for the user's trip queue. Returns null when empty
+ * so the command can omit it entirely.
+ */
+export function formatQueuedTripsForCooldownList(options: {
+	trips: QueuedTripCooldownItem[];
+	startsAtFormatted: string | null;
+}): string | null {
+	const trips = options.trips.filter(trip => trip.remaining > 0 && trip.label.length > 0);
+	if (trips.length === 0) return null;
+
+	const listed = trips
+		.map(trip => `${trip.remaining} ${trip.label} trip${trip.remaining === 1 ? '' : 's'}`)
+		.join(', ');
+	if (options.startsAtFormatted) {
+		return `Queue: ${listed}, starts ${options.startsAtFormatted}`;
+	}
+	return `Queue: ${listed}, Ready`;
+}

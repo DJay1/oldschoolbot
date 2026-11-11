@@ -1,6 +1,7 @@
+import { dateFm } from '@oldschoolgg/discord';
 import { UserError } from '@oldschoolgg/toolkit';
 
-import { formatQueuedTripLabel } from '@/lib/bsc/tripQueueDisplay.js';
+import { formatQueuedTripLabel, formatQueuedTripsForCooldownList } from '@/lib/bsc/tripQueueDisplay.js';
 import {
 	applyQueueDailyReset,
 	dailyQueueAllowance,
@@ -227,6 +228,20 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 		`You get ${dailyCap} queued trips every 2 days and have used ${state.dailyUsed} (refills <t:${Math.floor(queueResetAtMs(Date.now()) / 1000)}:R>). Clearing unused trips refunds those points.`
 	);
 	return lines.join(' ');
+}
+
+export async function describeQueuedTripsForCooldown(user: MUser, now = Date.now()): Promise<string | null> {
+	const state = await getTripQueueState(user.id, now);
+	if (!state.trip || state.remaining <= 0) return null;
+
+	const activity = await loadQueuedActivity(state, user);
+	const current = await ActivityManager.getActivityOfUser(user.id);
+	const startsAtFormatted = current && current.finishDate > now ? dateFm(new Date(current.finishDate)) : null;
+
+	return formatQueuedTripsForCooldownList({
+		trips: [{ label: prettyTrip(state.trip.type, activity?.data), remaining: state.remaining }],
+		startsAtFormatted
+	});
 }
 
 function makeSilentQueueInteraction(user: MUser, channelId: string): OSInteraction {
