@@ -359,8 +359,8 @@ async function bgColorConfig(user: MUser, hex?: string) {
 		};
 	}
 
-	if ((await user.fetchPerkTier()) < PerkTier.Five) {
-		return withPatreonLink('A custom bank background color is an Alpha perk.');
+	if ((await user.fetchPerkTier()) < PerkTier.Four) {
+		return withPatreonLink('A custom bank background color is a Top Dog perk.');
 	}
 
 	hex = hex.toUpperCase();
