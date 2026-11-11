@@ -727,6 +727,15 @@ const backgroundImages: BankBackground[] = [
 		hasPurple: true,
 		purpleImage: null
 	}
+	{
+		id: 1028,
+		name: 'WastedBank CustomBG',
+		image: null,
+		available: false,
+		owners: ['246813910999629824'],
+		purpleImage: null,
+		hasPurple: true
+	}
 ];
 
 export function getBankBgById(bgId: number) {
