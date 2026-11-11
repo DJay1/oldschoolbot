@@ -726,7 +726,7 @@ const backgroundImages: BankBackground[] = [
 		perkTierNeeded: PerkTier.Six,
 		hasPurple: true,
 		purpleImage: null
-	}
+	},
 	{
 		id: 1028,
 		name: 'WastedBank CustomBG',
