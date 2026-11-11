@@ -29,7 +29,6 @@ export type BankBackground = {
 	uniqueImage?: CanvasImage | null;
 };
 
-
 const backgroundImages: BankBackground[] = [
 	{
 		id: 1,
@@ -320,7 +319,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Transparent',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Five,
+		perkTierNeeded: PerkTier.Four,
 		gpCost: 20_000_000,
 		transparent: true
 	},

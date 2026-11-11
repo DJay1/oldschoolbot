@@ -226,7 +226,6 @@ export const giveawayCommand = defineCommand({
 
 			return {
 				content: 'Giveaway started.',
-				ephemeral: true,
 				components: [makeGiveawayRepeatButton(giveawayID)]
 			};
 		}

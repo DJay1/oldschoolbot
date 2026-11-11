@@ -2,7 +2,7 @@ import { notEmpty, removeFromArr, stringMatches } from '@oldschoolgg/toolkit';
 import { EItem, type Monster, Monsters } from 'oldschooljs';
 
 import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
-import { slayerActionButtons } from '@/lib/slayer/slayerButtons.js';
+import { slayerTaskReturnButtons } from '@/lib/slayer/slayerButtons.js';
 import { slayerMasters } from '@/lib/slayer/slayerMasters.js';
 import {
 	assignNewSlayerTask,
@@ -160,7 +160,7 @@ export async function slayerNewTaskCommand({
 			return {
 				content: `${extraContent ?? ''}\n\n${returnMessage}`,
 				ephemeral: true,
-				components: slayerActionButtons
+				components: await slayerTaskReturnButtons(user)
 			};
 		}
 		return `${extraContent ?? ''}\n\n${returnMessage}`;
@@ -194,7 +194,7 @@ export async function slayerNewTaskCommand({
 				return {
 					content: `You already have a slayer task: ${resultMessage}`,
 					ephemeral: true,
-					components: slayerActionButtons
+					components: await slayerTaskReturnButtons(user)
 				};
 			}
 		}
@@ -220,7 +220,7 @@ export async function slayerNewTaskCommand({
 		return {
 			content: resultMessage,
 			ephemeral: true,
-			components: slayerActionButtons
+			components: await slayerTaskReturnButtons(user)
 		};
 	}
 

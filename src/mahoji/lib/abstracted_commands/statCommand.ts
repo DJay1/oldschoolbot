@@ -1,4 +1,3 @@
-import { formatBscPatronRequirement } from '@/lib/bsc/patronTiers.js';
 import {
 	calculateAllFletchedItems,
 	calculateChargedItems,
@@ -35,7 +34,6 @@ import Agility from '@/lib/skilling/skills/agility.js';
 import { Castables } from '@/lib/skilling/skills/magic/castables.js';
 import { ForestryEvents } from '@/lib/skilling/skills/woodcutting/forestry.js';
 import { SkillsArray } from '@/lib/skilling/types.js';
-import { withPatreonLink } from '@/lib/patreonLink.js';
 import { getCommonTaskName, getSlayerTaskStats } from '@/lib/slayer/slayerUtil.js';
 import { sorts } from '@/lib/sorts.js';
 import type { InfernoOptions } from '@/lib/types/minions.js';
@@ -1585,10 +1583,6 @@ export async function statsCommand(user: MUser, type: string): Promise<SendableM
 	}
 	const dataPoint = dataPoints.find(dp => stringMatches(dp.name, type));
 	if (!dataPoint) return 'Invalid stat name.';
-	const { perkTierNeeded } = dataPoint;
-	if (perkTierNeeded !== null && (await user.fetchPerkTier()) < perkTierNeeded) {
-		return withPatreonLink(formatBscPatronRequirement(perkTierNeeded));
-	}
 	const userStats = await fetchUserStats(user.id);
 	return dataPoint.run(user, userStats);
 }

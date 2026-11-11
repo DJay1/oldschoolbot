@@ -90,9 +90,9 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_TOPDOG',
 		patreonTierIdEnv: 'PATREON_TIER_TOPDOG_ID',
 		badge: customEmoji('patron_topdog'),
-		adds: 'All Good Boy perks, plus +10 min trips, +4 Grand Exchange slots, 10 pts/mo, queue 5 trips every 2 days, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair',
+		adds: 'All Good Boy perks, plus +10 min trips, +4 Grand Exchange slots, 10 pts/mo, queue 5 trips every 2 days, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, Transparent bank background',
 		summary:
-			'+10 min trips, full scrollable bank (show_all) and bank page buttons, queue 5 trips every 2 days, +4 Grand Exchange slots, 10 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair'
+			'+10 min trips, full scrollable bank (show_all) and bank page buttons, queue 5 trips every 2 days, +4 Grand Exchange slots, 10 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, Transparent bank background'
 	},
 	{
 		level: 4,

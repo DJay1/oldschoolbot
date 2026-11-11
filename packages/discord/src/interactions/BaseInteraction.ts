@@ -91,10 +91,16 @@ export class BaseInteraction {
 		return this._data.message.id;
 	}
 
-	private async toBody(msg: SendableMessage): Promise<APISendableMessage> {
-		const result = await sendableMsgToApiCreate({ msg });
+	private async toBody(msg: SendableMessage, forEdit = false): Promise<APISendableMessage> {
+		const result = await sendableMsgToApiCreate({ msg, forEdit });
 		if (result.message.flags === MessageFlags.Ephemeral) {
-			this._ephemeral = true;
+			// Editing a public interaction reply with the ephemeral flag removes it
+			// from the channel ("Original message was deleted") instead of converting it.
+			if (forEdit && !this._ephemeral) {
+				result.message.flags = undefined;
+			} else {
+				this._ephemeral = true;
+			}
 		}
 		return result;
 	}
@@ -107,7 +113,9 @@ export class BaseInteraction {
 			with_response: options?.withResponse ?? false,
 			thread_id: isObject(options) && 'threadId' in options ? options.threadId : undefined
 		});
-		const { files, message } = options ? await this.toBody(options) : { files: undefined, message: undefined };
+		const { files, message } = options
+			? await this.toBody(options, type === InteractionResponseType.UpdateMessage)
+			: { files: undefined, message: undefined };
 		return this.rest.post(Routes.interactionCallback(this.id, this.token), {
 			auth: false,
 			body: { type, data: message },
@@ -130,7 +138,7 @@ export class BaseInteraction {
 		messageId: string,
 		options: SendableMessage
 	): Promise<RESTPostAPIInteractionCallbackWithResponseResult> {
-		const { files, message } = await this.toBody(options);
+		const { files, message } = await this.toBody(options, true);
 		return this.rest.patch(Routes.webhookMessage(this.applicationId, this.token, messageId), {
 			auth: false,
 			body: message,

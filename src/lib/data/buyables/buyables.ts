@@ -1102,6 +1102,28 @@ const Buyables: Buyable[] = [
 		ironmanPrice: 200
 	},
 	{
+		name: 'Black axe',
+		gpCost: 4000,
+		// Black axes are not sold in a shop; this is the OSRS item value.
+		ironmanPrice: 384
+	},
+	{
+		name: 'Mithril axe',
+		gpCost: 5000,
+		// Perry's Chop-chop Shop (Bob's only stocks up to steel).
+		ironmanPrice: 1664
+	},
+	{
+		name: 'Adamant axe',
+		gpCost: 10_000,
+		ironmanPrice: 4096
+	},
+	{
+		name: 'Rune axe',
+		gpCost: 100_000,
+		ironmanPrice: 40_960
+	},
+	{
 		name: 'Broken coffin',
 		gpCost: 2000
 	},

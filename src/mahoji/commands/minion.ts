@@ -6,7 +6,7 @@ import { FormattedCustomEmoji, formatOrdinal, notEmpty, roboChimpCLRankQuery } f
 import { convertLVLtoXP, Items } from 'oldschooljs';
 
 import { ownedItemOption, skillOption } from '@/discord/index.js';
-import { BSC_PATRON_TIERS } from '@/lib/bsc/patronTiers.js';
+import { BSC_PATRON_TIERS, bscPatronNameForPerkTier } from '@/lib/bsc/patronTiers.js';
 import { bscTierDisplay } from '@/lib/bsc/tierDisplay.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { BitFieldData, MAX_LEVEL, PerkTier } from '@/lib/constants.js';
@@ -181,6 +181,10 @@ export const minionCommand = defineCommand({
 					name: 'name',
 					description: 'The name of the bank background you want.',
 					autocomplete: async ({ value, user }: StringAutoComplete) => {
+						if (!bankImageTask.ready) {
+							await bankImageTask.init();
+							bankImageTask.ready = true;
+						}
 						const allAccounts = await findGroupOfUser(user.id);
 						const bankImages = bankImageTask.backgroundImages;
 						const owned = bankImages
