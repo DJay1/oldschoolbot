@@ -11,6 +11,7 @@ import announceLoot from '@/lib/minions/functions/announceLoot.js';
 import { TeamLoot } from '@/lib/simulation/TeamLoot.js';
 import { getUsersCurrentSlayerInfo } from '@/lib/slayer/slayerUtil.js';
 import type { BossActivityTaskOptions } from '@/lib/types/minions.js';
+import { launchPetTertiaryChanges } from '@/lib/util.js';
 
 interface KalphiteKingUser {
 	id: string;
@@ -64,7 +65,7 @@ export const kalphiteKingTask: MinionTask = {
 			}
 
 			const loot = new Bank();
-			loot.add(KalphiteKingMonster.table.kill(1, {}));
+			loot.add(KalphiteKingMonster.table.kill(1, { lootTableOptions: { tertiaryItemPercentageChanges: launchPetTertiaryChanges() } }));
 
 			const winner = teamTable.roll();
 			if (!winner) continue;

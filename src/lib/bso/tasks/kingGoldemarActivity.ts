@@ -8,6 +8,7 @@ import { Bank } from 'oldschooljs';
 
 import { trackLoot } from '@/lib/lootTrack.js';
 import { TeamLoot } from '@/lib/simulation/TeamLoot.js';
+import { launchPetTertiaryChanges } from '@/lib/util.js';
 
 const methodsOfDeath = [
 	'Beheaded',
@@ -82,7 +83,7 @@ export const kingGoldemarTask: MinionTask = {
 		const teamLoot = new TeamLoot([]);
 		const totalLoot = new Bank();
 		for (const user of users.filter(u => !deaths.includes(u))) {
-			const loot = new Bank().add(KingGoldemarLootTable.roll());
+			const loot = new Bank().add(KingGoldemarLootTable.roll(1, { tertiaryItemPercentageChanges: launchPetTertiaryChanges() }));
 			if (dwwhRecipient === user) {
 				loot.add('Broken dwarven warhammer');
 			}

@@ -5,8 +5,8 @@ import { describe, expect, test } from 'vitest';
 import { Eatables } from '@/lib/data/eatables.js';
 import getUserFoodFromBank from '@/lib/minions/functions/getUserFoodFromBank.js';
 import { pluraliseItemName } from '@/lib/util/smallUtils.js';
-import { clearSeasonalEventOverrides, setSeasonalEventOverride } from '@/lib/events/registry.js';
-import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
+import { clearSeasonalEventOverrides, isEventActive, setSeasonalEventOverride } from '@/lib/events/registry.js';
+import { launchPetPercent, launchPetRate, launchPetTertiaryChanges, skillingPetDropRate } from '@/lib/util.js';
 import { sellPriceOfItem, sellStorePriceOfItem } from '@/mahoji/commands/sell.js';
 import { mockMUser } from './userutil.js';
 
@@ -156,6 +156,44 @@ describe('util', () => {
 			clearSeasonalEventOverrides();
 		}
 		expect(launchPetRate(8000)).toBe(8000);
+	});
+
+	test('launchPetPercent doubles percent chances during launch', () => {
+		expect(launchPetPercent(20)).toBe(20);
+		setSeasonalEventOverride('launch', { enabled: true, start: null, end: null });
+		try {
+			expect(launchPetPercent(20)).toBe(40);
+			expect(launchPetPercent(60)).toBe(100);
+		} finally {
+			clearSeasonalEventOverrides();
+		}
+	});
+
+	test('launchPetTertiaryChanges halves boss-pet tertiaries and skips Smokey', () => {
+		expect(launchPetTertiaryChanges()).toBeUndefined();
+		setSeasonalEventOverride('launch', { enabled: true, start: null, end: null });
+		try {
+			const changes = launchPetTertiaryChanges();
+			expect(changes).toBeDefined();
+			expect(changes?.get('Pet snakeling')).toBe(50);
+			expect(changes?.get('Olmlet')).toBe(50);
+			expect(changes?.get("Lil' zik")).toBe(50);
+			expect(changes?.has('Smokey')).toBe(false);
+		} finally {
+			clearSeasonalEventOverrides();
+		}
+	});
+
+	test('isEventActive(launch) is false once the event end date is reached', () => {
+		const start = 1794156079332;
+		const end = 1795365679332;
+		setSeasonalEventOverride('launch', { enabled: true, start, end });
+		try {
+			expect(isEventActive('launch', end - 1)).toBe(true);
+			expect(isEventActive('launch', end)).toBe(false);
+		} finally {
+			clearSeasonalEventOverrides();
+		}
 	});
 
 	test('pluraliseItemName correctly pluralises items', async () => {

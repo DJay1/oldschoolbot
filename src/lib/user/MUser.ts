@@ -86,6 +86,7 @@ import { type TransactItemsArgs, transactItemsFromBank } from '@/lib/util/transa
 import { applyBalanceDecrements, prepareNumericUpdate } from '@/lib/util/validateQuantity.js';
 import type { JsonKeys } from '@/lib/util.js';
 import { getParsedStashUnits } from '@/mahoji/lib/abstracted_commands/stashUnitsCommand.js';
+import { launchPetTertiaryChanges } from '@/lib/util.js';
 
 export class MUserClass extends BaseUser {
 	constructor(user: User) {
@@ -748,6 +749,13 @@ Charge your items using ${globalClient.mentionCommand('minion', 'charge')}.`
 			changes.set('Mossy key', 66.67);
 		} else if (inWildy && onTask) {
 			changes.set('Mossy key', 77.6);
+		}
+
+		const launchPets = launchPetTertiaryChanges();
+		if (launchPets) {
+			for (const [name, change] of launchPets) {
+				changes.set(name, (changes.get(name) ?? 0) + change);
+			}
 		}
 
 		return changes;

@@ -14,6 +14,7 @@ import { kittens } from '@/lib/growablePets.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { bossKillables } from '@/lib/minions/data/killableMonsters/bosses/index.js';
 import announceLoot from '@/lib/minions/functions/announceLoot.js';
+import { launchPetRate, launchPetTertiaryChanges } from '@/lib/util.js';
 
 const awakenedMonsters = [
 	Monsters.AwakenedDukeSucellus.id,
@@ -57,8 +58,8 @@ export const vasaTask: MinionTask = {
 			globalDroprates.voidling.clIncrease
 		);
 		for (let i = 0; i < quantity; i++) {
-			loot.add(VasaMagusLootTable.roll());
-			if (rng.roll(petDroprate)) loot.add('Voidling');
+			loot.add(VasaMagusLootTable.roll(1, { tertiaryItemPercentageChanges: launchPetTertiaryChanges() }));
+			if (rng.roll(launchPetRate(petDroprate))) loot.add('Voidling');
 			const mon = rng.pick(vasaBosses);
 			const qty = rng.randInt(1, 3);
 			lootOf[mon.name] = (lootOf[mon.name] ?? 0) + qty;

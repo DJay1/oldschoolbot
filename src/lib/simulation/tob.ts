@@ -3,6 +3,7 @@ import { Bank, type LootBank, LootTable, SimpleTable } from 'oldschooljs';
 
 import { TOBRooms } from '@/lib/data/tob.js';
 import { assert } from '@/lib/util/logError.js';
+import { launchPetRate } from '@/lib/util.js';
 
 interface TeamMember {
 	id: string;
@@ -116,7 +117,7 @@ class TheatreOfBloodClass {
 		if (member.numDeaths > 0) {
 			petChance *= member.numDeaths;
 		}
-		if (rng.roll(petChance)) {
+		if (rng.roll(launchPetRate(petChance))) {
 			loot.add("Lil' zik");
 		}
 

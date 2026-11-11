@@ -14,6 +14,7 @@ import { SlayerTaskUnlocksEnum } from '@/lib/slayer/slayerUnlocks.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import type { UpdateBank } from '@/lib/structures/UpdateBank.js';
 import type { SlayerContext } from '@/tasks/minions/monsterActivity.js';
+import { launchPetRate } from '@/lib/util.js';
 
 export type UserStatsNeededForMidPvmEffects = {
 	onTaskMonsterScores: ItemBank;
@@ -75,7 +76,7 @@ export function rollForBSOThings(args: MidPVMEffectArgs) {
 	if (osjsMon?.data.attributes?.includes(MonsterAttribute.Dragon)) {
 		const dropRate = clAdjustedDroprate(cl, 'Klik', 8500, 1.5);
 		for (let i = 0; i < minutes; i++) {
-			if (roll(dropRate)) {
+			if (roll(launchPetRate(dropRate))) {
 				updateBank.itemLootBank.add('Klik');
 				break;
 			}
@@ -93,7 +94,7 @@ export function rollForBSOThings(args: MidPVMEffectArgs) {
 
 	if (monster.name.toLowerCase() === 'zulrah') {
 		for (let i = 0; i < minutes; i++) {
-			if (roll(5500)) {
+			if (roll(launchPetRate(5500))) {
 				updateBank.itemLootBank.add('Brock');
 				break;
 			}

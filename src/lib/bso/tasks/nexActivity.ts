@@ -10,6 +10,7 @@ import { trackLoot } from '@/lib/lootTrack.js';
 import announceLoot from '@/lib/minions/functions/announceLoot.js';
 import { TeamLoot } from '@/lib/simulation/TeamLoot.js';
 import type { BossActivityTaskOptions } from '@/lib/types/minions.js';
+import { launchPetTertiaryChanges } from '@/lib/util.js';
 
 interface NexUser {
 	id: string;
@@ -63,7 +64,7 @@ export const nexTask: MinionTask = {
 			}
 
 			const loot = new Bank();
-			loot.add(NexMonster.table.kill(1, {}));
+			loot.add(NexMonster.table.kill(1, { lootTableOptions: { tertiaryItemPercentageChanges: launchPetTertiaryChanges() } }));
 			if (rng.roll(NEX_UNIQUE_DROPRATE(users.length))) {
 				loot.add(rng.pick(nexUniqueDrops), 1);
 			}

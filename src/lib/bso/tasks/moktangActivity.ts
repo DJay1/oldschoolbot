@@ -17,6 +17,7 @@ import { Bank, Items, increaseBankQuantitesByPercent, resolveItems } from 'oldsc
 
 import { trackLoot } from '@/lib/lootTrack.js';
 import Smithing from '@/lib/skilling/skills/smithing/index.js';
+import { launchPetTertiaryChanges } from '@/lib/util.js';
 
 export const moktangTask: MinionTask = {
 	type: 'Moktang',
@@ -28,7 +29,7 @@ export const moktangTask: MinionTask = {
 		const loot = new Bank();
 
 		for (let i = 0; i < qty; i++) {
-			loot.add(MoktangLootTable.roll());
+			loot.add(MoktangLootTable.roll(1, { tertiaryItemPercentageChanges: launchPetTertiaryChanges() }));
 		}
 
 		const bonusPercent = Math.floor(user.skillLevel('mining') / 6);

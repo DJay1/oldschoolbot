@@ -9,6 +9,7 @@ import { GearStat } from '@oldschoolgg/gear';
 import { Time, uniqueArr } from '@oldschoolgg/toolkit';
 import { MathRNG, randomVariation, roll } from 'node-rng';
 import { Bank, LootTable, Monsters, resolveItems } from 'oldschooljs';
+import { launchPetRate } from '@/lib/util.js';
 
 const JewelleryTable = new LootTable()
 	.add(new LootTable().add('Onyx ring').add('Onyx necklace').add('Onyx bracelet').add('Onyx amulet'))
@@ -87,7 +88,7 @@ export const VladimirDrakan: CustomMonster = {
 				globalDroprates.echo.baseRate,
 				globalDroprates.echo.clIncrease
 			);
-			if (roll(droprate)) {
+			if (roll(launchPetRate(droprate))) {
 				loot.add('Echo');
 			}
 

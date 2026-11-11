@@ -41,6 +41,7 @@ import { increaseWildEvasionXp } from '@/lib/util/calcWildyPkChance.js';
 import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { calculateSimpleMonsterDeathChance } from '@/lib/util/smallUtils.js';
+import { applyLaunchMalygosPetRolls, Malygos } from '@/lib/bso/monsters/demi-bosses/Malygos.js';
 
 const VORKATH_HEAD_GUARANTEED_KC = 50;
 
@@ -388,6 +389,9 @@ export function doMonsterTrip(data: newOptions) {
 	const loot = wiped
 		? new Bank()
 		: monster.table.kill(oriEffect({ gearBank, quantity: finalQuantity, duration, messages }), killOptions);
+	if (!wiped && monster.id === Malygos.id) {
+		applyLaunchMalygosPetRolls(loot, finalQuantity);
+	}
 	if (isDoubleLootActive(duration)) {
 		loot.multiply(2);
 		messages.push(`${itemStatusIcon('double_loot_token')}**Double loot activated!**`);
