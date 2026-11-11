@@ -5,6 +5,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { Bank, Items } from 'oldschooljs';
 
 import type { AlchingActivityTaskOptions } from '@/lib/types/minions.js';
+import { launchPetRate } from '@/lib/util.js';
 
 export const alchingTask: MinionTask = {
 	type: 'Alching',
@@ -30,7 +31,7 @@ export const alchingTask: MinionTask = {
 			}
 		}
 
-		if (duration > MIN_LENGTH_FOR_PET && rng.roll(Math.ceil(8000 / (duration / Time.Minute)))) {
+		if (duration > MIN_LENGTH_FOR_PET && rng.roll(launchPetRate(Math.ceil(8000 / (duration / Time.Minute))))) {
 			loot.add('Lil lamb');
 		}
 

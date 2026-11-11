@@ -24,7 +24,7 @@ import {
 import { getFarmingKeyFromName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import type { FarmingActivityTaskOptions, MonsterActivityTaskOptions } from '@/lib/types/minions.js';
 import { assert } from '@/lib/util/logError.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 
 export type FarmingStepAttachment = Awaited<ReturnType<typeof chatHeadImage>>;
 
@@ -700,7 +700,7 @@ async function applySpecialFarmingLoot(options: {
 			(plantToHarvest.petChance - currentFarmingLevel * 25) / patchType.lastQuantity / 5,
 			2
 		);
-		if (rng.roll(Math.max(1, plopperDroprate))) {
+		if (rng.roll(launchPetRate(Math.max(1, plopperDroprate)))) {
 			loot.add('Plopper');
 		}
 	} else if (
@@ -717,7 +717,7 @@ async function applySpecialFarmingLoot(options: {
 			(plantToHarvest.petChance - currentFarmingLevel * 25) / alivePlants / 5,
 			2
 		);
-		if (rng.roll(Math.max(1, plopperDroprate))) {
+		if (rng.roll(launchPetRate(Math.max(1, plopperDroprate)))) {
 			loot.add('Plopper');
 		}
 	}

@@ -19,7 +19,7 @@ import type { Gear } from '@/lib/structures/Gear.js';
 import type { Skills } from '@/lib/types/index.js';
 import type { HunterActivityTaskOptions } from '@/lib/types/minions.js';
 import { PeakTier } from '@/lib/util/peaks.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 
 const riskDeathNumbers = [
 	{
@@ -231,7 +231,7 @@ export function calculateHunterResult({
 			globalDroprates.zippyHunter.clIncrease
 		);
 		for (let i = 0; i < quantity; i++) {
-			if (roll(zippyDroprate)) {
+			if (roll(launchPetRate(zippyDroprate))) {
 				loot.add('Zippy');
 			}
 		}
@@ -244,7 +244,7 @@ export function calculateHunterResult({
 			globalDroprates.sandy.clIncrease
 		);
 		for (let i = 0; i < quantity; i++) {
-			if (roll(sandyDroprate)) {
+			if (roll(launchPetRate(sandyDroprate))) {
 				loot.add('Sandy');
 			}
 		}

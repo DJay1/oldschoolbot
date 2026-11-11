@@ -12,7 +12,7 @@ import type { Fish, SkillNameType } from '@/lib/skilling/types.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import { UpdateBank } from '@/lib/structures/UpdateBank.js';
 import type { XPBank } from '@/lib/structures/XPBank.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 import {
 	calcLeapingExpectedCookingXP,
 	calcMinnowQuantityRange,
@@ -243,7 +243,7 @@ export function calcFishingTripResult({
 			globalDroprates.shelldon.clIncrease
 		);
 		for (let i = 0; i < minutesInTrip; i++) {
-			if (roll(petChance)) {
+			if (roll(launchPetRate(petChance))) {
 				updateBank.itemLootBank.add('Shelldon');
 				messages.push(
 					customEmoji('shelldon') +

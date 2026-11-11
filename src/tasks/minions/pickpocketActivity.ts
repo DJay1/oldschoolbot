@@ -12,7 +12,7 @@ import { type Stealable, stealables } from '@/lib/skilling/skills/thieving/steal
 import { UpdateBank } from '@/lib/structures/UpdateBank.js';
 import type { PickpocketActivityTaskOptions } from '@/lib/types/minions.js';
 import { perHourChance } from '@/lib/util/smallUtils.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 
 const notMultiplied = resolveItems([
 	'Blood shard',
@@ -143,7 +143,7 @@ export const pickpocketTask: MinionTask = {
 		let gotWil = false;
 		if (duration >= MIN_LENGTH_FOR_PET) {
 			const minutes = duration / Time.Minute;
-			if (rng.roll(Math.floor(4000 / minutes))) {
+			if (rng.roll(launchPetRate(Math.floor(4000 / minutes)))) {
 				updateBank.itemLootBank.add('Wilvus');
 				gotWil = true;
 			}

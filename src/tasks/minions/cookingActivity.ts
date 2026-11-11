@@ -9,6 +9,7 @@ import { Bank } from 'oldschooljs';
 import { calcBurntCookables } from '@/lib/skilling/functions/calcBurntCookables.js';
 import Cooking from '@/lib/skilling/skills/cooking/cooking.js';
 import type { CookingActivityTaskOptions } from '@/lib/types/minions.js';
+import { launchPetRate } from '@/lib/util.js';
 
 export const cookingTask: MinionTask = {
 	type: 'Cooking',
@@ -66,7 +67,7 @@ export const cookingTask: MinionTask = {
 			);
 			const minutesInTrip = Math.ceil(duration / 1000 / 60);
 			for (let i = 0; i < minutesInTrip; i++) {
-				if (roll(dropRate)) {
+				if (roll(launchPetRate(dropRate))) {
 					loot.add('Remy');
 					str +=
 						'\n' +

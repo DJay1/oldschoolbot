@@ -6,6 +6,7 @@ import { Bank, EItem } from 'oldschooljs';
 import Herblore from '@/lib/skilling/skills/herblore/herblore.js';
 import type { Mixable } from '@/lib/skilling/types.js';
 import type { HerbloreActivityTaskOptions } from '@/lib/types/minions.js';
+import { launchPetRate } from '@/lib/util.js';
 
 function BSOApplyExtraQuantity(
 	rng: RNGProvider,
@@ -44,7 +45,7 @@ function BSOHerbetRoll(
 	const minutes = Math.floor(duration / Time.Minute);
 	if (isMixingPotion && minutes > 0) {
 		for (let i = 0; i < minutes; i++) {
-			if (rng.roll(petChance)) {
+			if (rng.roll(launchPetRate(petChance))) {
 				loot.add('Herbert');
 				messages.push('You incorrectly mixed some ingredients, and created Herbert, a weird herby creature!');
 			}

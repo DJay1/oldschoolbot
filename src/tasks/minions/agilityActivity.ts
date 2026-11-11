@@ -12,7 +12,7 @@ import { addItemToBank, Bank, type ItemBank, Items, toKMB } from 'oldschooljs';
 import Agility from '@/lib/skilling/skills/agility.js';
 import type { Course } from '@/lib/skilling/types.js';
 import type { AgilityActivityTaskOptions } from '@/lib/types/minions.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 
 function chanceOfFailingAgilityPyramid(lvl: number) {
 	if (lvl < 40) return 95;
@@ -230,7 +230,7 @@ export const agilityTask: MinionTask = {
 					globalDroprates.scruffy.clIncrease
 				);
 				for (let i = 0; i < minutes; i++) {
-					if (roll(scruffyDroprate)) {
+					if (roll(launchPetRate(scruffyDroprate))) {
 						loot.add('Scruffy');
 						petMessages.push(
 							customEmoji('scruffy') +
@@ -243,7 +243,7 @@ export const agilityTask: MinionTask = {
 
 			if (course.id === 11) {
 				for (let i = 0; i < minutes; i++) {
-					if (roll(1600)) {
+					if (roll(launchPetRate(1600))) {
 						loot.add('Harry');
 						petMessages.push(
 							customEmoji('harry') +
@@ -257,7 +257,7 @@ export const agilityTask: MinionTask = {
 			if (course.id === 12) {
 				const dropRate = clAdjustedDroprate(user, 'Skipper', 1600, 1.3);
 				for (let i = 0; i < minutes; i++) {
-					if (roll(dropRate)) {
+					if (roll(launchPetRate(dropRate))) {
 						loot.add('Skipper');
 						petMessages.push(
 							customEmoji('skipper') +

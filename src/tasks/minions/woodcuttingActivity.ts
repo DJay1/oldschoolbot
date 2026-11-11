@@ -15,7 +15,7 @@ import Woodcutting, { type TwitcherGloves } from '@/lib/skilling/skills/woodcutt
 import type { SkillNameType } from '@/lib/skilling/types.js';
 import type { WoodcuttingActivityTaskOptions } from '@/lib/types/minions.js';
 import { rollForMoonKeyHalf } from '@/lib/util/minionUtils.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 
 async function handleForestry({
 	user,
@@ -331,7 +331,7 @@ export const woodcuttingTask: MinionTask = {
 		if (duration >= MIN_LENGTH_FOR_PET) {
 			const minutes = duration / Time.Minute;
 			const droprate = clAdjustedDroprate(user, 'Peky', Math.floor(4000 / minutes), 1.5);
-			if (rng.roll(droprate)) {
+			if (rng.roll(launchPetRate(droprate))) {
 				loot.add('Peky');
 				str +=
 					'\n' +

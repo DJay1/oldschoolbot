@@ -16,7 +16,7 @@ import Smithing from '@/lib/skilling/skills/smithing/index.js';
 import type { Ore } from '@/lib/skilling/types.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import type { MiningActivityTaskOptions } from '@/lib/types/minions.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 
 export function calculateMiningResult({
 	ore,
@@ -105,7 +105,7 @@ export function calculateMiningResult({
 			globalDroprates.doug.clIncrease
 		);
 		for (let i = 0; i < minutesInTrip; i++) {
-			if (rng.roll(droprate)) {
+			if (rng.roll(launchPetRate(droprate))) {
 				loot.add('Doug');
 				messages.push(
 					customEmoji('doug') +

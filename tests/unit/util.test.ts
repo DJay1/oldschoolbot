@@ -5,7 +5,8 @@ import { describe, expect, test } from 'vitest';
 import { Eatables } from '@/lib/data/eatables.js';
 import getUserFoodFromBank from '@/lib/minions/functions/getUserFoodFromBank.js';
 import { pluraliseItemName } from '@/lib/util/smallUtils.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { clearSeasonalEventOverrides, setSeasonalEventOverride } from '@/lib/events/registry.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 import { sellPriceOfItem, sellStorePriceOfItem } from '@/mahoji/commands/sell.js';
 import { mockMUser } from './userutil.js';
 
@@ -133,6 +134,28 @@ describe('util', () => {
 		}) as any as MUser;
 		const dropRate200M = Math.floor((baseDropRate - 120 * 25) / 15);
 		expect(skillingPetDropRate(testUser, 'agility', baseDropRate).petDropRate).toEqual(dropRate200M);
+	});
+
+	test('launchPetRate halves 1/n denominators during the launch event', () => {
+		expect(launchPetRate(8000)).toBe(8000);
+		expect(launchPetRate(1)).toBe(1);
+		setSeasonalEventOverride('launch', { enabled: true, start: null, end: null });
+		try {
+			expect(launchPetRate(8000)).toBe(4000);
+			expect(launchPetRate(3)).toBe(1);
+			expect(launchPetRate(1)).toBe(1);
+			const testUser = mockMUser({
+				skills_agility: convertLVLtoXP(30)
+			});
+			const baseDropRate = 300_000;
+			const offEvent = Math.floor((baseDropRate - 30 * 25) / 1);
+			expect(skillingPetDropRate(testUser, 'agility', baseDropRate).petDropRate).toEqual(
+				Math.max(1, Math.floor(offEvent / 2))
+			);
+		} finally {
+			clearSeasonalEventOverrides();
+		}
+		expect(launchPetRate(8000)).toBe(8000);
 	});
 
 	test('pluraliseItemName correctly pluralises items', async () => {

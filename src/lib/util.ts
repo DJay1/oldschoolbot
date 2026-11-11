@@ -12,6 +12,12 @@ BigInt.prototype.toJSON = function () {
 	return this.toString();
 };
 
+/** Halve a 1/n pet-chance denominator during the launch event (twice as likely). */
+export function launchPetRate(n: number): number {
+	if (!isEventActive('launch')) return n;
+	return Math.max(1, Math.floor(n / 2));
+}
+
 export function skillingPetDropRate(
 	user: MUser | GearBank | number,
 	skill: SkillNameType,
@@ -21,8 +27,7 @@ export function skillingPetDropRate(
 	const twoHundredMillXP = xp >= MAX_XP;
 	const skillLevel = convertXPtoLVL(xp, MAX_LEVEL);
 	const petRateDivisor = twoHundredMillXP ? 15 : 1;
-	const launchDivisor = isEventActive('launch') ? 2 : 1;
-	const dropRate = Math.floor((baseDropRate - skillLevel * 25) / petRateDivisor / launchDivisor);
+	const dropRate = launchPetRate(Math.floor((baseDropRate - skillLevel * 25) / petRateDivisor));
 	return { petDropRate: dropRate };
 }
 
