@@ -97,9 +97,8 @@ export async function getUserInfo(user: MUser) {
 **Ironman:** ${result.isIronman}
 **Bitfields:** ${result.bitfields}
 **Github Connected:** ${result.github}
-**Leagues:** ${roboChimpUser.leagues_completed_tasks_ids.length} tasks, ${
-			roboChimpUser.leagues_points_total
-		} points (Rank ${leaguesRanking > 500 ? 'Unranked! Get more points!' : formatOrdinal(leaguesRanking)})
+**Leagues:** ${roboChimpUser.leagues_completed_tasks_ids.length} tasks, ${roboChimpUser.leagues_points_total
+			} points (Rank ${leaguesRanking > 500 ? 'Unranked! Get more points!' : formatOrdinal(leaguesRanking)})
 **Global CL:** ${globalCLPercent}% (${clRank > 500 ? 'Unranked! Get more CL slots completed!' : formatOrdinal(clRank)})
 `
 	};
@@ -613,7 +612,7 @@ ${substr}`;
 
 function bscPerksLine(perkTier: number): string {
 	const tier = [...BSC_PATRON_TIERS].reverse().find(t => perkTier >= t.perkTier);
-	if (!tier) return 'Free player: queue 2 trips every 2 days with /queue (each patron tier adds 1 more)';
+	if (!tier) return 'Free player: queue 2 trips everyday with /queue (each patron tier adds 1 more)';
 	const below = tier.level > 1 ? ', plus every perk from the tiers below' : '';
 	return `__${tier.name}__: ${tier.summary}${below}`;
 }

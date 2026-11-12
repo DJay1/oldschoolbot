@@ -10,16 +10,18 @@ import {
 	refundUnstartedTrips,
 	utcDayStartMs
 } from '@/lib/bsc/tripQueueLimits.js';
+import {
+	appendQueuedTrips,
+	dequeueQueuedTrip,
+	parseQueuedTrips,
+	type QueuedTrip,
+	type QueuedTripGroup
+} from '@/lib/bsc/tripQueueState.js';
 import { fetchRepeatTrips, startRepeatTripFromActivity } from '@/lib/util/repeatStoredTrip.js';
-
-export interface QueuedTrip {
-	activityId: number;
-	type: string;
-}
 
 interface TripQueueRow {
 	user_id: string;
-	trip: QueuedTrip | string | null;
+	trip: unknown;
 	remaining: number;
 	daily_used: number;
 	daily_reset: bigint | number;
@@ -28,7 +30,7 @@ interface TripQueueRow {
 
 export interface TripQueueState {
 	userId: string;
-	trip: QueuedTrip | null;
+	trips: QueuedTripGroup[];
 	remaining: number;
 	dailyUsed: number;
 	dailyReset: number;
@@ -36,17 +38,10 @@ export interface TripQueueState {
 
 const ready = { done: false };
 
-function parseTrip(value: TripQueueRow['trip']): QueuedTrip | null {
-	if (!value) return null;
-	const parsed = typeof value === 'string' ? (JSON.parse(value) as QueuedTrip) : value;
-	if (typeof parsed.activityId !== 'number' || typeof parsed.type !== 'string') return null;
-	return { activityId: parsed.activityId, type: parsed.type };
-}
-
 function emptyState(userId: string, now: number): TripQueueState {
 	return {
 		userId,
-		trip: null,
+		trips: [],
 		remaining: 0,
 		dailyUsed: 0,
 		dailyReset: utcDayStartMs(now)
@@ -54,11 +49,12 @@ function emptyState(userId: string, now: number): TripQueueState {
 }
 
 function fromRow(row: TripQueueRow, now: number): TripQueueState {
+	const trips = parseQueuedTrips(row.trip, row.remaining);
 	return applyQueueDailyReset(
 		{
 			userId: row.user_id,
-			trip: parseTrip(row.trip),
-			remaining: row.remaining,
+			trips,
+			remaining: trips.reduce((total, trip) => total + trip.count, 0),
 			dailyUsed: row.daily_used,
 			dailyReset: Number(row.daily_reset)
 		},
@@ -83,7 +79,7 @@ export async function ensureTripQueueStore() {
 
 async function saveState(state: TripQueueState): Promise<void> {
 	await ensureTripQueueStore();
-	const tripJson = state.trip ? JSON.stringify(state.trip) : null;
+	const tripJson = state.trips.length > 0 ? JSON.stringify(state.trips) : null;
 	await prisma.$executeRawUnsafe(
 		`INSERT INTO bsc_trip_queue (user_id, trip, remaining, daily_used, daily_reset, updated_at)
 		 VALUES ($1, $2::jsonb, $3, $4, $5, NOW())
@@ -112,7 +108,11 @@ export async function getTripQueueState(userId: string, now = Date.now()): Promi
 	const row = rows[0];
 	if (!row) return emptyState(userId, now);
 	const state = fromRow(row, now);
-	if (state.dailyUsed !== row.daily_used || state.dailyReset !== Number(row.daily_reset)) {
+	if (
+		state.dailyUsed !== row.daily_used ||
+		state.dailyReset !== Number(row.daily_reset) ||
+		state.remaining !== row.remaining
+	) {
 		await saveState(state);
 	}
 	return state;
@@ -120,11 +120,11 @@ export async function getTripQueueState(userId: string, now = Date.now()): Promi
 
 export async function clearTripQueue(userId: string): Promise<{ cleared: boolean; refunded: number }> {
 	const state = await getTripQueueState(userId);
-	if (!state.trip || state.remaining <= 0) {
+	if (state.trips.length === 0 || state.remaining <= 0) {
 		return { cleared: false, refunded: 0 };
 	}
 	const { refunded, state: cleared } = refundUnstartedTrips(state);
-	cleared.trip = null;
+	cleared.trips = [];
 	await saveState(cleared);
 	return { cleared: true, refunded };
 }
@@ -135,7 +135,7 @@ function prettyTrip(type: string, data?: unknown): string {
 
 async function refundAndClear(state: TripQueueState): Promise<number> {
 	const { refunded, state: cleared } = refundUnstartedTrips(state);
-	cleared.trip = null;
+	cleared.trips = [];
 	await saveState(cleared);
 	return refunded;
 }
@@ -162,7 +162,7 @@ export async function addTripsToQueue(
 		return `You've used all ${dailyCap} of your queued trips. They refill ${resetAt}.`;
 	}
 	if (times > dailyLeft) {
-		return `You can queue ${dailyLeft} more trip${dailyLeft === 1 ? '' : 's'} right now (you get ${dailyCap} every 2 days, refilling ${resetAt}).`;
+		return `You can queue ${dailyLeft} more trip${dailyLeft === 1 ? '' : 's'} right now (you get ${dailyCap} everyday, refilling ${resetAt}).`;
 	}
 
 	if (times > maxAtOnce) {
@@ -175,17 +175,16 @@ export async function addTripsToQueue(
 		return "Couldn't find that recent trip. Finish a trip first, then pick it from the list.";
 	}
 
-	const sameType = state.trip?.type === activity.type && state.remaining > 0;
-	const newRemaining = sameType ? state.remaining + times : times;
+	const newRemaining = state.remaining + times;
 	if (newRemaining > maxAtOnce) {
-		const room = maxAtOnce - (sameType ? state.remaining : 0);
+		const room = maxAtOnce - state.remaining;
 		if (room <= 0) {
 			return `Your queue is already full (${maxAtOnce} trips).`;
 		}
 		return `You can only add ${room} more trip${room === 1 ? '' : 's'} (max ${maxAtOnce} at once).`;
 	}
 
-	state.trip = { activityId: activity.id, type: activity.type };
+	state.trips = appendQueuedTrips(state.trips, { activityId: activity.id, type: activity.type }, times);
 	state.remaining = newRemaining;
 	state.dailyUsed += times;
 	await saveState(state);
@@ -212,11 +211,16 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 	const state = await getTripQueueState(user.id);
 
 	const lines: string[] = [];
-	if (state.trip && state.remaining > 0) {
-		const activity = await loadQueuedActivity(state, user);
-		const pretty = prettyTrip(state.trip.type, activity?.data);
+	if (state.trips.length > 0 && state.remaining > 0) {
+		const queued = await Promise.all(
+			state.trips.map(async trip => {
+				const activity = await loadQueuedActivity(trip, user);
+				const pretty = prettyTrip(trip.type, activity?.data);
+				return `${trip.count} ${pretty} trip${trip.count === 1 ? '' : 's'}`;
+			})
+		);
 		lines.push(
-			`Queued: ${state.remaining} ${pretty} trip${state.remaining === 1 ? '' : 's'}. They start when your current trip finishes, or immediately if you are idle.`
+			`Queued: ${queued.join(', ')}. They start in order when your current trip finishes, or immediately if you are idle.`
 		);
 	} else {
 		lines.push(
@@ -225,7 +229,7 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 	}
 	lines.push(`You can have up to ${maxAtOnce} trips queued at once.`);
 	lines.push(
-		`You get ${dailyCap} queued trips every 2 days and have used ${state.dailyUsed} (refills <t:${Math.floor(queueResetAtMs(Date.now()) / 1000)}:R>). Clearing unused trips refunds those points.`
+		`You get ${dailyCap} queued trips everyday and have used ${state.dailyUsed} (refills <t:${Math.floor(queueResetAtMs(Date.now()) / 1000)}:R>). Clearing unused trips refunds those points.`
 	);
 	return lines.join(' ');
 }
@@ -237,7 +241,7 @@ export async function describeQueuedTripsForCooldown(user: MUser, now = Date.now
 	const allowanceLeft = Math.max(0, allowanceMax - state.dailyUsed);
 	const refillsAtFormatted = dateFm(new Date(queueResetAtMs(now)));
 
-	if (!state.trip || state.remaining <= 0) {
+	if (state.trips.length === 0 || state.remaining <= 0) {
 		return formatQueuedTripsForCooldownList({
 			trips: [],
 			startsAtFormatted: null,
@@ -247,12 +251,17 @@ export async function describeQueuedTripsForCooldown(user: MUser, now = Date.now
 		});
 	}
 
-	const activity = await loadQueuedActivity(state, user);
 	const current = await ActivityManager.getActivityOfUser(user.id);
 	const startsAtFormatted = current && current.finishDate > now ? dateFm(new Date(current.finishDate)) : null;
+	const trips = await Promise.all(
+		state.trips.map(async trip => {
+			const activity = await loadQueuedActivity(trip, user);
+			return { label: prettyTrip(trip.type, activity?.data), remaining: trip.count };
+		})
+	);
 
 	return formatQueuedTripsForCooldownList({
-		trips: [{ label: prettyTrip(state.trip.type, activity?.data), remaining: state.remaining }],
+		trips,
 		startsAtFormatted
 	});
 }
@@ -268,25 +277,24 @@ function makeSilentQueueInteraction(user: MUser, channelId: string): OSInteracti
 		member: null,
 		createdTimestamp: now,
 		messageId,
-		async defer() {},
-		async deferReply() {},
-		async reply() {},
-		async editReply() {},
-		async followUp() {},
-		async confirmation() {},
-		async makePaginatedMessage() {},
-		async returnStringOrFile() {}
+		async defer() { },
+		async deferReply() { },
+		async reply() { },
+		async editReply() { },
+		async followUp() { },
+		async confirmation() { },
+		async makePaginatedMessage() { },
+		async returnStringOrFile() { }
 	} as unknown as OSInteraction;
 }
 
-async function loadQueuedActivity(state: TripQueueState, user: MUser) {
-	if (!state.trip || state.remaining <= 0) return null;
+async function loadQueuedActivity(trip: QueuedTrip, user: MUser) {
 	const byId = await prisma.activity.findFirst({
-		where: { id: state.trip.activityId, user_id: BigInt(user.id) }
+		where: { id: trip.activityId, user_id: BigInt(user.id) }
 	});
 	if (byId) return byId;
 	const recent = await fetchRepeatTrips(user);
-	return recent.find(trip => trip.type === state.trip?.type) ?? null;
+	return recent.find(activity => activity.type === trip.type) ?? null;
 }
 
 /**
@@ -296,13 +304,14 @@ async function loadQueuedActivity(state: TripQueueState, user: MUser) {
 export async function tryStartQueuedTrip(user: MUser, channelId: string): Promise<string | null> {
 	try {
 		const state = await getTripQueueState(user.id);
-		if (!state.trip || state.remaining <= 0) return null;
+		const trip = state.trips[0];
+		if (!trip || state.remaining <= 0) return null;
 
 		if (await user.minionIsBusy()) {
 			return null;
 		}
 
-		const activity = await loadQueuedActivity(state, user);
+		const activity = await loadQueuedActivity(trip, user);
 		if (!activity) {
 			const refunded = await refundAndClear(state);
 			return refunded > 0
@@ -319,12 +328,9 @@ export async function tryStartQueuedTrip(user: MUser, channelId: string): Promis
 			return `Your trip queue was cleared: ${result.message}.${refundNote}`;
 		}
 
-		state.remaining -= 1;
+		state.trips = dequeueQueuedTrip(state.trips);
+		state.remaining = Math.max(0, state.remaining - 1);
 		const remaining = state.remaining;
-		if (state.remaining <= 0) {
-			state.trip = null;
-			state.remaining = 0;
-		}
 		await saveState(state);
 
 		const pretty = prettyTrip(activity.type, activity.data);
@@ -336,10 +342,10 @@ export async function tryStartQueuedTrip(user: MUser, channelId: string): Promis
 		let refunded = 0;
 		try {
 			const latest = await getTripQueueState(user.id);
-			if (latest.trip && latest.remaining > 0) {
+			if (latest.trips.length > 0 && latest.remaining > 0) {
 				refunded = await refundAndClear(latest);
 			}
-		} catch {}
+		} catch { }
 		const refundNote =
 			refunded > 0 ? ` ${refunded} unused queue point${refunded === 1 ? '' : 's'} were refunded.` : '';
 		if (err instanceof UserError) {

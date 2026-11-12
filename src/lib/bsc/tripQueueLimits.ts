@@ -5,8 +5,8 @@ import { PerkTier } from '@/lib/constants.js';
 /** Free players can queue this many trips per reset window. */
 export const F2P_QUEUE_LIMIT = 2;
 
-/** The queue allowance resets every 2 days (fixed UTC windows). */
-export const QUEUE_RESET_MS = Time.Day * 2;
+/** The queue allowance resets everyday (fixed UTC windows). */
+export const QUEUE_RESET_MS = Time.Day * 1;
 
 /**
  * Trips a player may queue per window (and have lined up at once).
@@ -17,12 +17,12 @@ export function maxQueuedTripsForPerkTier(perkTier: number): number {
 	return F2P_QUEUE_LIMIT + level;
 }
 
-/** Trips a player may add per 2-day window. Same as the at-once max. */
+/** Trips a player may add per day window. Same as the at-once max. */
 export function dailyQueueAllowance(perkTier: number): number {
 	return maxQueuedTripsForPerkTier(perkTier);
 }
 
-/** Start of the current 2-day UTC window, in unix milliseconds. */
+/** Start of the current day UTC window, in unix milliseconds. */
 export function utcDayStartMs(now: number): number {
 	return Math.floor(now / QUEUE_RESET_MS) * QUEUE_RESET_MS;
 }
@@ -38,7 +38,7 @@ export function applyQueueDailyReset<T extends { dailyUsed: number; dailyReset: 
 	return { ...row, dailyUsed: 0, dailyReset: start };
 }
 
-/** Refund still-queued trips back to the 2-day allowance and empty the queue. */
+/** Refund still-queued trips back to the day allowance and empty the queue. */
 export function refundUnstartedTrips<T extends { remaining: number; dailyUsed: number }>(
 	state: T
 ): { refunded: number; state: T } {
