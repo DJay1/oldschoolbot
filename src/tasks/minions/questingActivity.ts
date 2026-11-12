@@ -2,7 +2,7 @@ import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 import { launchPetRate } from '@/lib/util.js';
 
-import { Emoji } from '@oldschoolgg/toolkit';
+import { Emoji, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import { MAX_QP } from '@/lib/minions/data/quests.js';
