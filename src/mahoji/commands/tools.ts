@@ -8,7 +8,6 @@ import { Bank, type Item, type ItemBank, ItemGroups, Items, resolveItems, ToBUni
 
 import type { Activity } from '@/prisma/main.js';
 import { choicesOf, itemOption, monsterOption, skillOption } from '@/discord/index.js';
-import { triggerBscDoubleLoot } from '@/lib/bsc/patronPerks.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { allStashUnitsFlat } from '@/lib/clues/stashUnits.js';
 import { allCLItemsFiltered, allDroppedItems } from '@/lib/data/Collections.js';
@@ -1105,11 +1104,6 @@ export const toolsCommand = defineCommand({
 				},
 				{
 					type: 'Subcommand',
-					name: 'doubleloot',
-					description: 'Start weekly server double loot. Same as /patron double_loot.'
-				},
-				{
-					type: 'Subcommand',
 					name: 'purple_glow',
 					description: 'Change the colour new collection log items glow in your bank images (Pup and up).',
 					options: [
@@ -1305,9 +1299,6 @@ export const toolsCommand = defineCommand({
 			if (patron.spawnbox) return spawnBoxCommand(user, interaction);
 			if (patron.stats) {
 				return statsCommand(user, patron.stats.stat);
-			}
-			if (patron.doubleloot) {
-				return triggerBscDoubleLoot(user);
 			}
 			if (patron.purple_glow) {
 				return newClGlowColourCommand(user, patron.purple_glow.color);
