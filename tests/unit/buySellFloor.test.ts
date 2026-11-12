@@ -68,4 +68,48 @@ describe('buy cost is at least 2x /sell payout', () => {
 		expect(buyCost).toBe(Math.max(shop.totalCost, sellValue * 2));
 		expect(buyCost).toBeGreaterThan(sellValue);
 	});
+
+	test('every static /buy buyable costs at least 2x the /sell payout', () => {
+		let checked = 0;
+
+		for (const buyable of tripBuyables) {
+			const item = Items.getOrThrow(buyable.item);
+			const itemQty = buyable.quantity ?? 1;
+			const shop = calculateShopBuyCost({
+				gpCost: buyable.gpCost ?? 0,
+				quantity: 1,
+				shopQuantity: buyable.shopQuantity,
+				changePer: buyable.changePer
+			});
+			const loot = new Bank().add(item.id, itemQty);
+			const buyCost = applyBuyCostSellFloor(shop.totalCost, loot);
+			const sellValue = sellPayout(item.id, itemQty);
+			const name = buyable.displayName ?? item.name;
+			expect(buyCost, name).toBeGreaterThanOrEqual(sellValue * 2);
+			checked++;
+		}
+
+		for (const buyable of Buyables) {
+			if (typeof buyable.outputItems === 'function') continue;
+			const output =
+				buyable.outputItems === undefined
+					? new Bank().add(Items.getOrThrow(buyable.name).id)
+					: buyable.outputItems.clone();
+			if (output.length === 0) continue;
+			const existingGp = buyable.gpCost ?? 0;
+			const buyCost = applyBuyCostSellFloor(existingGp, output);
+			let sellValue = 0;
+			for (const [item, qty] of output.items()) {
+				sellValue += sellPayout(item.id, qty);
+			}
+			expect(buyCost, buyable.name).toBeGreaterThanOrEqual(sellValue * 2);
+			if (buyable.ironmanPrice !== undefined) {
+				const ironCost = applyBuyCostSellFloor(buyable.ironmanPrice, output);
+				expect(ironCost, `${buyable.name} (ironman)`).toBeGreaterThanOrEqual(sellValue * 2);
+			}
+			checked++;
+		}
+
+		expect(checked).toBeGreaterThan(tripBuyables.length);
+	});
 });
