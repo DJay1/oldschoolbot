@@ -65,7 +65,8 @@ const CLUE_SCROLLS: readonly (readonly [string, number, number, number])[] = [
 ];
 
 const RARE_SCALE = 1_000_000;
-export const CORGO_PARTY_HAT_PITY = 200;
+/** Opens needed for the guaranteed Corgo party hat (and the Launch box badge). */
+export const CORGO_PARTY_HAT_GUARANTEE_OPENS = 100;
 
 export interface Closeness {
 	got: boolean;
@@ -154,12 +155,10 @@ function closenessLine(name: string, track: Closeness): string {
 export function openLaunchBoxes({
 	quantity,
 	boxesOpenedBefore,
-	ownsPartyHat,
 	rng
 }: {
 	quantity: number;
 	boxesOpenedBefore: number;
-	ownsPartyHat: boolean;
 	rng: LaunchBoxRng;
 }): { bank: Bank; message: string } {
 	const loot = new Bank();
@@ -170,7 +169,7 @@ export function openLaunchBoxes({
 		Kuro: { got: false, roll: 0, denominator: 250 },
 		Flappy: { got: false, roll: 0, denominator: 1000 }
 	};
-	let hasHat = ownsPartyHat;
+	let gotGuaranteedHat = false;
 
 	for (let i = 0; i < quantity; i++) {
 		for (const box of LAUNCH_BOX_MYSTERY_BOXES) loot.add(box, rng.randInt(1, 3));
@@ -196,13 +195,13 @@ export function openLaunchBoxes({
 
 		const openNumber = boxesOpenedBefore + i + 1;
 		const hat = oneIn(rng, 75);
-		const pity = !hasHat && openNumber >= CORGO_PARTY_HAT_PITY;
-		const hatHit = hat.got || pity;
-		note(tracks['Corgo party hat'], hatHit ? { got: true, roll: 75, denominator: 75 } : hat);
-		if (hatHit) {
+		const guaranteedDrop = openNumber === CORGO_PARTY_HAT_GUARANTEE_OPENS;
+		if (hat.got) loot.add(LaunchItem.CORGO_PARTY_HAT);
+		if (guaranteedDrop) {
 			loot.add(LaunchItem.CORGO_PARTY_HAT);
-			hasHat = true;
+			gotGuaranteedHat = true;
 		}
+		note(tracks['Corgo party hat'], hat.got || guaranteedDrop ? { got: true, roll: 75, denominator: 75 } : hat);
 
 		const greg = oneIn(rng, 125);
 		note(tracks.Gregoyle, greg);
@@ -218,19 +217,45 @@ export function openLaunchBoxes({
 	}
 
 	const closeness = CLOSENESS_NAMES.map(name => closenessLine(name, tracks[name])).join('\n');
+	const extras: string[] = [];
+	const opensAfter = boxesOpenedBefore + quantity;
+	if (gotGuaranteedHat) {
+		extras.push(
+			`You reached ${CORGO_PARTY_HAT_GUARANTEE_OPENS} opens and received your guaranteed Corgo party hat!`
+		);
+	} else if (opensAfter < CORGO_PARTY_HAT_GUARANTEE_OPENS) {
+		extras.push(`Corgo party hat guaranteed drop: ${opensAfter}/${CORGO_PARTY_HAT_GUARANTEE_OPENS} opens`);
+	}
 	return {
 		bank: loot,
-		message: `Your best rolls (hit the top number to win):\n${closeness}`
+		message: [`Your best rolls (hit the top number to win):\n${closeness}`, ...extras].join('\n')
 	};
+}
+
+export function launchBoxOpenCountFromScores(scores: ItemBank | null | undefined): number {
+	return new Bank((scores ?? {}) as ItemBank).amount(LaunchItem.LAUNCH_BOX);
+}
+
+export function hasLaunchBoxOpenBadge(opens: number): boolean {
+	return opens >= CORGO_PARTY_HAT_GUARANTEE_OPENS;
+}
+
+/** Read-only open count. Returns 0 if the player has no stats row yet. */
+export async function launchBoxOpenCount(user: MUser): Promise<number> {
+	try {
+		const scores = await user.fetchUserStat('openable_scores');
+		return launchBoxOpenCountFromScores((scores ?? {}) as ItemBank);
+	} catch {
+		return 0;
+	}
 }
 
 export async function openLaunchBoxForUser(user: MUser, quantity: number, rng: LaunchBoxRng) {
 	const scores = await user.fetchUserStat('openable_scores');
-	const opened = new Bank((scores ?? {}) as ItemBank).amount(LaunchItem.LAUNCH_BOX);
+	const opened = launchBoxOpenCountFromScores((scores ?? {}) as ItemBank);
 	return openLaunchBoxes({
 		quantity,
 		boxesOpenedBefore: opened,
-		ownsPartyHat: user.allItemsOwned.has(LaunchItem.CORGO_PARTY_HAT),
 		rng
 	});
 }

@@ -8,6 +8,7 @@ import { type BscPatronTier, bscPatronTierFromBits } from '@/lib/bsc/patronTiers
 import { BitField } from '@/lib/constants.js';
 import { calcCLDetails } from '@/lib/data/Collections.js';
 import { allPetIDs } from '@/lib/data/CollectionsExport.js';
+import { hasLaunchBoxOpenBadge, launchBoxOpenCount } from '@/lib/events/launch/launchBox.js';
 import { makeBadgeEmojiNames } from '@/lib/util/makeBadgeString.js';
 
 const PET_ID_SET = new Set(allPetIDs);
@@ -98,13 +99,16 @@ export async function generatePatronProfileCard(user: MUser): Promise<{ image: B
 		title: account.title,
 		flair: account.flair,
 		months,
-		badgeFiles: makeBadgeEmojiNames(
-			user.user.badges,
-			user.isIronman,
-			user.bitfield.includes(BitField.BSCEarlySupporter),
-			user.bitfield.includes(BitField.LaunchFounder),
-			user.bitfield
-		),
+		badgeFiles: [
+			...makeBadgeEmojiNames(
+				user.user.badges,
+				user.isIronman,
+				user.bitfield.includes(BitField.BSCEarlySupporter),
+				user.bitfield.includes(BitField.LaunchFounder),
+				user.bitfield
+			),
+			...(hasLaunchBoxOpenBadge(await launchBoxOpenCount(user)) ? ['launchbox'] : [])
+		],
 		loyaltyBadgeFiles: loyaltyBadges.map(badge => badge.key),
 		totalLevel: user.totalLevel,
 		clPercent: cl.percent,

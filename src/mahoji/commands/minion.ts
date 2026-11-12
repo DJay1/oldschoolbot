@@ -2,7 +2,7 @@ import { feedHammyCommand } from '@/lib/bso/commands/hammyCommand.js';
 import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
 
 import { bold } from '@oldschoolgg/discord';
-import { FormattedCustomEmoji, formatOrdinal, notEmpty, roboChimpCLRankQuery } from '@oldschoolgg/toolkit';
+import { customEmoji, FormattedCustomEmoji, formatOrdinal, notEmpty, roboChimpCLRankQuery } from '@oldschoolgg/toolkit';
 import { convertLVLtoXP, Items } from 'oldschooljs';
 
 import { ownedItemOption, skillOption } from '@/discord/index.js';
@@ -12,6 +12,7 @@ import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { BitFieldData, MAX_LEVEL, PerkTier } from '@/lib/constants.js';
 import { degradeableItems } from '@/lib/degradeableItems.js';
 import { diaries } from '@/lib/diaries.js';
+import { hasLaunchBoxOpenBadge, launchBoxOpenCount } from '@/lib/events/launch/launchBox.js';
 import { calculateMastery } from '@/lib/mastery.js';
 import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 import { blowpipeCommand, blowpipeDarts } from '@/lib/minions/functions/blowpipeCommand.js';
@@ -72,10 +73,14 @@ export async function getUserInfo(user: MUser) {
 	const task = await ActivityManager.getActivityOfUser(user.id);
 	const taskText = task ? `${task.type}` : 'None';
 
+	const launchBoxOpens = await launchBoxOpenCount(user);
+	const minionBadges = hasLaunchBoxOpenBadge(launchBoxOpens)
+		? [user.badgesString, customEmoji('launchbox')].filter(part => part.length > 0).join(' ')
+		: user.badgesString;
 	const result = {
 		perkTier: user.perkTier,
 		isBlacklisted: await user.isBlacklisted(),
-		badges: user.badgesString,
+		badges: minionBadges,
 		isIronman: user.isIronman,
 		bitfields,
 		currentTask: taskText,
