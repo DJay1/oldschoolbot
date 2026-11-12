@@ -24,7 +24,7 @@ import {
 	utcMonthKey
 } from '@/lib/bsc/patronPoints.js';
 import { BSC_PATRON_TIERS, bscPatronTripBonusMs, bscTripBonusForPerkTier } from '@/lib/bsc/patronTiers.js';
-import { PATRON_TITLES, parsePatronTitle } from '@/lib/bsc/patronTitles.js';
+import { PATRON_TITLE_MAX_LENGTH, parsePatronTitle } from '@/lib/bsc/patronTitles.js';
 import { BitField, PerkTier } from '@/lib/constants.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
 import { NEW_CL_GLOW_PERK_TIER } from '@/lib/util/newClGlowColour.js';
@@ -130,17 +130,31 @@ test('paid patrons earn higher badges from a continuous streak; bitfield-only pa
 	]);
 });
 
-test('flair is sanitized and titles come from the locked list', () => {
+test('flair is sanitized and titles accept custom text', () => {
 	expect(sanitizePatronFlair('  Back from a treat run  ').ok).toBe(true);
 	expect(sanitizePatronFlair('hello @everyone').ok).toBe(false);
 	expect(sanitizePatronFlair('see https://evil.example').ok).toBe(false);
 	expect(sanitizePatronFlair('<@123> hi').ok).toBe(false);
 	expect(sanitizePatronFlair('a'.repeat(81)).ok).toBe(false);
 	expect(sanitizePatronFlair('clear')).toEqual({ ok: true, flair: '' });
-	expect(PATRON_TITLES).toHaveLength(10);
-	expect(parsePatronTitle('Fetch Master')).toBe('Fetch Master');
-	expect(parsePatronTitle('clear')).toBe('clear');
-	expect(parsePatronTitle('Dragon Slayer')).toBeNull();
+	expect(parsePatronTitle('Massive Hotdog')).toEqual({ ok: true, title: 'Massive Hotdog' });
+	expect(parsePatronTitle(':"Massive Hotdog"')).toEqual({ ok: true, title: 'Massive Hotdog' });
+	expect(parsePatronTitle('Fetch Master')).toEqual({ ok: true, title: 'Fetch Master' });
+	expect(parsePatronTitle('clear')).toEqual({ ok: true, title: null });
+	expect(parsePatronTitle('none')).toEqual({ ok: true, title: null });
+	expect(parsePatronTitle('A')).toMatchObject({ ok: false });
+	expect(parsePatronTitle('A'.repeat(PATRON_TITLE_MAX_LENGTH))).toEqual({
+		ok: true,
+		title: 'A'.repeat(PATRON_TITLE_MAX_LENGTH)
+	});
+	expect(parsePatronTitle('A'.repeat(PATRON_TITLE_MAX_LENGTH + 1))).toMatchObject({ ok: false });
+	expect(parsePatronTitle('hello @everyone')).toMatchObject({ ok: false });
+	expect(parsePatronTitle('see https://evil.example')).toMatchObject({ ok: false });
+	expect(parsePatronTitle('<@123> hi')).toMatchObject({ ok: false });
+	expect(parsePatronTitle('Bold *title*')).toMatchObject({ ok: false });
+	expect(parsePatronTitle('Cool_Title')).toMatchObject({ ok: false });
+	expect(parsePatronTitle('Line\nBreak')).toMatchObject({ ok: false });
+	expect(parsePatronTitle('www.example.com')).toMatchObject({ ok: false });
 });
 
 test('dyed item IDs stay tradeable because the dye is an account cosmetic', () => {

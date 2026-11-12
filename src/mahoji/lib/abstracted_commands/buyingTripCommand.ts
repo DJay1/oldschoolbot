@@ -1,14 +1,12 @@
-import { formatDuration, Time } from '@oldschoolgg/toolkit';
+import { Time } from '@oldschoolgg/toolkit';
 import { Bank, EItem, Items } from 'oldschooljs';
 
 import type { TripBuyable } from '@/lib/data/buyables/tripBuyables.js';
-import type { BuyActivityTaskOptions } from '@/lib/types/minions.js';
 import { calculateShopBuyCost } from '@/lib/util/calculateShopBuyCost.js';
-import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { MAX_QUANTITY, safePositiveProduct, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 export async function buyingTripCommand(
 	user: MUser,
-	channelId: string,
 	buyable: TripBuyable,
 	quantity: number | null,
 	interaction: MInteraction
@@ -25,16 +23,13 @@ export async function buyingTripCommand(
 	const itemQuantity = buyable.quantity ?? 1;
 	const gpCost = buyable.gpCost ?? 0;
 
-	const maxTripLength = await user.calcMaxTripLength('Buy');
-	if (!quantity) {
+	if (quantity === null || quantity === undefined) {
+		const maxTripLength = await user.calcMaxTripLength('Buy');
 		quantity = Math.floor(maxTripLength / timePerItem);
 	}
-	const duration = quantity * timePerItem;
-	if (duration > maxTripLength) {
-		return `${user.minionName} can't go on a trip longer than ${formatDuration(
-			maxTripLength
-		)}, try a lower quantity. The highest amount you can buy is ${Math.floor(maxTripLength / timePerItem)}.`;
-	}
+	const parsedQuantity = validateQuantity(quantity, { min: 1, max: MAX_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
 
 	const { totalCost, averageCost } = calculateShopBuyCost({
 		gpCost,
@@ -42,6 +37,12 @@ export async function buyingTripCommand(
 		shopQuantity: buyable.shopQuantity,
 		changePer: buyable.changePer
 	});
+	if (!Number.isSafeInteger(totalCost) || totalCost < 0 || !Number.isSafeInteger(averageCost) || averageCost < 0) {
+		return 'That quantity is too large.';
+	}
+
+	const lootQty = safePositiveProduct(itemQuantity, quantity, Number.MAX_SAFE_INTEGER);
+	if (!lootQty.ok) return lootQty.error;
 
 	const cost = new Bank().add('Coins', totalCost);
 	if (!user.owns(cost)) {
@@ -49,21 +50,18 @@ export async function buyingTripCommand(
 	}
 
 	await interaction.confirmation(
-		`Buying ${quantity}x ${itemDisplayName} will cost ${totalCost.toLocaleString()} GP (avg ${averageCost.toLocaleString()} ea) and take ${formatDuration(duration)}. Please confirm.`
+		`Buying ${quantity}x ${itemDisplayName} will cost ${totalCost.toLocaleString()} GP (avg ${averageCost.toLocaleString()} ea). Please confirm.`
 	);
 
-	await user.transactItems({ itemsToRemove: cost });
-	await ClientSettings.updateBankSetting('buy_cost_bank', cost);
+	const loot = new Bank().add(osItem.id, lootQty.value);
 
-	await ActivityManager.startTrip<BuyActivityTaskOptions>({
-		type: 'Buy',
-		itemID: osItem.id,
-		quantity: quantity * itemQuantity, // total item count
-		userID: user.id,
-		channelId,
-		duration,
-		totalCost
+	await user.transactItems({
+		itemsToRemove: cost,
+		itemsToAdd: loot,
+		collectionLog: false
 	});
+	await ClientSettings.updateBankSetting('buy_cost_bank', cost);
+	await ClientSettings.updateBankSetting('buy_loot_bank', loot);
 
-	return `${user.minionName} is now buying ${quantity}x ${itemDisplayName} and will return in ${formatTripDuration(user, duration)}.`;
+	return `You purchased ${loot}. This cost ${totalCost.toLocaleString()} GP (avg ${averageCost.toLocaleString()} ea).`;
 }

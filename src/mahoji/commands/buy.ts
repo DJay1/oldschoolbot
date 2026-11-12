@@ -47,7 +47,7 @@ export const buyCommand = defineCommand({
 			required: false
 		}
 	],
-	run: async ({ options, user, interaction, channelId }) => {
+	run: async ({ options, user, interaction }) => {
 		const { name } = options;
 		let quantity: number | null = mahojiParseNumber({ input: options.quantity, min: 1, max: MAX_QUANTITY });
 		if (options.quantity && quantity === null) {
@@ -66,7 +66,7 @@ export const buyCommand = defineCommand({
 		);
 
 		if (tripBuyable) {
-			return buyingTripCommand(user, channelId.toString(), tripBuyable, quantity, interaction);
+			return buyingTripCommand(user, tripBuyable, quantity, interaction);
 		}
 		const buyable = Buyables.find(
 			item => stringMatches(name, item.name) || item.aliases?.some(alias => stringMatches(alias, name))

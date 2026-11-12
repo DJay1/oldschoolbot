@@ -21,7 +21,7 @@ import {
 	formatBscPatronOverview,
 	planBscPatronGift
 } from '@/lib/bsc/patronTiers.js';
-import { formatPatronTitleList, parsePatronTitle } from '@/lib/bsc/patronTitles.js';
+import { parsePatronTitle } from '@/lib/bsc/patronTitles.js';
 import { patreonUrl } from '@/lib/patreonLink.js';
 import { patronMsg } from '@/lib/util/smallUtils.js';
 
@@ -112,7 +112,7 @@ export const patronCommand = defineCommand({
 	attributes: {
 		examples: [
 			'/patron info',
-			'/patron title title:Fetch Master',
+			'/patron title title:Massive Hotdog',
 			'/patron flair text:Back from a treat run',
 			'/patron profile',
 			'/patron dyes buy:Biscuit',
@@ -137,7 +137,7 @@ export const patronCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'title',
-					description: 'A title from the list, or clear.',
+					description: 'Your custom title (2-24 characters), or clear.',
 					required: true
 				}
 			]
@@ -341,15 +341,13 @@ export const patronCommand = defineCommand({
 			const gated = await requireTopDog(user);
 			if (gated) return gated;
 			const parsed = parsePatronTitle(options.title.title);
-			if (!parsed) {
-				return `Pick one of these titles, or use clear: ${formatPatronTitleList()}.`;
-			}
-			if (parsed === 'clear') {
+			if (!parsed.ok) return parsed.message;
+			if (parsed.title === null) {
 				await updateBscPatronAccount(user.id, { title: null });
 				return 'Your patron title was cleared.';
 			}
-			await updateBscPatronAccount(user.id, { title: parsed });
-			return `Your patron title is now ${parsed}.`;
+			await updateBscPatronAccount(user.id, { title: parsed.title });
+			return `Your patron title is now ${parsed.title}.`;
 		}
 		if (options.flair) {
 			const gated = await requireTopDog(user);
