@@ -33,6 +33,8 @@ export interface PatronProfileCardData {
 	title: string | null;
 	flair: string | null;
 	months: number;
+	/** Emoji file stems shown next to the name in /minion info, in the same order. */
+	badgeFiles?: string[];
 	/** Emoji file stems for every earned loyalty badge, e.g. patron_loyalty_1. */
 	loyaltyBadgeFiles?: string[];
 	totalLevel: number;
@@ -289,13 +291,11 @@ export async function renderPatronProfileCard(data: PatronProfileCardData): Prom
 		cursorY += 32;
 	}
 
-	const collar = data.tierKey ? await loadEmojiPng('patron_collar') : null;
-	const loyaltyIcons: Image[] = [];
-	for (const file of data.loyaltyBadgeFiles ?? []) {
+	const badges: Image[] = [];
+	for (const file of [...(data.badgeFiles ?? []), ...(data.loyaltyBadgeFiles ?? [])]) {
 		const icon = await loadEmojiPng(file);
-		if (icon) loyaltyIcons.push(icon);
+		if (icon) badges.push(icon);
 	}
-	const badges = [collar, ...loyaltyIcons].filter((badge): badge is Image => Boolean(badge));
 	const badgeY = cursorY;
 	const badgeGap = 8;
 	const badgeMax = 56;

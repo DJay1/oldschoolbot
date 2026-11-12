@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 
 import { bitfieldCanUserManipulate, getBitFieldData } from '@/lib/bitFieldUtils.js';
 import { BadgesEnum, BitField, BitFieldData, badges, globalConfig } from '@/lib/constants.js';
-import { makeBadgeString } from '@/lib/util/makeBadgeString.js';
+import { makeBadgeEmojiNames, makeBadgeString } from '@/lib/util/makeBadgeString.js';
 import { mockMUser } from './userutil.js';
 
 describe('BSC Early Supporter', () => {
@@ -51,5 +51,14 @@ describe('BSC Early Supporter', () => {
 		const withBit = makeBadgeString([17], true, true);
 		expect(withBit).toBe(`${Emoji.EsbCorgi} ${Emoji.Ironman}`);
 		expect(withBit).not.toContain('undefined');
+	});
+
+	test('makeBadgeEmojiNames matches minion-info badge order and skips unknown badges', () => {
+		expect(makeBadgeEmojiNames([17], true, true)).toEqual(['esbcorgi', 'ironman']);
+		expect(makeBadgeEmojiNames([], false, true, true, [BitField.BSCPatronCosmetic])).toEqual([
+			'esbcorgi',
+			'bscicon',
+			'patron_collar'
+		]);
 	});
 });

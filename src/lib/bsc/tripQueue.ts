@@ -9,7 +9,7 @@ import {
 	maxQueuedTripsForPerkTier,
 	queueResetAtMs,
 	refundUnstartedTrips,
-	utcDayStartMs
+	startQueueWindowIfNeeded
 } from '@/lib/bsc/tripQueueLimits.js';
 import {
 	appendQueuedTrips,
@@ -62,7 +62,7 @@ function emptyState(userId: string, now: number): TripQueueState {
 		trips: [],
 		remaining: 0,
 		dailyUsed: 0,
-		dailyReset: utcDayStartMs(now),
+		dailyReset: 0,
 		remindersEnabled: false,
 		reminderTime: null,
 		reminderTimezone: null,
@@ -305,9 +305,14 @@ export async function addTripsToQueue(
 	const maxAtOnce = maxQueuedTripsForPerkTier(perkTier);
 	const dailyCap = dailyQueueAllowance(perkTier);
 	const now = Date.now();
-	const state = await getTripQueueState(user.id, now);
+	let state = await getTripQueueState(user.id, now);
+	const previousReset = state.dailyReset;
+	state = startQueueWindowIfNeeded(state, now);
+	if (state.dailyReset !== previousReset) {
+		state.lastRefillReminderReset = state.dailyReset;
+	}
 
-	const resetAt = `<t:${Math.floor(queueResetAtMs(now) / 1000)}:R>`;
+	const resetAt = `<t:${Math.floor(queueResetAtMs(state.dailyReset) / 1000)}:R>`;
 	const dailyLeft = dailyCap - state.dailyUsed;
 	if (dailyLeft <= 0) {
 		return `You've used all ${dailyCap} of your queued trips. They refill ${resetAt}.`;
@@ -379,8 +384,10 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 		);
 	}
 	lines.push(`You can have up to ${maxAtOnce} trips queued at once.`);
+	const resetAt = queueResetAtMs(state.dailyReset);
+	const refillNote = resetAt > 0 ? ` (refills <t:${Math.floor(resetAt / 1000)}:R>)` : '';
 	lines.push(
-		`You get ${dailyCap} queued trips everyday and have used ${state.dailyUsed} (refills <t:${Math.floor(queueResetAtMs(Date.now()) / 1000)}:R>). Clearing unused trips refunds those points.`
+		`You get ${dailyCap} queued trips everyday and have used ${state.dailyUsed}${refillNote}. Clearing unused trips refunds those points.`
 	);
 	if (state.scheduledStartAt !== null) {
 		lines.push(`Scheduled to start <t:${Math.floor(state.scheduledStartAt / 1000)}:F>.`);
@@ -400,7 +407,8 @@ export async function describeQueuedTripsForCooldown(user: MUser, now = Date.now
 	const allowanceMax = dailyQueueAllowance(perkTier);
 	const state = await getTripQueueState(user.id, now);
 	const allowanceLeft = Math.max(0, allowanceMax - state.dailyUsed);
-	const refillsAtFormatted = dateFm(new Date(queueResetAtMs(now)));
+	const resetAt = queueResetAtMs(state.dailyReset);
+	const refillsAtFormatted = resetAt > 0 ? dateFm(new Date(resetAt)) : null;
 
 	if (state.trips.length === 0 || state.remaining <= 0) {
 		return formatQueuedTripsForCooldownList({
@@ -477,8 +485,6 @@ export async function processQueueReminders(now = Date.now()): Promise<void> {
 		FROM bsc_trip_queue
 		WHERE reminders_enabled = true
 	`;
-	const currentReset = utcDayStartMs(now);
-
 	for (const row of rows) {
 		try {
 			const user = await mUserFetch(row.user_id);
@@ -495,13 +501,13 @@ export async function processQueueReminders(now = Date.now()): Promise<void> {
 					.setCustomId(`QUEUE_REMINDERS_OFF:${user.id}`)
 			];
 
-			const needsRefillReminder = state.lastRefillReminderReset < currentReset;
+			const needsRefillReminder = state.dailyReset === 0 && state.lastRefillReminderReset > 0;
 			if (needsRefillReminder) {
 				await globalClient.sendDm(user.id, {
 					content: `Your daily queue allowance has refreshed. You currently have ${Math.max(0, dailyCap - state.dailyUsed)} of ${dailyCap} queue trips available. Use /queue add to queue them.`,
 					components: buttons
 				});
-				state.lastRefillReminderReset = currentReset;
+				state.lastRefillReminderReset = 0;
 				await saveState(state);
 				sentRefillReminder = true;
 			}

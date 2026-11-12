@@ -17,6 +17,7 @@ import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js'
 import { blowpipeCommand, blowpipeDarts } from '@/lib/minions/functions/blowpipeCommand.js';
 import { degradeableItemsCommand } from '@/lib/minions/functions/degradeableItemsCommand.js';
 import { allPossibleStyles, trainCommand } from '@/lib/minions/functions/trainCommand.js';
+import { patreonUrl } from '@/lib/patreonLink.js';
 import { Minigames } from '@/lib/settings/minigames.js';
 import creatures from '@/lib/skilling/skills/hunter/creatures/index.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
@@ -611,8 +612,8 @@ ${substr}`;
 });
 
 function bscPerksLine(perkTier: number): string {
+	const url = `<${patreonUrl()}>`;
 	const tier = [...BSC_PATRON_TIERS].reverse().find(t => perkTier >= t.perkTier);
-	if (!tier) return 'Free player: queue 2 trips everyday with /queue (each patron tier adds 1 more)';
-	const below = tier.level > 1 ? ', plus every perk from the tiers below' : '';
-	return `__${tier.name}__: ${tier.summary}${below}`;
+	if (!tier) return `Free player, see all perks at ${url}`;
+	return `${tier.name}, see all perks at ${url}`;
 }
