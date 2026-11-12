@@ -157,7 +157,7 @@ export const BSC_GE_SLOT_BOOSTS = [
 ] as const;
 
 /** Shown after a Good Boy or higher claims the monthly cosmetic. Not an item. */
-export const BSC_SUPPORTER_COSMETIC = 'ðŸŽ€';
+export const BSC_SUPPORTER_COSMETIC = '🎀';
 export const BSC_COSMETIC_COOLDOWN = Time.Day * 30;
 
 /** Perks stay for this long after the Discord tier role disappears. */
@@ -599,7 +599,7 @@ export function formatBscPatronOverview(input: {
 	}
 	lines.push('');
 	for (const entry of BSC_PATRON_TIERS) {
-		lines.push(`${entry.name} ($${entry.priceUsd}) â€” ${entry.adds}`);
+		lines.push(`${entry.name} ($${entry.priceUsd}) — ${entry.adds}`);
 	}
 	lines.push('');
 	lines.push(

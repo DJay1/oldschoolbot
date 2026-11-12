@@ -654,37 +654,6 @@ class CacheManager {
 		return existing;
 	}
 
-	private pollVoteKey(messageId: string, choice: 'yes' | 'no') {
-		return `${BOT_TYPE}:poll:${choice}:${messageId}`;
-	}
-
-	async loadPollVotes(messageId: string): Promise<Map<string, 'yes' | 'no'>> {
-		const yesKey = this.pollVoteKey(messageId, 'yes');
-		const noKey = this.pollVoteKey(messageId, 'no');
-		const [yesUsers, noUsers] = await Promise.all([this.client.smembers(yesKey), this.client.smembers(noKey)]);
-		const votes = new Map<string, 'yes' | 'no'>();
-		for (const userId of yesUsers) votes.set(userId, 'yes');
-		for (const userId of noUsers) votes.set(userId, 'no');
-		return votes;
-	}
-
-	async persistPollVote(messageId: string, userId: string, choice: 'yes' | 'no'): Promise<void> {
-		const yesKey = this.pollVoteKey(messageId, 'yes');
-		const noKey = this.pollVoteKey(messageId, 'no');
-		const ttl = TTL.Day * 30;
-		const pipeline = this.client.multi();
-		if (choice === 'yes') {
-			pipeline.srem(noKey, userId);
-			pipeline.sadd(yesKey, userId);
-		} else {
-			pipeline.srem(yesKey, userId);
-			pipeline.sadd(noKey, userId);
-		}
-		pipeline.expire(yesKey, ttl);
-		pipeline.expire(noKey, ttl);
-		await pipeline.exec();
-	}
-
 	async close() {
 		await this.client.quit();
 	}

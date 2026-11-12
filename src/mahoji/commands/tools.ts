@@ -986,7 +986,7 @@ export const toolsCommand = defineCommand({
 						{
 							type: 'String',
 							name: 'source',
-							description: 'The source of the item â€“ a monster, minigame, clue, etc.',
+							description: 'The source of the item – a monster, minigame, clue, etc.',
 							required: true,
 							autocomplete: async ({ value }: StringAutoComplete) => {
 								return [

@@ -320,7 +320,7 @@ const mentionCommands: MentionCommand[] = [
 ];
 
 function patreonMessage() {
-	return `ðŸ¶ Support Bark School Corgo on Patreon and unlock perks like longer trips, extra boxes and more: <${patreonUrl()}>\nSee all the tiers with /patron info.`;
+	return `🐶 Support Bark School Corgo on Patreon and unlock perks like longer trips, extra boxes and more: <${patreonUrl()}>\nSee all the tiers with /patron info.`;
 }
 
 const commandList = [...new Set(mentionCommands.flatMap(i => [i.name, ...i.aliases]))];
