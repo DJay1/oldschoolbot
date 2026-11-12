@@ -2,6 +2,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { Bank, EItem, Items } from 'oldschooljs';
 
 import type { TripBuyable } from '@/lib/data/buyables/tripBuyables.js';
+import { applyBuyCostSellFloor } from '@/lib/util/buySellFloor.js';
 import { calculateShopBuyCost } from '@/lib/util/calculateShopBuyCost.js';
 import { MAX_QUANTITY, safePositiveProduct, validateQuantity } from '@/lib/util/validateQuantity.js';
 
@@ -31,7 +32,7 @@ export async function buyingTripCommand(
 	if (!parsedQuantity.ok) return parsedQuantity.error;
 	quantity = parsedQuantity.value;
 
-	const { totalCost, averageCost } = calculateShopBuyCost({
+	let { totalCost, averageCost } = calculateShopBuyCost({
 		gpCost,
 		quantity,
 		shopQuantity: buyable.shopQuantity,
@@ -44,16 +45,21 @@ export async function buyingTripCommand(
 	const lootQty = safePositiveProduct(itemQuantity, quantity, Number.MAX_SAFE_INTEGER);
 	if (!lootQty.ok) return lootQty.error;
 
+	const loot = new Bank().add(osItem.id, lootQty.value);
+	totalCost = applyBuyCostSellFloor(totalCost, loot);
+	const displayAverage = Math.floor(totalCost / quantity);
+	if (!Number.isSafeInteger(totalCost) || totalCost < 0 || !Number.isSafeInteger(displayAverage) || displayAverage < 0) {
+		return 'That quantity is too large.';
+	}
+
 	const cost = new Bank().add('Coins', totalCost);
 	if (!user.owns(cost)) {
 		return `You need ${cost} to buy ${quantity}x ${itemDisplayName}.`;
 	}
 
 	await interaction.confirmation(
-		`Buying ${quantity}x ${itemDisplayName} will cost ${totalCost.toLocaleString()} GP (avg ${averageCost.toLocaleString()} ea). Please confirm.`
+		`Buying ${quantity}x ${itemDisplayName} will cost ${totalCost.toLocaleString()} GP (avg ${displayAverage.toLocaleString()} ea). Please confirm.`
 	);
-
-	const loot = new Bank().add(osItem.id, lootQty.value);
 
 	await user.transactItems({
 		itemsToRemove: cost,
@@ -63,5 +69,5 @@ export async function buyingTripCommand(
 	await ClientSettings.updateBankSetting('buy_cost_bank', cost);
 	await ClientSettings.updateBankSetting('buy_loot_bank', loot);
 
-	return `You purchased ${loot}. This cost ${totalCost.toLocaleString()} GP (avg ${averageCost.toLocaleString()} ea).`;
+	return `You purchased ${loot}. This cost ${totalCost.toLocaleString()} GP (avg ${displayAverage.toLocaleString()} ea).`;
 }

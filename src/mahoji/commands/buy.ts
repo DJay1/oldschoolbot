@@ -10,6 +10,7 @@ import { seasonalBuyableHoldMessage } from '@/lib/events/buyables.js';
 import { quests } from '@/lib/minions/data/quests.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 import { Minigames } from '@/lib/settings/minigames.js';
+import { applyBuyCostSellFloor } from '@/lib/util/buySellFloor.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { MAX_QUANTITY } from '@/lib/util/validateQuantity.js';
 import { buyFossilIslandNotes } from '@/mahoji/lib/abstracted_commands/buyFossilIslandNotes.js';
@@ -163,11 +164,6 @@ export const buyCommand = defineCommand({
 		const singleCost: Bank = new Bank(buyable.itemCost);
 		if (gpCost) singleCost.add('Coins', gpCost);
 
-		const totalCost = singleCost.clone().multiply(quantity);
-		if (!user.owns(totalCost)) {
-			return `You don't have the required items to purchase this. You need: ${totalCost}.`;
-		}
-
 		const singleOutput: Bank =
 			buyable.outputItems === undefined
 				? new Bank().add(buyable.name)
@@ -176,6 +172,15 @@ export const buyCommand = defineCommand({
 					: buyable.outputItems(user);
 
 		const outItems = singleOutput.clone().multiply(quantity);
+		const totalCost = singleCost.clone().multiply(quantity);
+		const minGp = applyBuyCostSellFloor(totalCost.amount('Coins'), outItems);
+		if (minGp > totalCost.amount('Coins')) {
+			totalCost.remove('Coins', totalCost.amount('Coins'));
+			if (minGp > 0) totalCost.add('Coins', minGp);
+		}
+		if (!user.owns(totalCost)) {
+			return `You don't have the required items to purchase this. You need: ${totalCost}.`;
+		}
 
 		await interaction.confirmation(
 			`${user}, please confirm that you want to buy **${outItems}** for: ${totalCost}.`
