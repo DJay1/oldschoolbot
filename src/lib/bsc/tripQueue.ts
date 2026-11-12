@@ -1,5 +1,6 @@
-import { dateFm } from '@oldschoolgg/discord';
+import { ButtonBuilder, ButtonStyle, dateFm } from '@oldschoolgg/discord';
 import { UserError } from '@oldschoolgg/toolkit';
+import { DateTime } from 'luxon';
 
 import { formatQueuedTripLabel, formatQueuedTripsForCooldownList } from '@/lib/bsc/tripQueueDisplay.js';
 import {
@@ -13,10 +14,13 @@ import {
 import {
 	appendQueuedTrips,
 	dequeueQueuedTrip,
+	isValidQueueLocalTime,
+	nextQueueScheduleAt,
 	parseQueuedTrips,
 	type QueuedTrip,
 	type QueuedTripGroup
 } from '@/lib/bsc/tripQueueState.js';
+import { globalConfig, PerkTier } from '@/lib/constants.js';
 import { fetchRepeatTrips, startRepeatTripFromActivity } from '@/lib/util/repeatStoredTrip.js';
 
 interface TripQueueRow {
@@ -25,6 +29,13 @@ interface TripQueueRow {
 	remaining: number;
 	daily_used: number;
 	daily_reset: bigint | number;
+	reminders_enabled: boolean;
+	reminder_time: string | null;
+	reminder_timezone: string | null;
+	last_refill_reminder_reset: bigint | number;
+	last_local_reminder_date: string | null;
+	scheduled_start_at: bigint | number | null;
+	scheduled_channel_id: string | null;
 	updated_at?: Date;
 }
 
@@ -34,6 +45,13 @@ export interface TripQueueState {
 	remaining: number;
 	dailyUsed: number;
 	dailyReset: number;
+	remindersEnabled: boolean;
+	reminderTime: string | null;
+	reminderTimezone: string | null;
+	lastRefillReminderReset: number;
+	lastLocalReminderDate: string | null;
+	scheduledStartAt: number | null;
+	scheduledChannelId: string | null;
 }
 
 const ready = { done: false };
@@ -44,7 +62,14 @@ function emptyState(userId: string, now: number): TripQueueState {
 		trips: [],
 		remaining: 0,
 		dailyUsed: 0,
-		dailyReset: utcDayStartMs(now)
+		dailyReset: utcDayStartMs(now),
+		remindersEnabled: false,
+		reminderTime: null,
+		reminderTimezone: null,
+		lastRefillReminderReset: 0,
+		lastLocalReminderDate: null,
+		scheduledStartAt: null,
+		scheduledChannelId: null
 	};
 }
 
@@ -56,7 +81,14 @@ function fromRow(row: TripQueueRow, now: number): TripQueueState {
 			trips,
 			remaining: trips.reduce((total, trip) => total + trip.count, 0),
 			dailyUsed: row.daily_used,
-			dailyReset: Number(row.daily_reset)
+			dailyReset: Number(row.daily_reset),
+			remindersEnabled: row.reminders_enabled ?? false,
+			reminderTime: row.reminder_time ?? null,
+			reminderTimezone: row.reminder_timezone ?? null,
+			lastRefillReminderReset: Number(row.last_refill_reminder_reset ?? 0),
+			lastLocalReminderDate: row.last_local_reminder_date ?? null,
+			scheduledStartAt: row.scheduled_start_at == null ? null : Number(row.scheduled_start_at),
+			scheduledChannelId: row.scheduled_channel_id ?? null
 		},
 		now
 	);
@@ -71,8 +103,25 @@ export async function ensureTripQueueStore() {
 			remaining int NOT NULL DEFAULT 0,
 			daily_used int NOT NULL DEFAULT 0,
 			daily_reset bigint NOT NULL DEFAULT 0,
+			reminders_enabled boolean NOT NULL DEFAULT false,
+			reminder_time text,
+			reminder_timezone text,
+			last_refill_reminder_reset bigint NOT NULL DEFAULT 0,
+			last_local_reminder_date text,
+			scheduled_start_at bigint,
+			scheduled_channel_id text,
 			updated_at timestamptz NOT NULL DEFAULT now()
 		)
+	`);
+	await prisma.$executeRawUnsafe(`
+		ALTER TABLE bsc_trip_queue
+			ADD COLUMN IF NOT EXISTS reminders_enabled boolean NOT NULL DEFAULT false,
+			ADD COLUMN IF NOT EXISTS reminder_time text,
+			ADD COLUMN IF NOT EXISTS reminder_timezone text,
+			ADD COLUMN IF NOT EXISTS last_refill_reminder_reset bigint NOT NULL DEFAULT 0,
+			ADD COLUMN IF NOT EXISTS last_local_reminder_date text,
+			ADD COLUMN IF NOT EXISTS scheduled_start_at bigint,
+			ADD COLUMN IF NOT EXISTS scheduled_channel_id text
 	`);
 	ready.done = true;
 }
@@ -81,26 +130,43 @@ async function saveState(state: TripQueueState): Promise<void> {
 	await ensureTripQueueStore();
 	const tripJson = state.trips.length > 0 ? JSON.stringify(state.trips) : null;
 	await prisma.$executeRawUnsafe(
-		`INSERT INTO bsc_trip_queue (user_id, trip, remaining, daily_used, daily_reset, updated_at)
-		 VALUES ($1, $2::jsonb, $3, $4, $5, NOW())
+		`INSERT INTO bsc_trip_queue (
+			user_id, trip, remaining, daily_used, daily_reset, reminders_enabled,
+			reminder_time, reminder_timezone, last_refill_reminder_reset,
+			last_local_reminder_date, scheduled_start_at, scheduled_channel_id, updated_at
+		) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
 		 ON CONFLICT (user_id) DO UPDATE SET
 			trip = EXCLUDED.trip,
 			remaining = EXCLUDED.remaining,
 			daily_used = EXCLUDED.daily_used,
 			daily_reset = EXCLUDED.daily_reset,
+			reminders_enabled = EXCLUDED.reminders_enabled,
+			reminder_time = EXCLUDED.reminder_time,
+			reminder_timezone = EXCLUDED.reminder_timezone,
+			last_refill_reminder_reset = EXCLUDED.last_refill_reminder_reset,
+			last_local_reminder_date = EXCLUDED.last_local_reminder_date,
+			scheduled_start_at = EXCLUDED.scheduled_start_at,
+			scheduled_channel_id = EXCLUDED.scheduled_channel_id,
 			updated_at = NOW()`,
 		state.userId,
 		tripJson,
 		state.remaining,
 		state.dailyUsed,
-		state.dailyReset
+		state.dailyReset,
+		state.remindersEnabled,
+		state.reminderTime,
+		state.reminderTimezone,
+		state.lastRefillReminderReset,
+		state.lastLocalReminderDate,
+		state.scheduledStartAt,
+		state.scheduledChannelId
 	);
 }
 
 export async function getTripQueueState(userId: string, now = Date.now()): Promise<TripQueueState> {
 	await ensureTripQueueStore();
 	const rows = await prisma.$queryRaw<TripQueueRow[]>`
-		SELECT user_id, trip, remaining, daily_used, daily_reset
+		SELECT *
 		FROM bsc_trip_queue
 		WHERE user_id = ${userId}
 		LIMIT 1
@@ -125,6 +191,8 @@ export async function clearTripQueue(userId: string): Promise<{ cleared: boolean
 	}
 	const { refunded, state: cleared } = refundUnstartedTrips(state);
 	cleared.trips = [];
+	cleared.scheduledStartAt = null;
+	cleared.scheduledChannelId = null;
 	await saveState(cleared);
 	return { cleared: true, refunded };
 }
@@ -136,8 +204,91 @@ function prettyTrip(type: string, data?: unknown): string {
 async function refundAndClear(state: TripQueueState): Promise<number> {
 	const { refunded, state: cleared } = refundUnstartedTrips(state);
 	cleared.trips = [];
+	cleared.scheduledStartAt = null;
+	cleared.scheduledChannelId = null;
 	await saveState(cleared);
 	return refunded;
+}
+
+export async function setQueueReminders(
+	user: MUser,
+	enabled: boolean,
+	time?: string,
+	timezone?: string,
+	clearTime = false
+): Promise<string> {
+	if (enabled && (await user.fetchPerkTier()) < PerkTier.Two) {
+		return 'Queue reminders are available to all Patreon tiers.';
+	}
+	const state = await getTripQueueState(user.id);
+	if (!enabled) {
+		state.remindersEnabled = false;
+		await saveState(state);
+		return 'Queue reminders are off.';
+	}
+	if ((time && !timezone) || (!time && timezone)) {
+		return 'Set both a reminder time and timezone, for example 22:00 and America/Chicago.';
+	}
+	if (clearTime && (time || timezone)) {
+		return 'Choose either a new reminder time or clear the existing one, not both.';
+	}
+	if (time && timezone && !isValidQueueLocalTime(time, timezone)) {
+		return 'Use a valid 24-hour time (HH:mm) and IANA timezone, for example 22:00 and America/Chicago.';
+	}
+	if (!state.remindersEnabled) state.lastRefillReminderReset = state.dailyReset;
+	state.remindersEnabled = true;
+	if (clearTime) {
+		state.reminderTime = null;
+		state.reminderTimezone = null;
+		state.lastLocalReminderDate = null;
+	}
+	if (time && timezone) {
+		state.reminderTime = time;
+		state.reminderTimezone = timezone;
+		state.lastLocalReminderDate = null;
+	}
+	await saveState(state);
+	return state.reminderTime && state.reminderTimezone
+		? `Queue reminders are on. You'll be reminded when your queue refills and at ${state.reminderTime} (${state.reminderTimezone}).`
+		: 'Queue refill reminders are on. You can also set a local reminder time with /queue reminders time:HH:mm timezone:Area/Location.';
+}
+
+export async function disableQueueRemindersFromButton(user: MUser, customId: string): Promise<CommandResponse> {
+	const [, ownerId] = customId.split(':');
+	if (ownerId !== user.id) return { content: 'This reminder button is not for your account.', ephemeral: true };
+	const state = await getTripQueueState(user.id);
+	state.remindersEnabled = false;
+	await saveState(state);
+	return { content: 'Queue reminders are off.', ephemeral: true };
+}
+
+export async function scheduleQueuedTrips(
+	user: MUser,
+	time: string,
+	timezone: string,
+	channelId: string
+): Promise<string> {
+	if ((await user.fetchPerkTier()) < PerkTier.Two) return 'Queue scheduling is available to all Patreon tiers.';
+	const now = Date.now();
+	const scheduledAt = nextQueueScheduleAt(time, timezone, now);
+	if (scheduledAt === null) {
+		return 'Use a valid 24-hour time (HH:mm) and IANA timezone, for example 22:00 and America/Chicago.';
+	}
+	const state = await getTripQueueState(user.id, now);
+	if (state.remaining <= 0 || state.trips.length === 0) return 'Queue at least one trip before scheduling it.';
+	state.scheduledStartAt = scheduledAt;
+	state.scheduledChannelId = channelId;
+	await saveState(state);
+	return `Your queued trips will start automatically at <t:${Math.floor(scheduledAt / 1000)}:F> (${timezone}). If you're on a trip then, they'll start when it finishes.`;
+}
+
+export async function unscheduleQueuedTrips(userId: string): Promise<string> {
+	const state = await getTripQueueState(userId);
+	if (state.scheduledStartAt === null) return 'Your queue has no scheduled start.';
+	state.scheduledStartAt = null;
+	state.scheduledChannelId = null;
+	await saveState(state);
+	return 'The scheduled queue start was cancelled. Your queued trips are still saved.';
 }
 
 export async function addTripsToQueue(
@@ -231,6 +382,16 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 	lines.push(
 		`You get ${dailyCap} queued trips everyday and have used ${state.dailyUsed} (refills <t:${Math.floor(queueResetAtMs(Date.now()) / 1000)}:R>). Clearing unused trips refunds those points.`
 	);
+	if (state.scheduledStartAt !== null) {
+		lines.push(`Scheduled to start <t:${Math.floor(state.scheduledStartAt / 1000)}:F>.`);
+	}
+	if (state.remindersEnabled) {
+		lines.push(
+			state.reminderTime && state.reminderTimezone
+				? `Queue reminders are on, including ${state.reminderTime} (${state.reminderTimezone}).`
+				: 'Queue refill reminders are on.'
+		);
+	}
 	return lines.join(' ');
 }
 
@@ -277,14 +438,14 @@ function makeSilentQueueInteraction(user: MUser, channelId: string): OSInteracti
 		member: null,
 		createdTimestamp: now,
 		messageId,
-		async defer() { },
-		async deferReply() { },
-		async reply() { },
-		async editReply() { },
-		async followUp() { },
-		async confirmation() { },
-		async makePaginatedMessage() { },
-		async returnStringOrFile() { }
+		async defer() {},
+		async deferReply() {},
+		async reply() {},
+		async editReply() {},
+		async followUp() {},
+		async confirmation() {},
+		async makePaginatedMessage() {},
+		async returnStringOrFile() {}
 	} as unknown as OSInteraction;
 }
 
@@ -297,6 +458,113 @@ async function loadQueuedActivity(trip: QueuedTrip, user: MUser) {
 	return recent.find(activity => activity.type === trip.type) ?? null;
 }
 
+interface QueueReminderRow {
+	user_id: string;
+	daily_used: number;
+	daily_reset: bigint | number;
+	reminder_time: string | null;
+	reminder_timezone: string | null;
+	last_refill_reminder_reset: bigint | number;
+	last_local_reminder_date: string | null;
+}
+
+export async function processQueueReminders(now = Date.now()): Promise<void> {
+	if (!globalConfig.isProduction) return;
+	await ensureTripQueueStore();
+	const rows = await prisma.$queryRaw<QueueReminderRow[]>`
+		SELECT user_id, daily_used, daily_reset, reminder_time, reminder_timezone,
+			last_refill_reminder_reset, last_local_reminder_date
+		FROM bsc_trip_queue
+		WHERE reminders_enabled = true
+	`;
+	const currentReset = utcDayStartMs(now);
+
+	for (const row of rows) {
+		try {
+			const user = await mUserFetch(row.user_id);
+			const perkTier = await user.fetchPerkTier();
+			if (perkTier < PerkTier.Two) continue;
+			const state = await getTripQueueState(row.user_id, now);
+			if (!state.remindersEnabled) continue;
+			const dailyCap = dailyQueueAllowance(perkTier);
+			let sentRefillReminder = false;
+			const buttons = [
+				new ButtonBuilder()
+					.setLabel('Turn Off Reminders')
+					.setStyle(ButtonStyle.Secondary)
+					.setCustomId(`QUEUE_REMINDERS_OFF:${user.id}`)
+			];
+
+			const needsRefillReminder = state.lastRefillReminderReset < currentReset;
+			if (needsRefillReminder) {
+				await globalClient.sendDm(user.id, {
+					content: `Your daily queue allowance has refreshed. You currently have ${Math.max(0, dailyCap - state.dailyUsed)} of ${dailyCap} queue trips available. Use /queue add to queue them.`,
+					components: buttons
+				});
+				state.lastRefillReminderReset = currentReset;
+				await saveState(state);
+				sentRefillReminder = true;
+			}
+
+			if (!state.reminderTime || !state.reminderTimezone) continue;
+			const localNow = DateTime.fromMillis(now, { zone: state.reminderTimezone });
+			if (!localNow.isValid) continue;
+			const localDate = localNow.toISODate();
+			if (!localDate || state.lastLocalReminderDate === localDate) continue;
+			const target = DateTime.fromFormat(`${localDate} ${state.reminderTime}`, 'yyyy-LL-dd HH:mm', {
+				zone: state.reminderTimezone
+			});
+			const minutesSinceTarget = localNow.diff(target, 'minutes').minutes;
+			if (!target.isValid || minutesSinceTarget < 0 || minutesSinceTarget >= 7) continue;
+			if (sentRefillReminder) {
+				state.lastLocalReminderDate = localDate;
+				await saveState(state);
+				continue;
+			}
+
+			const allowanceLeft = Math.max(0, dailyCap - state.dailyUsed);
+			if (allowanceLeft <= 0) continue;
+			await globalClient.sendDm(user.id, {
+				content: `Queue reminder: you have ${allowanceLeft} of ${dailyCap} queue trips left today. Use /queue add to use the rest.`,
+				components: buttons
+			});
+			state.lastLocalReminderDate = localDate;
+			await saveState(state);
+		} catch (err) {
+			Logging.logError(err as Error);
+		}
+	}
+}
+
+export async function processScheduledQueueStarts(now = Date.now()): Promise<void> {
+	if (!globalConfig.isProduction) return;
+	await ensureTripQueueStore();
+	const rows = await prisma.$queryRaw<{ user_id: string; scheduled_channel_id: string | null }[]>`
+		SELECT user_id, scheduled_channel_id
+		FROM bsc_trip_queue
+		WHERE scheduled_start_at <= ${now}
+			AND remaining > 0
+	`;
+	for (const row of rows) {
+		try {
+			const user = await mUserFetch(row.user_id);
+			if ((await user.fetchPerkTier()) < PerkTier.Two) {
+				await unscheduleQueuedTrips(user.id);
+				await globalClient.sendDm(
+					user.id,
+					'Your scheduled queue start was cancelled because patron access is no longer active. Your queued trips are still saved.'
+				);
+				continue;
+			}
+			if (await user.minionIsBusy()) continue;
+			const message = await tryStartQueuedTrip(user, row.scheduled_channel_id ?? '');
+			if (message) await globalClient.sendDm(user.id, message);
+		} catch (err) {
+			Logging.logError(err as Error);
+		}
+	}
+}
+
 /**
  * Called from trip finish. Starts the next queued trip the same way Repeat does.
  * Never throws to the caller.
@@ -306,6 +574,7 @@ export async function tryStartQueuedTrip(user: MUser, channelId: string): Promis
 		const state = await getTripQueueState(user.id);
 		const trip = state.trips[0];
 		if (!trip || state.remaining <= 0) return null;
+		if (state.scheduledStartAt !== null && state.scheduledStartAt > Date.now()) return null;
 
 		if (await user.minionIsBusy()) {
 			return null;
@@ -330,6 +599,8 @@ export async function tryStartQueuedTrip(user: MUser, channelId: string): Promis
 
 		state.trips = dequeueQueuedTrip(state.trips);
 		state.remaining = Math.max(0, state.remaining - 1);
+		state.scheduledStartAt = null;
+		state.scheduledChannelId = null;
 		const remaining = state.remaining;
 		await saveState(state);
 
@@ -345,7 +616,7 @@ export async function tryStartQueuedTrip(user: MUser, channelId: string): Promis
 			if (latest.trips.length > 0 && latest.remaining > 0) {
 				refunded = await refundAndClear(latest);
 			}
-		} catch { }
+		} catch {}
 		const refundNote =
 			refunded > 0 ? ` ${refunded} unused queue point${refunded === 1 ? '' : 's'} were refunded.` : '';
 		if (err instanceof UserError) {

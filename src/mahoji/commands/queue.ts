@@ -1,4 +1,11 @@
-import { addTripsToQueue, clearTripQueue, describeTripQueue } from '@/lib/bsc/tripQueue.js';
+import {
+	addTripsToQueue,
+	clearTripQueue,
+	describeTripQueue,
+	scheduleQueuedTrips,
+	setQueueReminders,
+	unscheduleQueuedTrips
+} from '@/lib/bsc/tripQueue.js';
 import { formatQueuedTripLabel } from '@/lib/bsc/tripQueueDisplay.js';
 import { fetchRepeatTrips } from '@/lib/util/repeatStoredTrip.js';
 
@@ -6,7 +13,13 @@ export const queueCommand = defineCommand({
 	name: 'queue',
 	description: 'Queue repeats of a recent trip. Starts after your current trip, or immediately if you are idle.',
 	attributes: {
-		examples: ['/queue add trip:MonsterKilling times:3', '/queue view', '/queue clear']
+		examples: [
+			'/queue add trip:MonsterKilling times:3',
+			'/queue view',
+			'/queue clear',
+			'/queue reminders enabled:true time:22:00 timezone:America/Chicago',
+			'/queue schedule time:22:00 timezone:America/Chicago'
+		]
 	},
 	options: [
 		{
@@ -55,6 +68,58 @@ export const queueCommand = defineCommand({
 			type: 'Subcommand',
 			name: 'clear',
 			description: 'Cancel queued trips and refund the unused allowance.'
+		},
+		{
+			type: 'Subcommand',
+			name: 'reminders',
+			description: 'Turn queue reminders on or off; optionally set a local reminder time.',
+			options: [
+				{
+					type: 'Boolean',
+					name: 'enabled',
+					description: 'Whether queue reminders are enabled.',
+					required: true
+				},
+				{
+					type: 'String',
+					name: 'time',
+					description: 'Optional local reminder time in 24-hour HH:mm format, such as 22:00.'
+				},
+				{
+					type: 'String',
+					name: 'timezone',
+					description: 'IANA timezone for the local time, such as America/Chicago.'
+				},
+				{
+					type: 'Boolean',
+					name: 'clear_time',
+					description: 'Clear the custom local reminder time and keep refill reminders enabled.'
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'schedule',
+			description: 'Schedule your queued trips to start automatically at a local time.',
+			options: [
+				{
+					type: 'String',
+					name: 'time',
+					description: 'Local start time in 24-hour HH:mm format, such as 22:00.',
+					required: true
+				},
+				{
+					type: 'String',
+					name: 'timezone',
+					description: 'IANA timezone, such as America/Chicago.',
+					required: true
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'unschedule',
+			description: 'Cancel the scheduled start without clearing your queued trips.'
 		}
 	],
 	run: async ({ options, user, channelId }) => {
@@ -69,6 +134,19 @@ export const queueCommand = defineCommand({
 			}
 			return 'Cleared your trip queue.';
 		}
+		if (options.reminders) {
+			return setQueueReminders(
+				user,
+				options.reminders.enabled,
+				options.reminders.time,
+				options.reminders.timezone,
+				options.reminders.clear_time
+			);
+		}
+		if (options.schedule) {
+			return scheduleQueuedTrips(user, options.schedule.time, options.schedule.timezone, channelId);
+		}
+		if (options.unschedule) return unscheduleQueuedTrips(user.id);
 		return describeTripQueue(user);
 	}
 });

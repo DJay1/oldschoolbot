@@ -1,4 +1,3 @@
-import { formatBscPatronRequirement } from '@/lib/bsc/patronTiers.js';
 import { ItemContracts } from '@/lib/bso/itemContracts.js';
 import { repeatTameTrip } from '@/lib/bso/tames/tameTasks.js';
 
@@ -9,6 +8,8 @@ import { Bank, type ItemBank } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main/enums.js';
 import type { Giveaway } from '@/prisma/main.js';
+import { formatBscPatronRequirement } from '@/lib/bsc/patronTiers.js';
+import { disableQueueRemindersFromButton } from '@/lib/bsc/tripQueue.js';
 import { giveawayCache } from '@/lib/cache.js';
 import type { ClueTier } from '@/lib/clues/clueTiers.js';
 import { BitField } from '@/lib/constants.js';
@@ -253,6 +254,9 @@ async function globalButtonInteractionHandler({
 	}
 
 	const user = interaction.user;
+	if (id.startsWith('QUEUE_REMINDERS_OFF:')) {
+		return disableQueueRemindersFromButton(user, id);
+	}
 	if (id.startsWith('QC:')) return handleQualityCheckButton(user, id, interaction);
 	if (id.includes(InteractionID.Commands.RepeatTrip)) return repeatTripHandler(user, id, interaction);
 

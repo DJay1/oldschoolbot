@@ -9,6 +9,7 @@ import type { User } from '@/prisma/main.js';
 import { resolveBotSendableMessage } from '@/discord/utils.js';
 import { analyticsTick } from '@/lib/analytics.js';
 import { syncBscPatrons } from '@/lib/bsc/patronSync.js';
+import { processQueueReminders, processScheduledQueueStarts } from '@/lib/bsc/tripQueue.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { cacheGEPrices } from '@/lib/marketPrices.js';
@@ -117,6 +118,24 @@ export const tickers: {
 		interval: testingShortcutsEnabled() ? 500 : Time.Second * 5,
 		cb: async () => {
 			await ActivityManager.processPendingActivities();
+		}
+	},
+	{
+		name: 'queue_reminders',
+		startupWait: Time.Minute,
+		interval: Time.Minute,
+		timer: null,
+		cb: async () => {
+			await processQueueReminders();
+		}
+	},
+	{
+		name: 'scheduled_queue_starts',
+		startupWait: Time.Minute,
+		interval: Time.Minute,
+		timer: null,
+		cb: async () => {
+			await processScheduledQueueStarts();
 		}
 	},
 	{
