@@ -1,8 +1,10 @@
+import { readFileSync } from 'node:fs';
+
 import { Bank, Items } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import { applyBuyCostSellFloor } from '@/lib/util/buySellFloor.js';
-import { GF_COST_GP, GF_GIF_URL, GF_ITEM_ID, gfQuantityError, isGfBuyName } from '@/mahoji/lib/abstracted_commands/buyGf.js';
+import { GF_COST_GP, GF_GIF_PATH, GF_ITEM_ID, gfQuantityError, isGfBuyName } from '@/mahoji/lib/abstracted_commands/buyGf.js';
 import { sellPriceOfItem } from '@/mahoji/commands/sell.js';
 
 const BEST_COMMON_SELL_TAX_RATE = 20;
@@ -34,9 +36,10 @@ describe('/buy gf', () => {
 		expect(buyCost).toBe(GF_COST_GP);
 	});
 
-	test('uses the direct klipy gif url', () => {
-		expect(GF_GIF_URL).toBe(
-			'https://static2.klipy.com/ii/d6b0ce929193df3c242ac34b5654d2ce/0d/9b/eAfdqa38.gif'
-		);
+	test('ships a local corgi-love gif under 5MB', () => {
+		const buf = readFileSync(GF_GIF_PATH);
+		expect(buf.subarray(0, 3).toString('ascii')).toBe('GIF');
+		expect(buf.length).toBeGreaterThan(1000);
+		expect(buf.length).toBeLessThan(5 * 1024 * 1024);
 	});
 });

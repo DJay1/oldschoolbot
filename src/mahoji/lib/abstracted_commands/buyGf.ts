@@ -1,4 +1,4 @@
-import { EmbedBuilder } from '@oldschoolgg/discord';
+import { readFile } from 'node:fs/promises';
 import { formatDuration, stringMatches } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank, Items } from 'oldschooljs';
 
@@ -6,8 +6,7 @@ import { applyBuyCostSellFloor } from '@/lib/util/buySellFloor.js';
 
 export const GF_COST_GP = 1_000_000;
 export const GF_ITEM_ID = 1842;
-export const GF_GIF_URL =
-	'https://static2.klipy.com/ii/d6b0ce929193df3c242ac34b5654d2ce/0d/9b/eAfdqa38.gif';
+export const GF_GIF_PATH = './assets/images/buy_gf.gif';
 
 const GF_FUNNY_LINE = 'You spent 1m GP on a girlfriend. She arrived in a barrel. No refunds.';
 
@@ -89,6 +88,6 @@ export async function buyGf(interaction: OSInteraction, quantity: number | null)
 
 	return {
 		content: GF_FUNNY_LINE,
-		embeds: [new EmbedBuilder().setImage(GF_GIF_URL)]
+		files: [{ name: 'gf.gif', buffer: await readFile(GF_GIF_PATH) }]
 	};
 }
