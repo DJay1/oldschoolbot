@@ -20,6 +20,7 @@ import { Redis } from 'ioredis';
 
 import type { Guild, Prisma } from '@/prisma/main.js';
 import { BitField, BOT_TYPE, globalConfig } from '@/lib/constants.js';
+import type { PollRecord } from '@/lib/bsc/polls.js';
 import type { RobochimpUser } from '@/lib/roboChimp.js';
 import { makeBadgeString } from '@/lib/util/makeBadgeString.js';
 import { resolveEmojiText } from '@oldschoolgg/toolkit';
@@ -653,6 +654,98 @@ class CacheManager {
 		}
 		return existing;
 	}
+
+
+	private pollKey(id: string) {
+		return `${BOT_TYPE}:poll:record:${id}`;
+	}
+
+	private pollIndexKey() {
+		return `${BOT_TYPE}:poll:index`;
+	}
+
+	private pollWeeklyReminderKey(weekId: string) {
+		return `${BOT_TYPE}:poll:weeklyReminder:${weekId}`;
+	}
+
+	private pollCloseLockKey(id: string) {
+		return `${BOT_TYPE}:poll:closeLock:${id}`;
+	}
+
+	async savePoll(poll: PollRecord): Promise<void> {
+		const key = this.pollKey(poll.id);
+		await this.client.set(key, JSON.stringify(poll));
+		await this.client.sadd(this.pollIndexKey(), poll.id);
+	}
+
+	async getPoll(id: string): Promise<PollRecord | null> {
+		const raw = await this.client.get(this.pollKey(id));
+		if (!raw) return null;
+		try {
+			return JSON.parse(raw) as PollRecord;
+		} catch {
+			return null;
+		}
+	}
+
+	async deletePoll(id: string): Promise<void> {
+		await this.client.del(this.pollKey(id));
+		await this.client.srem(this.pollIndexKey(), id);
+	}
+
+	async listPolls(): Promise<PollRecord[]> {
+		const ids = await this.client.smembers(this.pollIndexKey());
+		if (ids.length === 0) return [];
+		const rows = await this.client.mget(ids.map(id => this.pollKey(id)));
+		const polls: PollRecord[] = [];
+		for (const row of rows) {
+			if (!row) continue;
+			try {
+				polls.push(JSON.parse(row) as PollRecord);
+			} catch {}
+		}
+		return polls;
+	}
+
+	async tryClaimPollCloseLock(id: string): Promise<boolean> {
+		const result = await this.client.set(this.pollCloseLockKey(id), '1', 'EX', 60, 'NX');
+		return result === 'OK';
+	}
+
+	async releasePollCloseLock(id: string): Promise<void> {
+		await this.client.del(this.pollCloseLockKey(id));
+	}
+
+	async tryClaimPollWeeklyReminder(weekId: string): Promise<boolean> {
+		const result = await this.client.set(this.pollWeeklyReminderKey(weekId), '1', 'EX', 60 * 60 * 24 * 10, 'NX');
+		return result === 'OK';
+	}
+
+	async releasePollWeeklyReminder(weekId: string): Promise<void> {
+		await this.client.del(this.pollWeeklyReminderKey(weekId));
+	}
+
+	private pollUpdateNoteKey(userId: string) {
+		return `${BOT_TYPE}:poll:updateNote:${userId}`;
+	}
+
+	async savePollUpdateNote(userId: string, note: string | null): Promise<void> {
+		const key = this.pollUpdateNoteKey(userId);
+		if (!note) {
+			await this.client.del(key);
+			return;
+		}
+		await this.client.set(key, note, 'EX', 60 * 10);
+	}
+
+	async getPollUpdateNote(userId: string): Promise<string | null> {
+		return await this.client.get(this.pollUpdateNoteKey(userId));
+	}
+
+	async clearPollUpdateNote(userId: string): Promise<void> {
+		await this.client.del(this.pollUpdateNoteKey(userId));
+	}
+
 
 	async close() {
 		await this.client.quit();

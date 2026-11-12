@@ -41,6 +41,22 @@ export async function handlePollReactionAdd(payload: {
 	const vote = pollVoteFromEmoji(payload.emoji);
 	if (!vote) return;
 
+	const poll = await Cache.getPoll(payload.message_id);
+	if (poll && poll.status !== 'Open') {
+		try {
+			await globalClient.removeUserReaction({
+				channelId: payload.channel_id,
+				messageId: payload.message_id,
+				emojiId: pollReactionEmojiKey(vote),
+				userId: payload.user_id
+			});
+		} catch (err) {
+			const status = typeof err === 'object' && err && 'status' in err ? Number((err as { status?: number }).status) : 0;
+			if (status !== 404 && status !== 403) Logging.logError(err as Error);
+		}
+		return;
+	}
+
 	const other = pollReactionEmojiKey(oppositePollVote(vote));
 	try {
 		await globalClient.removeUserReaction({

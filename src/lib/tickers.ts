@@ -9,6 +9,7 @@ import type { User } from '@/prisma/main.js';
 import { resolveBotSendableMessage } from '@/discord/utils.js';
 import { analyticsTick } from '@/lib/analytics.js';
 import { syncBscPatrons } from '@/lib/bsc/patronSync.js';
+import { processPollTicker } from '@/lib/bsc/pollService.js';
 import { processQueueReminders, processScheduledQueueStarts } from '@/lib/bsc/tripQueue.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
@@ -347,6 +348,17 @@ tickers.push({
 	timer: null,
 	cb: async () => {
 		await syncBscPatrons();
+	}
+});
+
+tickers.push({
+	name: 'poll_lifecycle',
+	startupWait: Time.Minute,
+	interval: Time.Minute,
+	timer: null,
+	productionOnly: true,
+	cb: async () => {
+		await processPollTicker();
 	}
 });
 
