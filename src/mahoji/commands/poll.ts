@@ -1,8 +1,10 @@
-import { EmbedBuilder, SpecialResponse } from '@oldschoolgg/discord';
+import { SpecialResponse } from '@oldschoolgg/discord';
+
+import { buildPollEmbed, pollButtons } from '@/lib/util/pollVotes.js';
 
 export const pollCommand = defineCommand({
 	name: 'poll',
-	description: 'Create a reaction poll.',
+	description: 'Create a Yes/No poll.',
 	options: [
 		{
 			type: 'String',
@@ -11,19 +13,18 @@ export const pollCommand = defineCommand({
 			required: true
 		}
 	],
-	run: async ({ interaction, channelId, user, options }) => {
-		const embed = new EmbedBuilder()
-			.setColor(0x58_65_f2)
-			.setTitle('Poll')
-			.setDescription(`**${options.question}**\n\nReact with Yes / No.`)
-			.setFooter({ text: `Asked by ${user.username}` });
-
-		const createdMessage = await interaction.replyWithResponse({
-			embeds: [embed]
+	run: async ({ interaction, user, options }) => {
+		const embed = buildPollEmbed({
+			question: options.question,
+			yes: 0,
+			no: 0,
+			askedBy: user.username
 		});
-		const messageId = createdMessage!.message_id;
-		await globalClient.reactToMsg({ channelId: channelId, messageId, emojiId: 'Yes' });
-		await globalClient.reactToMsg({ channelId: channelId, messageId, emojiId: 'No' });
+
+		await interaction.replyWithResponse({
+			embeds: [embed],
+			components: pollButtons()
+		});
 		return SpecialResponse.RespondedManually;
 	}
 });

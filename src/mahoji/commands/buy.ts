@@ -16,13 +16,15 @@ import { MAX_QUANTITY } from '@/lib/util/validateQuantity.js';
 import { buyFossilIslandNotes } from '@/mahoji/lib/abstracted_commands/buyFossilIslandNotes.js';
 import { buyingTripCommand } from '@/mahoji/lib/abstracted_commands/buyingTripCommand.js';
 import { buyKitten } from '@/mahoji/lib/abstracted_commands/buyKitten.js';
+import { buyGf, isGfBuyName } from '@/mahoji/lib/abstracted_commands/buyGf.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
 const allBuyablesAutocomplete = [
 	...Buyables.map(b => ({ name: b.name })),
 	...tripBuyables.map(tb => ({ name: tb.displayName ?? Items.get(tb.item)?.name ?? 'Unknown item' })),
 	{ name: 'Kitten' },
-	{ name: 'Fossil Island Notes' }
+	{ name: 'Fossil Island Notes' },
+	{ name: 'gf', aliases: ['girlfriend'] }
 ];
 
 export const buyCommand = defineCommand({
@@ -37,7 +39,11 @@ export const buyCommand = defineCommand({
 			required: true,
 			autocomplete: async ({ value }: StringAutoComplete) => {
 				return allBuyablesAutocomplete
-					.filter(i => (!value ? true : i.name.toLowerCase().includes(value.toLowerCase())))
+					.filter(i => {
+						if (!value) return true;
+						const q = value.toLowerCase();
+						return i.name.toLowerCase().includes(q) || i.aliases?.some(alias => alias.toLowerCase().includes(q));
+					})
 					.map(i => ({ name: i.name, value: i.name }));
 			}
 		},
@@ -55,6 +61,9 @@ export const buyCommand = defineCommand({
 			return 'Quantity must be a whole number of at least 1.';
 		}
 
+		if (isGfBuyName(name)) {
+			return buyGf(interaction, quantity);
+		}
 		if (stringMatches(name, 'kitten')) {
 			return buyKitten(interaction);
 		}

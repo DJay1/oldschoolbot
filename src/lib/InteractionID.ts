@@ -25,6 +25,10 @@ export const InteractionID = {
 		Confirm: 'CONFIRM',
 		Cancel: 'CANCEL'
 	},
+	Poll: {
+		Yes: 'POLL_YES',
+		No: 'POLL_NO'
+	},
 	Open: {
 		BeginnerCasket: 'OPEN_BEGINNER_CASKET',
 		EasyCasket: 'OPEN_EASY_CASKET',

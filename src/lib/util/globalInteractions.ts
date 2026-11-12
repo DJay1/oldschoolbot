@@ -20,6 +20,7 @@ import { handleQualityCheckButton } from '@/lib/qualityChecks/buttons.js';
 import { type RunCommandArgs, runCommand } from '@/lib/settings/settings.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
 import { updateGiveawayMessage } from '@/lib/util/giveaway.js';
+import { handlePollButton } from '@/lib/util/pollVotes.js';
 import { fetchRepeatTrips, repeatTrip } from '@/lib/util/repeatStoredTrip.js';
 import { autoSlayCommand } from '@/mahoji/lib/abstracted_commands/autoSlayCommand.js';
 import { cancelGEListingCommand } from '@/mahoji/lib/abstracted_commands/cancelGEListingCommand.js';
@@ -254,6 +255,7 @@ async function globalButtonInteractionHandler({
 	}
 
 	const user = interaction.user;
+	if (id.startsWith('POLL_')) return handlePollButton(user, id, interaction);
 	if (id.startsWith('QUEUE_REMINDERS_OFF:')) {
 		return disableQueueRemindersFromButton(user, id);
 	}

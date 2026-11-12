@@ -37,14 +37,15 @@ type RatelimitConfig = {
 	max: number;
 };
 
-type RatelimitType = 'random_events' | 'global_buttons' | 'stats_command' | 'delay_member_fetch' | 'delay_guild_fetch';
+type RatelimitType = 'random_events' | 'global_buttons' | 'stats_command' | 'delay_member_fetch' | 'delay_guild_fetch' | 'buy_gf';
 
 const RATELIMITS: Record<RatelimitType, RatelimitConfig> = {
 	global_buttons: { windowSeconds: 2, max: 1 },
 	random_events: { windowSeconds: TTL.Hour * 3, max: 5 },
 	stats_command: { windowSeconds: 5, max: 1 },
 	delay_member_fetch: { windowSeconds: 5 * 60, max: 1 },
-	delay_guild_fetch: { windowSeconds: 5 * 60, max: 1 }
+	delay_guild_fetch: { windowSeconds: 5 * 60, max: 1 },
+	buy_gf: { windowSeconds: TTL.Day, max: 1 }
 } as const;
 
 const BotKeys = RedisKeys[BOT_TYPE];
@@ -651,6 +652,37 @@ class CacheManager {
 			await this.client.del(key);
 		}
 		return existing;
+	}
+
+	private pollVoteKey(messageId: string, choice: 'yes' | 'no') {
+		return `${BOT_TYPE}:poll:${choice}:${messageId}`;
+	}
+
+	async loadPollVotes(messageId: string): Promise<Map<string, 'yes' | 'no'>> {
+		const yesKey = this.pollVoteKey(messageId, 'yes');
+		const noKey = this.pollVoteKey(messageId, 'no');
+		const [yesUsers, noUsers] = await Promise.all([this.client.smembers(yesKey), this.client.smembers(noKey)]);
+		const votes = new Map<string, 'yes' | 'no'>();
+		for (const userId of yesUsers) votes.set(userId, 'yes');
+		for (const userId of noUsers) votes.set(userId, 'no');
+		return votes;
+	}
+
+	async persistPollVote(messageId: string, userId: string, choice: 'yes' | 'no'): Promise<void> {
+		const yesKey = this.pollVoteKey(messageId, 'yes');
+		const noKey = this.pollVoteKey(messageId, 'no');
+		const ttl = TTL.Day * 30;
+		const pipeline = this.client.multi();
+		if (choice === 'yes') {
+			pipeline.srem(noKey, userId);
+			pipeline.sadd(yesKey, userId);
+		} else {
+			pipeline.srem(yesKey, userId);
+			pipeline.sadd(noKey, userId);
+		}
+		pipeline.expire(yesKey, ttl);
+		pipeline.expire(noKey, ttl);
+		await pipeline.exec();
 	}
 
 	async close() {
