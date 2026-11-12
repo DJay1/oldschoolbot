@@ -90,7 +90,7 @@ const cooldownTimers: {
 		utcReset: false
 	},
 	{
-		name: 'Monthly Double Loot',
+		name: 'Weekly Double Loot',
 		timeStamp: (user: MUser) => Number(user.user.last_patron_double_time_trigger),
 		cd: PATRON_DOUBLE_LOOT_COOLDOWN,
 		command: ['patron', 'double_loot'],
@@ -320,7 +320,7 @@ const mentionCommands: MentionCommand[] = [
 ];
 
 function patreonMessage() {
-	return `🐶 Support Bark School Corgo on Patreon and unlock perks like longer trips, extra boxes and more: <${patreonUrl()}>\nSee all the tiers with /patron info.`;
+	return `ðŸ¶ Support Bark School Corgo on Patreon and unlock perks like longer trips, extra boxes and more: <${patreonUrl()}>\nSee all the tiers with /patron info.`;
 }
 
 const commandList = [...new Set(mentionCommands.flatMap(i => [i.name, ...i.aliases]))];

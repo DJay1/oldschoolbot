@@ -987,7 +987,7 @@ export const toolsCommand = defineCommand({
 						{
 							type: 'String',
 							name: 'source',
-							description: 'The source of the item – a monster, minigame, clue, etc.',
+							description: 'The source of the item â€“ a monster, minigame, clue, etc.',
 							required: true,
 							autocomplete: async ({ value }: StringAutoComplete) => {
 								return [
@@ -1106,7 +1106,7 @@ export const toolsCommand = defineCommand({
 				{
 					type: 'Subcommand',
 					name: 'doubleloot',
-					description: 'Start monthly server double loot. Same as /patron double_loot.'
+					description: 'Start weekly server double loot. Same as /patron double_loot.'
 				},
 				{
 					type: 'Subcommand',

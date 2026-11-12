@@ -122,9 +122,9 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_PACKLEADER',
 		patreonTierIdEnv: 'PATREON_TIER_PACKLEADER_ID',
 		badge: customEmoji('patron_packleader'),
-		adds: 'All Alpha perks, plus +18 min trips, 25 pts/mo, queue 7 trips everyday, Verzik bank background (the fight normally, the purple chest on a good drop), 40 min server double loot once every 31 days, gift 1 week of Good Boy once a month',
+		adds: 'All Alpha perks, plus +18 min trips, 25 pts/mo, queue 7 trips everyday, Verzik bank background (the fight normally, the purple chest on a good drop), 40 min server double loot once a week, gift 1 week of Good Boy once a month',
 		summary:
-			'+18 min trips, full scrollable bank (show_all) and bank page buttons, queue 7 trips everyday, +8 Grand Exchange slots, 25 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, every paid bank background plus custom bank colour, spawn lamp and spawn box, unlimited giveaways, Verzik bank background (the fight normally, the purple chest on a good drop), 40 min server double loot once every 31 days, gift 1 week of Good Boy once a month'
+			'+18 min trips, full scrollable bank (show_all) and bank page buttons, queue 7 trips everyday, +8 Grand Exchange slots, 25 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, every paid bank background plus custom bank colour, spawn lamp and spawn box, unlimited giveaways, Verzik bank background (the fight normally, the purple chest on a good drop), 40 min server double loot once a week, gift 1 week of Good Boy once a month'
 	},
 	{
 		level: 6,
@@ -138,9 +138,9 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_BIGGESTOFDOGS',
 		patreonTierIdEnv: 'PATREON_TIER_BIGGESTOFDOGS_ID',
 		badge: customEmoji('patron_biggestofdogs'),
-		adds: 'All Pack Leader perks, plus +20 min trips, 50 pts/mo, queue 8 trips everyday, fully custom bank background while you stay Pack Leader or higher, 90 min server double loot once every 31 days, gift 1 week of Alpha once a month',
+		adds: 'All Pack Leader perks, plus +20 min trips, 50 pts/mo, queue 8 trips everyday, fully custom bank background while you stay Pack Leader or higher, 90 min server double loot once a week, gift 1 week of Alpha once a month',
 		summary:
-			'+20 min trips, full scrollable bank (show_all) and bank page buttons, queue 8 trips everyday, +8 Grand Exchange slots, 50 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, every paid bank background plus custom bank colour, spawn lamp and spawn box, unlimited giveaways, Verzik bank background (the fight normally, the purple chest on a good drop), 40 min server double loot once every 31 days, gift 1 week of Good Boy once a month, fully custom bank background while you stay Pack Leader or higher, 90 min server double loot once every 31 days, gift 1 week of Alpha once a month'
+			'+20 min trips, full scrollable bank (show_all) and bank page buttons, queue 8 trips everyday, +8 Grand Exchange slots, 50 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, every paid bank background plus custom bank colour, spawn lamp and spawn box, unlimited giveaways, Verzik bank background (the fight normally, the purple chest on a good drop), 40 min server double loot once a week, gift 1 week of Good Boy once a month, fully custom bank background while you stay Pack Leader or higher, 90 min server double loot once a week, gift 1 week of Alpha once a month'
 	}
 ] as const;
 
@@ -157,7 +157,7 @@ export const BSC_GE_SLOT_BOOSTS = [
 ] as const;
 
 /** Shown after a Good Boy or higher claims the monthly cosmetic. Not an item. */
-export const BSC_SUPPORTER_COSMETIC = '🎀';
+export const BSC_SUPPORTER_COSMETIC = 'ðŸŽ€';
 export const BSC_COSMETIC_COOLDOWN = Time.Day * 30;
 
 /** Perks stay for this long after the Discord tier role disappears. */
@@ -167,7 +167,7 @@ export const BSC_PATRON_GIFT_COOLDOWN_MS = Time.Day * 30;
 export const BSC_PATRON_GIFT_DURATION_MS = Time.Week;
 
 /** Same monthly window the existing double-loot command already used. */
-export const PATRON_DOUBLE_LOOT_COOLDOWN = Time.Day * 31;
+export const PATRON_DOUBLE_LOOT_COOLDOWN = Time.Day * 7;
 
 export function bscSupportServerId(): string {
 	const fromEnv = process.env.SUPPORT_SERVER_ID?.trim();
@@ -599,7 +599,7 @@ export function formatBscPatronOverview(input: {
 	}
 	lines.push('');
 	for (const entry of BSC_PATRON_TIERS) {
-		lines.push(`${entry.name} ($${entry.priceUsd}) — ${entry.adds}`);
+		lines.push(`${entry.name} ($${entry.priceUsd}) â€” ${entry.adds}`);
 	}
 	lines.push('');
 	lines.push(

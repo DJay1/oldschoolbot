@@ -294,7 +294,7 @@ export const patronCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'double_loot',
-			description: 'Start your monthly server double loot. Pack Leader and Biggest of Dogs.'
+			description: 'Start your weekly server double loot. Pack Leader and Biggest of Dogs.'
 		},
 		{
 			type: 'Subcommand',

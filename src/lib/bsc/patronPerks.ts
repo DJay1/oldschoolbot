@@ -36,7 +36,7 @@ export async function triggerBscDoubleLoot(user: MUser): Promise<string> {
 	});
 
 	const name = bscPatronNameForPerkTier(perkTier) ?? 'Pack Leader';
-	await addToDoubleLootTimer(duration, `${userMention(user.id)} used their monthly ${name} double loot`);
+	await addToDoubleLootTimer(duration, `${userMention(user.id)} used their weekly ${name} double loot`);
 	return `Added ${formatDuration(duration)} of server-wide double loot.`;
 }
 
