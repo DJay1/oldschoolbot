@@ -1642,8 +1642,8 @@ ${META_CONSTANTS.RENDERED_STR}`
 			});
 		}
 
-		if (options.give || options.give_items) {
-			const giveOptions = options.give ?? options.give_items;
+		const giveOptions = options.give ?? options.give_items;
+		if (giveOptions) {
 			const items = adminParseSpawnBank(giveOptions.items);
 			if (typeof items === 'string') return items;
 

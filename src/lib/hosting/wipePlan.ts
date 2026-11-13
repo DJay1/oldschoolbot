@@ -245,6 +245,27 @@ export const MAIN_MODELS: readonly ClassifiedModel[] = [
 		table: 'quality_check_bounty',
 		action: 'keep',
 		reason: 'Quality-check bounties. Staff workflow, not a player save'
+	},
+	{
+		schema: 'main',
+		model: 'BscPatronAccount',
+		table: 'bsc_patron_account',
+		action: 'keep',
+		reason: 'Patron points, loyalty months, title, flair and favourite pet'
+	},
+	{
+		schema: 'main',
+		model: 'BscPatronPointsLog',
+		table: 'bsc_patron_points_log',
+		action: 'keep',
+		reason: 'History of patron point changes'
+	},
+	{
+		schema: 'main',
+		model: 'BscPatronItemDye',
+		table: 'bsc_patron_item_dyes',
+		action: 'keep',
+		reason: 'Item dyes bought with patron points'
 	}
 ];
 

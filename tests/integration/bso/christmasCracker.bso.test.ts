@@ -33,7 +33,8 @@ describe('BSO Christmas cracker command', async () => {
 				interaction
 			});
 
-			if (bsoPartyhats.some(hat => commandResult.includes(hat))) {
+			const resultText = typeof commandResult === 'string' ? commandResult : (commandResult.content ?? '');
+			if (bsoPartyhats.some(hat => resultText.includes(hat))) {
 				gotBsoPartyhat = true;
 				break;
 			}

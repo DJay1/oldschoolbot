@@ -69,7 +69,7 @@ export interface TripQueueState {
 
 const ready = { done: false };
 
-function emptyState(userId: string, now: number): TripQueueState {
+function emptyState(userId: string): TripQueueState {
 	return {
 		userId,
 		trips: [],
@@ -191,7 +191,7 @@ export async function getTripQueueState(userId: string, now = Date.now()): Promi
 		LIMIT 1
 	`;
 	const row = rows[0];
-	if (!row) return emptyState(userId, now);
+	if (!row) return emptyState(userId);
 	const state = fromRow(row, now);
 	if (
 		state.dailyUsed !== row.daily_used ||

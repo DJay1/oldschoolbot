@@ -256,7 +256,7 @@ function asUser(gearBank: GearBank): MUser {
 		skillsAsLevels: gearBank.skillsAsLevels,
 		cl: new Bank(),
 		user: { finished_quest_ids: [] },
-		hasEquipped(item: number | string | (string | number)[], every = false) {
+		hasEquipped(item: string | number | string[] | number[], every = false) {
 			return gearBank.hasEquipped(item, every);
 		},
 		hasEquippedOrInBank(item: string | number | (string | number)[], type?: 'every' | 'one') {
@@ -301,12 +301,12 @@ test('the full First Age (max) set grants each outfit bonus once, and 6 of 7 gra
 
 	const fullRogue = ItemGroups.rogueOutfit.length * 20;
 	const rogueOnly = makeGearBank();
-	for (const id of ItemGroups.rogueOutfit) rogueOnly.gear.skilling.equip(id);
+	for (const id of ItemGroups.rogueOutfit) rogueOnly.gear.skilling.equip(Items.getOrThrow(id));
 	expect(rogueOutfitPercentBonus(asUser(rogueOnly))).toEqual(fullRogue);
 	expect(rogueOutfitPercentBonus(asUser(maxOnly))).toEqual(fullRogue);
 	const rogueAndMax = makeGearBank();
 	equipMaxSet(rogueAndMax.gear.melee);
-	for (const id of ItemGroups.rogueOutfit) rogueAndMax.gear.skilling.equip(id);
+	for (const id of ItemGroups.rogueOutfit) rogueAndMax.gear.skilling.equip(Items.getOrThrow(id));
 	expect(rogueOutfitPercentBonus(asUser(rogueAndMax))).toEqual(fullRogue);
 	expect(rogueOutfitPercentBonus(asUser(six))).toEqual(0);
 

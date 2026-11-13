@@ -1,4 +1,4 @@
-import { sendableMsgToApiCreate } from '@oldschoolgg/discord';
+import { type BaseSendableMessage, sendableMsgToApiCreate } from '@oldschoolgg/discord';
 import { describe, expect, test } from 'vitest';
 
 import { MessageBuilderClass } from '@/discord/MessageBuilder.js';
@@ -13,8 +13,8 @@ describe('MessageBuilder.build()', () => {
 			writable: true
 		});
 
-		const first = await builder.build();
-		const second = await builder.build();
+		const first = (await builder.build()) as BaseSendableMessage;
+		const second = (await builder.build()) as BaseSendableMessage;
 
 		expect(first.files?.filter(Boolean)).toHaveLength(1);
 		expect(second.files?.filter(Boolean)).toHaveLength(1);

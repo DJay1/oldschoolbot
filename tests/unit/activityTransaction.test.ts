@@ -54,18 +54,18 @@ describe('activityTransaction ALS', () => {
 		const wrapped = wrapPrismaClientWithActivityTx(real as never);
 
 		expect(await wrapped.portent.findMany()).toEqual(['real']);
-		expect(await wrapped.$queryRaw()).toEqual(['real-raw']);
+		expect(await wrapped.$queryRaw`SELECT 1`).toEqual(['real-raw']);
 
 		await activityTxStorage.run(
 			{ tx: tx as never, deferredTripMessages: [], deferredTripFinishes: [] },
 			async () => {
 				expect(await wrapped.portent.findMany()).toEqual(['tx']);
-				expect(await wrapped.$queryRaw()).toEqual(['tx-raw']);
+				expect(await wrapped.$queryRaw`SELECT 1`).toEqual(['tx-raw']);
 			}
 		);
 
 		expect(await wrapped.portent.findMany()).toEqual(['real']);
-		expect(await wrapped.$queryRaw()).toEqual(['real-raw']);
+		expect(await wrapped.$queryRaw`SELECT 1`).toEqual(['real-raw']);
 	});
 
 	test('an activity transaction waits long enough for loot writes and is not the 5s Prisma default', () => {

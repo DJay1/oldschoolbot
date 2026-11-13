@@ -147,6 +147,6 @@ describe('recurring scheduled queue', () => {
 			})
 		).toBeNull();
 		expect(parseRecurringQueue(sampleRecurring({ daysLeft: 6 }))).toBeNull();
-		expect(parseRecurringQueue(sampleRecurring()).trips[0].count).toBe(2);
+		expect(parseRecurringQueue(sampleRecurring())?.trips[0].count).toBe(2);
 	});
 });

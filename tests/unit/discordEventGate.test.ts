@@ -42,7 +42,7 @@ function installFetchSpy() {
 	});
 	global.mUserFetch = fetchUser as typeof global.mUserFetch;
 	const channelIsSendable = vi.fn(async () => true);
-	global.globalClient = { channelIsSendable } as typeof global.globalClient;
+	global.globalClient = { channelIsSendable } as unknown as typeof global.globalClient;
 	return { fetchUser, channelIsSendable };
 }
 
@@ -93,7 +93,7 @@ test('interactionHandler runs once per interaction id', async () => {
 		id: 'itx-1',
 		guild_id: null,
 		user: { id: '424242' }
-	} as APIInteraction;
+	} as unknown as APIInteraction;
 
 	await expect(interactionHandler(client, itx)).rejects.toThrow('fetched');
 	await expect(interactionHandler(client, { ...itx })).resolves.toBeUndefined();
