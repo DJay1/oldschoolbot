@@ -1,3 +1,5 @@
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
+
 import { ItemGroups, Monsters } from 'oldschooljs';
 
 import { isCertainMonsterTrip } from '@/lib/combat_achievements/caUtils.js';
@@ -611,6 +613,40 @@ export const mediumCombatAchievements: CombatAchievement[] = [
 		requirements: new Requirements().add({
 			kcRequirement: {
 				'Royal Titans': [10, Monsters.Branda.id, Monsters.Eldric.id, Monsters.RoyalTitans.id]
+			}
+		})
+	},
+	{
+		id: 151,
+		name: 'Shellbane Speedrunner',
+		desc: 'Kill the Shellbane Gryphon 10 times within 12:30 minutes of entering the cave.',
+		type: 'speed',
+		monster: 'Shellbane Gryphon',
+		rng: {
+			chancePerKill: 15,
+			hasChance: isCertainMonsterTrip(Slayer2026MonsterID.SHELLBANE_GRYPHON)
+		}
+	},
+	{
+		id: 152,
+		name: 'Perfect Shellbane',
+		desc: 'Kill the Shellbane Gryphon without taking damage.',
+		type: 'perfection',
+		monster: 'Shellbane Gryphon',
+		rng: {
+			chancePerKill: 10,
+			hasChance: isCertainMonsterTrip(Slayer2026MonsterID.SHELLBANE_GRYPHON)
+		}
+	},
+	{
+		id: 153,
+		name: 'Shellbane Veteran',
+		desc: 'Kill the Shellbane Gryphon 50 times.',
+		type: 'kill_count',
+		monster: 'Shellbane Gryphon',
+		requirements: new Requirements().add({
+			kcRequirement: {
+				[Slayer2026MonsterID.SHELLBANE_GRYPHON]: 50
 			}
 		})
 	}

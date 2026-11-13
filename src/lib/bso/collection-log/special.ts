@@ -1,4 +1,5 @@
 import { allDyedItems } from '@/lib/bso/dyedItems.js';
+import { coralMixableIDs } from '@/lib/bso/skills/herblore/coralMixables.js';
 
 import { uniqueArr } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
@@ -11,7 +12,9 @@ import Crafting from '@/lib/skilling/skills/crafting/index.js';
 import Herblore from '@/lib/skilling/skills/herblore/herblore.js';
 import Smithing from '@/lib/skilling/skills/smithing/index.js';
 
-export const herbloreCL = removeDiscontinuedItems(Herblore.Mixables.map(i => i.item.id));
+export const herbloreCL = removeDiscontinuedItems(
+	Herblore.Mixables.filter(i => !coralMixableIDs.has(i.item.id)).map(i => i.item.id)
+);
 export const cookingCL = removeDiscontinuedItems(Cookables.map(i => i.id));
 export const craftingCL = removeDiscontinuedItems(Crafting.Craftables.map(i => i.id));
 export const smithingCL = removeDiscontinuedItems(Smithing.SmithableItems.map(i => i.id));

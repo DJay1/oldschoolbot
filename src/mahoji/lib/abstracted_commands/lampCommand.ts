@@ -1,6 +1,7 @@
 import { Bank, type Item, type ItemBank, Items, itemID, resolveItems } from 'oldschooljs';
 import { clamp } from 'remeda';
 
+import { BloodMoonItem } from '@/lib/customItems/bloodMoon.js';
 import { type SkillNameType, SkillsArray } from '@/lib/skilling/types.js';
 import type { Skills } from '@/lib/types/index.js';
 import { assert } from '@/lib/util/logError.js';
@@ -58,6 +59,12 @@ export const XPLamps: IXPLamp[] = [
 		amount: 50_000,
 		name: 'Small lamp',
 		minimumLevel: 1
+	},
+	{
+		itemID: BloodMoonItem.TOME_OF_EXPERIENCE,
+		amount: 30_000,
+		name: 'Tome of experience (blood moon)',
+		minimumLevel: 70
 	},
 	{
 		itemID: 23_516,

@@ -1,3 +1,5 @@
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
+
 import { itemID, Monsters } from 'oldschooljs';
 
 interface SlayerTaskUnlocks {
@@ -77,7 +79,11 @@ export enum SlayerTaskUnlocksEnum {
 	MoreEyesThanSense = 203,
 	WarpedReality = 204,
 	OffTaskSlayer = 205,
-	UnRestrainingOrder = 206
+	UnRestrainingOrder = 206,
+	WingsSpread = 207,
+	LuredIn = 208,
+	GryphonAndOn = 209,
+	LetsStayAllAquanite = 210
 }
 
 export const SlayerRewardsShop: SlayerTaskUnlocks[] = [
@@ -93,7 +99,7 @@ export const SlayerRewardsShop: SlayerTaskUnlocks[] = [
 		id: SlayerTaskUnlocksEnum.RingBling,
 		name: 'Ring Bling',
 		desc: 'Unlocks ability to create Slayer rings.',
-		slayerPointCost: 300,
+		slayerPointCost: 150,
 		canBeRemoved: false,
 		aliases: ['unlock slayer ring', 'unlock slayer rings']
 	},
@@ -104,14 +110,6 @@ export const SlayerRewardsShop: SlayerTaskUnlocks[] = [
 		slayerPointCost: 50,
 		canBeRemoved: true,
 		aliases: ['red dragon', 'red dragons']
-	},
-	{
-		id: SlayerTaskUnlocksEnum.IHopeYouMithMe,
-		name: 'I hope you mith me!',
-		desc: 'Unlocks the ability to receive Mithril dragons as a task.',
-		slayerPointCost: 80,
-		canBeRemoved: true,
-		aliases: ['mithril dragons', 'mithril dragon']
 	},
 	{
 		id: SlayerTaskUnlocksEnum.WatchTheBirdie,
@@ -149,7 +147,7 @@ export const SlayerRewardsShop: SlayerTaskUnlocks[] = [
 		id: SlayerTaskUnlocksEnum.BiggerAndBadder,
 		name: 'Bigger and Badder',
 		desc: 'Unlocks superiors.',
-		slayerPointCost: 150,
+		slayerPointCost: 50,
 		canBeRemoved: true,
 		aliases: ['superiors', 'superior']
 	},
@@ -318,43 +316,21 @@ export const SlayerRewardsShop: SlayerTaskUnlocks[] = [
 	},
 	{
 		id: SlayerTaskUnlocksEnum.PedalToTheMetals,
-		name: 'Pedal to the metals',
-		desc: 'Extends Bronze, Iron, and Steel dragon tasks.',
-		slayerPointCost: 100,
-		extendID: [Monsters.BronzeDragon.id, Monsters.IronDragon.id, Monsters.SteelDragon.id],
-		extendMult: 3,
-		canBeRemoved: true,
-		aliases: ['extend metal dragons', 'extend steel dragons', 'extend bronze dragons', 'extend iron dragons']
-	},
-	{
-		id: SlayerTaskUnlocksEnum.IReallyMithYou,
-		name: 'I really mith you',
-		desc: 'Extends Mithril dragon tasks.',
-		slayerPointCost: 120,
-		extendID: [Monsters.MithrilDragon.id],
+		name: 'Pedal to the Metals',
+		desc: 'Extends Metal dragon tasks.',
+		slayerPointCost: 200,
+		extendID: [Monsters.BronzeDragon.id],
 		extendMult: 4,
 		canBeRemoved: true,
-		aliases: ['extend mith dragons', 'extend mithril dragons', 'extend mith drags']
-	},
-	{
-		id: SlayerTaskUnlocksEnum.AdamindSomeMore,
-		name: 'Adamind some more',
-		desc: 'Extends Adamant dragon tasks.',
-		slayerPointCost: 100,
-		extendID: [Monsters.AdamantDragon.id],
-		extendMult: 5,
-		canBeRemoved: true,
-		aliases: ['extend addy dragons', 'extend adamant dragons']
-	},
-	{
-		id: SlayerTaskUnlocksEnum.RUUUUUNE,
-		name: 'RUUUUUNE',
-		desc: 'Extends Rune dragon tasks.',
-		slayerPointCost: 100,
-		extendID: [Monsters.RuneDragon.id],
-		extendMult: 9,
-		canBeRemoved: true,
-		aliases: ['rune', 'extend rune dragons', 'extend rune dragon']
+		aliases: [
+			'extend metal dragons',
+			'extend steel dragons',
+			'extend bronze dragons',
+			'extend iron dragons',
+			'extend mithril dragons',
+			'extend adamant dragons',
+			'extend rune dragons'
+		]
 	},
 	{
 		id: SlayerTaskUnlocksEnum.SpiritualFervour,
@@ -619,6 +595,42 @@ export const SlayerRewardsShop: SlayerTaskUnlocks[] = [
 		extendMult: 2.857,
 		canBeRemoved: true,
 		aliases: ['extend custodian stalkers', 'extend stalkers']
+	},
+	{
+		id: SlayerTaskUnlocksEnum.WingsSpread,
+		name: 'Wings Spread',
+		desc: 'Allows Nieve and Duradel to assign Gryphons.',
+		slayerPointCost: 80,
+		canBeRemoved: true,
+		aliases: ['gryphon', 'gryphons', 'wings spread']
+	},
+	{
+		id: SlayerTaskUnlocksEnum.LuredIn,
+		name: 'Lured In',
+		desc: 'Allows Nieve and Duradel to assign Aquanites.',
+		slayerPointCost: 80,
+		canBeRemoved: true,
+		aliases: ['aquanite', 'aquanites', 'lured in']
+	},
+	{
+		id: SlayerTaskUnlocksEnum.GryphonAndOn,
+		name: 'Gryphon and On',
+		desc: 'Extends Gryphon tasks.',
+		slayerPointCost: 50,
+		extendID: [Slayer2026MonsterID.GRYPHON],
+		extendMult: 2,
+		canBeRemoved: true,
+		aliases: ['extend gryphons', 'extend gryphon']
+	},
+	{
+		id: SlayerTaskUnlocksEnum.LetsStayAllAquanite,
+		name: "Let's Stay All Aquanite",
+		desc: 'Extends Aquanite tasks to 150-200.',
+		slayerPointCost: 100,
+		extendID: [Slayer2026MonsterID.AQUANITE],
+		extendMult: 4,
+		canBeRemoved: true,
+		aliases: ['extend aquanites', 'extend aquanite']
 	}
 ];
 

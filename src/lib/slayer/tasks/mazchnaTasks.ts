@@ -1,4 +1,5 @@
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
 
 import { Monsters } from 'oldschooljs';
 
@@ -261,7 +262,8 @@ export const mazchnaTasks: AssignableSlayerTask[] = [
 			Monsters.VampyreJuvinate.id,
 			Monsters.Vyrewatch.id,
 			Monsters.VyrewatchSentinel.id,
-			EBSOMonster.VLADIMIR_DRAKAN
+			EBSOMonster.VLADIMIR_DRAKAN,
+			Slayer2026MonsterID.VENATOR
 		],
 		combatLevel: 35,
 		questPoints: 1,

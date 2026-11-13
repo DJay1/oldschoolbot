@@ -3,6 +3,7 @@ import { Bank, Monsters } from 'oldschooljs';
 
 import { isEventActive } from '@/lib/events/registry.js';
 import { getEclipsePetName } from '@/lib/events/summer/summerDays.js';
+import { QuestID } from '@/lib/minions/data/quests.js';
 import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
 import {
 	anglerItemsArr,
@@ -64,6 +65,12 @@ export const fishCommand = defineCommand({
 			description: 'Use Shark lures (Sharks only).',
 			required: false,
 			choices: sharkLureQuantities.map(value => ({ name: value.toString(), value }))
+		},
+		{
+			type: 'Boolean',
+			name: 'super_fishing_potion',
+			description: 'Use Super fishing potions (+6 Fishing) for this trip.',
+			required: false
 		}
 	],
 	run: async ({ options, user, channelId }) => {
@@ -89,6 +96,9 @@ export const fishCommand = defineCommand({
 
 		if (spot.qpRequired && user.QP < spot.qpRequired) {
 			return `You need ${spot.qpRequired} qp to catch those!`;
+		}
+		if (spot.name === 'Leechfin' && !user.user.finished_quest_ids.includes(QuestID.TheBloodMoonRises)) {
+			return 'You need to complete The Blood Moon Rises to fish leechfins.';
 		}
 
 		if (spot.name === 'Infernal eel') {
@@ -127,7 +137,8 @@ export const fishCommand = defineCommand({
 			powerfish: Boolean(options.powerfish),
 			hasWildyEliteDiary,
 			sharkLureQuantity,
-			user
+			user,
+			wantsToUseSuperFishingPotion: Boolean(options.super_fishing_potion)
 		});
 
 		if (typeof result === 'string') {
@@ -173,6 +184,7 @@ export const fishCommand = defineCommand({
 			powerfish: result.isPowerfishing,
 			spiritFlakes: result.isUsingSpiritFlakes,
 			spiritFlakePreference: result.spiritFlakePreference,
+			superFishingPotion: options.super_fishing_potion ? true : undefined,
 			sharkLureQuantity: result.sharkLureQuantity,
 			sharkLuresToConsume: result.sharkLuresToConsume,
 			sharkLurePreference: result.sharkLurePreference,

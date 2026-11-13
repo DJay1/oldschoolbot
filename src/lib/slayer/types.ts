@@ -31,6 +31,7 @@ export interface SlayerMaster {
 	tasks: AssignableSlayerTask[];
 	bossTasks?: true;
 	basePoints: number;
+	blockCost: number;
 	combatLvl?: number;
 	slayerLvl?: number;
 	questPoints?: number;

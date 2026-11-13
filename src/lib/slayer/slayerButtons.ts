@@ -1,11 +1,11 @@
 import { tearsOfGuthixIronmanReqs, tearsOfGuthixSkillReqs } from '@/lib/bso/commands/tearsOfGuthixCommand.js';
 
-import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
+import type { ButtonBuilder } from '@oldschoolgg/discord';
 import { getNextUTCReset } from '@oldschoolgg/toolkit';
 
 import { BitField, CONSTANTS, PerkTier } from '@/lib/constants.js';
-import { InteractionID } from '@/lib/InteractionID.js';
 import { canShowAutoFarmButton } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
+import { makeSlayerActionButtons } from '@/lib/slayer/slayerActionButtons.js';
 import {
 	makeAutoContractButton,
 	makeAutoFarmButton,
@@ -18,41 +18,11 @@ import { hasSkillReqs } from '@/lib/util/smallUtils.js';
 import { isUsersDailyReady } from '@/mahoji/lib/abstracted_commands/dailyCommand.js';
 import { canRunAutoContract } from '@/mahoji/lib/abstracted_commands/farmingContractCommand.js';
 
-export const slayerActionButtons = [
-	new ButtonBuilder({
-		label: 'Autoslay (Saved)',
-		style: ButtonStyle.Secondary,
-		custom_id: InteractionID.Slayer.AutoSlaySaved
-	}),
-	new ButtonBuilder({
-		label: 'Autoslay (Default)',
-		style: ButtonStyle.Secondary,
-		custom_id: InteractionID.Slayer.AutoSlayDefault
-	}),
-	new ButtonBuilder({
-		label: 'Autoslay (EHP)',
-		style: ButtonStyle.Secondary,
-		custom_id: InteractionID.Slayer.AutoSlayEHP
-	}),
-	new ButtonBuilder({
-		label: 'Autoslay (Boss)',
-		style: ButtonStyle.Secondary,
-		custom_id: InteractionID.Slayer.AutoSlayBoss
-	}),
-	new ButtonBuilder({
-		label: 'Cancel Task + New (30 points)',
-		style: ButtonStyle.Danger,
-		custom_id: InteractionID.Slayer.SkipTask
-	}),
-	new ButtonBuilder({
-		label: 'Block Task + New (100 points)',
-		style: ButtonStyle.Danger,
-		custom_id: InteractionID.Slayer.BlockTask
-	})
-];
-
 /** Repeat trip and the usual perk-gated follow-ups, plus the slayer action buttons. */
-export async function slayerTaskReturnButtons(user: MUser): Promise<ButtonBuilder[]> {
+export async function slayerTaskReturnButtons(
+	user: MUser,
+	actionButtons: ButtonBuilder[] = makeSlayerActionButtons(30, 100)
+): Promise<ButtonBuilder[]> {
 	const components: ButtonBuilder[] = [makeRepeatTripButton()];
 	const perkTier = await user.fetchPerkTier();
 	if (perkTier >= PerkTier.Two) {
@@ -80,6 +50,6 @@ export async function slayerTaskReturnButtons(user: MUser): Promise<ButtonBuilde
 			}
 		}
 	}
-	components.push(...slayerActionButtons);
+	components.push(...actionButtons);
 	return components;
 }

@@ -1,3 +1,5 @@
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
+
 import { EMonster, ItemGroups, Monsters, resolveItems } from 'oldschooljs';
 
 import { isCertainMonsterTrip } from '@/lib/combat_achievements/caUtils.js';
@@ -885,5 +887,40 @@ export const hardCombatAchievements: CombatAchievement[] = [
 				isCertainMonsterTrip(Monsters.Eldric.id)(data) ||
 				isCertainMonsterTrip(Monsters.RoyalTitans.id)(data)
 		}
+	},
+	{
+		id: 275,
+		name: 'Maggot Squasher',
+		desc: 'Kill the Maggot King.',
+		type: 'kill_count',
+		monster: 'Maggot King',
+		requirements: new Requirements().add({
+			kcRequirement: {
+				[Slayer2026MonsterID.MAGGOT_KING]: 1
+			}
+		})
+	},
+	{
+		id: 276,
+		name: 'Featherweight Fighter',
+		desc: 'Kill the Shellbane Gryphon 5 times without leaving the cave, while wearing gear weighing less than 40kg.',
+		type: 'restriction',
+		monster: 'Shellbane Gryphon',
+		rng: {
+			chancePerKill: 10,
+			hasChance: isCertainMonsterTrip(Slayer2026MonsterID.SHELLBANE_GRYPHON)
+		}
+	},
+	{
+		id: 277,
+		name: 'Shellbane Survivor',
+		desc: 'Kill the Shellbane Gryphon 25 times without leaving the cave.',
+		type: 'stamina',
+		monster: 'Shellbane Gryphon',
+		requirements: new Requirements().add({
+			kcRequirement: {
+				[Slayer2026MonsterID.SHELLBANE_GRYPHON]: 25
+			}
+		})
 	}
 ];

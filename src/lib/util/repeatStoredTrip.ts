@@ -434,7 +434,8 @@ const tripHandlers: {
 				quantity: data.iQty,
 				powerfish: data.powerfish ?? false,
 				spirit_flakes: data.spiritFlakePreference ?? data.spiritFlakes ?? false,
-				shark_lure: data.sharkLurePreference ?? data.sharkLureQuantity ?? 0
+				shark_lure: data.sharkLurePreference ?? data.sharkLureQuantity ?? 0,
+				super_fishing_potion: data.superFishingPotion ?? false
 			};
 		}
 	},
@@ -497,7 +498,8 @@ const tripHandlers: {
 		args: (data: HunterActivityTaskOptions) => ({
 			name: Hunter.Creatures.find(i => i.id === data.creatureID)?.name ?? data.creatureID.toString(),
 			quantity: data.quantity,
-			hunter_potion: data.usingHuntPotion,
+			hunter_potion: data.usingHuntPotion && !data.usingSuperHuntPotion,
+			super_hunter_potion: data.usingSuperHuntPotion ?? false,
 			stamina_potions: data.usingStaminaPotion
 		})
 	},

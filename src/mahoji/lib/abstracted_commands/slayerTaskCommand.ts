@@ -1,7 +1,19 @@
-import { notEmpty, removeFromArr, stringMatches } from '@oldschoolgg/toolkit';
-import { EItem, type Monster, Monsters } from 'oldschooljs';
+import { stringMatches } from '@oldschoolgg/toolkit';
+import { EItem, Monsters } from 'oldschooljs';
 
 import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
+import {
+	formatModifier,
+	getMortimerState,
+	getTaskModifier,
+	MORTIMER_ID,
+	MORTIMER_MAX_BLOCKS,
+	MORTIMER_SKIP_COST,
+	mortimerOfferMessage,
+	rollMortimerOffers
+} from '@/lib/slayer/mortimer.js';
+import { makeSlayerActionButtons } from '@/lib/slayer/slayerActionButtons.js';
+import { addSlayerBlock, getAllSlayerBlocks, getSlayerBlocks, removeSlayerBlock } from '@/lib/slayer/slayerBlocks.js';
 import { slayerTaskReturnButtons } from '@/lib/slayer/slayerButtons.js';
 import { slayerMasters } from '@/lib/slayer/slayerMasters.js';
 import {
@@ -11,8 +23,7 @@ import {
 	getUsersCurrentSlayerInfo,
 	userCanUseMaster
 } from '@/lib/slayer/slayerUtil.js';
-import type { AssignableSlayerTask } from '@/lib/slayer/types.js';
-import type { SafeUserUpdateInput } from '@/lib/user/update.js';
+import type { AssignableSlayerTask, SlayerMaster } from '@/lib/slayer/types.js';
 
 function getAlternateMonsterList(assignedTask: AssignableSlayerTask | null) {
 	if (assignedTask) {
@@ -34,22 +45,43 @@ function getAlternateMonsterList(assignedTask: AssignableSlayerTask | null) {
 	return '';
 }
 
+function slayerButtonsFor(master: SlayerMaster | undefined) {
+	const skipCost = master?.id === MORTIMER_ID ? MORTIMER_SKIP_COST : 30;
+	return makeSlayerActionButtons(skipCost, master?.blockCost ?? 100);
+}
+
+function blockedTaskName(monsterId: number) {
+	const monster = Monsters.get(monsterId);
+	return monster ? getCommonTaskName(monster) : `Unknown (${monsterId})`;
+}
+
 export async function slayerListBlocksCommand(mahojiUser: MUser) {
 	const maxBlocks = await calcMaxBlockedTasks(mahojiUser);
-	const myBlockList = mahojiUser.user.slayer_blocked_ids;
+	const allBlocks = await getAllSlayerBlocks(mahojiUser.id);
 
-	let outstr =
-		`You have a maximum of ${maxBlocks} task blocks. You are using ${myBlockList.length}` +
-		` and have ${maxBlocks - myBlockList.length} remaining\n\n**Blocked Tasks:**\n`;
-	const myBlockedMonsters: Monster[] = myBlockList.map(_id => Monsters.get(_id)).filter(notEmpty);
-	outstr += `${myBlockedMonsters.map(getCommonTaskName).join('\n')}`;
-	return `${outstr}\n\nTry: \`/slayer manage block\` to block a task.`;
+	const lines = [
+		`Each Slayer master has their own block list, with up to ${maxBlocks} blocks each. A block only stops that master from assigning the task.`,
+		''
+	];
+	for (const master of slayerMasters) {
+		const blocks = allBlocks.get(master.id) ?? [];
+		const names = blocks.length > 0 ? blocks.map(blockedTaskName).join(', ') : 'None';
+		const masterMax = master.id === MORTIMER_ID ? MORTIMER_MAX_BLOCKS : maxBlocks;
+		lines.push(`**${master.name}** (${blocks.length}/${masterMax}, ${master.blockCost} pts per block): ${names}`);
+	}
+	lines.push('', 'Try: `/slayer manage block` to block your current task.');
+	return lines.join('\n');
 }
 
 export async function slayerStatusCommand(mahojiUser: MUser) {
 	const { currentTask, assignedTask, slayerMaster } = await getUsersCurrentSlayerInfo(mahojiUser.id);
 	const { slayer_points: slayerPoints } = mahojiUser.user;
 	const slayer_streaks = await mahojiUser.fetchStats();
+	const mortimer = await getMortimerState(mahojiUser.id);
+	const modifier = currentTask && slayerMaster.id === MORTIMER_ID ? await getTaskModifier(currentTask.id) : null;
+	const mortimerInfo =
+		(modifier ? `\nTask modifier: **${formatModifier(modifier)}**.` : '') +
+		(mortimer.tasksCompleted > 0 ? `\nYou have completed ${mortimer.tasksCompleted} Mortimer tasks.` : '');
 
 	return (
 		`${
@@ -63,7 +95,8 @@ export async function slayerStatusCommand(mahojiUser: MUser) {
 		}` +
 		`\nYou have ${slayerPoints.toLocaleString()} slayer points, and have completed ${
 			slayer_streaks.slayer_task_streak
-		} tasks in a row and ${slayer_streaks.slayer_wildy_task_streak} wilderness tasks in a row.`
+		} tasks in a row and ${slayer_streaks.slayer_wildy_task_streak} wilderness tasks in a row.` +
+		mortimerInfo
 	);
 }
 
@@ -91,6 +124,11 @@ export async function slayerNewTaskCommand({
 		return `Your minion is busy, but you can still manage your block list: \`/slayer manage list_blocks\`${await slayerStatusCommand(
 			user
 		)}`;
+	}
+
+	const mortimerState = await getMortimerState(user.id);
+	if (!currentTask && mortimerState.offers && mortimerState.offers.length > 0) {
+		return mortimerOfferMessage(mortimerState.offers, "You still need to pick one of Mortimer's tasks.\n\n");
 	}
 
 	const has99SlayerCape = user.skillsAsLevels.slayer >= 99 && user.hasEquippedOrInBank(EItem.SLAYER_CAPE);
@@ -127,6 +165,9 @@ export async function slayerNewTaskCommand({
 
 	// Special handling for Turael skip
 	if (currentTask && slayerMasterOverride && slayerMaster && slayerMaster.name === 'Turael') {
+		if (currentTask.slayer_master_id === MORTIMER_ID) {
+			return "Mortimer's tasks can't be skipped by getting a task from Turael.";
+		}
 		if (slayerMaster.tasks.find(t => t.monster.id === currentTask.monster_id)) {
 			return 'You cannot skip this task because Turael assigns it.';
 		}
@@ -160,7 +201,7 @@ export async function slayerNewTaskCommand({
 			return {
 				content: `${extraContent ?? ''}\n\n${returnMessage}`,
 				ephemeral: true,
-				components: await slayerTaskReturnButtons(user)
+				components: await slayerTaskReturnButtons(user, slayerButtonsFor(slayerMaster))
 			};
 		}
 		return `${extraContent ?? ''}\n\n${returnMessage}`;
@@ -194,11 +235,22 @@ export async function slayerNewTaskCommand({
 				return {
 					content: `You already have a slayer task: ${resultMessage}`,
 					ephemeral: true,
-					components: await slayerTaskReturnButtons(user)
+					components: await slayerTaskReturnButtons(
+						user,
+						slayerButtonsFor(slayerMasters.find(m => m.id === currentTask.slayer_master_id))
+					)
 				};
 			}
 		}
 		return resultMessage;
+	}
+
+	if (slayerMaster.id === MORTIMER_ID) {
+		const offers = await rollMortimerOffers(user, rng);
+		if (offers.length === 0) {
+			return `${resultMessage}Mortimer doesn't have any tasks he can give you right now.`;
+		}
+		return mortimerOfferMessage(offers, resultMessage);
 	}
 
 	const newSlayerTask = await assignNewSlayerTask({ user, rng }, slayerMaster);
@@ -220,7 +272,7 @@ export async function slayerNewTaskCommand({
 		return {
 			content: resultMessage,
 			ephemeral: true,
-			components: await slayerTaskReturnButtons(user)
+			components: await slayerTaskReturnButtons(user, slayerButtonsFor(slayerMaster))
 		};
 	}
 
@@ -241,7 +293,6 @@ export async function slayerSkipTaskCommand({
 	rng: RNGProvider;
 }): CommandResponse {
 	const { currentTask } = await user.fetchSlayerInfo();
-	const myBlockList = user.user.slayer_blocked_ids;
 	const maxBlocks = await calcMaxBlockedTasks(user);
 	if (await user.minionIsBusy()) {
 		return 'You cannot change your task while your minion is busy.';
@@ -258,34 +309,47 @@ export async function slayerSkipTaskCommand({
 		return "You don't have an active task!";
 	}
 
-	if (block && myBlockList.length >= maxBlocks) {
-		return `You cannot have more than ${maxBlocks} slayer blocks!\n\nUse:\n\`/slayer rewards unblock assignment:kalphite\`\n to remove a blocked monster.\n\`/slayer manage command:list_blocks\` for your list of blocked monsters.`;
+	const taskMaster = slayerMasters.find(m => m.id === currentTask.slayer_master_id);
+	if (block && !taskMaster) {
+		return "You can't block this task.";
+	}
+	const masterMax = taskMaster?.id === MORTIMER_ID ? MORTIMER_MAX_BLOCKS : maxBlocks;
+	if (block && taskMaster) {
+		const masterBlocks = await getSlayerBlocks(user.id, taskMaster.id);
+		if (masterBlocks.length >= masterMax) {
+			return `You cannot have more than ${masterMax} blocks with ${taskMaster.name}!\n\nUse:\n\`/slayer rewards unblock\`\n to remove a blocked task.\n\`/slayer manage command:list_blocks\` for your block lists.`;
+		}
 	}
 	const slayerPoints = user.user.slayer_points;
-	const cost = block ? 100 : 30;
+	const skipCost = taskMaster?.id === MORTIMER_ID ? MORTIMER_SKIP_COST : 30;
+	const cost = block && taskMaster ? taskMaster.blockCost : skipCost;
 	if (slayerPoints < cost) {
 		return `You need ${cost} points to ${block ? 'block' : 'cancel'}, you only have: ${slayerPoints.toLocaleString()}.`;
 	}
-	const updateData: SafeUserUpdateInput = {
-		slayer_points: {
-			decrement: cost
-		}
-	};
-	if (block) {
-		updateData.slayer_blocked_ids = [...removeFromArr(myBlockList, currentTask.monster_id), currentTask.monster_id];
-	}
 	try {
-		await user.update(updateData);
-		await prisma.slayerTask.update({
-			where: {
-				id: currentTask.id
-			},
-			data: {
-				skipped: true,
-				quantity_remaining: 0
-			}
+		const spent = await prisma.$queryRaw<{ points: number }[]>`
+			UPDATE users SET "slayer.points" = "slayer.points" - ${cost}
+			WHERE id = ${user.id} AND "slayer.points" >= ${cost}
+			RETURNING "slayer.points" AS points
+		`;
+		if (spent.length === 0) {
+			await user.sync();
+			return `You need ${cost} points to ${block ? 'block' : 'cancel'}, you only have: ${user.user.slayer_points.toLocaleString()}.`;
+		}
+		const claimed = await prisma.slayerTask.updateMany({
+			where: { id: currentTask.id, skipped: false, quantity_remaining: { gt: 0 } },
+			data: { skipped: true, quantity_remaining: 0 }
 		});
-		const resultMessage = `Your task has been ${block ? 'blocked' : 'skipped'}. You now have ${user.user.slayer_points.toLocaleString()} slayer points.`;
+		if (claimed.count === 0) {
+			await prisma.$executeRaw`UPDATE users SET "slayer.points" = "slayer.points" + ${cost} WHERE id = ${user.id}`;
+			await user.sync();
+			return 'Your task has already changed.';
+		}
+		if (block && taskMaster) {
+			await addSlayerBlock(user.id, taskMaster.id, currentTask.monster_id);
+		}
+		await user.sync();
+		const resultMessage = `Your task has been ${block && taskMaster ? `blocked for ${taskMaster.name}` : 'skipped'}. You now have ${spent[0].points.toLocaleString()} slayer points.`;
 
 		if (newTask) {
 			return slayerNewTaskCommand({
@@ -308,32 +372,60 @@ export async function slayerSkipTaskCommand({
 	}
 }
 
-export async function slayerUnblockCommand(mahojiUser: MUser, monsterName: string) {
-	const osjsMonster = Monsters.find(
-		m => stringMatches(m.name, monsterName) || m.aliases.some(alias => stringMatches(alias, monsterName))
+export async function slayerUnblockCommand(mahojiUser: MUser, assignment: string) {
+	const allBlocks = await getAllSlayerBlocks(mahojiUser.id);
+	const entries = [...allBlocks.entries()].flatMap(([masterId, monsterIds]) =>
+		monsterIds.map(monsterId => ({ masterId, monsterId }))
 	);
-	if (!osjsMonster) {
-		return `Cannot find Monster with name **${monsterName}**`;
+	if (entries.length === 0) {
+		return "You don't currently have any tasks blocked.";
 	}
-	const blockedMonsters = mahojiUser.user.slayer_blocked_ids.map(mId => Monsters.get(mId)).filter(notEmpty);
-	if (blockedMonsters.length === 0) {
-		return "You don't currently have any monsters blocked.";
+
+	const direct = /^(\d+):(\d+)$/.exec(assignment.trim());
+	const matches = direct
+		? entries.filter(e => e.masterId === Number(direct[1]) && e.monsterId === Number(direct[2]))
+		: entries.filter(e => {
+				const monster = Monsters.get(e.monsterId);
+				if (!monster) return false;
+				return (
+					stringMatches(assignment, getCommonTaskName(monster)) ||
+					stringMatches(assignment, monster.name) ||
+					monster.aliases.some(alias => stringMatches(assignment, alias))
+				);
+			});
+
+	if (matches.length === 0) {
+		return `You don't have **${assignment}** blocked.`;
 	}
-	const monsterToUnblock = blockedMonsters.find(m => m.id === osjsMonster.id);
-	if (!monsterToUnblock) {
-		return `You don't currently have ${getCommonTaskName(osjsMonster)} blocked.`;
+	if (matches.length > 1) {
+		const masters = matches.map(e => slayerMasters.find(m => m.id === e.masterId)?.name ?? e.masterId).join(', ');
+		return `You have that task blocked with more than one master (${masters}). Pick the one to unblock from the list.`;
 	}
+
+	const [match] = matches;
+	const masterName = slayerMasters.find(m => m.id === match.masterId)?.name ?? 'that master';
 	try {
-		await mahojiUser.update({
-			slayer_blocked_ids: removeFromArr(mahojiUser.user.slayer_blocked_ids, monsterToUnblock.id)
-		});
-		return `**${getCommonTaskName(monsterToUnblock)}** has been unblocked`;
+		await removeSlayerBlock(mahojiUser.id, match.masterId, match.monsterId);
+		return `**${blockedTaskName(match.monsterId)}** has been unblocked for ${masterName}.`;
 	} catch (e) {
 		Logging.logError(e as Error, {
 			user_id: mahojiUser.id.toString(),
 			command: 'slayerUnblockCommand',
-			assignment: monsterName
+			assignment
 		});
 		return 'An error occurred while trying to remove task. Please try again, or ask #help-and-support if the issue persists.';
 	}
+}
+
+export async function slayerBlockedTaskChoices(userId: string, value: string) {
+	const allBlocks = await getAllSlayerBlocks(userId);
+	const choices = [...allBlocks.entries()].flatMap(([masterId, monsterIds]) => {
+		const masterName = slayerMasters.find(m => m.id === masterId)?.name ?? String(masterId);
+		return monsterIds.map(monsterId => ({
+			name: `${blockedTaskName(monsterId)} (${masterName})`,
+			value: `${masterId}:${monsterId}`
+		}));
+	});
+	if (choices.length === 0) return [{ name: "You don't have any tasks blocked", value: '' }];
+	return choices.filter(c => (!value ? true : c.name.toLowerCase().includes(value.toLowerCase())));
 }

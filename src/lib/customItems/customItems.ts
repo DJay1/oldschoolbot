@@ -27,11 +27,14 @@ import './firstAge.js';
 import '../events/launch/items.js';
 import './bankPlaceholders.js';
 import './patronDyes.js';
+import './coralPotions.js';
+import './slayer2026.js';
 
 import { EquipmentSlot } from '@oldschoolgg/gear';
 import { type ItemRequirements, Items, resolveItems } from 'oldschooljs';
 
 import { registerSeasonalEventItems } from '@/lib/events/registerItems.js';
+import { setSeekingArrowItems } from './bloodMoon.js';
 import { customItems, maxedRequirements, setCustomItem, UN_EQUIPPABLE } from './util.js';
 
 setCustomItem(1579, "Thieves' armband", 'Rune gloves', {}, 100_000);
@@ -1511,6 +1514,7 @@ setCustomItem(
 );
 
 setCustomItem(48_222, 'Hellfire arrowtips', 'Dragon arrowtips', {}, 1000);
+setSeekingArrowItems();
 setCustomItem(48_223, 'Scroll of the hunt', 'Coal', {}, 1_000_000);
 
 // MMMR

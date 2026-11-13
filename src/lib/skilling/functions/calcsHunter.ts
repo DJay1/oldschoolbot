@@ -12,6 +12,7 @@ type CalcLootXPHuntingOptions = {
 	graceful: boolean;
 	experienceScore: number;
 	noRandomness: boolean;
+	catchRateBonus?: number;
 };
 
 export function calcLootXPHunting({
@@ -22,7 +23,8 @@ export function calcLootXPHunting({
 	graceful,
 	experienceScore,
 	rng,
-	noRandomness
+	noRandomness,
+	catchRateBonus = 0
 }: CalcLootXPHuntingOptions): [number, number, number] {
 	let xpReceived = 0;
 	let successful = 0;
@@ -46,6 +48,8 @@ export function calcLootXPHunting({
 
 		chanceOfSuccess += chanceOfSuccess * (percentIncrease / 100);
 	}
+
+	if (catchRateBonus > 0) chanceOfSuccess = Math.min(100, chanceOfSuccess * (1 + catchRateBonus / 100));
 
 	const xpToAdd = creature.hunterXP + (creature.name === 'Herbiboar' ? 27 * (currentLevel - 80) : 0);
 

@@ -1,4 +1,6 @@
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
+import { Gryphon, ShellbaneGryphon } from '@/lib/bso/monsters/slayer2026Monsters.js';
 
 import { Monsters } from 'oldschooljs';
 
@@ -447,7 +449,8 @@ export const vannakaTasks: AssignableSlayerTask[] = [
 			Monsters.VampyreJuvinate.id,
 			Monsters.Vyrewatch.id,
 			Monsters.VyrewatchSentinel.id,
-			EBSOMonster.VLADIMIR_DRAKAN
+			EBSOMonster.VLADIMIR_DRAKAN,
+			Slayer2026MonsterID.VENATOR
 		],
 		combatLevel: 35,
 		questPoints: 1,
@@ -460,6 +463,16 @@ export const vannakaTasks: AssignableSlayerTask[] = [
 		monsters: [Monsters.Werewolf.id],
 		combatLevel: 60,
 		questPoints: 1,
+		unlocked: true
+	},
+	{
+		monster: Gryphon,
+		amount: [30, 80],
+		extendedAmount: [110, 160],
+		extendedUnlockId: SlayerTaskUnlocksEnum.GryphonAndOn,
+		weight: 8,
+		monsters: [Gryphon.id, ShellbaneGryphon.id],
+		slayerLevel: 51,
 		unlocked: true
 	}
 ];

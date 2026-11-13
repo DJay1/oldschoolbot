@@ -5,6 +5,7 @@ import { moktangCommand } from '@/lib/bso/commands/moktangCommand.js';
 import { naxxusCommand } from '@/lib/bso/commands/naxxusCommand.js';
 import { vasaCommand } from '@/lib/bso/commands/vasaCommand.js';
 import { handleDTD } from '@/lib/bso/handleDTD.js';
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
 
 import { customEmoji, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Monsters } from 'oldschooljs';
@@ -38,7 +39,8 @@ export async function minionKillCommand(
 	method: PvMMethod | undefined,
 	wilderness: boolean | undefined,
 	_solo: boolean | undefined,
-	onTask: boolean | undefined
+	onTask: boolean | undefined,
+	takeEggs?: boolean
 ): CommandResponse {
 	if (inputQuantity !== undefined) {
 		const parsedQuantity = validateQuantity(inputQuantity, { min: 1, max: MAX_QUANTITY });
@@ -206,7 +208,8 @@ export async function minionKillCommand(
 		hasWildySupplies,
 		isInWilderness: result.isInWilderness === true ? true : undefined,
 		attackStyles: result.attackStyles,
-		onTask: slayerInfo.assignedTask !== null
+		onTask: slayerInfo.assignedTask !== null,
+		takeEggs: takeEggs && monster.id === Slayer2026MonsterID.MAGGOT_KING ? true : undefined
 	});
 
 	let response = `${minionName} is now killing ${result.quantity}x ${monster.name}, ${dtdResult ? `using a ${customEmoji('deathtouched_dart')} **Deathtouched dart**, it'll take around ${formatTripDuration(user, Time.Second * 5)}` : `It'll take around ${formatTripDuration(user, result.duration)} to finish`}. Attack styles used: ${result.attackStyles.join(', ')}.`;

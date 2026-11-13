@@ -1,8 +1,15 @@
 import { resolveItems } from 'oldschooljs';
 
+import { SEEKING_ARROWS } from '@/lib/customItems/bloodMoon.js';
+
+const SEEKING_ARROW_BASES = ['Adamant arrow', 'Rune arrow', 'Amethyst arrow', 'Dragon arrow', 'Hellfire arrow'];
+
 export const projectiles = {
 	arrow: {
-		items: resolveItems(['Adamant arrow', 'Rune arrow', 'Amethyst arrow', 'Dragon arrow', 'Hellfire arrow']),
+		items: [
+			...resolveItems(['Adamant arrow', 'Rune arrow', 'Amethyst arrow', 'Dragon arrow', 'Hellfire arrow']),
+			...SEEKING_ARROWS.filter(a => SEEKING_ARROW_BASES.includes(a.base)).map(a => a.id)
+		],
 		savedByAvas: true,
 		weapons: resolveItems(['Twisted bow'])
 	},

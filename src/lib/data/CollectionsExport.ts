@@ -6,6 +6,8 @@ import { LampTable } from '@/lib/bso/xpLamps.js';
 import { Bank, ItemGroups } from 'oldschooljs';
 
 import type { Minigame } from '@/prisma/main.js';
+import { MaggotKingItem } from '@/lib/customItems/bloodMoon.js';
+import { ShellbaneItem, Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import {
 	gracefulCapes,
 	gracefulFeet,
@@ -1572,7 +1574,9 @@ export const allPetsCL = resolveItems([
 	'Nid',
 	'Huberte',
 	'Moxi',
-	'Bran'
+	'Bran',
+	ShellbaneItem.GULL,
+	MaggotKingItem.MAGGOT_MARQUESS
 	// 'Yami', // Currently unobtainable.
 	// 'Dom' // Currently unobtainable.
 ]);
@@ -1862,7 +1866,12 @@ export const slayerCL = resolveItems([
 	// EItem.EARTHBOUND_TECPATL, // Currently unobtainable.
 	EItem.ANTLER_GUARD,
 	EItem.ALCHEMISTS_SIGNET,
-	EItem.BROKEN_ANTLER
+	EItem.BROKEN_ANTLER,
+	'Aquanite tendon',
+	Slayer2026Item.HORN_OF_PLENTY,
+	'Gryphon feather',
+	Slayer2026Item.VENATOR_TOOTH,
+	Slayer2026Item.VENATOR_FANG
 ]);
 
 export const tormentedDemonCL = resolveItems(['Tormented synapse', 'Burning claw', 'Guthixian temple teleport']);

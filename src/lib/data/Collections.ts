@@ -52,12 +52,14 @@ import { AkumuLootTable } from '@/lib/bso/monsters/bosses/Akumu.js';
 import { Ignecarus } from '@/lib/bso/monsters/bosses/Ignecarus.js';
 import { KalphiteKingMonster, kalphiteKingLootTable } from '@/lib/bso/monsters/bosses/KalphiteKing.js';
 import { KingGoldemar } from '@/lib/bso/monsters/bosses/KingGoldemar.js';
+import { MaggotKing, MaggotKingTable } from '@/lib/bso/monsters/bosses/MaggotKing.js';
 import { MoktangLootTable } from '@/lib/bso/monsters/bosses/Moktang.js';
 import { Naxxus, NaxxusLootTableFinishable } from '@/lib/bso/monsters/bosses/Naxxus.js';
 import { VasaMagus } from '@/lib/bso/monsters/bosses/VasaMagus.js';
 import { VenatrixLootTable } from '@/lib/bso/monsters/bosses/Venatrix.js';
 import { BSOMonsters } from '@/lib/bso/monsters/customMonsters.js';
 import { NexMonster, nexLootTable } from '@/lib/bso/monsters/nex.js';
+import { ShellbaneGryphon, ShellbaneGryphonTable } from '@/lib/bso/monsters/slayer2026Monsters.js';
 import { cmbClothes } from '@/lib/bso/openables/cmb.js';
 import { PaintBoxTable } from '@/lib/bso/paintColors.js';
 import { pumpkinHeadUniqueTable } from '@/lib/bso/pumpkinHead.js';
@@ -85,6 +87,8 @@ import {
 import type { ClueTier } from '@/lib/clues/clueTiers.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import type { CollectionLogType } from '@/lib/collectionLogTask.js';
+import { MaggotKingItem } from '@/lib/customItems/bloodMoon.js';
+import { ShellbaneItem } from '@/lib/customItems/slayer2026.js';
 import {
 	abyssalSireCL,
 	aerialFishingCL,
@@ -702,6 +706,27 @@ export const allCollectionLogs: ICollection = {
 				items: moktangCL,
 				allItems: MoktangLootTable.allItems,
 				fmtProg: kcProg(EBSOMonster.MOKTANG)
+			},
+			'Maggot King': {
+				alias: ['maggot king', 'maggotking', 'mk'],
+				items: resolveItems([
+					MaggotKingItem.ELDER_VENATOR_FANG,
+					MaggotKingItem.CRIMSON_KISTEN,
+					MaggotKingItem.MAGGOT_MARQUESS
+				]),
+				allItems: MaggotKingTable.allItems,
+				fmtProg: kcProg(MaggotKing.id)
+			},
+			'Shellbane Gryphon': {
+				alias: ['shellbane gryphon', 'shellbane'],
+				items: resolveItems([
+					ShellbaneItem.GULL,
+					ShellbaneItem.JAR_OF_FEATHERS,
+					ShellbaneItem.BELLES_FOLLY_TARNISHED,
+					'Gryphon feather'
+				]),
+				allItems: ShellbaneGryphonTable.allItems,
+				fmtProg: kcProg(ShellbaneGryphon.id)
 			},
 			Wintertodt: {
 				alias: ['todt', 'wintertodt', 'wt'],
@@ -2356,7 +2381,9 @@ export async function getCollection(options: {
 						typeof attributes.kcActivity === 'object' &&
 						attributes.kcActivity !== null &&
 						Object.values(attributes.kcActivity).some(
-							v => typeof v === 'function' && Function.prototype.toString.call(v).includes('openableScores')
+							v =>
+								typeof v === 'function' &&
+								Function.prototype.toString.call(v).includes('openableScores')
 						),
 					collectionObtained: userAmount,
 					collectionTotal: totalCl,

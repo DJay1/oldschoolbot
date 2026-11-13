@@ -6,11 +6,17 @@ import { Bank, Items } from 'oldschooljs';
 
 import { claimBscSupporterCosmetic } from '@/lib/bsc/patronSync.js';
 import { BitField, Channel } from '@/lib/constants.js';
+import { BloodMoonItem } from '@/lib/customItems/bloodMoon.js';
 import { calcCLDetails } from '@/lib/data/Collections.js';
 import { LAUNCH_FOUNDER_BADGE } from '@/lib/events/launch/constants.js';
 import { buildFounderLaunchExtras } from '@/lib/events/launch/launchBox.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { getReclaimableItemsOfUser } from '@/lib/reclaimableItems.js';
+
+const RECLAIM_COSTS = new Map<number, number>([
+	[BloodMoonItem.HALLOWED_FLAIL, 80_000],
+	[BloodMoonItem.SUNSPEAR, 100_000]
+]);
 
 /** Free T1 Perks requirements. */
 const FREE_T1_CL_PERCENT = 80;
@@ -158,8 +164,17 @@ export const claimCommand = defineCommand({
 			}
 			const item = Items.getOrThrow(rawData.item_id);
 			const loot = new Bank().add(item.id);
-			await user.addItemsToBank({ items: loot, collectionLog: false });
-			return `You claimed ${loot}.
+			const cost = RECLAIM_COSTS.get(item.id);
+			if (cost) {
+				const price = new Bank().add('Coins', cost);
+				if (!user.owns(price)) {
+					return `It costs ${cost.toLocaleString()} GP to get your ${item.name} back.`;
+				}
+				await user.transactItems({ itemsToRemove: price, itemsToAdd: loot, collectionLog: false });
+			} else {
+				await user.addItemsToBank({ items: loot, collectionLog: false });
+			}
+			return `You claimed ${loot}${cost ? ` for ${cost.toLocaleString()} GP` : ''}.
 
 ${rawData.name}: ${rawData.description}.
 ${dateFm(new Date(rawData.date))}`;

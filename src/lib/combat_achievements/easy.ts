@@ -1,3 +1,5 @@
+import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
+
 import { ItemGroups, Items, Monsters, resolveItems } from 'oldschooljs';
 
 import { isCertainMonsterTrip } from '@/lib/combat_achievements/caUtils.js';
@@ -483,5 +485,28 @@ export const easyCombatAchievements: CombatAchievement[] = [
 				isCertainMonsterTrip(Monsters.Eldric.id)(data) ||
 				isCertainMonsterTrip(Monsters.RoyalTitans.id)(data)
 		}
+	},
+	{
+		id: 39,
+		name: 'Dry Cleaning',
+		desc: 'Kill the Shellbane Gryphon after clearing its corrosive spit from your armour.',
+		type: 'mechanical',
+		monster: 'Shellbane Gryphon',
+		rng: {
+			chancePerKill: 5,
+			hasChance: isCertainMonsterTrip(Slayer2026MonsterID.SHELLBANE_GRYPHON)
+		}
+	},
+	{
+		id: 40,
+		name: 'Shellbane Adept',
+		desc: 'Kill the Shellbane Gryphon 25 times.',
+		type: 'kill_count',
+		monster: 'Shellbane Gryphon',
+		requirements: new Requirements().add({
+			kcRequirement: {
+				[Slayer2026MonsterID.SHELLBANE_GRYPHON]: 25
+			}
+		})
 	}
 ];

@@ -7,12 +7,14 @@ import exitHook from 'exit-hook';
 
 import { createDb } from '@/lib/globals.js';
 import { preStartup } from '@/lib/preStartup.js';
+import { runSlayerUpdateMigration } from '@/lib/slayer/slayerBlocks.js';
 import { exitCleanup } from '@/mahoji/lib/exitHandler.js';
 
 exitHook(exitCleanup);
 
 async function main() {
 	await createDb();
+	await runSlayerUpdateMigration().catch(err => Logging.logError(err as Error));
 	Logging.logDebug(`Starting up after ${process.uptime()}s`);
 	await Promise.all([preStartup(), globalClient.login()]);
 }

@@ -4,6 +4,7 @@ import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, type RNGProvider } from 'node-rng';
 import { Bank, EItem, Items } from 'oldschooljs';
 
+import { CoralPotionItem } from '@/lib/customItems/coralPotions.js';
 import { summerFishingStartAdjustments } from '@/lib/events/summer/fishing.js';
 import type { Fish } from '@/lib/skilling/types.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
@@ -22,7 +23,7 @@ const harpoonBoosts = [
 	{ id: EItem.INFERNAL_HARPOON, boostPercent: 20 }
 ];
 
-const harpoonFishSpots = new Set(['Tuna/Swordfish', 'Shark']);
+const harpoonFishSpots = new Set(['Tuna/Swordfish', 'Shark', 'Squid']);
 
 const FEATHER_ID = Items.getId('Feather');
 const FEATHER_PACK_ID = Items.getId('Feather pack');
@@ -106,7 +107,8 @@ function determineFishingTime({
 	initialBait,
 	useBarbarianCutEat,
 	rng,
-	sharkLureMultiplier
+	sharkLureMultiplier,
+	levelBoost = 0
 }: {
 	quantity: number;
 	tripTicks: number;
@@ -123,6 +125,7 @@ function determineFishingTime({
 	useBarbarianCutEat: boolean;
 	rng: RNGProvider;
 	sharkLureMultiplier: number;
+	levelBoost?: number;
 }) {
 	let ticksElapsed = 0;
 	let flakesUsed = 0;
@@ -137,7 +140,7 @@ function determineFishingTime({
 	const extraCatchRolls = new Array<number>(fishCount).fill(0);
 
 	const fishingLevel = gearBank.skillsAsLevels.fishing;
-	let effectiveFishingLevel = fishingLevel;
+	let effectiveFishingLevel = fishingLevel + levelBoost;
 
 	const isBarbarianFishing = fish.name === 'Barbarian fishing';
 	const canCatchSalmon =
@@ -311,7 +314,8 @@ export async function calcFishingTripStart({
 	hasWildyEliteDiary,
 	rng,
 	sharkLureQuantity,
-	user
+	user,
+	wantsToUseSuperFishingPotion = false
 }: {
 	gearBank: GearBank;
 	fish: Fish;
@@ -323,6 +327,7 @@ export async function calcFishingTripStart({
 	rng?: RNGProvider;
 	sharkLureQuantity?: SharkLureQuantity;
 	user?: MUser;
+	wantsToUseSuperFishingPotion?: boolean;
 }) {
 	const rngProvider = rng ?? MathRNG;
 
@@ -529,7 +534,8 @@ export async function calcFishingTripStart({
 			initialBait,
 			useBarbarianCutEat,
 			rng: rngProvider,
-			sharkLureMultiplier
+			sharkLureMultiplier,
+			levelBoost: wantsToUseSuperFishingPotion ? 6 : 0
 		});
 
 		const boosts = [...baseBoosts, ...extraBoosts];
@@ -567,6 +573,14 @@ export async function calcFishingTripStart({
 		}
 		if (sharkLuresToConsume > 0) {
 			suppliesToRemove.add(SHARK_LURE_ID, sharkLuresToConsume);
+		}
+		if (wantsToUseSuperFishingPotion) {
+			const potionsNeeded = Math.max(1, Math.round(duration / (8 * Time.Minute)));
+			if (gearBank.bank.amount(CoralPotionItem.SUPER_FISHING_POTION[3]) < potionsNeeded) {
+				return `You need ${potionsNeeded}x Super fishing potion(4) to boost your level for the whole trip, try a lower quantity or make more potions.`;
+			}
+			suppliesToRemove.add(CoralPotionItem.SUPER_FISHING_POTION[3], potionsNeeded);
+			boosts.push(`+6 Fishing for using ${potionsNeeded}x Super fishing potion(4)`);
 		}
 
 		return {

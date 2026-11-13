@@ -1,5 +1,7 @@
 import { resolveItems } from 'oldschooljs';
 
+import { CoralPotionItem } from '@/lib/customItems/coralPotions.js';
+
 const Potions = [
 	{
 		name: 'Saradomin brew',
@@ -441,7 +443,10 @@ const Potions = [
 			'Prayer regeneration potion(3)',
 			'Prayer regeneration potion(4)'
 		])
-	}
+	},
+	{ name: 'Super fishing potion', items: [...CoralPotionItem.SUPER_FISHING_POTION] },
+	{ name: 'Super hunter potion', items: [...CoralPotionItem.SUPER_HUNTER_POTION] },
+	{ name: 'Armadyl brew', items: [...CoralPotionItem.ARMADYL_BREW] }
 ];
 
 export default Potions;

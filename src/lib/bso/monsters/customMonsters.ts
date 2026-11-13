@@ -7,6 +7,7 @@
  * kill list. The hub attaches those bosses separately.
  */
 import { Akumu } from '@/lib/bso/monsters/bosses/Akumu.js';
+import { MaggotKing } from '@/lib/bso/monsters/bosses/MaggotKing.js';
 import { Venatrix } from '@/lib/bso/monsters/bosses/Venatrix.js';
 import { Malygos } from '@/lib/bso/monsters/demi-bosses/Malygos.js';
 import { Nihiliz } from '@/lib/bso/monsters/demi-bosses/Nihiliz.js';
@@ -20,6 +21,7 @@ import { Yeti } from '@/lib/bso/monsters/demi-bosses/Yeti.js';
 import { CockroachSoldier, EliteBlackKnight } from '@/lib/bso/monsters/misc.js';
 import { resourceDungeonMonsters } from '@/lib/bso/monsters/resourceDungeons.js';
 import { SunMoonMonsters } from '@/lib/bso/monsters/SunMoon.js';
+import { Aquanite, Gryphon, ShellbaneGryphon, Venator } from '@/lib/bso/monsters/slayer2026Monsters.js';
 
 export const BSOMonsters = {
 	Treebeard,
@@ -35,6 +37,11 @@ export const BSOMonsters = {
 	VladimirDrakan,
 	Akumu,
 	Venatrix,
+	Gryphon,
+	Aquanite,
+	Venator,
+	MaggotKing,
+	ShellbaneGryphon,
 	...resourceDungeonMonsters,
 	...SunMoonMonsters
 };

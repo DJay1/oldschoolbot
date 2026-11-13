@@ -2,9 +2,88 @@ import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 
 import { Bank, LootTable } from 'oldschooljs';
 
+import { VampyriumItem } from '@/lib/customItems/bloodMoon.js';
+import { CoralPotionItem } from '@/lib/customItems/coralPotions.js';
+import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { type Creature, HunterTechniqueEnum } from '@/lib/skilling/types.js';
 
+export const VAMPYRIUM_CREATURE_IDS = [940_101, 940_102];
+
 export const bsoCreatures: Creature[] = [
+	{
+		name: 'Letvek',
+		id: 940_101,
+		aliases: ['letvek', 'letveks'],
+		level: 76,
+		hunterXP: 200,
+		table: new LootTable().every(Slayer2026Item.LETVEK),
+		huntTechnique: HunterTechniqueEnum.BoxTrapping,
+		multiTraps: true,
+		catchTime: 25,
+		slope: 1.22,
+		intercept: -31.33
+	},
+	{
+		name: 'Stymphike',
+		id: 940_102,
+		aliases: ['stymphike', 'stymphikes'],
+		level: 82,
+		hunterXP: 1725,
+		table: new LootTable()
+			.every(Slayer2026Item.STYMPHIKE_FEATHER, 15)
+			.every('Bones')
+			.every(VampyriumItem.STYMPHIKE_CARCASS),
+		huntTechnique: HunterTechniqueEnum.Tracking,
+		catchTime: 43,
+		slope: 0,
+		intercept: 99,
+		bait: qty => new Bank().add(Slayer2026Item.LETVEK, qty)
+	},
+	{
+		name: 'Red crab',
+		id: 940_103,
+		aliases: ['red crab', 'red crabs'],
+		level: 21,
+		hunterXP: 64,
+		table: new LootTable().every('Red crab'),
+		huntTechnique: HunterTechniqueEnum.BoxTrapping,
+		multiTraps: true,
+		catchTime: 21,
+		slope: 0,
+		intercept: 100,
+		qpRequired: 1,
+		bait: qty => new Bank().add('Fish offcuts', qty)
+	},
+	{
+		name: 'Blue crab',
+		id: 940_104,
+		aliases: ['blue crab', 'blue crabs'],
+		level: 48,
+		hunterXP: 136,
+		table: new LootTable().every('Blue crab'),
+		huntTechnique: HunterTechniqueEnum.BoxTrapping,
+		multiTraps: true,
+		catchTime: 23,
+		slope: 0,
+		intercept: 100,
+		qpRequired: 45,
+		bait: qty => new Bank().add('Fish offcuts', qty)
+	},
+	{
+		name: 'Rainbow crab',
+		id: 940_105,
+		aliases: ['rainbow crab', 'rainbow crabs'],
+		level: 77,
+		hunterXP: 216,
+		table: new LootTable().every(CoralPotionItem.RAINBOW_CRAB),
+		huntTechnique: HunterTechniqueEnum.BoxTrapping,
+		multiTraps: true,
+		catchTime: 25,
+		slope: 0,
+		intercept: 100,
+		qpRequired: 64,
+		bait: qty => new Bank().add('Fine fish offcuts', qty)
+	},
 	{
 		name: 'Sand Gecko',
 		id: 3251,

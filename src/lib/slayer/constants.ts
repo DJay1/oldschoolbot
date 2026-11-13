@@ -8,6 +8,7 @@ export enum AutoslayOptionsEnum {
 }
 
 export const slayerMasterChoices = [
+	'Mortimer',
 	'Duradel',
 	'Vannaka',
 	'Konar quo Maten',

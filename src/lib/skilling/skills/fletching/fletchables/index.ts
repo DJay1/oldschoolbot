@@ -6,6 +6,7 @@ import Bows from './bows.js';
 import Crossbows from './crossbows.js';
 import Darts from './darts.js';
 import Javelins from './javelins.js';
+import { SeekingFletchables } from './seeking.js';
 import Shafts from './shafts.js';
 import Shields from './shields.js';
 import { AmethystBroadBolts, BroadArrows, BroadBolts, Slayer } from './slayer.js';
@@ -26,10 +27,12 @@ export const Fletchables: Fletchable[] = [
 	...Darts,
 	...Crossbows,
 	...Slayer,
-	...Atlatl
+	...Atlatl,
+	...SeekingFletchables
 ];
 
-export const fletchingCL = Fletchables.map(i => i.id);
+const seekingIDs = new Set(SeekingFletchables.map(i => i.id));
+export const fletchingCL = Fletchables.filter(i => !seekingIDs.has(i.id)).map(i => i.id);
 export const zeroTimeFletchables: Fletchable[] = [
 	BroadArrows,
 	BroadBolts,

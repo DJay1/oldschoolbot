@@ -1,6 +1,7 @@
 import { Emoji } from '@oldschoolgg/toolkit';
 import { itemID } from 'oldschooljs';
 
+import { VampyriumItem } from '@/lib/customItems/bloodMoon.js';
 import { defineSkill, type Fish } from '@/lib/skilling/types.js';
 import { calcFishingTripResult } from './fishingTrip.js';
 import { calcFishingTripStart } from './fishingTripStart.js';
@@ -315,6 +316,67 @@ const fishes: Fish[] = [
 		canPowerfish: true,
 		powerfishTicks: 2,
 		powerfishLostTicks: 0.05
+	},
+	{
+		name: 'Leechfin',
+		alias: ['leechfin', 'leechfins', 'leech'],
+		subfishes: [
+			{
+				id: VampyriumItem.LEECHFIN,
+				level: 78,
+				xp: 33.2,
+				intercept: 0.1086,
+				slope: 0.00762
+			}
+		],
+		petChance: 160_000,
+		clueScrollChance: 165_000,
+		lostTicks: 0.1,
+		bankingTime: 0,
+		ticksPerRoll: 3
+	},
+	{
+		name: 'Squid',
+		alias: ['squid', 'swordtip squid', 'jumbo squid', 'lantern harpooning'],
+		subfishes: [
+			{
+				id: itemID('Raw swordtip squid'),
+				level: 52,
+				xp: 55,
+				intercept: 0.0326,
+				slope: 0.0023
+			},
+			{
+				id: itemID('Raw jumbo squid'),
+				level: 69,
+				xp: 75,
+				intercept: 0.0196,
+				slope: 0.0018
+			}
+		],
+		petChance: 257_770,
+		clueScrollChance: 257_770,
+		lostTicks: 0.1,
+		bankingTime: 25,
+		ticksPerRoll: 5
+	},
+	{
+		name: 'Haddock',
+		alias: ['haddock', 'raw haddock', 'trawling'],
+		subfishes: [
+			{
+				id: itemID('Raw haddock'),
+				level: 73,
+				xp: 128.5,
+				intercept: 0.0545,
+				slope: 0.0006
+			}
+		],
+		petChance: 82_243,
+		clueScrollChance: 82_243,
+		lostTicks: 0.1,
+		bankingTime: 25,
+		ticksPerRoll: 3
 	},
 	{
 		name: 'Infernal eel',

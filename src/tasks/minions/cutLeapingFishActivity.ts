@@ -1,6 +1,8 @@
 import { Bank } from 'oldschooljs';
 import { clamp } from 'remeda';
 
+import { VampyriumItem } from '@/lib/customItems/bloodMoon.js';
+import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { LeapingFish } from '@/lib/skilling/skills/cooking/leapingFish.js';
 import type { CutLeapingFishActivityTaskOptions } from '@/lib/types/minions.js';
 
@@ -57,13 +59,28 @@ export const cutLeapingFishTask: MinionTask = {
 			}
 		}
 
+		let leechfinXP = 0;
 		const loot = new Bank();
+		if (barbarianFish.item.id === VampyriumItem.LEECHFIN) {
+			leechfinXP = 20 * quantity;
+			for (let i = 0; i < quantity; i++) {
+				if (rng.roll(3)) loot.add(Slayer2026Item.BLOOD_SAC);
+			}
+		}
+
+		if (barbarianFish.item.name === 'Raw haddock') {
+			const eyeChance = clamp(19.9 + ((currentLevel - 1) * 80.1) / 98, { min: 0, max: 100 });
+			loot.add('Fine fish offcuts', quantity);
+			for (let i = 0; i < quantity; i++) {
+				if (rng.percentChance(eyeChance)) loot.add('Haddock eye');
+			}
+		}
 
 		loot.add('Roe', roeCreated);
 		loot.add('Caviar', caviarCreated);
 		loot.add('Fish offcuts', fishOffcutsCreated);
 
-		let xpReceived = 0;
+		let xpReceived = leechfinXP;
 		xpReceived += 10 * roeCreated;
 		xpReceived += 15 * caviarCreated;
 
