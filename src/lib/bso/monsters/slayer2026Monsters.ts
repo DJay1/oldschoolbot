@@ -55,7 +55,7 @@ const GryphonTable = new LootTable({ limit: 128 })
 	.add('Pillar frag', 1, 1)
 	.add(GemTable, 1, 1)
 	.tertiary(100, 'Clue scroll (hard)')
-	.tertiary(2500, Slayer2026Item.HORN_OF_PLENTY_EMPTY);
+	.tertiary(2500, Slayer2026Item.HORN_OF_PLENTY);
 
 const AquaniteTable = new LootTable({ limit: 128 })
 	.every('Big bones')

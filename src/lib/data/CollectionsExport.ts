@@ -1868,7 +1868,7 @@ export const slayerCL = resolveItems([
 	EItem.ALCHEMISTS_SIGNET,
 	EItem.BROKEN_ANTLER,
 	'Aquanite tendon',
-	Slayer2026Item.HORN_OF_PLENTY_EMPTY,
+	Slayer2026Item.HORN_OF_PLENTY,
 	'Gryphon feather',
 	Slayer2026Item.VENATOR_TOOTH,
 	Slayer2026Item.VENATOR_FANG

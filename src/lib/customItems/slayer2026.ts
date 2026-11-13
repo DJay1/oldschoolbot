@@ -20,7 +20,7 @@ export const Slayer2026Item = {
 	TARNISHED_BATTLEAXE: 74_414,
 	TARNISHED_HALBERD: 74_415,
 	TARNISHED_LONGSWORD: 74_416,
-	HORN_OF_PLENTY_EMPTY: 74_417
+	HORN_OF_PLENTY: 74_417
 } as const;
 
 const items: [id: number, name: string, base: string, price: number][] = [
@@ -40,8 +40,7 @@ const items: [id: number, name: string, base: string, price: number][] = [
 	[Slayer2026Item.TARNISHED_2H_SWORD, 'Tarnished 2h sword', 'Coal', 12_000],
 	[Slayer2026Item.TARNISHED_BATTLEAXE, 'Tarnished battleaxe', 'Coal', 12_000],
 	[Slayer2026Item.TARNISHED_HALBERD, 'Tarnished halberd', 'Coal', 12_000],
-	[Slayer2026Item.TARNISHED_LONGSWORD, 'Tarnished longsword', 'Coal', 12_000],
-	[Slayer2026Item.HORN_OF_PLENTY_EMPTY, 'Horn of Plenty (empty)', 'Coal', 1_000_000]
+	[Slayer2026Item.TARNISHED_LONGSWORD, 'Tarnished longsword', 'Coal', 12_000]
 ];
 
 for (const [id, name, base, price] of items) {
@@ -58,6 +57,37 @@ for (const [id, name, base, price] of items) {
 		price
 	);
 }
+
+setCustomItem(
+	Slayer2026Item.HORN_OF_PLENTY,
+	'Horn of plenty',
+	'Coal',
+	{
+		equipable: true,
+		equipment: {
+			attack_stab: 0,
+			attack_slash: 0,
+			attack_crush: 0,
+			attack_magic: 0,
+			attack_ranged: 0,
+			defence_stab: 0,
+			defence_slash: 0,
+			defence_crush: 0,
+			defence_magic: 0,
+			defence_ranged: 0,
+			melee_strength: 0,
+			ranged_strength: 0,
+			magic_damage: 0,
+			prayer: 0,
+			slot: EquipmentSlot.Shield,
+			requirements: { hunter: 50 }
+		},
+		customItemData: {
+			cantDropFromMysteryBoxes: true
+		}
+	},
+	1_000_000
+);
 
 export const ShellbaneItem = {
 	BELLES_FOLLY_TARNISHED: 74_442,

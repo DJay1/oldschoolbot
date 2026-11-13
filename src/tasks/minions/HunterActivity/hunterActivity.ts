@@ -9,6 +9,7 @@ import { randInt, roll } from 'node-rng';
 import { Bank, ECreature, type ItemBank, increaseBankQuantitesByPercent, itemID, toKMB } from 'oldschooljs';
 
 import { MAX_LEVEL } from '@/lib/constants.js';
+import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { hasWildyHuntGearEquipped } from '@/lib/gear/functions/hasWildyHuntGearEquipped.js';
 import type { UserFullGearSetup } from '@/lib/gear/types.js';
 import { trackLoot } from '@/lib/lootTrack.js';
@@ -94,8 +95,12 @@ export function calculateHunterResult({
 
 	const crystalImpling = creature.name === 'Crystal impling';
 
+	const hasHorn = (creature.wildy ? allGear.wildy : allGear.skilling).hasEquipped(Slayer2026Item.HORN_OF_PLENTY);
+	const hornFeathers = hasHorn ? bank.amount('Gryphon feather') : 0;
+	const hornBoost = hasHorn ? (hornFeathers > 0 ? 4 : 2) : 0;
+
 	let [successfulQuantity, xpReceived] = calcLootXPHunting({
-		currentLevel: Math.min(Math.floor(skillsAsLevels.hunter + (usingHuntPotion ? 2 : 0)), MAX_LEVEL),
+		currentLevel: Math.min(Math.floor(skillsAsLevels.hunter + (usingHuntPotion ? 2 : 0) + hornBoost), MAX_LEVEL),
 		creature,
 		quantity,
 		usingStaminaPotion,
@@ -216,6 +221,32 @@ export function calculateHunterResult({
 			`${toKMB(bonusXP * GLOBAL_BSO_XP_MULTIPLIER)} bonus XP from your Pacifist Portent (${
 				portentResult.portent.charges_remaining
 			} charges remaining)`
+		);
+	}
+
+	if (hasHorn && hornFeathers > 0 && !portentResult.didCharge) {
+		let feathersLeft = hornFeathers - Math.min(hornFeathers, Math.ceil(realQuantity / 25));
+		let doubledCatches = 0;
+		if (!creature.name.toLowerCase().includes('impling') && creature.id !== ECreature.HERBIBOAR) {
+			for (let i = 0; i < realQuantity && feathersLeft > 0; i++) {
+				if (!rng.roll(10)) continue;
+				for (const [item, qty] of creatureTable.roll().items()) {
+					if (!/bones|^raw |fur$/i.test(item.name)) loot.add(item.id, qty);
+				}
+				feathersLeft--;
+				doubledCatches++;
+			}
+		}
+		const feathersUsed = hornFeathers - feathersLeft;
+		if (feathersUsed > 0) totalCost.add('Gryphon feather', feathersUsed);
+		messages.push(
+			`Your Horn of plenty gave +4 Hunter${
+				doubledCatches > 0 ? ` and doubled ${doubledCatches}x catches` : ''
+			}, using ${feathersUsed}x Gryphon feather.`
+		);
+	} else if (hasHorn) {
+		messages.push(
+			'Your Horn of plenty gave +2 Hunter. Keep Gryphon feathers in your bank for +4 and doubled catches.'
 		);
 	}
 

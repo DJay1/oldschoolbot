@@ -25,6 +25,7 @@ import {
 import { clone, isDeepEqual } from 'remeda';
 
 import { type BitField, BitField as BitFieldEnum } from '@/lib/constants.js';
+import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
 import { addMonsterXPRaw } from '@/lib/minions/functions/addMonsterXPRaw.js';
@@ -416,6 +417,11 @@ export function doMonsterTrip(data: newOptions) {
 	}
 	if (!wiped && !takingEggs && monster.id === Malygos.id) {
 		applyLaunchMalygosPetRolls(loot, finalQuantity);
+	}
+	if (!wiped && monster.id === Slayer2026MonsterID.GRYPHON && slayerContext.isOnTask) {
+		for (let i = 0; i < finalQuantity; i++) {
+			if (rng.randFloat(0, 1) < 1 / 1000 - 1 / 2500) loot.add(Slayer2026Item.HORN_OF_PLENTY);
+		}
 	}
 	if (isDoubleLootActive(duration)) {
 		loot.multiply(2);
