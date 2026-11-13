@@ -19,7 +19,7 @@ afterEach(() => {
 test('Tradeable Mystery box quantity 255 is one batched roll and stays fast', async () => {
 	const openable = mysteryBoxOpenables.find(o => o.id === 6199);
 	expect(openable).toBeTruthy();
-	const output = vi.spyOn(openable!, 'output');
+	const output = vi.spyOn(openable as unknown as { output: (args: { quantity: number }) => unknown }, 'output');
 	const started = performance.now();
 	const result = await getOpenableLoot({
 		openable: openable!,

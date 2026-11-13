@@ -20,7 +20,7 @@ import { buyingTripCommand } from '@/mahoji/lib/abstracted_commands/buyingTripCo
 import { buyKitten } from '@/mahoji/lib/abstracted_commands/buyKitten.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
-const allBuyablesAutocomplete = [
+const allBuyablesAutocomplete: { name: string; aliases?: string[] }[] = [
 	...Buyables.map(b => ({ name: b.name })),
 	...tripBuyables.map(tb => ({ name: tb.displayName ?? Items.get(tb.item)?.name ?? 'Unknown item' })),
 	{ name: 'Kitten' },

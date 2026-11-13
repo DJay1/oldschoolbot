@@ -83,9 +83,7 @@ function drawOutlinedText(
 		drawX -= Math.floor(ctx.measureText(text).width / 2);
 	}
 	const shadow = opts?.shadow ?? 2;
-	const outlineText = (
-		ctx as OSRSCanvas['ctx'] & { outlineText?: (t: string) => { offset: (x: number, y: number) => Path2D } }
-	).outlineText;
+	const outlineText = (ctx as OSRSCanvas['ctx'] & { outlineText?: OSRSCanvas['ctx']['outlineText'] }).outlineText;
 	ctx.fillStyle = '#000000';
 	if (typeof outlineText === 'function') {
 		ctx.fill(outlineText.call(ctx, text).offset(drawX + shadow, drawY + shadow));

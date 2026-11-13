@@ -76,7 +76,7 @@ export async function deliverTripFinishMessage(userId: string, channelId: string
 
 	try {
 		const built = await message.build();
-		const originalContent = typeof built === 'string' ? built : (built.content ?? '');
+		const originalContent = typeof built === 'string' ? built : 'content' in built ? (built.content ?? '') : '';
 		const notice = tripFinishDmNotice(reason);
 		const dmPayload =
 			typeof built === 'string'

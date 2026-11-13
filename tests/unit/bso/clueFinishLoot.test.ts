@@ -29,7 +29,8 @@ test('Zippy clue lines stay empty when nothing was found or doubled', () => {
 
 test('the clue loot image is one pile of the original loot, Zippy finds, and later extras', () => {
 	const base = new Bank().add(casket, 5);
-	expect(clueFinishLootImage({ loot: base, extras: new Bank(), base })).toBeNull();
+	expect(clueFinishLootImage({ loot: base, extras: new Bank(), base })?.amount(casket)).toEqual(5);
+	expect(clueFinishLootImage({ loot: new Bank(), extras: new Bank(), base })).toBeNull();
 
 	const withZippy = new Bank().add(base).add(easy, 1).add(box, 1);
 	const zippyImage = clueFinishLootImage({ loot: withZippy, extras: new Bank(), base });

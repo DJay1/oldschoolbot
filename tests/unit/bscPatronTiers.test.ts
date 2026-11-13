@@ -187,7 +187,7 @@ test('custom backgrounds unlock at Biggest of Dogs and stay through Pack Leader'
 	expect(dropped.customBackground).toBe(false);
 });
 
-test('gifts and double loot each have a monthly cooldown', () => {
+test('gifts have a monthly cooldown and double loot a weekly one', () => {
 	expect(bscGiftLevelForDonor(6)).toBe(4);
 	expect(bscGiftLevelForDonor(5)).toBe(2);
 	expect(bscGiftLevelForDonor(4)).toBe(0);
@@ -236,8 +236,8 @@ test('gifts and double loot each have a monthly cooldown', () => {
 	expect(bscDoubleLootDurationMs(PerkTier.Six)).toBe(Time.Minute * 40);
 	expect(bscDoubleLootDurationMs(PerkTier.Seven)).toBe(Time.Minute * 90);
 	expect(bscDoubleLootCooldownRemaining(null, now)).toBe(0);
-	expect(bscDoubleLootCooldownRemaining(now - Time.Day, now)).toBe(Time.Day * 30);
-	expect(bscDoubleLootCooldownRemaining(now - Time.Day * 31, now)).toBe(0);
+	expect(bscDoubleLootCooldownRemaining(now - Time.Day, now)).toBe(Time.Day * 6);
+	expect(bscDoubleLootCooldownRemaining(now - Time.Day * 7, now)).toBe(0);
 });
 
 test('Patreon entitled tier ids map by env, and the patron page stays centralized', () => {
