@@ -1,12 +1,8 @@
-import { BSOItem } from '@/lib/bso/BSOItem.js';
 import { RuneTable } from '@/lib/bso/tables/seedTable.js';
 import { ExoticSeedsTable } from '@/lib/bso/tables/sharedTables.js';
 import { LampTable } from '@/lib/bso/xpLamps.js';
 
 import { LootTable, TreeHerbSeedTable } from 'oldschooljs';
-
-import { PATRON_DYES } from '@/lib/bsc/patronDyes.js';
-import { LaunchItem } from '@/lib/events/launch/items.js';
 
 export const MysteryBoxes = new LootTable()
 	.oneIn(55, 'Pet Mystery Box')
@@ -51,16 +47,8 @@ const baseTGBTable = new LootTable()
 	.add('Tchiki monkey nuts')
 	.add('Magic seed', [20, 50]);
 
-const testerDyeTable = new LootTable();
-for (const dye of PATRON_DYES.filter(d => ['biscuit', 'fetch', 'pawberry'].includes(d.key))) {
-	testerDyeTable.add(dye.itemID, 1, Math.round(120 / dye.points));
-}
-
 export const testerGiftTable = new LootTable()
 	.every(baseTGBTable, [3, 7])
-	.tertiary(10, testerDyeTable)
-	.tertiary(50, BSOItem.DOUBLE_LOOT_TOKEN)
-	.tertiary(50, LaunchItem.DOUBLE_XP_TOKEN)
 	.every('Clue scroll (grandmaster)', [1, 3])
 	.every(LampTable, [1, 2])
 	.add('Rocktail', [30, 60])
