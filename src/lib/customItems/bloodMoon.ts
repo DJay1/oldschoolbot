@@ -187,21 +187,24 @@ export const SEEKING_ARROWS: readonly { id: number; name: string; base: string }
 	{ id: 74_438, name: 'Seeking adamant arrow', base: 'Adamant arrow' },
 	{ id: 74_439, name: 'Seeking rune arrow', base: 'Rune arrow' },
 	{ id: 74_440, name: 'Seeking amethyst arrow', base: 'Amethyst arrow' },
-	{ id: 74_441, name: 'Seeking dragon arrow', base: 'Dragon arrow' }
+	{ id: 74_441, name: 'Seeking dragon arrow', base: 'Dragon arrow' },
+	{ id: 74_449, name: 'Seeking hellfire arrow', base: 'Hellfire arrow' }
 ];
 
-for (const arrow of SEEKING_ARROWS) {
-	const base = Items.getOrThrow(arrow.base);
-	setCustomItem(
-		arrow.id,
-		arrow.name,
-		arrow.base,
-		{
-			...tradeable,
-			equipment: { attack_ranged: (base.equipment?.attack_ranged ?? 0) + 20 }
-		},
-		(base.price ?? 1) * 2
-	);
+export function setSeekingArrowItems() {
+	for (const arrow of SEEKING_ARROWS) {
+		const base = Items.getOrThrow(arrow.base);
+		setCustomItem(
+			arrow.id,
+			arrow.name,
+			arrow.base,
+			{
+				...tradeable,
+				equipment: { attack_ranged: (base.equipment?.attack_ranged ?? 0) + 20 }
+			},
+			(base.price ?? 1) * 2
+		);
+	}
 }
 
 export const SeekingFletchItem = {

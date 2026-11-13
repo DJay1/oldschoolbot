@@ -2,7 +2,7 @@ import { resolveItems } from 'oldschooljs';
 
 import { SEEKING_ARROWS } from '@/lib/customItems/bloodMoon.js';
 
-const SEEKING_ARROW_BASES = ['Adamant arrow', 'Rune arrow', 'Amethyst arrow', 'Dragon arrow'];
+const SEEKING_ARROW_BASES = ['Adamant arrow', 'Rune arrow', 'Amethyst arrow', 'Dragon arrow', 'Hellfire arrow'];
 
 export const projectiles = {
 	arrow: {
