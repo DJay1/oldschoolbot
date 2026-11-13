@@ -180,7 +180,8 @@ const constructionBuyables: Buyable[] = [
 	{ name: 'Bolt of cloth', outputItems: new Bank({ 'Bolt of cloth': 1 }), gpCost: 10_000 },
 	{
 		name: 'Limestone brick',
-		gpCost: 2_000
+		gpCost: 2_000,
+		ironmanPrice: 272
 	},
 	{
 		name: 'Gold leaf',
@@ -228,7 +229,8 @@ const constructionBuyables: Buyable[] = [
 	},
 	{
 		name: 'Bucket of water',
-		gpCost: 1_000
+		gpCost: 1_000,
+		ironmanPrice: 80
 	}
 ];
 
@@ -782,12 +784,14 @@ const Buyables: Buyable[] = [
 	{
 		name: 'Rope',
 		aliases: ['rope'],
-		gpCost: 220
+		gpCost: 220,
+		ironmanPrice: 110
 	},
 	{
 		name: 'Fishing Bait',
 		aliases: ['fishing bait'],
-		gpCost: 40
+		gpCost: 40,
+		ironmanPrice: 6
 	},
 	{
 		name: 'Jug of Water',
@@ -797,7 +801,8 @@ const Buyables: Buyable[] = [
 	{
 		name: 'Feather',
 		aliases: ['feather'],
-		gpCost: 100
+		gpCost: 100,
+		ironmanPrice: 4
 	},
 	{
 		name: 'Shield right half',
@@ -814,21 +819,25 @@ const Buyables: Buyable[] = [
 	{
 		name: 'Eye of newt',
 		aliases: ['eye of newt', 'newt eye'],
-		gpCost: 600
+		gpCost: 600,
+		ironmanPrice: 4
 	},
 	{
 		name: 'Vial of water',
 		aliases: ['vial of water'],
-		gpCost: 120
+		gpCost: 120,
+		ironmanPrice: 4
 	},
 	{
 		name: 'Vial',
 		aliases: ['vial'],
-		gpCost: 60
+		gpCost: 60,
+		ironmanPrice: 4
 	},
 	{
 		name: 'Bucket',
-		gpCost: 60
+		gpCost: 60,
+		ironmanPrice: 10
 	},
 	{
 		name: 'Cup of hot water',
@@ -968,6 +977,7 @@ const Buyables: Buyable[] = [
 	{
 		name: 'Mithril seeds',
 		gpCost: 6_000,
+		ironmanPrice: 1000,
 		outputItems: new Bank({
 			'Mithril seeds': 1
 		})
