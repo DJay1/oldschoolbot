@@ -195,6 +195,46 @@ const specialPlants: Plant[] = [
 		timePerPatchTravel: 20,
 		timePerHarvest: 10
 	},
+	...(
+		[
+			['Elkhorn', 28, 20.5, 24, new Bank({ 'Giant seaweed': 5 })],
+			['Pillar', 52, 52.5, 60, new Bank({ 'Elkhorn coral': 5 })],
+			['Umbral', 77, 136, 159, new Bank({ 'Pillar coral': 5 })]
+		] as const
+	).map(
+		([coral, level, plantXp, harvestXp, protectionPayment]): Plant => ({
+			id: itemID(`${coral} coral`),
+			level,
+			plantXp,
+			checkXp: 0,
+			harvestXp,
+			inputItems: new Bank({ [`${coral} frag`]: 1 }).freeze(),
+			outputCrop: itemID(`${coral} coral`),
+			name: `${coral} coral`,
+			aliases: [`${coral.toLowerCase()} coral`, `${coral.toLowerCase()}`, `${coral.toLowerCase()} frag`],
+			petChance: 7500,
+			seedType: 'seaweed',
+			growthTime: 160,
+			numOfStages: 4,
+			chance1: 149,
+			chance99: 208,
+			chanceOfDeath: 20,
+			protectionPayment: protectionPayment.freeze(),
+			needsChopForHarvest: false,
+			fixedOutput: false,
+			givesLogs: false,
+			givesCrops: true,
+			defaultNumOfPatches: 0,
+			canPayFarmer: true,
+			canCompostPatch: true,
+			canCompostandPay: true,
+			additionalPatchesByQP: [[3, 2]],
+			additionalPatchesByFarmLvl: [],
+			additionalPatchesByFarmGuildAndLvl: [],
+			timePerPatchTravel: 20,
+			timePerHarvest: 10
+		})
+	),
 	{
 		id: itemID('Nasturtiums'),
 		level: 24,

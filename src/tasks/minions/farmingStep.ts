@@ -727,7 +727,7 @@ async function applySpecialFarmingLoot(options: {
 		loot.add(MysteryBoxes.roll());
 	}
 
-	if (plantToHarvest.seedType === 'seaweed' && rng.roll(3)) {
+	if (plantToHarvest.name === 'Seaweed' && rng.roll(3)) {
 		loot.add('Seaweed spore', rng.randInt(1, 3));
 	}
 
