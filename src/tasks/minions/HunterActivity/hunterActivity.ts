@@ -14,6 +14,11 @@ import { hasWildyHuntGearEquipped } from '@/lib/gear/functions/hasWildyHuntGearE
 import type { UserFullGearSetup } from '@/lib/gear/types.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { calcLootXPHunting, generateHerbiTable } from '@/lib/skilling/functions/calcsHunter.js';
+import {
+	getHornOfPlentyCharges,
+	HORN_OF_PLENTY_CATCHES_PER_CHARGE,
+	spendHornOfPlentyCharges
+} from '@/lib/skilling/skills/hunter/hornOfPlenty.js';
 import Hunter from '@/lib/skilling/skills/hunter/hunter.js';
 import type { Creature } from '@/lib/skilling/types.js';
 import type { Gear } from '@/lib/structures/Gear.js';
@@ -60,7 +65,8 @@ export function calculateHunterResult({
 	invincible = false,
 	noRandomness = false,
 	graceful,
-	experienceScore
+	experienceScore,
+	hornCharges = 0
 }: {
 	creature: Creature;
 	bank: Bank;
@@ -85,6 +91,7 @@ export function calculateHunterResult({
 	noRandomness?: boolean;
 	graceful: boolean;
 	experienceScore: number;
+	hornCharges?: number;
 }) {
 	const messages: string[] = [];
 	let gotPked = false;
@@ -96,8 +103,7 @@ export function calculateHunterResult({
 	const crystalImpling = creature.name === 'Crystal impling';
 
 	const hasHorn = (creature.wildy ? allGear.wildy : allGear.skilling).hasEquipped(Slayer2026Item.HORN_OF_PLENTY);
-	const hornFeathers = hasHorn ? bank.amount('Gryphon feather') : 0;
-	const hornBoost = hasHorn ? (hornFeathers > 0 ? 4 : 2) : 0;
+	const hornBoost = hasHorn ? (hornCharges > 0 ? 4 : 2) : 0;
 
 	let [successfulQuantity, xpReceived] = calcLootXPHunting({
 		currentLevel: Math.min(Math.floor(skillsAsLevels.hunter + (usingHuntPotion ? 2 : 0) + hornBoost), MAX_LEVEL),
@@ -224,29 +230,30 @@ export function calculateHunterResult({
 		);
 	}
 
-	if (hasHorn && hornFeathers > 0 && !portentResult.didCharge) {
-		let feathersLeft = hornFeathers - Math.min(hornFeathers, Math.ceil(realQuantity / 25));
+	let hornChargesUsed = 0;
+	if (hasHorn && hornCharges > 0 && !portentResult.didCharge) {
+		let chargesLeft =
+			hornCharges - Math.min(hornCharges, Math.ceil(realQuantity / HORN_OF_PLENTY_CATCHES_PER_CHARGE));
 		let doubledCatches = 0;
 		if (!creature.name.toLowerCase().includes('impling') && creature.id !== ECreature.HERBIBOAR) {
-			for (let i = 0; i < realQuantity && feathersLeft > 0; i++) {
+			for (let i = 0; i < realQuantity && chargesLeft > 0; i++) {
 				if (!rng.roll(10)) continue;
 				for (const [item, qty] of creatureTable.roll().items()) {
 					if (!/bones|^raw |fur$/i.test(item.name)) loot.add(item.id, qty);
 				}
-				feathersLeft--;
+				chargesLeft--;
 				doubledCatches++;
 			}
 		}
-		const feathersUsed = hornFeathers - feathersLeft;
-		if (feathersUsed > 0) totalCost.add('Gryphon feather', feathersUsed);
+		hornChargesUsed = hornCharges - chargesLeft;
 		messages.push(
 			`Your Horn of plenty gave +4 Hunter${
 				doubledCatches > 0 ? ` and doubled ${doubledCatches}x catches` : ''
-			}, using ${feathersUsed}x Gryphon feather.`
+			}, using ${hornChargesUsed} charges (${chargesLeft.toLocaleString()} left).`
 		);
 	} else if (hasHorn) {
 		messages.push(
-			'Your Horn of plenty gave +2 Hunter. Keep Gryphon feathers in your bank for +4 and doubled catches.'
+			'Your Horn of plenty gave +2 Hunter. Charge it with Gryphon feathers using /minion charge for +4 and doubled catches.'
 		);
 	}
 
@@ -302,7 +309,8 @@ export function calculateHunterResult({
 		messages,
 		totalHerbloreXP,
 		totalHunterXP,
-		totalCost
+		totalCost,
+		hornChargesUsed
 	};
 }
 
@@ -346,36 +354,47 @@ export const hunterTask: MinionTask = {
 			charges: minutes
 		});
 
-		const { successfulQuantity, loot, newWildyGear, messages, totalHerbloreXP, totalHunterXP, totalCost } =
-			calculateHunterResult({
-				creature,
-				allItemsOwned: user.allItemsOwned,
-				skillsAsLevels: user.skillsAsLevels,
-				skillsAsXP: user.skillsAsXP,
-				usingHuntPotion,
-				usingStaminaPotion,
-				bank: user.bank,
-				quantity,
-				duration,
-				creatureScores: (await user.fetchStats()).creature_scores as ItemBank,
-				allGear: user.gear,
-				collectionLog: user.cl,
-				hasHunterMasterCape: user.hasEquippedOrInBank('Hunter master cape'),
-				equippedPet: user.user.minion_equippedPet,
-				wildyPeakTier: wildyPeak?.peakTier,
-				isUsingArcaneHarvester: boostRes?.success ?? false,
-				arcaneHarvesterMessages: boostRes?.success ? boostRes.messages : undefined,
-				portentResult,
-				rng,
-				graceful,
-				experienceScore
-			});
+		const hornCharges = await getHornOfPlentyCharges(user.id);
+		const {
+			successfulQuantity,
+			loot,
+			newWildyGear,
+			messages,
+			totalHerbloreXP,
+			totalHunterXP,
+			totalCost,
+			hornChargesUsed
+		} = calculateHunterResult({
+			creature,
+			allItemsOwned: user.allItemsOwned,
+			skillsAsLevels: user.skillsAsLevels,
+			skillsAsXP: user.skillsAsXP,
+			usingHuntPotion,
+			usingStaminaPotion,
+			bank: user.bank,
+			quantity,
+			duration,
+			creatureScores: (await user.fetchStats()).creature_scores as ItemBank,
+			allGear: user.gear,
+			collectionLog: user.cl,
+			hasHunterMasterCape: user.hasEquippedOrInBank('Hunter master cape'),
+			equippedPet: user.user.minion_equippedPet,
+			wildyPeakTier: wildyPeak?.peakTier,
+			isUsingArcaneHarvester: boostRes?.success ?? false,
+			arcaneHarvesterMessages: boostRes?.success ? boostRes.messages : undefined,
+			portentResult,
+			rng,
+			graceful,
+			experienceScore,
+			hornCharges
+		});
 
 		await user.transactItems({
 			collectionLog: true,
 			itemsToAdd: loot,
 			itemsToRemove: totalCost
 		});
+		if (hornChargesUsed > 0) await spendHornOfPlentyCharges(user.id, hornChargesUsed);
 
 		await ClientSettings.updateBankSetting('hunter_loot', loot);
 		await trackLoot({

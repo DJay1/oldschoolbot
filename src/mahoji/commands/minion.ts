@@ -103,8 +103,9 @@ export async function getUserInfo(user: MUser) {
 **Ironman:** ${result.isIronman}
 **Bitfields:** ${result.bitfields}
 **Github Connected:** ${result.github}
-**Leagues:** ${roboChimpUser.leagues_completed_tasks_ids.length} tasks, ${roboChimpUser.leagues_points_total
-			} points (Rank ${leaguesRanking > 500 ? 'Unranked! Get more points!' : formatOrdinal(leaguesRanking)})
+**Leagues:** ${roboChimpUser.leagues_completed_tasks_ids.length} tasks, ${
+			roboChimpUser.leagues_points_total
+		} points (Rank ${leaguesRanking > 500 ? 'Unranked! Get more points!' : formatOrdinal(leaguesRanking)})
 **Global CL:** ${globalCLPercent}% (${clRank > 500 ? 'Unranked! Get more CL slots completed!' : formatOrdinal(clRank)})
 `
 	};
@@ -359,7 +360,10 @@ export const minionCommand = defineCommand({
 					name: 'item',
 					description: 'The item you want to charge',
 					required: false,
-					choices: degradeableItems.map(i => ({ name: i.item.name, value: i.item.name }))
+					choices: [
+						...degradeableItems.map(i => ({ name: i.item.name, value: i.item.name })),
+						{ name: 'Horn of plenty', value: 'Horn of plenty' }
+					]
 				},
 				{
 					type: 'Integer',

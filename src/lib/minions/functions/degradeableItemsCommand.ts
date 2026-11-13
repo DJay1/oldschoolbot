@@ -2,6 +2,7 @@ import { stringMatches } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import { degradeableItems } from '@/lib/degradeableItems.js';
+import { chargeHornOfPlentyCommand, getHornOfPlentyCharges } from '@/lib/skilling/skills/hunter/hornOfPlenty.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
 export async function degradeableItemsCommand(
@@ -13,14 +14,20 @@ export async function degradeableItemsCommand(
 	const item = degradeableItems.find(i => [i.item.name, ...i.aliases].some(n => stringMatches(n, input ?? '')));
 	const number = mahojiParseNumber({ input: quantity, min: 1, max: 1_000_000 });
 
+	if (input && ['horn of plenty', 'horn'].some(n => stringMatches(n, input))) {
+		return chargeHornOfPlentyCommand(interaction, user, number ?? undefined);
+	}
+
 	if (!input || !number || !item || number < 1 || number > 100_000) {
-		return `Use \`/minion charge item: [${degradeableItems.map(i => i.item.name).join('|')}] amount:[1-100,000]\`
+		const hornCharges = await getHornOfPlentyCharges(user.id);
+		return `Use \`/minion charge item: [${[...degradeableItems.map(i => i.item.name), 'Horn of plenty'].join('|')}] amount:[1-100,000]\`
 ${degradeableItems
 	.map(i => {
 		const charges = user.user[i.settingsKey];
 		return `${i.item.name}: ${charges.toLocaleString()} charges`;
 	})
-	.join('\n')}`;
+	.join('\n')}
+Horn of plenty: ${hornCharges.toLocaleString()} charges`;
 	}
 
 	const cost = item.chargeInput.cost.clone().multiply(number);
