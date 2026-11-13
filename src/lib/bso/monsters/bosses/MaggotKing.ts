@@ -3,7 +3,7 @@ import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
 
 import { GearStat } from '@oldschoolgg/gear';
 import { Time } from '@oldschoolgg/toolkit';
-import { Bank, LootTable, Monsters } from 'oldschooljs';
+import { Bank, itemID, LootTable, Monsters } from 'oldschooljs';
 
 import { MaggotKingItem } from '@/lib/customItems/bloodMoon.js';
 import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
@@ -65,7 +65,17 @@ export const MaggotKing: CustomMonster = {
 	attackStylesUsed: [GearStat.AttackRanged, GearStat.AttackMagic, GearStat.AttackCrush],
 	itemInBankBoosts: [
 		{
-			[MaggotKingItem.CRIMSON_KISTEN]: 10
+			[itemID("Tumeken's shadow")]: 12,
+			[itemID('Twisted bow')]: 10,
+			[itemID('Zaryte bow')]: 10
+		},
+		{
+			[MaggotKingItem.CRIMSON_KISTEN]: 10,
+			[itemID('Drygore mace')]: 8,
+			[itemID("Inquisitor's mace")]: 5
+		},
+		{
+			[MaggotKingItem.NECKLACE_OF_RUPTURE]: 3
 		}
 	],
 	notifyDrops: [MaggotKingItem.ELDER_VENATOR_FANG, MaggotKingItem.CRIMSON_KISTEN, MaggotKingItem.MAGGOT_MARQUESS],

@@ -10,6 +10,14 @@ import { BloodMoonItem } from '@/lib/customItems/bloodMoon.js';
 import { ShellbaneItem, Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 
+function crushBoosts() {
+	return {
+		[itemID('Drygore mace')]: 12,
+		[itemID("Inquisitor's mace")]: 8,
+		[itemID('Elder maul')]: 6
+	};
+}
+
 function superiorTable(base: LootTable) {
 	return new LootTable()
 		.every(base, 3)
@@ -167,6 +175,7 @@ export const Gryphon: CustomMonster = {
 	attackStyleToUse: GearStat.AttackSlash,
 	attackStylesUsed: [GearStat.AttackCrush],
 	superior: DireGryphon,
+	itemInBankBoosts: [crushBoosts()],
 	canCannon: true,
 	cannonMulti: false,
 	canBarrage: false,
@@ -190,6 +199,13 @@ export const Aquanite: CustomMonster = {
 	attackStyleToUse: GearStat.AttackRanged,
 	attackStylesUsed: [GearStat.AttackMagic],
 	superior: ElderAquanite,
+	itemInBankBoosts: [
+		{
+			[itemID('Drygore rapier')]: 12,
+			[itemID("Osmumten's fang")]: 8,
+			[itemID('Ghrazi rapier')]: 6
+		}
+	],
 	canCannon: false,
 	canBarrage: false,
 	respawnTime: Time.Second * 5
@@ -291,6 +307,7 @@ export const ShellbaneGryphon: CustomMonster = {
 	attackStyleToUse: GearStat.AttackSlash,
 	attackStylesUsed: [GearStat.AttackSlash, GearStat.AttackRanged],
 	notifyDrops: [ShellbaneItem.JAR_OF_FEATHERS, ShellbaneItem.GULL],
+	itemInBankBoosts: [crushBoosts()],
 	canCannon: false,
 	canBarrage: false,
 	respawnTime: Time.Second * 12

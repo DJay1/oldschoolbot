@@ -6,7 +6,8 @@ import { LampTable } from '@/lib/bso/xpLamps.js';
 import { Bank, ItemGroups } from 'oldschooljs';
 
 import type { Minigame } from '@/prisma/main.js';
-import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
+import { MaggotKingItem } from '@/lib/customItems/bloodMoon.js';
+import { ShellbaneItem, Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import {
 	gracefulCapes,
 	gracefulFeet,
@@ -1573,7 +1574,9 @@ export const allPetsCL = resolveItems([
 	'Nid',
 	'Huberte',
 	'Moxi',
-	'Bran'
+	'Bran',
+	ShellbaneItem.GULL,
+	MaggotKingItem.MAGGOT_MARQUESS
 	// 'Yami', // Currently unobtainable.
 	// 'Dom' // Currently unobtainable.
 ]);
