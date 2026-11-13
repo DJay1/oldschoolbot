@@ -8,6 +8,7 @@ import { sinsOfTheFatherSkillRequirements } from '@/lib/skilling/functions/quest
 import Mining from '@/lib/skilling/skills/mining.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import type { MiningActivityTaskOptions } from '@/lib/types/minions.js';
+import { getPatronTripBonusMs } from '@/lib/util/calcMaxTripLength.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { motherlodeMineCommand } from '@/mahoji/lib/abstracted_commands/motherlodeMineCommand.js';
@@ -26,6 +27,7 @@ export function calculateMiningInput({
 	hasKaramjaMedium,
 	randomVariationEnabled = true,
 	hasDT2Quest,
+	patronBonusMs = 0,
 	rng
 }: {
 	nameInput: string;
@@ -41,6 +43,7 @@ export function calculateMiningInput({
 	maxTripLength: number;
 	hasKaramjaMedium: boolean;
 	randomVariationEnabled?: boolean;
+	patronBonusMs?: number;
 	rng: RNGProvider;
 }) {
 	const ore = Mining.Ores.find(
@@ -182,6 +185,7 @@ export function calculateMiningInput({
 		goldSilverBoost,
 		miningLvl: effectiveMiningLevel,
 		hasKaramjaMedium,
+		patronBonusMs,
 		rng
 	});
 
@@ -278,6 +282,7 @@ export const mineCommand = defineCommand({
 			maxTripLength: await user.calcMaxTripLength('Mining'),
 			hasKaramjaMedium,
 			hasDT2Quest: user.user.finished_quest_ids.includes(QuestID.DesertTreasureII),
+			patronBonusMs: await getPatronTripBonusMs(user),
 			rng
 		});
 

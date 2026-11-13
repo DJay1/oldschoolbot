@@ -22,6 +22,7 @@ import {
 } from '@/lib/bsc/tripQueueState.js';
 import { globalConfig, PerkTier } from '@/lib/constants.js';
 import { fetchRepeatTrips, startRepeatTripFromActivity } from '@/lib/util/repeatStoredTrip.js';
+import { QUEUED_TRIP_SHORTENED_MESSAGE } from '@/lib/util/tripLength.js';
 
 interface TripQueueRow {
 	user_id: string;
@@ -611,10 +612,11 @@ export async function tryStartQueuedTrip(user: MUser, channelId: string): Promis
 		await saveState(state);
 
 		const pretty = prettyTrip(activity.type, activity.data);
+		const shortened = result.trimmed ? ` ${QUEUED_TRIP_SHORTENED_MESSAGE}` : '';
 		if (remaining <= 0) {
-			return `Started your last queued ${pretty} trip.`;
+			return `Started your last queued ${pretty} trip.${shortened}`;
 		}
-		return `Started your next queued ${pretty} trip. ${remaining} left in the queue.`;
+		return `Started your next queued ${pretty} trip. ${remaining} left in the queue.${shortened}`;
 	} catch (err) {
 		let refunded = 0;
 		try {

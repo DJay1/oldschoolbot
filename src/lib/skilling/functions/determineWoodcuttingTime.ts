@@ -4,6 +4,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { EItem } from 'oldschooljs/EItem';
 
 import type { Log } from '@/lib/skilling/types.js';
+import { applyTripLengthMultiplier } from '@/lib/util/tripLength.js';
 
 interface WoodcuttingTimeOptions {
 	quantity: number | undefined;
@@ -14,6 +15,7 @@ interface WoodcuttingTimeOptions {
 	forestry: boolean;
 	woodcuttingLvl: number;
 	maxTripLength: number;
+	patronBonusMs?: number;
 	rng: RNGProvider;
 }
 
@@ -26,6 +28,7 @@ export function determineWoodcuttingTime({
 	forestry,
 	woodcuttingLvl,
 	maxTripLength,
+	patronBonusMs = 0,
 	rng
 }: WoodcuttingTimeOptions): [number, number] {
 	let timeElapsed = 0;
@@ -53,7 +56,8 @@ export function determineWoodcuttingTime({
 	let userMaxTripTicks = maxTripLength / (Time.Second * 0.6);
 
 	if (log.name === 'Redwood Logs') {
-		userMaxTripTicks *= 2;
+		const tickMs = Time.Second * 0.6;
+		userMaxTripTicks = applyTripLengthMultiplier(userMaxTripTicks, 2, patronBonusMs / tickMs);
 	}
 
 	if (log.name === 'Ivy') userMaxTripTicks += IVY_MAX_TRIP_LENGTH_BOOST / (Time.Second * 0.6);

@@ -7,6 +7,7 @@ import { Items, itemID, resolveItems } from 'oldschooljs';
 import { determineWoodcuttingTime } from '@/lib/skilling/functions/determineWoodcuttingTime.js';
 import Woodcutting from '@/lib/skilling/skills/woodcutting/woodcutting.js';
 import type { WoodcuttingActivityTaskOptions } from '@/lib/types/minions.js';
+import { getPatronTripBonusMs } from '@/lib/util/calcMaxTripLength.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 
 const axes = [
@@ -190,6 +191,7 @@ export const chopCommand = defineCommand({
 		let axeMultiplier = 1;
 		boosts.push(`**${axeMultiplier}x** success multiplier for Bronze axe`);
 		const maxTripLength = await user.calcMaxTripLength('Woodcutting');
+		const patronBonusMs = await getPatronTripBonusMs(user);
 
 		if (user.hasEquippedOrInBank(['Drygore axe'])) {
 			const [predeterminedTotalTime] = determineWoodcuttingTime({
@@ -201,6 +203,7 @@ export const chopCommand = defineCommand({
 				forestry: forestry_events,
 				woodcuttingLvl: wcLvl,
 				maxTripLength,
+				patronBonusMs,
 				rng
 			});
 			const boostRes = await inventionItemBoost({
@@ -269,6 +272,7 @@ export const chopCommand = defineCommand({
 			forestry: forestry_events,
 			woodcuttingLvl: wcLvl,
 			maxTripLength,
+			patronBonusMs,
 			rng
 		});
 

@@ -5,16 +5,32 @@ import { bscPatronTripBonusMs, bscTripBonusForPerkTier } from '@/lib/bsc/patronT
 import { BitField, PerkTier } from '@/lib/constants.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { getCyrTripBonus, RobochimpBitfieldEnum } from '@/lib/perkTiers.js';
+import { applyQueuedTripDurationCap, applyTripLengthMultiplier } from '@/lib/util/tripLength.js';
 
 export function patronMaxTripBonus(perkTier: PerkTier | 0) {
 	return bscTripBonusForPerkTier(perkTier);
 }
 
+export function patronTripBonusFromSources(
+	perkTier: PerkTier | 0,
+	bitfield: readonly number[],
+	roboBits: number[]
+): number {
+	return Math.max(bscPatronTripBonusMs(bitfield), patronMaxTripBonus(perkTier), getCyrTripBonus(roboBits));
+}
+
+export async function getPatronTripBonusMs(user: MUser): Promise<number> {
+	const perkTier = await user.fetchPerkTier({ forceNoCache: true });
+	const roboBits = (await Cache.getRoboChimpUser(user.id)).bits;
+	return patronTripBonusFromSources(perkTier, user.bitfield, roboBits);
+}
+
 export async function calcMaxTripLength(user: MUser, activity?: activity_type_enum) {
 	const perkTier = await user.fetchPerkTier({ forceNoCache: true });
 	const roboBits = (await Cache.getRoboChimpUser(user.id)).bits;
+	const patronBonusMs = patronTripBonusFromSources(perkTier, user.bitfield, roboBits);
 	let max = Time.Minute * 30;
-	max += Math.max(bscPatronTripBonusMs(user.bitfield), patronMaxTripBonus(perkTier), getCyrTripBonus(roboBits));
+	max += patronBonusMs;
 
 	if (roboBits.includes(RobochimpBitfieldEnum.BonusMinute)) {
 		max += Time.Minute * 3;
@@ -58,7 +74,7 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 			break;
 		}
 		case 'Alching': {
-			max *= 2;
+			max = applyTripLengthMultiplier(max, 2, patronBonusMs);
 			break;
 		}
 		case 'TinkeringWorkshop':
@@ -70,7 +86,7 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 			break;
 		}
 		case 'NightmareZone': {
-			max *= 3;
+			max = applyTripLengthMultiplier(max, 3, patronBonusMs);
 			break;
 		}
 		case 'Fishing': {
@@ -126,5 +142,5 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 		max += Time.Minute;
 	}
 
-	return max;
+	return applyQueuedTripDurationCap(max);
 }

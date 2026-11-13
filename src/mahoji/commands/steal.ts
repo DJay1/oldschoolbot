@@ -6,7 +6,9 @@ import removeFoodFromUser from '@/lib/minions/functions/removeFoodFromUser.js';
 import { Thieving } from '@/lib/skilling/skills/thieving/index.js';
 import { type Stealable, stealables } from '@/lib/skilling/skills/thieving/stealables.js';
 import type { PickpocketActivityTaskOptions } from '@/lib/types/minions.js';
+import { getPatronTripBonusMs } from '@/lib/util/calcMaxTripLength.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { applyTripLengthMultiplier } from '@/lib/util/tripLength.js';
 import { calcLootXPPickpocketing } from '@/tasks/minions/pickpocketActivity.js';
 
 export const stealCommand = defineCommand({
@@ -110,8 +112,10 @@ export const stealCommand = defineCommand({
 			boosts.push('50% boost for Wilvus');
 		}
 
-		const maxTripLength =
-			(stealable.name === 'Wealthy Citizen' ? 2 : 1) * (await user.calcMaxTripLength('Pickpocket'));
+		let maxTripLength = await user.calcMaxTripLength('Pickpocket');
+		if (stealable.name === 'Wealthy Citizen') {
+			maxTripLength = applyTripLengthMultiplier(maxTripLength, 2, await getPatronTripBonusMs(user));
+		}
 
 		let { quantity } = options;
 		if (!quantity) quantity = Math.floor(maxTripLength / timeToTheft);
