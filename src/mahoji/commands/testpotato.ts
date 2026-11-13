@@ -1,4 +1,7 @@
 import { elderRequiredClueCLItems, elderSherlockItems } from '@/lib/bso/elderClueRequirements.js';
+import { materialTypes } from '@/lib/bso/skills/invention/index.js';
+import { Inventions, transactMaterialsFromUser } from '@/lib/bso/skills/invention/inventions.js';
+import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 
 import { EmbedBuilder, userMention } from '@oldschoolgg/discord';
 import { noOp, stringMatches, Time, uniqueArr } from '@oldschoolgg/toolkit';
@@ -288,6 +291,19 @@ const elderRequiredBitfields = [
 	BitField.HasArcaneScroll
 ];
 
+async function giveAllInventions(user: MUser) {
+	const items = new Bank();
+	for (const invention of Inventions) items.add(invention.item.id);
+	const materials = new MaterialBank();
+	for (const type of materialTypes) materials.add(type, 10_000);
+	await user.update({
+		unlocked_blueprints: uniqueArr([...user.user.unlocked_blueprints, ...Inventions.map(i => i.id)])
+	});
+	await transactMaterialsFromUser({ user, add: materials });
+	await user.addItemsToBank({ items, collectionLog: false });
+	return `You received all ${Inventions.length} inventions with their blueprints, and 10,000 of every material.`;
+}
+
 async function giveElderClueRequirements(user: MUser) {
 	await user.addItemsToBank({ items: faloTheBardPreset });
 	await user.addItemsToCollectionLog({ itemsToAdd: elderClueCLPreset });
@@ -533,6 +549,11 @@ export const testPotatoCommand = defineCommand({
 			type: 'Subcommand',
 			name: 'elder',
 			description: 'Spawn the Elder clue requirements.'
+		},
+		{
+			type: 'Subcommand',
+			name: 'inventions',
+			description: 'Get every invention, its blueprint and 10k of every material.'
 		},
 		{
 			type: 'Subcommand',
@@ -1021,6 +1042,9 @@ export const testPotatoCommand = defineCommand({
 		}
 		if (options.elder) {
 			return giveElderClueRequirements(user);
+		}
+		if (options.inventions) {
+			return giveAllInventions(user);
 		}
 		if (options.gear) {
 			const gear = gearPresets.find(i => stringMatches(i.name, options.gear?.thing))!;
