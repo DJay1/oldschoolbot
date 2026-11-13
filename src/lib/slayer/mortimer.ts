@@ -236,6 +236,12 @@ export async function pickMortimerOffer(
 	const { currentTask } = await user.fetchSlayerInfo();
 	if (currentTask) return 'You already have a slayer task.';
 
+	const claimed = await prisma.$executeRaw`
+		UPDATE bsc_mortimer SET offers = NULL
+		WHERE user_id = ${user.id} AND offers = ${JSON.stringify(offers)}::jsonb
+	`;
+	if (Number(claimed) !== 1) return 'That choice is no longer available.';
+
 	const task = await prisma.slayerTask.create({
 		data: {
 			user_id: user.id,
@@ -251,7 +257,6 @@ export async function pickMortimerOffer(
 		VALUES (${task.id}, ${offer.modifier.kind}, ${offer.modifier.value})
 		ON CONFLICT (task_id) DO NOTHING
 	`;
-	await saveOffers(user.id, null);
 	await user.update({ slayer_last_task: offer.monsterId });
 	return {
 		content: `Mortimer has assigned you to kill ${offer.quantity}x ${taskName(offer.monsterId)} (${formatModifier(offer.modifier)}).`,

@@ -24,7 +24,6 @@ import {
 	userCanUseMaster
 } from '@/lib/slayer/slayerUtil.js';
 import type { AssignableSlayerTask, SlayerMaster } from '@/lib/slayer/types.js';
-import type { SafeUserUpdateInput } from '@/lib/user/update.js';
 
 function getAlternateMonsterList(assignedTask: AssignableSlayerTask | null) {
 	if (assignedTask) {
@@ -327,26 +326,30 @@ export async function slayerSkipTaskCommand({
 	if (slayerPoints < cost) {
 		return `You need ${cost} points to ${block ? 'block' : 'cancel'}, you only have: ${slayerPoints.toLocaleString()}.`;
 	}
-	const updateData: SafeUserUpdateInput = {
-		slayer_points: {
-			decrement: cost
-		}
-	};
 	try {
-		await user.update(updateData);
+		const spent = await prisma.$queryRaw<{ points: number }[]>`
+			UPDATE users SET "slayer.points" = "slayer.points" - ${cost}
+			WHERE id = ${user.id} AND "slayer.points" >= ${cost}
+			RETURNING "slayer.points" AS points
+		`;
+		if (spent.length === 0) {
+			await user.sync();
+			return `You need ${cost} points to ${block ? 'block' : 'cancel'}, you only have: ${user.user.slayer_points.toLocaleString()}.`;
+		}
+		const claimed = await prisma.slayerTask.updateMany({
+			where: { id: currentTask.id, skipped: false, quantity_remaining: { gt: 0 } },
+			data: { skipped: true, quantity_remaining: 0 }
+		});
+		if (claimed.count === 0) {
+			await prisma.$executeRaw`UPDATE users SET "slayer.points" = "slayer.points" + ${cost} WHERE id = ${user.id}`;
+			await user.sync();
+			return 'Your task has already changed.';
+		}
 		if (block && taskMaster) {
 			await addSlayerBlock(user.id, taskMaster.id, currentTask.monster_id);
 		}
-		await prisma.slayerTask.update({
-			where: {
-				id: currentTask.id
-			},
-			data: {
-				skipped: true,
-				quantity_remaining: 0
-			}
-		});
-		const resultMessage = `Your task has been ${block && taskMaster ? `blocked for ${taskMaster.name}` : 'skipped'}. You now have ${user.user.slayer_points.toLocaleString()} slayer points.`;
+		await user.sync();
+		const resultMessage = `Your task has been ${block && taskMaster ? `blocked for ${taskMaster.name}` : 'skipped'}. You now have ${spent[0].points.toLocaleString()} slayer points.`;
 
 		if (newTask) {
 			return slayerNewTaskCommand({

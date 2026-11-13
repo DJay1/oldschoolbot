@@ -36,6 +36,17 @@ async function changeHornOfPlentyCharges(userId: string, delta: number): Promise
 	return rows[0].charges;
 }
 
+async function addHornOfPlentyCharges(userId: string, amount: number): Promise<number | null> {
+	await ensureStore();
+	const rows = await prisma.$queryRaw<{ charges: number }[]>`
+		INSERT INTO bsc_horn_of_plenty (user_id, charges) VALUES (${userId}, ${amount})
+		ON CONFLICT (user_id) DO UPDATE SET charges = bsc_horn_of_plenty.charges + ${amount}
+		WHERE bsc_horn_of_plenty.charges + ${amount} <= ${HORN_OF_PLENTY_MAX_CHARGES}
+		RETURNING charges
+	`;
+	return rows[0]?.charges ?? null;
+}
+
 export function spendHornOfPlentyCharges(userId: string, amount: number) {
 	if (amount <= 0) return getHornOfPlentyCharges(userId);
 	return changeHornOfPlentyCharges(userId, -amount);
@@ -65,7 +76,15 @@ export async function chargeHornOfPlentyCommand(
 			Items.getOrThrow(Slayer2026Item.HORN_OF_PLENTY).name
 		}?`
 	);
-	await user.transactItems({ itemsToRemove: cost });
-	const newCharges = await changeHornOfPlentyCharges(user.id, toAdd);
+	const newCharges = await addHornOfPlentyCharges(user.id, toAdd);
+	if (newCharges === null) {
+		return `That would take your Horn of plenty over ${HORN_OF_PLENTY_MAX_CHARGES.toLocaleString()} charges.`;
+	}
+	try {
+		await user.transactItems({ itemsToRemove: cost });
+	} catch (err) {
+		await changeHornOfPlentyCharges(user.id, -toAdd);
+		throw err;
+	}
 	return `You added **${cost}** to your Horn of plenty, it now has ${newCharges.toLocaleString()} charges.`;
 }
