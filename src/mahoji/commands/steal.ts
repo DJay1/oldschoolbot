@@ -8,7 +8,7 @@ import { type Stealable, stealables } from '@/lib/skilling/skills/thieving/steal
 import type { PickpocketActivityTaskOptions } from '@/lib/types/minions.js';
 import { getPatronTripBonusMs } from '@/lib/util/calcMaxTripLength.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
-import { applyTripLengthMultiplier } from '@/lib/util/tripLength.js';
+import { applyTripLengthMultiplier, finalizeTripLength } from '@/lib/util/tripLength.js';
 import { calcLootXPPickpocketing } from '@/tasks/minions/pickpocketActivity.js';
 
 export const stealCommand = defineCommand({
@@ -116,6 +116,7 @@ export const stealCommand = defineCommand({
 		if (stealable.name === 'Wealthy Citizen') {
 			maxTripLength = applyTripLengthMultiplier(maxTripLength, 2, await getPatronTripBonusMs(user));
 		}
+		maxTripLength = finalizeTripLength(maxTripLength);
 
 		let { quantity } = options;
 		if (!quantity) quantity = Math.floor(maxTripLength / timeToTheft);

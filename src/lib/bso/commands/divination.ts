@@ -14,6 +14,7 @@ import { formatDuration, increaseNumByPercent, removeFromArr, Time } from '@olds
 import { Bank } from 'oldschooljs';
 
 import { assert } from '@/lib/util/logError.js';
+import { finalizeTripLength } from '@/lib/util/tripLength.js';
 import { safePositiveProduct, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 export const divinationCommand = defineCommand({
@@ -250,6 +251,7 @@ You have ${portentCharges[portent.id]} charges left, and you receive ${
 				maxTripLength += Time.Minute * 7;
 				boosts.push('7mins extra trip length for Jar of memories');
 			}
+			maxTripLength = finalizeTripLength(maxTripLength);
 
 			let hasWispBuster = false;
 			let hasDivineHand = false;

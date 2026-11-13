@@ -5,7 +5,7 @@ import { bscPatronTripBonusMs, bscTripBonusForPerkTier } from '@/lib/bsc/patronT
 import { BitField, PerkTier } from '@/lib/constants.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { getCyrTripBonus, RobochimpBitfieldEnum } from '@/lib/perkTiers.js';
-import { applyQueuedTripDurationCap, applyTripLengthMultiplier } from '@/lib/util/tripLength.js';
+import { applyTripLengthMultiplier, finalizeTripLength } from '@/lib/util/tripLength.js';
 
 export function patronMaxTripBonus(perkTier: PerkTier | 0) {
 	return bscTripBonusForPerkTier(perkTier);
@@ -142,5 +142,5 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 		max += Time.Minute;
 	}
 
-	return applyQueuedTripDurationCap(max);
+	return finalizeTripLength(max);
 }

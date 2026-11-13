@@ -4,7 +4,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { EItem } from 'oldschooljs/EItem';
 
 import type { Log } from '@/lib/skilling/types.js';
-import { applyTripLengthMultiplier } from '@/lib/util/tripLength.js';
+import { applyTripLengthMultiplier, finalizeTripLengthTicks } from '@/lib/util/tripLength.js';
 
 interface WoodcuttingTimeOptions {
 	quantity: number | undefined;
@@ -55,12 +55,14 @@ export function determineWoodcuttingTime({
 	}
 	let userMaxTripTicks = maxTripLength / (Time.Second * 0.6);
 
+	const tickMs = Time.Second * 0.6;
 	if (log.name === 'Redwood Logs') {
-		const tickMs = Time.Second * 0.6;
-		userMaxTripTicks = applyTripLengthMultiplier(userMaxTripTicks, 2, patronBonusMs / tickMs);
+		userMaxTripTicks = applyTripLengthMultiplier(userMaxTripTicks * tickMs, 2, patronBonusMs) / tickMs;
 	}
 
-	if (log.name === 'Ivy') userMaxTripTicks += IVY_MAX_TRIP_LENGTH_BOOST / (Time.Second * 0.6);
+	if (log.name === 'Ivy') userMaxTripTicks += IVY_MAX_TRIP_LENGTH_BOOST / tickMs;
+
+	userMaxTripTicks = finalizeTripLengthTicks(userMaxTripTicks, tickMs);
 
 	while (timeElapsed < userMaxTripTicks) {
 		// Keep rolling until log chopped

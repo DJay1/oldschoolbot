@@ -1,7 +1,7 @@
 import { Time } from '@oldschoolgg/toolkit';
 
 import type { Ore } from '@/lib/skilling/types.js';
-import { applyTripLengthMultiplier } from '@/lib/util/tripLength.js';
+import { applyTripLengthMultiplier, finalizeTripLengthTicks } from '@/lib/util/tripLength.js';
 
 interface MiningTimeOptions {
 	hasGlory: boolean;
@@ -69,11 +69,13 @@ export function determineMiningTime({
 	const tickMs = Time.Second * 0.6;
 	if (ore.name === 'Daeyalt essence rock') {
 		if (!powermining) {
-			userMaxTripTicks = applyTripLengthMultiplier(userMaxTripTicks, 2, patronBonusMs / tickMs);
+			userMaxTripTicks = applyTripLengthMultiplier(userMaxTripTicks * tickMs, 2, patronBonusMs) / tickMs;
 		}
 	} else if (ore.name === 'Amethyst') {
-		userMaxTripTicks = applyTripLengthMultiplier(userMaxTripTicks, 1.5, patronBonusMs / tickMs);
+		userMaxTripTicks = applyTripLengthMultiplier(userMaxTripTicks * tickMs, 1.5, patronBonusMs) / tickMs;
 	}
+
+	userMaxTripTicks = finalizeTripLengthTicks(userMaxTripTicks, tickMs);
 
 	while (timeElapsed < userMaxTripTicks) {
 		while (!rng.percentChance(chanceOfSuccess)) {

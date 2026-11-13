@@ -60,6 +60,17 @@ export function applyQueuedTripDurationCap(durationMs: number): number {
 	return durationMs;
 }
 
+/** Apply the queued-trip cap after activity multipliers and other extras. */
+export function finalizeTripLength(lengthMs: number): number {
+	return applyQueuedTripDurationCap(lengthMs);
+}
+
+/** Same cap for tick-based trip lengths (Woodcutting, Mining). */
+export function finalizeTripLengthTicks(ticks: number, tickMs: number): number {
+	if (!Number.isFinite(ticks) || !Number.isFinite(tickMs) || tickMs <= 0) return ticks;
+	return finalizeTripLength(ticks * tickMs) / tickMs;
+}
+
 export async function runInQueuedTripContext<T>(fn: () => Promise<T>, opts?: { skipCap?: boolean }): Promise<T> {
 	return queuedTripContext.run({ skipCap: opts?.skipCap ?? false, trimmed: false }, fn);
 }
