@@ -1104,7 +1104,6 @@ const Buyables: Buyable[] = [
 	{
 		name: 'Black axe',
 		gpCost: 4000,
-		// Black axes are not sold in a shop; this is the OSRS item value.
 		ironmanPrice: 1000
 	},
 	{
