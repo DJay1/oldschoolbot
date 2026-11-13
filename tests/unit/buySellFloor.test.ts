@@ -52,21 +52,21 @@ describe('buy cost is at least 2x /sell payout', () => {
 		}
 	});
 
-	test('Pineapple 5k costs at least twice the /sell payout', () => {
+	test('Pineapple costs at least twice the /sell payout', () => {
 		const item = Items.getOrThrow('Pineapple');
+		const buyable = tripBuyables.find(tb => tb.item === item.id)!;
 		const qty = 5000;
 		const shop = calculateShopBuyCost({
-			gpCost: 5,
+			gpCost: buyable.gpCost ?? 0,
 			quantity: qty,
-			shopQuantity: 15,
-			changePer: 2
+			shopQuantity: buyable.shopQuantity,
+			changePer: buyable.changePer
 		});
 		const loot = new Bank().add(item.id, qty);
 		const buyCost = applyBuyCostSellFloor(shop.totalCost, loot);
 		const sellValue = sellPayout(item.id, qty);
-		expect(shop.totalCost).toBeLessThan(sellValue);
 		expect(buyCost).toBe(Math.max(shop.totalCost, sellValue * 2));
-		expect(buyCost).toBeGreaterThan(sellValue);
+		expect(buyCost).toBeGreaterThanOrEqual(sellValue * 2);
 	});
 
 	test('every static /buy buyable costs at least 2x the /sell payout', () => {

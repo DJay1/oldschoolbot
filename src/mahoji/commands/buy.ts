@@ -11,12 +11,13 @@ import { quests } from '@/lib/minions/data/quests.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 import { Minigames } from '@/lib/settings/minigames.js';
 import { applyBuyCostSellFloor } from '@/lib/util/buySellFloor.js';
+import { runWithBuyDailyLimit } from '@/lib/util/runWithBuyDailyLimit.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { MAX_QUANTITY } from '@/lib/util/validateQuantity.js';
 import { buyFossilIslandNotes } from '@/mahoji/lib/abstracted_commands/buyFossilIslandNotes.js';
+import { buyGf, isGfBuyName } from '@/mahoji/lib/abstracted_commands/buyGf.js';
 import { buyingTripCommand } from '@/mahoji/lib/abstracted_commands/buyingTripCommand.js';
 import { buyKitten } from '@/mahoji/lib/abstracted_commands/buyKitten.js';
-import { buyGf, isGfBuyName } from '@/mahoji/lib/abstracted_commands/buyGf.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
 const allBuyablesAutocomplete = [
@@ -42,7 +43,10 @@ export const buyCommand = defineCommand({
 					.filter(i => {
 						if (!value) return true;
 						const q = value.toLowerCase();
-						return i.name.toLowerCase().includes(q) || i.aliases?.some(alias => alias.toLowerCase().includes(q));
+						return (
+							i.name.toLowerCase().includes(q) ||
+							i.aliases?.some(alias => alias.toLowerCase().includes(q))
+						);
 					})
 					.map(i => ({ name: i.name, value: i.name }));
 			}
@@ -187,69 +191,72 @@ export const buyCommand = defineCommand({
 			totalCost.remove('Coins', totalCost.amount('Coins'));
 			if (minGp > 0) totalCost.add('Coins', minGp);
 		}
-		if (!user.owns(totalCost)) {
-			return `You don't have the required items to purchase this. You need: ${totalCost}.`;
-		}
-
-		await interaction.confirmation(
-			`${user}, please confirm that you want to buy **${outItems}** for: ${totalCost}.`
-		);
-
-		if (
-			'globalAnnouncementOnFirstBuy' in buyable &&
-			buyable.globalAnnouncementOnFirstBuy &&
-			!user.cl.has(buyable.name)
-		) {
-			const [count, ironCount] = await Promise.all([
-				countUsersWithItemInCl(itemID(buyable.name), false),
-				countUsersWithItemInCl(itemID(buyable.name), true)
-			]);
-
-			let announcement = `${user.notificationName} just purchased their first ${
-				buyable.name
-			}! They are the ${formatOrdinal(count + 1)} player to buy one.`;
-
-			if (user.isIronman) {
-				announcement += `\n\nThey are the ${formatOrdinal(ironCount + 1)} Ironman to buy one.`;
+		return runWithBuyDailyLimit(user.id, buyable.name, quantity, async ({ commit }) => {
+			if (!user.owns(totalCost)) {
+				return `You don't have the required items to purchase this. You need: ${totalCost}.`;
 			}
 
-			globalClient.emit(Events.ServerNotification, announcement);
-		}
+			await interaction.confirmation(
+				`${user}, please confirm that you want to buy **${outItems}** for: ${totalCost}.`
+			);
 
-		await user.transactItems({
-			itemsToAdd: outItems,
-			collectionLog: true,
-			itemsToRemove: totalCost
+			if (
+				'globalAnnouncementOnFirstBuy' in buyable &&
+				buyable.globalAnnouncementOnFirstBuy &&
+				!user.cl.has(buyable.name)
+			) {
+				const [count, ironCount] = await Promise.all([
+					countUsersWithItemInCl(itemID(buyable.name), false),
+					countUsersWithItemInCl(itemID(buyable.name), true)
+				]);
+
+				let announcement = `${user.notificationName} just purchased their first ${
+					buyable.name
+				}! They are the ${formatOrdinal(count + 1)} player to buy one.`;
+
+				if (user.isIronman) {
+					announcement += `\n\nThey are the ${formatOrdinal(ironCount + 1)} Ironman to buy one.`;
+				}
+
+				globalClient.emit(Events.ServerNotification, announcement);
+			}
+
+			await user.transactItems({
+				itemsToAdd: outItems,
+				collectionLog: true,
+				itemsToRemove: totalCost
+			});
+
+			let costBankExcludingGP: Bank | undefined = totalCost.clone().remove('Coins', totalCost.amount('Coins'));
+			if (costBankExcludingGP.length === 0) costBankExcludingGP = undefined;
+
+			const currentStats = await user.fetchStats();
+			await Promise.all([
+				await ClientSettings.updateBankSetting('buy_cost_bank', totalCost),
+				await ClientSettings.updateBankSetting('buy_loot_bank', outItems),
+				user.statsUpdate({
+					buy_cost_bank: totalCost
+						.clone()
+						.add(currentStats.buy_cost_bank as ItemBank)
+						.toJSON(),
+					buy_loot_bank: outItems
+						.clone()
+						.add(currentStats.buy_loot_bank as ItemBank)
+						.toJSON()
+				}),
+				prisma.buyCommandTransaction.create({
+					data: {
+						user_id: BigInt(user.id),
+						cost_gp: totalCost.amount('Coins'),
+						cost_bank_excluding_gp: costBankExcludingGP,
+						loot_bank: outItems.toJSON()
+					},
+					select: { id: true }
+				})
+			]);
+
+			commit();
+			return `You purchased ${outItems}.`;
 		});
-
-		let costBankExcludingGP: Bank | undefined = totalCost.clone().remove('Coins', totalCost.amount('Coins'));
-		if (costBankExcludingGP.length === 0) costBankExcludingGP = undefined;
-
-		const currentStats = await user.fetchStats();
-		await Promise.all([
-			await ClientSettings.updateBankSetting('buy_cost_bank', totalCost),
-			await ClientSettings.updateBankSetting('buy_loot_bank', outItems),
-			user.statsUpdate({
-				buy_cost_bank: totalCost
-					.clone()
-					.add(currentStats.buy_cost_bank as ItemBank)
-					.toJSON(),
-				buy_loot_bank: outItems
-					.clone()
-					.add(currentStats.buy_loot_bank as ItemBank)
-					.toJSON()
-			}),
-			prisma.buyCommandTransaction.create({
-				data: {
-					user_id: BigInt(user.id),
-					cost_gp: totalCost.amount('Coins'),
-					cost_bank_excluding_gp: costBankExcludingGP,
-					loot_bank: outItems.toJSON()
-				},
-				select: { id: true }
-			})
-		]);
-
-		return `You purchased ${outItems}.`;
 	}
 });
