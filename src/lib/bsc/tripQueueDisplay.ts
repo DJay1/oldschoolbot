@@ -1,3 +1,4 @@
+import { type RecurringQueue, recurringTripSummary } from '@/lib/bsc/tripQueueState.js';
 import { autocompleteMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 
 const MONSTER_ACTIVITY_TYPES = new Set(['MonsterKilling', 'GroupMonsterKilling']);
@@ -76,4 +77,28 @@ export function formatQueuedTripsForCooldownList(options: {
 		return `Queue: ${listed}, starts ${options.startsAtFormatted}`;
 	}
 	return `Queue: ${listed}, Ready`;
+}
+
+/** One cd-list / queue-view line for a recurring scheduled queue. */
+export function formatRecurringQueueLine(
+	recurring: RecurringQueue,
+	opts?: { discordTimestamps?: boolean; startsAtFormatted?: string | null }
+): string {
+	const trips = recurringTripSummary(recurring.trips);
+	const runs =
+		recurring.daysLeft <= 0
+			? 'no runs left'
+			: `${recurring.daysLeft} run${recurring.daysLeft === 1 ? '' : 's'} left`;
+	let next: string;
+	if (recurring.daysLeft <= 0) {
+		next = 'done';
+	} else if (opts?.discordTimestamps) {
+		next = `next <t:${Math.floor(recurring.nextAt / 1000)}:F>`;
+	} else if (opts?.startsAtFormatted) {
+		next = `next ${opts.startsAtFormatted}`;
+	} else {
+		next = `next <t:${Math.floor(recurring.nextAt / 1000)}:R>`;
+	}
+	const last = recurring.lastResult ? `, last ${recurring.lastResult}` : '';
+	return `Recurring: ${trips}, ${runs}, ${next}${last}`;
 }

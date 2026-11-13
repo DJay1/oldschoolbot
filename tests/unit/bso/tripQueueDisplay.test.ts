@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vitest';
 import {
 	formatActivityTypeName,
 	formatQueuedTripLabel,
-	formatQueuedTripsForCooldownList
+	formatQueuedTripsForCooldownList,
+	formatRecurringQueueLine
 } from '@/lib/bsc/tripQueueDisplay.js';
 
 describe('queued trip labels', () => {
@@ -98,5 +99,24 @@ describe('queued trips on the cd list', () => {
 				startsAtFormatted: '4:23 PM (in 12 minutes)'
 			})
 		).toBe('Queue: 3 General Graardor trips, 2 Offering trips, starts 4:23 PM (in 12 minutes)');
+	});
+});
+
+describe('formatRecurringQueueLine', () => {
+	const recurring = {
+		trips: [{ activityId: 1, type: 'Woodcutting', count: 2, label: 'Woodcutting' }],
+		daysLeft: 4,
+		time: '22:00',
+		timezone: 'America/Chicago',
+		nextAt: Date.parse('2026-11-14T04:00:00.000Z'),
+		channelId: '1',
+		lastResult: 'Started your next queued Woodcutting trip. 1 left in the queue.',
+		lastClaimKey: '2026-11-12'
+	};
+
+	test('shows the trip, runs left, next time, and last result', () => {
+		expect(formatRecurringQueueLine(recurring, { discordTimestamps: true })).toBe(
+			`Recurring: 2 Woodcutting trips, 4 runs left, next <t:${Math.floor(recurring.nextAt / 1000)}:F>, last Started your next queued Woodcutting trip. 1 left in the queue.`
+		);
 	});
 });

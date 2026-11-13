@@ -2,7 +2,11 @@ import { ButtonBuilder, ButtonStyle, dateFm } from '@oldschoolgg/discord';
 import { UserError } from '@oldschoolgg/toolkit';
 import { DateTime } from 'luxon';
 
-import { formatQueuedTripLabel, formatQueuedTripsForCooldownList } from '@/lib/bsc/tripQueueDisplay.js';
+import {
+	formatQueuedTripLabel,
+	formatQueuedTripsForCooldownList,
+	formatRecurringQueueLine
+} from '@/lib/bsc/tripQueueDisplay.js';
 import {
 	applyQueueDailyReset,
 	dailyQueueAllowance,
@@ -13,12 +17,18 @@ import {
 } from '@/lib/bsc/tripQueueLimits.js';
 import {
 	appendQueuedTrips,
+	claimRecurringRun,
 	dequeueQueuedTrip,
 	isValidQueueLocalTime,
+	MAX_RECURRING_QUEUE_DAYS,
 	nextQueueScheduleAt,
 	parseQueuedTrips,
+	parseRecurringDays,
+	parseRecurringQueue,
 	type QueuedTrip,
-	type QueuedTripGroup
+	type QueuedTripGroup,
+	type RecurringQueue,
+	recurringTripSummary
 } from '@/lib/bsc/tripQueueState.js';
 import { globalConfig, PerkTier } from '@/lib/constants.js';
 import { fetchRepeatTrips, startRepeatTripFromActivity } from '@/lib/util/repeatStoredTrip.js';
@@ -37,6 +47,7 @@ interface TripQueueRow {
 	last_local_reminder_date: string | null;
 	scheduled_start_at: bigint | number | null;
 	scheduled_channel_id: string | null;
+	recurring: unknown;
 	updated_at?: Date;
 }
 
@@ -53,6 +64,7 @@ export interface TripQueueState {
 	lastLocalReminderDate: string | null;
 	scheduledStartAt: number | null;
 	scheduledChannelId: string | null;
+	recurring: RecurringQueue | null;
 }
 
 const ready = { done: false };
@@ -70,7 +82,8 @@ function emptyState(userId: string, now: number): TripQueueState {
 		lastRefillReminderReset: 0,
 		lastLocalReminderDate: null,
 		scheduledStartAt: null,
-		scheduledChannelId: null
+		scheduledChannelId: null,
+		recurring: null
 	};
 }
 
@@ -89,7 +102,8 @@ function fromRow(row: TripQueueRow, now: number): TripQueueState {
 			lastRefillReminderReset: Number(row.last_refill_reminder_reset ?? 0),
 			lastLocalReminderDate: row.last_local_reminder_date ?? null,
 			scheduledStartAt: row.scheduled_start_at == null ? null : Number(row.scheduled_start_at),
-			scheduledChannelId: row.scheduled_channel_id ?? null
+			scheduledChannelId: row.scheduled_channel_id ?? null,
+			recurring: parseRecurringQueue(row.recurring)
 		},
 		now
 	);
@@ -122,7 +136,8 @@ export async function ensureTripQueueStore() {
 			ADD COLUMN IF NOT EXISTS last_refill_reminder_reset bigint NOT NULL DEFAULT 0,
 			ADD COLUMN IF NOT EXISTS last_local_reminder_date text,
 			ADD COLUMN IF NOT EXISTS scheduled_start_at bigint,
-			ADD COLUMN IF NOT EXISTS scheduled_channel_id text
+			ADD COLUMN IF NOT EXISTS scheduled_channel_id text,
+			ADD COLUMN IF NOT EXISTS recurring jsonb
 	`);
 	ready.done = true;
 }
@@ -134,8 +149,9 @@ async function saveState(state: TripQueueState): Promise<void> {
 		`INSERT INTO bsc_trip_queue (
 			user_id, trip, remaining, daily_used, daily_reset, reminders_enabled,
 			reminder_time, reminder_timezone, last_refill_reminder_reset,
-			last_local_reminder_date, scheduled_start_at, scheduled_channel_id, updated_at
-		) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+			last_local_reminder_date, scheduled_start_at, scheduled_channel_id,
+			recurring, updated_at
+		) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, NOW())
 		 ON CONFLICT (user_id) DO UPDATE SET
 			trip = EXCLUDED.trip,
 			remaining = EXCLUDED.remaining,
@@ -148,6 +164,7 @@ async function saveState(state: TripQueueState): Promise<void> {
 			last_local_reminder_date = EXCLUDED.last_local_reminder_date,
 			scheduled_start_at = EXCLUDED.scheduled_start_at,
 			scheduled_channel_id = EXCLUDED.scheduled_channel_id,
+			recurring = EXCLUDED.recurring,
 			updated_at = NOW()`,
 		state.userId,
 		tripJson,
@@ -160,7 +177,8 @@ async function saveState(state: TripQueueState): Promise<void> {
 		state.lastRefillReminderReset,
 		state.lastLocalReminderDate,
 		state.scheduledStartAt,
-		state.scheduledChannelId
+		state.scheduledChannelId,
+		state.recurring ? JSON.stringify(state.recurring) : null
 	);
 }
 
@@ -267,7 +285,8 @@ export async function scheduleQueuedTrips(
 	user: MUser,
 	time: string,
 	timezone: string,
-	channelId: string
+	channelId: string,
+	options?: { trip?: string; times?: number; days?: number }
 ): Promise<string> {
 	if ((await user.fetchPerkTier()) < PerkTier.Two) return 'Queue scheduling is available to all Patreon tiers.';
 	const now = Date.now();
@@ -275,8 +294,89 @@ export async function scheduleQueuedTrips(
 	if (scheduledAt === null) {
 		return 'Use a valid 24-hour time (HH:mm) and IANA timezone, for example 22:00 and America/Chicago.';
 	}
+
+	const days = options?.days !== undefined ? parseRecurringDays(options.days) : undefined;
+	if (options?.days !== undefined && days === null) {
+		return `Recurring trips can repeat daily for 1 to ${MAX_RECURRING_QUEUE_DAYS} days.`;
+	}
+	if ((options?.trip && options.times === undefined) || (!options?.trip && options?.times !== undefined)) {
+		return 'Set both a trip and how many times to queue it.';
+	}
+
+	if (days) {
+		const state = await getTripQueueState(user.id, now);
+		let snapshot = [...state.trips];
+		if (options?.trip && options.times !== undefined) {
+			const recent = await fetchRepeatTrips(user);
+			const activity = recent.find(trip => trip.type === options.trip);
+			if (!activity) {
+				return "Couldn't find that recent trip. Finish a trip first, then pick it from the list.";
+			}
+			snapshot = appendQueuedTrips(snapshot, { activityId: activity.id, type: activity.type }, options.times);
+		}
+		if (snapshot.length === 0) {
+			return 'Queue at least one trip before scheduling it, or pick a trip in this command.';
+		}
+		const trips = await Promise.all(
+			snapshot.map(async trip => {
+				const activity = await loadQueuedActivity(trip, user);
+				return {
+					activityId: trip.activityId,
+					type: trip.type,
+					count: trip.count,
+					label: prettyTrip(trip.type, activity?.data)
+				};
+			})
+		);
+		// Keep the template on the recurring schedule only, so the first run is not queued twice.
+		const replacedRecurring = state.recurring !== null;
+		let refunded = 0;
+		if (state.remaining > 0) {
+			const cleared = refundUnstartedTrips(state);
+			refunded = cleared.refunded;
+			state.trips = [];
+			state.remaining = cleared.state.remaining;
+			state.dailyUsed = cleared.state.dailyUsed;
+		}
+		state.recurring = {
+			trips,
+			daysLeft: days,
+			time,
+			timezone,
+			nextAt: scheduledAt,
+			channelId,
+			lastResult: null,
+			lastClaimKey: null
+		};
+		state.scheduledStartAt = null;
+		state.scheduledChannelId = null;
+		await saveState(state);
+		const extras: string[] = [];
+		if (refunded > 0) {
+			extras.push('Your current queue was refunded so those trips are not started twice.');
+		}
+		if (replacedRecurring) {
+			extras.push('This replaces your previous recurring schedule.');
+		}
+		return `Scheduled ${recurringTripSummary(trips)} to start daily at <t:${Math.floor(scheduledAt / 1000)}:F> (${timezone}) for ${days} day${days === 1 ? '' : 's'}. Use /queue unschedule to cancel.${extras.length ? ` ${extras.join(' ')}` : ''}`;
+	}
+
+	const existing = await getTripQueueState(user.id, now);
+	if (existing.recurring) {
+		return 'You already have a recurring schedule. Use /queue unschedule first if you want a one-time start instead.';
+	}
+
+	if (options?.trip && options.times !== undefined) {
+		const added = await addTripsToQueue(user, options.trip, options.times, channelId, { deferStart: true });
+		if (!added.startsWith('Queued ') && !added.startsWith('Started your')) {
+			return added;
+		}
+	}
+
 	const state = await getTripQueueState(user.id, now);
-	if (state.remaining <= 0 || state.trips.length === 0) return 'Queue at least one trip before scheduling it.';
+	if (state.remaining <= 0 || state.trips.length === 0) {
+		return 'Queue at least one trip before scheduling it, or pick a trip in this command.';
+	}
 	state.scheduledStartAt = scheduledAt;
 	state.scheduledChannelId = channelId;
 	await saveState(state);
@@ -285,10 +385,19 @@ export async function scheduleQueuedTrips(
 
 export async function unscheduleQueuedTrips(userId: string): Promise<string> {
 	const state = await getTripQueueState(userId);
-	if (state.scheduledStartAt === null) return 'Your queue has no scheduled start.';
+	const hadSchedule = state.scheduledStartAt !== null;
+	const hadRecurring = state.recurring !== null;
+	if (!hadSchedule && !hadRecurring) return 'Your queue has no scheduled or recurring start.';
 	state.scheduledStartAt = null;
 	state.scheduledChannelId = null;
+	state.recurring = null;
 	await saveState(state);
+	if (hadRecurring && hadSchedule) {
+		return 'The scheduled start and recurring trips were cancelled. Your queued trips are still saved.';
+	}
+	if (hadRecurring) {
+		return 'The recurring scheduled trips were cancelled. Your queued trips are still saved.';
+	}
 	return 'The scheduled queue start was cancelled. Your queued trips are still saved.';
 }
 
@@ -296,11 +405,26 @@ export async function addTripsToQueue(
 	user: MUser,
 	activityType: string,
 	times: number,
-	channelId: string
+	channelId: string,
+	options?: { deferStart?: boolean; scheduleTime?: string; scheduleTimezone?: string }
 ): Promise<string> {
 	if (!Number.isInteger(times) || times < 1) {
 		return 'How many trips to queue must be a whole number of at least 1.';
 	}
+
+	const scheduleTime = options?.scheduleTime;
+	const scheduleTimezone = options?.scheduleTimezone;
+	let scheduledAt: number | null = null;
+	if (scheduleTime || scheduleTimezone) {
+		if (!scheduleTime || !scheduleTimezone) {
+			return 'Set both a start time and timezone, for example 22:00 and America/Chicago.';
+		}
+		scheduledAt = nextQueueScheduleAt(scheduleTime, scheduleTimezone, Date.now());
+		if (scheduledAt === null) {
+			return 'Use a valid 24-hour time (HH:mm) and IANA timezone, for example 22:00 and America/Chicago.';
+		}
+	}
+	const deferStart = Boolean(options?.deferStart || scheduledAt);
 
 	const perkTier = await user.fetchPerkTier();
 	const maxAtOnce = maxQueuedTripsForPerkTier(perkTier);
@@ -311,6 +435,15 @@ export async function addTripsToQueue(
 	state = startQueueWindowIfNeeded(state, now);
 	if (state.dailyReset !== previousReset) {
 		state.lastRefillReminderReset = state.dailyReset;
+	}
+
+	if (scheduledAt !== null) {
+		if (perkTier < PerkTier.Two) {
+			return 'Queue scheduling is available to all Patreon tiers.';
+		}
+		if (state.recurring) {
+			return 'You already have a recurring schedule. Use /queue unschedule first if you want a one-time start instead.';
+		}
 	}
 
 	const resetAt = `<t:${Math.floor(queueResetAtMs(state.dailyReset) / 1000)}:R>`;
@@ -344,11 +477,24 @@ export async function addTripsToQueue(
 	state.trips = appendQueuedTrips(state.trips, { activityId: activity.id, type: activity.type }, times);
 	state.remaining = newRemaining;
 	state.dailyUsed += times;
+	if (scheduledAt !== null) {
+		state.scheduledStartAt = scheduledAt;
+		state.scheduledChannelId = channelId;
+	}
 	await saveState(state);
 
 	const pretty = prettyTrip(activity.type, activity.data);
 	const dailyLeftAfter = dailyCap - state.dailyUsed;
 	const dailyNote = ` You have ${dailyLeftAfter} left until they refill ${resetAt}.`;
+	const queuedLine = `Queued ${times} ${pretty} trip${times === 1 ? '' : 's'}. ${state.remaining} in the queue.${dailyNote}`;
+
+	if (scheduledAt !== null && scheduleTimezone) {
+		return `${queuedLine} They will start automatically at <t:${Math.floor(scheduledAt / 1000)}:F> (${scheduleTimezone}).`;
+	}
+
+	if (deferStart) {
+		return queuedLine;
+	}
 
 	if (await user.minionIsBusy()) {
 		return `Queued ${times} ${pretty} trip${times === 1 ? '' : 's'}. They will start automatically when your current trip finishes. ${state.remaining} in the queue.${dailyNote}`;
@@ -358,7 +504,7 @@ export async function addTripsToQueue(
 	if (startNote) {
 		return `${startNote}${dailyNote}`;
 	}
-	return `Queued ${times} ${pretty} trip${times === 1 ? '' : 's'}. ${state.remaining} in the queue.${dailyNote}`;
+	return queuedLine;
 }
 
 export async function describeTripQueue(user: MUser): Promise<string> {
@@ -393,6 +539,11 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 	if (state.scheduledStartAt !== null) {
 		lines.push(`Scheduled to start <t:${Math.floor(state.scheduledStartAt / 1000)}:F>.`);
 	}
+	if (state.recurring) {
+		lines.push(
+			`${formatRecurringQueueLine(state.recurring, { discordTimestamps: true })}. Use /queue unschedule to cancel.`
+		);
+	}
 	if (state.remindersEnabled) {
 		lines.push(
 			state.reminderTime && state.reminderTimezone
@@ -411,14 +562,24 @@ export async function describeQueuedTripsForCooldown(user: MUser, now = Date.now
 	const resetAt = queueResetAtMs(state.dailyReset);
 	const refillsAtFormatted = resetAt > 0 ? dateFm(new Date(resetAt)) : null;
 
-	if (state.trips.length === 0 || state.remaining <= 0) {
-		return formatQueuedTripsForCooldownList({
-			trips: [],
-			startsAtFormatted: null,
-			allowanceLeft,
-			allowanceMax,
-			refillsAtFormatted
+	const withRecurring = (line: string | null) => {
+		if (!state.recurring) return line;
+		const recurringLine = formatRecurringQueueLine(state.recurring, {
+			startsAtFormatted: dateFm(new Date(state.recurring.nextAt))
 		});
+		return line ? `${line}\n${recurringLine}` : recurringLine;
+	};
+
+	if (state.trips.length === 0 || state.remaining <= 0) {
+		return withRecurring(
+			formatQueuedTripsForCooldownList({
+				trips: [],
+				startsAtFormatted: null,
+				allowanceLeft,
+				allowanceMax,
+				refillsAtFormatted
+			})
+		);
 	}
 
 	const current = await ActivityManager.getActivityOfUser(user.id);
@@ -430,10 +591,12 @@ export async function describeQueuedTripsForCooldown(user: MUser, now = Date.now
 		})
 	);
 
-	return formatQueuedTripsForCooldownList({
-		trips,
-		startsAtFormatted
-	});
+	return withRecurring(
+		formatQueuedTripsForCooldownList({
+			trips,
+			startsAtFormatted
+		})
+	);
 }
 
 function makeSilentQueueInteraction(user: MUser, channelId: string): OSInteraction {
@@ -556,7 +719,10 @@ export async function processScheduledQueueStarts(now = Date.now()): Promise<voi
 		try {
 			const user = await mUserFetch(row.user_id);
 			if ((await user.fetchPerkTier()) < PerkTier.Two) {
-				await unscheduleQueuedTrips(user.id);
+				const state = await getTripQueueState(user.id);
+				state.scheduledStartAt = null;
+				state.scheduledChannelId = null;
+				await saveState(state);
 				await globalClient.sendDm(
 					user.id,
 					'Your scheduled queue start was cancelled because patron access is no longer active. Your queued trips are still saved.'
@@ -566,6 +732,132 @@ export async function processScheduledQueueStarts(now = Date.now()): Promise<voi
 			if (await user.minionIsBusy()) continue;
 			const message = await tryStartQueuedTrip(user, row.scheduled_channel_id ?? '');
 			if (message) await globalClient.sendDm(user.id, message);
+		} catch (err) {
+			Logging.logError(err as Error);
+		}
+	}
+	await processRecurringQueueStarts(now);
+}
+
+async function claimRecurringRunAtomically(
+	userId: string,
+	recurring: RecurringQueue,
+	now: number
+): Promise<RecurringQueue | null> {
+	const claimed = claimRecurringRun(recurring, now);
+	if (!claimed.ok) return null;
+	const updated = await prisma.$executeRawUnsafe(
+		`UPDATE bsc_trip_queue
+			SET recurring = $1::jsonb, updated_at = NOW()
+			WHERE user_id = $2
+				AND recurring IS NOT NULL
+				AND COALESCE(recurring->>'lastClaimKey', '') <> $3
+				AND (recurring->>'nextAt')::bigint <= $4
+				AND (recurring->>'daysLeft')::int > 0`,
+		JSON.stringify(claimed.recurring),
+		userId,
+		claimed.runKey,
+		now
+	);
+	if (Number(updated) !== 1) return null;
+	return claimed.recurring;
+}
+
+async function enqueueRecurringTrips(user: MUser, recurring: RecurringQueue, now: number): Promise<string> {
+	const perkTier = await user.fetchPerkTier();
+	if (perkTier < PerkTier.Two) {
+		return 'Skipped: patron access is no longer active';
+	}
+
+	let state = await getTripQueueState(user.id, now);
+	const previousReset = state.dailyReset;
+	state = startQueueWindowIfNeeded(state, now);
+	if (state.dailyReset !== previousReset) {
+		state.lastRefillReminderReset = state.dailyReset;
+	}
+
+	const maxAtOnce = maxQueuedTripsForPerkTier(perkTier);
+	const dailyCap = dailyQueueAllowance(perkTier);
+	const dailyLeft = dailyCap - state.dailyUsed;
+	const room = maxAtOnce - state.remaining;
+	if (dailyLeft <= 0) {
+		return 'Skipped: no queued trips left today';
+	}
+	if (room <= 0) {
+		return 'Skipped: the queue is already full';
+	}
+
+	let added = 0;
+	let missing = false;
+	for (const trip of recurring.trips) {
+		const activity = await loadQueuedActivity(trip, user);
+		if (!activity) {
+			missing = true;
+			continue;
+		}
+		const remainingCap = Math.min(dailyLeft - added, room - added, trip.count);
+		if (remainingCap <= 0) break;
+		state.trips = appendQueuedTrips(state.trips, { activityId: trip.activityId, type: trip.type }, remainingCap);
+		state.remaining += remainingCap;
+		state.dailyUsed += remainingCap;
+		added += remainingCap;
+	}
+
+	if (added <= 0) {
+		return missing ? 'Skipped: that trip could no longer be repeated' : 'Skipped: no queued trips left today';
+	}
+
+	await saveState(state);
+
+	if (await user.minionIsBusy()) {
+		const extra = missing ? ' Some trips could no longer be repeated.' : '';
+		return `Queued ${added} trip${added === 1 ? '' : 's'} to start when the current trip finishes.${extra}`.trim();
+	}
+
+	const startNote = await tryStartQueuedTrip(user, recurring.channelId);
+	if (startNote) {
+		return startNote;
+	}
+	return `Queued ${added} trip${added === 1 ? '' : 's'}`;
+}
+
+async function processRecurringQueueStarts(now: number): Promise<void> {
+	const rows = await prisma.$queryRaw<{ user_id: string; recurring: unknown }[]>`
+		SELECT user_id, recurring
+		FROM bsc_trip_queue
+		WHERE recurring IS NOT NULL
+			AND (recurring->>'daysLeft')::int > 0
+			AND (recurring->>'nextAt')::bigint <= ${now}
+	`;
+	for (const row of rows) {
+		try {
+			const current = parseRecurringQueue(row.recurring);
+			if (!current) continue;
+			const claimed = await claimRecurringRunAtomically(row.user_id, current, now);
+			if (!claimed) continue;
+
+			const user = await mUserFetch(row.user_id);
+			let lastResult: string;
+			try {
+				lastResult = await enqueueRecurringTrips(user, claimed, now);
+			} catch (err) {
+				Logging.logError(err as Error);
+				lastResult = 'Skipped: the trip could not be started';
+			}
+
+			const latest = await getTripQueueState(row.user_id, now);
+			if (latest.recurring && latest.recurring.lastClaimKey === claimed.lastClaimKey) {
+				latest.recurring = { ...latest.recurring, lastResult };
+				await saveState(latest);
+			}
+			await globalClient.sendDm(
+				user.id,
+				`Recurring queue: ${lastResult}. ${
+					claimed.daysLeft > 0
+						? `${claimed.daysLeft} run${claimed.daysLeft === 1 ? '' : 's'} left, next <t:${Math.floor(claimed.nextAt / 1000)}:F>.`
+						: 'That was the last run.'
+				}`
+			);
 		} catch (err) {
 			Logging.logError(err as Error);
 		}
