@@ -76,8 +76,36 @@ export async function applySummerFishingLoot({
 }) {
 	if (isEventActive('summer')) {
 		rollSummerFishingDrops({ user, fish, duration, rng, result });
+	} else {
+		rollShelldonCrabCage({ user, duration, rng, result });
 	}
 	await convertEquippedMysteriousBottle(user, duration, rng, result);
+}
+
+const SHELLDON_CRAB_CAGE_RATE = 1000;
+
+function rollShelldonCrabCage({
+	user,
+	duration,
+	rng,
+	result
+}: {
+	user: MUser;
+	duration: number;
+	rng: RNGProvider;
+	result: {
+		updateBank: { itemLootBank: Bank };
+		messages: string[];
+	};
+}) {
+	if (!user.usingPet('Shelldon') || user.allItemsOwned.has(BSOItem.OLD_CRAB_CAGE)) return;
+	const minutes = Math.floor(duration / Time.Minute);
+	for (let i = 0; i < minutes; i++) {
+		if (!rng.roll(SHELLDON_CRAB_CAGE_RATE)) continue;
+		result.updateBank.itemLootBank.add(BSOItem.OLD_CRAB_CAGE);
+		result.messages.push('🦀 Shelldon dug something rusted out of the seabed: an **Old crab cage**.');
+		break;
+	}
 }
 
 function rollSummerFishingDrops({
