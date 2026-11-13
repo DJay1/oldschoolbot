@@ -202,6 +202,8 @@ interface newOptions {
 	rng: RNGProvider;
 }
 
+const SUPERIOR_UNIQUES = ['Mist battlestaff', 'Dust battlestaff', 'Eternal gem', 'Imbued heart'];
+
 export function doMonsterTrip(data: newOptions) {
 	let {
 		monster,
@@ -456,7 +458,24 @@ export function doMonsterTrip(data: newOptions) {
 		}
 		if (newSuperiorCount) {
 			// TODO: remove drop from superiors in osjs? remove the rng keys
-			loot.add(superiorTable?.kill(newSuperiorCount).set('Brimstone key', 0));
+			const superiorModifier =
+				slayerContext.isOnTask && slayerModifier?.kind === 'superior' ? slayerModifier.value : 0;
+			const superiorUniqueChanges =
+				superiorModifier > 0
+					? new Map(SUPERIOR_UNIQUES.map(name => [name, 100 - 100 / (1 + superiorModifier / 100)] as const))
+					: undefined;
+			loot.add(
+				superiorTable
+					?.kill(newSuperiorCount, {
+						lootTableOptions: { tertiaryItemPercentageChanges: superiorUniqueChanges }
+					})
+					.set('Brimstone key', 0)
+			);
+			if (superiorModifier > 0) {
+				messages.push(
+					`Mortimer's modifier made superior uniques ${superiorModifier}% more likely (${newSuperiorCount}x superiors).`
+				);
+			}
 			if (isInCatacombs) loot.add('Dark totem base', newSuperiorCount);
 			if (isInWilderness) loot.add("Larran's key", newSuperiorCount);
 			if (killOptions.slayerMaster === MonsterSlayerMaster.Konar) loot.add('Brimstone key', newSuperiorCount);
@@ -489,13 +508,6 @@ export function doMonsterTrip(data: newOptions) {
 		}
 
 		const taskModifier = slayerContext.isOnTask ? slayerModifier : null;
-		if (taskModifier?.kind === 'superior' && newSuperiorCount > 0 && superiorTable) {
-			const extra = bonusRolls(rng, newSuperiorCount, taskModifier.value);
-			if (extra > 0) {
-				loot.add(superiorTable.kill(extra).set('Brimstone key', 0));
-				messages.push(`Mortimer's modifier gave you ${extra}x extra superior loot.`);
-			}
-		}
 		if (taskModifier?.kind === 'clue') {
 			let extraClues = 0;
 			for (const [item, qty] of loot.items()) {

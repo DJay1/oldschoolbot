@@ -130,7 +130,7 @@ export function formatModifier(modifier: MortimerModifier): string {
 		case 'clue':
 			return `${sign}${modifier.value}% clue scrolls`;
 		case 'superior':
-			return `${sign}${modifier.value}% superior loot`;
+			return `${sign}${modifier.value}% superior unique chance`;
 		case 'xp':
 			return `${sign}${modifier.value}% Slayer XP`;
 	}
