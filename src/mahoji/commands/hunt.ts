@@ -5,6 +5,7 @@ import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skil
 import { formatDuration, reduceNumByPercent, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank, ECreature, type ItemBank, itemID } from 'oldschooljs';
 
+import { CoralPotionItem } from '@/lib/customItems/coralPotions.js';
 import { hasWildyHuntGearEquipped } from '@/lib/gear/functions/hasWildyHuntGearEquipped.js';
 import type { UserFullGearSetup } from '@/lib/gear/types.js';
 import { trackLoot } from '@/lib/lootTrack.js';
@@ -18,9 +19,20 @@ import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { generateDailyPeakIntervals, type Peak } from '@/lib/util/peaks.js';
 import { hasSkillReqs } from '@/lib/util/smallUtils.js';
 
+const ANTI_ODOUR_SALT_TECHNIQUES = new Set<HunterTechniqueEnum>([
+	HunterTechniqueEnum.BirdSnaring,
+	HunterTechniqueEnum.BoxTrapping,
+	HunterTechniqueEnum.DeadfallTrapping,
+	HunterTechniqueEnum.MagicBoxTrapping,
+	HunterTechniqueEnum.NetTrapping,
+	HunterTechniqueEnum.PitfallTrapping,
+	HunterTechniqueEnum.RabbitSnaring
+]);
+
 export function calculateHunterInput({
 	skillsAsLevels,
 	isUsingHunterPotion,
+	isUsingSuperHunterPotion = false,
 	shouldUseStaminaPotions = true,
 	quantityInput,
 	hasHunterMasterCape,
@@ -45,6 +57,7 @@ export function calculateHunterInput({
 	shouldUseStaminaPotions: boolean;
 	skillsAsLevels: Required<Skills>;
 	isUsingHunterPotion: boolean;
+	isUsingSuperHunterPotion?: boolean;
 	hasHunterMasterCape: boolean;
 	hasGraceful: boolean;
 	maxTripLength: number;
@@ -56,6 +69,7 @@ export function calculateHunterInput({
 	user: MUser;
 }) {
 	const messages: string[] = [];
+	const potionBoost = isUsingSuperHunterPotion ? 6 : isUsingHunterPotion ? 2 : 0;
 	let traps = 1;
 	let wildyScore = 0;
 
@@ -87,7 +101,7 @@ export function calculateHunterInput({
 		}
 	}
 
-	if (skillsAsLevels.hunter + (isUsingHunterPotion ? 2 : 0) < creature.level) {
+	if (skillsAsLevels.hunter + potionBoost < creature.level) {
 		return `You need needs ${creature.level} Hunter to hunt ${creature.name}.`;
 	}
 
@@ -110,9 +124,7 @@ export function calculateHunterInput({
 	}
 
 	if (creature.multiTraps) {
-		traps +=
-			Math.min(Math.floor((skillsAsLevels.hunter + (isUsingHunterPotion ? 2 : 0)) / 20), 5) +
-			(creature.wildy ? 1 : 0);
+		traps += Math.min(Math.floor((skillsAsLevels.hunter + potionBoost) / 20), 5) + (creature.wildy ? 1 : 0);
 	}
 
 	if (creature.itemsRequired) {
@@ -233,7 +245,14 @@ export function calculateHunterInput({
 		}
 	}
 
-	if (isUsingHunterPotion) {
+	if (isUsingSuperHunterPotion) {
+		const hunterPotionQuantity = Math.round(duration / (8 * Time.Minute));
+		if (bank.amount(CoralPotionItem.SUPER_HUNTER_POTION[3]) < hunterPotionQuantity) {
+			return `You need ${hunterPotionQuantity}x Super hunter potion(4) to boost your level for the whole trip, try a lower quantity or make more potions.`;
+		}
+		totalCost.add(CoralPotionItem.SUPER_HUNTER_POTION[3], hunterPotionQuantity);
+		messages.push(`+6 hunter level for using ${hunterPotionQuantity}x Super hunter potion(4)`);
+	} else if (isUsingHunterPotion) {
 		const hunterPotionQuantity = Math.round(duration / (8 * Time.Minute));
 		if (bank.amount('Hunter potion(4)') < hunterPotionQuantity) {
 			return `You need ${hunterPotionQuantity}x Hunter potion(4) to boost your level for the whole trip, try a lower quantity or make/buy more potions.`;
@@ -248,6 +267,15 @@ export function calculateHunterInput({
 			return `You don't have enough bait to catch ${quantity}x ${creature.name}, you need: ${reqBank}.`;
 		}
 		totalCost.add(reqBank);
+	}
+
+	const usingAntiOdourSalt =
+		ANTI_ODOUR_SALT_TECHNIQUES.has(creature.huntTechnique) &&
+		!(creature.slope === 0 && creature.intercept >= 100) &&
+		bank.amount('Anti-odour salt') >= quantity;
+	if (usingAntiOdourSalt) {
+		totalCost.add('Anti-odour salt', quantity);
+		messages.push(`+2% catch rate from ${quantity}x Anti-odour salt`);
 	}
 
 	let wildyPeak = null;
@@ -275,6 +303,8 @@ export function calculateHunterInput({
 		totalCost,
 		boosts: messages,
 		isUsingHunterPotion,
+		isUsingSuperHunterPotion,
+		usingAntiOdourSalt,
 		shouldUseStaminaPotions,
 		wildyPeak,
 		messages
@@ -320,6 +350,12 @@ export const huntCommand = defineCommand({
 		},
 		{
 			type: 'Boolean',
+			name: 'super_hunter_potion',
+			description: 'Do you want to use Super hunter potions (+6 Hunter) for this trip?',
+			required: false
+		},
+		{
+			type: 'Boolean',
 			name: 'stamina_potions',
 			description: 'Use stam potions for Herbiboar?',
 			required: false
@@ -353,6 +389,7 @@ export const huntCommand = defineCommand({
 			quantityInput: options.quantity,
 			skillsAsLevels: user.skillsAsLevels,
 			isUsingHunterPotion: options.hunter_potion ?? false,
+			isUsingSuperHunterPotion: options.super_hunter_potion ?? false,
 			shouldUseStaminaPotions: options.stamina_potions ?? true,
 			creatureScores: (await user.fetchStats()).creature_scores as ItemBank,
 			allGear: user.gear,
@@ -401,8 +438,17 @@ export const huntCommand = defineCommand({
 			return result;
 		}
 
-		const { wildyPeak, messages, totalCost, quantity, duration, isUsingHunterPotion, shouldUseStaminaPotions } =
-			result;
+		const {
+			wildyPeak,
+			messages,
+			totalCost,
+			quantity,
+			duration,
+			isUsingHunterPotion,
+			isUsingSuperHunterPotion,
+			usingAntiOdourSalt,
+			shouldUseStaminaPotions
+		} = result;
 
 		await user.removeItemsFromBank(totalCost);
 		await ClientSettings.updateBankSetting('hunter_cost', totalCost);
@@ -425,7 +471,9 @@ export const huntCommand = defineCommand({
 			channelId,
 			quantity,
 			duration,
-			usingHuntPotion: isUsingHunterPotion ? true : undefined,
+			usingHuntPotion: isUsingHunterPotion || isUsingSuperHunterPotion ? true : undefined,
+			usingSuperHuntPotion: isUsingSuperHunterPotion ? true : undefined,
+			usingAntiOdourSalt: usingAntiOdourSalt ? true : undefined,
 			usingStaminaPotion: shouldUseStaminaPotions ? true : undefined,
 			wildyPeak: wildyPeak ? wildyPeak : undefined,
 			type: 'Hunter'

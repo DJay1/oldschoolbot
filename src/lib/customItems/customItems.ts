@@ -27,6 +27,7 @@ import './firstAge.js';
 import '../events/launch/items.js';
 import './bankPlaceholders.js';
 import './patronDyes.js';
+import './coralPotions.js';
 import './slayer2026.js';
 
 import { EquipmentSlot } from '@oldschoolgg/gear';

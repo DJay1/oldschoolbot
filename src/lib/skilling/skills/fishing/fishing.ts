@@ -336,6 +336,49 @@ const fishes: Fish[] = [
 		ticksPerRoll: 3
 	},
 	{
+		name: 'Squid',
+		alias: ['squid', 'swordtip squid', 'jumbo squid', 'lantern harpooning'],
+		subfishes: [
+			{
+				id: itemID('Raw swordtip squid'),
+				level: 52,
+				xp: 55,
+				intercept: 0.0326,
+				slope: 0.0023
+			},
+			{
+				id: itemID('Raw jumbo squid'),
+				level: 69,
+				xp: 75,
+				intercept: 0.0196,
+				slope: 0.0018
+			}
+		],
+		petChance: 257_770,
+		clueScrollChance: 257_770,
+		lostTicks: 0.1,
+		bankingTime: 25,
+		ticksPerRoll: 5
+	},
+	{
+		name: 'Haddock',
+		alias: ['haddock', 'raw haddock', 'trawling'],
+		subfishes: [
+			{
+				id: itemID('Raw haddock'),
+				level: 73,
+				xp: 128.5,
+				intercept: 0.0545,
+				slope: 0.0006
+			}
+		],
+		petChance: 82_243,
+		clueScrollChance: 82_243,
+		lostTicks: 0.1,
+		bankingTime: 25,
+		ticksPerRoll: 3
+	},
+	{
 		name: 'Infernal eel',
 		subfishes: [
 			{

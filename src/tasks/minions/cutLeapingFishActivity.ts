@@ -68,6 +68,14 @@ export const cutLeapingFishTask: MinionTask = {
 			}
 		}
 
+		if (barbarianFish.item.name === 'Raw haddock') {
+			const eyeChance = clamp(19.9 + ((currentLevel - 1) * 80.1) / 98, { min: 0, max: 100 });
+			loot.add('Fine fish offcuts', quantity);
+			for (let i = 0; i < quantity; i++) {
+				if (rng.percentChance(eyeChance)) loot.add('Haddock eye');
+			}
+		}
+
 		loot.add('Roe', roeCreated);
 		loot.add('Caviar', caviarCreated);
 		loot.add('Fish offcuts', fishOffcutsCreated);

@@ -1,3 +1,5 @@
+import { coralMixables } from '@/lib/bso/skills/herblore/coralMixables.js';
+
 import { Bank, Items } from 'oldschooljs';
 
 import type { Mixable } from '@/lib/skilling/types.js';
@@ -28,5 +30,6 @@ export const bsoMixables: Mixable[] = [
 		tickRate: 2,
 		bankTimePerPotion: 0.3,
 		defaultQuantity: 1
-	}
+	},
+	...coralMixables
 ];

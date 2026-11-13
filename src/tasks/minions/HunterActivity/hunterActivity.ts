@@ -47,6 +47,8 @@ export function calculateHunterResult({
 	allItemsOwned,
 	skillsAsLevels,
 	usingHuntPotion,
+	usingSuperHuntPotion = false,
+	usingAntiOdourSalt = false,
 	usingStaminaPotion,
 	bank,
 	quantity,
@@ -74,6 +76,8 @@ export function calculateHunterResult({
 	skillsAsLevels: Required<Skills>;
 	skillsAsXP: Required<Skills>;
 	usingHuntPotion: boolean;
+	usingSuperHuntPotion?: boolean;
+	usingAntiOdourSalt?: boolean;
 	usingStaminaPotion: boolean;
 	quantity: number;
 	duration: number;
@@ -106,14 +110,18 @@ export function calculateHunterResult({
 	const hornBoost = hasHorn ? (hornCharges > 0 ? 4 : 2) : 0;
 
 	let [successfulQuantity, xpReceived] = calcLootXPHunting({
-		currentLevel: Math.min(Math.floor(skillsAsLevels.hunter + (usingHuntPotion ? 2 : 0) + hornBoost), MAX_LEVEL),
+		currentLevel: Math.min(
+			Math.floor(skillsAsLevels.hunter + (usingHuntPotion ? (usingSuperHuntPotion ? 6 : 2) : 0) + hornBoost),
+			MAX_LEVEL
+		),
 		creature,
 		quantity,
 		usingStaminaPotion,
 		graceful,
 		experienceScore,
 		noRandomness,
-		rng
+		rng,
+		catchRateBonus: usingAntiOdourSalt ? 2 : 0
 	});
 	let totalHunterXP = xpReceived;
 
@@ -322,6 +330,8 @@ export const hunterTask: MinionTask = {
 			quantity,
 			channelId,
 			usingHuntPotion = false,
+			usingSuperHuntPotion = false,
+			usingAntiOdourSalt = false,
 			wildyPeak,
 			duration,
 			usingStaminaPotion = false
@@ -370,6 +380,8 @@ export const hunterTask: MinionTask = {
 			skillsAsLevels: user.skillsAsLevels,
 			skillsAsXP: user.skillsAsXP,
 			usingHuntPotion,
+			usingSuperHuntPotion,
+			usingAntiOdourSalt,
 			usingStaminaPotion,
 			bank: user.bank,
 			quantity,

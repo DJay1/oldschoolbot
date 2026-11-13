@@ -7,6 +7,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { GemTable, HerbDropTable, itemID, LootTable, MonsterAttribute, Monsters } from 'oldschooljs';
 
 import { BloodMoonItem } from '@/lib/customItems/bloodMoon.js';
+import { armadylBrewBoost } from '@/lib/customItems/coralPotions.js';
 import { ShellbaneItem, Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 
@@ -206,6 +207,7 @@ export const Aquanite: CustomMonster = {
 			[itemID('Ghrazi rapier')]: 6
 		}
 	],
+	itemCost: [armadylBrewBoost()],
 	canCannon: false,
 	canBarrage: false,
 	respawnTime: Time.Second * 5

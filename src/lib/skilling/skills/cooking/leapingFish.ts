@@ -28,5 +28,10 @@ export const LeapingFish: CutLeapingFish[] = [
 		item: Items.getOrThrow(VampyriumItem.LEECHFIN),
 		aliases: ['leechfin', 'cut leechfin', 'leechfins'],
 		tickRate: 2
+	},
+	{
+		item: Items.getOrThrow('Raw haddock'),
+		aliases: ['raw haddock', 'haddock', 'cut haddock', 'haddock eye'],
+		tickRate: 3
 	}
 ];

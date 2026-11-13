@@ -196,6 +196,7 @@ export interface FishingActivityTaskOptions extends ActivityTaskOptions {
 	flakeExtra?: number;
 	usedBarbarianCutEat?: boolean;
 	iQty?: number;
+	superFishingPotion?: boolean;
 }
 
 export interface MiningActivityTaskOptions extends ActivityTaskOptions {
@@ -330,6 +331,8 @@ export interface HunterActivityTaskOptions extends ActivityTaskOptions {
 	usingHuntPotion?: boolean;
 	wildyPeak?: Peak | null;
 	usingStaminaPotion?: boolean;
+	usingSuperHuntPotion?: boolean;
+	usingAntiOdourSalt?: boolean;
 }
 
 export interface AlchingActivityTaskOptions extends ActivityTaskOptions {

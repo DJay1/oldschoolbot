@@ -5,6 +5,7 @@ import { Bank, deepResolveItems, EItem, type ItemBank, Items, itemID } from 'old
 
 import { BitField } from '@/lib/constants.js';
 import { MaggotKingItem, SEEKING_ARROWS, SeekingFletchItem, VampyriumItem } from '@/lib/customItems/bloodMoon.js';
+import { CoralPotionItem } from '@/lib/customItems/coralPotions.js';
 import { ShellbaneItem, Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { chambersOfXericMetamorphPets, tobMetamorphPets } from '@/lib/data/CollectionsExport.js';
 import { amrodCreatables } from '@/lib/data/creatables/amrod.js';
@@ -1463,6 +1464,26 @@ const Reverteables: Createable[] = [
 ];
 
 const Createables: Createable[] = [
+	...(
+		[
+			['Crab paste', 'Red crab'],
+			['Crab paste (blue crab)', 'Blue crab'],
+			['Rainbow crab paste', CoralPotionItem.RAINBOW_CRAB],
+			['Squid paste', 'Raw swordtip squid'],
+			['Squid paste (jumbo squid)', 'Raw jumbo squid']
+		] as const
+	).map(
+		([name, input]): Createable => ({
+			name,
+			inputItems: new Bank().add(input),
+			outputItems: new Bank().add(
+				name.startsWith('Crab paste') ? 'Crab paste' : name.startsWith('Squid paste') ? 'Squid paste' : name
+			),
+			noCreatablesCl: true,
+			customReq: async user =>
+				user.owns('Pestle and mortar') ? null : 'You need a Pestle and mortar to crush this.'
+		})
+	),
 	...SEEKING_ARROWS.map(
 		(arrow): Createable => ({
 			name: arrow.name,

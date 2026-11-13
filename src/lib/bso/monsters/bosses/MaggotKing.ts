@@ -6,6 +6,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { Bank, itemID, LootTable, Monsters } from 'oldschooljs';
 
 import { MaggotKingItem } from '@/lib/customItems/bloodMoon.js';
+import { armadylBrewBoost } from '@/lib/customItems/coralPotions.js';
 import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 
@@ -78,6 +79,7 @@ export const MaggotKing: CustomMonster = {
 			[MaggotKingItem.NECKLACE_OF_RUPTURE]: 3
 		}
 	],
+	itemCost: [armadylBrewBoost()],
 	notifyDrops: [MaggotKingItem.ELDER_VENATOR_FANG, MaggotKingItem.CRIMSON_KISTEN, MaggotKingItem.MAGGOT_MARQUESS],
 	groupKillable: false,
 	respawnTime: Time.Second * 6
