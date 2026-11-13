@@ -5,6 +5,7 @@ import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 import { userMention } from '@oldschoolgg/discord';
 import { Emoji, Time } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank, Items } from 'oldschooljs';
+import { launchPetRate } from '@/lib/util.js';
 
 export const disassemblingTask: MinionTask = {
 	type: 'Disassembling',
@@ -52,7 +53,7 @@ ${xpStr}`;
 		const chancePerMinute = cogsworthChancePerHour * 60;
 		const prizeLoot = new Bank();
 		for (let i = 0; i < minutes; i++) {
-			if (rng.roll(chancePerMinute)) {
+			if (rng.roll(launchPetRate(chancePerMinute))) {
 				loot.add('Cogsworth');
 			}
 		}

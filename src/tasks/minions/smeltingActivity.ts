@@ -7,6 +7,7 @@ import { Bank, EItem, itemID } from 'oldschooljs';
 
 import Smithing from '@/lib/skilling/skills/smithing/index.js';
 import type { SmeltingActivityTaskOptions } from '@/lib/types/minions.js';
+import { launchPetRate } from '@/lib/util.js';
 
 export const smeltingTask: MinionTask = {
 	type: 'Smelting',
@@ -64,7 +65,7 @@ export const smeltingTask: MinionTask = {
 				globalDroprates.zak.clIncrease
 			);
 			for (let i = 0; i < numMinutes; i++) {
-				if (rng.roll(petChance)) {
+				if (rng.roll(launchPetRate(petChance))) {
 					str +=
 						'\n\n' +
 						customEmoji('zak') +

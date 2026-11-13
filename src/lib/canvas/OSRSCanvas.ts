@@ -14,6 +14,12 @@ import {
 	Canvas as SkiaCanvas
 } from 'skia-canvas';
 
+import {
+	getCachedPatronDye,
+	PATRON_DYE_SPARKLE_OFFSETS,
+	type PatronItemDye,
+	resolvePatronDyeAppearance
+} from '@/lib/bsc/patronDyes.js';
 import { CanvasModule } from '@/lib/canvas/CanvasModule.js';
 import type { CanvasSpritesheet, SpriteData } from '@/lib/canvas/CanvasSpritesheet.js';
 import {
@@ -64,6 +70,37 @@ export class OSRSCanvas {
 		LIGHT_CHOCOLATE: '#494034'
 	};
 	private static tinyPixelYOffset: number | null = null;
+	private static whiteGlowImage: Image | null | undefined;
+	private static tintedGlowCache = new Map<string, Canvas>();
+
+	/** Load the shared white-glow sprite used by Seer and patron dyes. */
+	private static async loadWhiteGlow(): Promise<Image | null> {
+		if (OSRSCanvas.whiteGlowImage !== undefined) return OSRSCanvas.whiteGlowImage;
+		try {
+			OSRSCanvas.whiteGlowImage = await loadImage(await readFile('./src/lib/resources/images/white-glow.png'));
+		} catch {
+			OSRSCanvas.whiteGlowImage = null;
+		}
+		return OSRSCanvas.whiteGlowImage;
+	}
+
+	/** Tint white-glow.png with source-in, matching BSO getCustomPurpleEffect. */
+	private static async getSeerStyleGlow(color: string): Promise<Canvas | null> {
+		const key = color.toLowerCase();
+		const cached = OSRSCanvas.tintedGlowCache.get(key);
+		if (cached) return cached;
+		const white = await OSRSCanvas.loadWhiteGlow();
+		if (!white) return null;
+		const canvas = createCanvas(white.width, white.height);
+		const ctx = canvas.getContext('2d');
+		ctx.imageSmoothingEnabled = false;
+		ctx.drawImage(white, 0, 0);
+		ctx.globalCompositeOperation = 'source-in';
+		ctx.fillStyle = color;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		OSRSCanvas.tintedGlowCache.set(key, canvas);
+		return canvas;
+	}
 
 	public sprite: IBgSprite | null = null;
 	public ctx: CanvasContext;
@@ -499,6 +536,7 @@ export class OSRSCanvas {
 		user,
 		override_show_paints: show_paints,
 		effect,
+		patronDyeOverride,
 		networkTimeoutMs = OSRSCanvas.iconFetchBudgetMs
 	}: {
 		itemID: number;
@@ -516,6 +554,7 @@ export class OSRSCanvas {
 		user?: MUser | null | undefined;
 		override_show_paints?: boolean | undefined;
 		effect?: Image | undefined;
+		patronDyeOverride?: PatronItemDye | null;
 		networkTimeoutMs?: number;
 	}) {
 		const itemIcon: Image | Canvas = await OSRSCanvas.getItemImage({ itemID, iconPackId, networkTimeoutMs });
@@ -541,29 +580,48 @@ export class OSRSCanvas {
 			itemIcon.height
 		] as const;
 
+		const patronDye = patronDyeOverride ?? (user ? getCachedPatronDye(user.id, itemID) : null);
+		const appearance = resolvePatronDyeAppearance(patronDye);
+		const tintItem = Boolean(
+			appearance && patronDye && (patronDye.mode === 'recolour' || patronDye.mode === 'recolour_glow')
+		);
+		const useDyeGlow = Boolean(
+			appearance && patronDye && (patronDye.mode === 'glow' || patronDye.mode === 'recolour_glow')
+		);
+		const dyeGlowEffect = useDyeGlow && appearance ? await OSRSCanvas.getSeerStyleGlow(appearance.glow) : null;
+
+		const centerX = destX + itemIcon.width / 2;
+		const centerY = destY + itemIcon.height / 2;
+
 		if (effect) {
-			const centerX = destX + itemIcon.width / 2;
-			const centerY = destY + itemIcon.height / 2;
 			const effectX = centerX - effect.width / 2;
 			const effectY = centerY - effect.height / 2;
 			this.ctx.drawImage(effect, effectX, effectY, effect.width, effect.height);
 		}
-		glow = handleSlayerMaskGlow({ itemID, user, glow });
-
-		if (glow) {
-			this.drawGlowingBlur(
-				destX + itemIcon.width / 2,
-				destY + itemIcon.height / 2,
-				glow.radius,
-				glow.color,
-				glow.blur
-			);
+		if (dyeGlowEffect) {
+			const effectX = centerX - dyeGlowEffect.width / 2;
+			const effectY = centerY - dyeGlowEffect.height / 2;
+			this.ctx.drawImage(dyeGlowEffect, effectX, effectY, dyeGlowEffect.width, dyeGlowEffect.height);
+			if (appearance?.sparkles) {
+				this.drawPatronDyeSparkles(centerX, centerY, appearance.glow);
+			}
 		}
 
+		glow = handleSlayerMaskGlow({ itemID, user, glow });
+		if (glow && !dyeGlowEffect) {
+			this.drawGlowingBlur(centerX, centerY, glow.radius, glow.color, glow.blur);
+		}
+
+		const sprite =
+			tintItem && appearance
+				? this.tintImage(args[0], appearance.color, itemIcon.width, itemIcon.height)
+				: args[0];
+		const drawnArgs = [sprite, args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]] as const;
+
 		if (outline) {
-			drawImageWithOutline(this.ctx, ...args, outline.outlineColor);
+			drawImageWithOutline(this.ctx, ...drawnArgs, outline.outlineColor);
 		} else {
-			this.ctx.drawImage(...args);
+			this.ctx.drawImage(...drawnArgs);
 		}
 
 		if (quantity) {
@@ -574,6 +632,37 @@ export class OSRSCanvas {
 				color: textColor ?? generateHexColorForCashStack(quantity)
 			});
 		}
+	}
+
+	private tintImage(image: Image | Canvas, color: string, width: number, height: number): Canvas {
+		const canvas = new SkiaCanvas(width, height);
+		canvas.gpu = false;
+		const ctx = canvas.getContext('2d');
+		ctx.imageSmoothingEnabled = false;
+		ctx.drawImage(image, 0, 0, width, height);
+		ctx.globalCompositeOperation = 'multiply';
+		ctx.fillStyle = color;
+		ctx.fillRect(0, 0, width, height);
+		ctx.globalCompositeOperation = 'destination-in';
+		ctx.drawImage(image, 0, 0, width, height);
+		ctx.globalCompositeOperation = 'source-over';
+		return canvas;
+	}
+
+	private drawPatronDyeSparkles(centerX: number, centerY: number, color: string) {
+		this.ctx.save();
+		this.ctx.imageSmoothingEnabled = false;
+		for (const sparkle of PATRON_DYE_SPARKLE_OFFSETS) {
+			const x = Math.round(centerX + sparkle.x);
+			const y = Math.round(centerY + sparkle.y);
+			const arm = Math.max(1, Math.round(sparkle.size));
+			this.ctx.fillStyle = color;
+			this.ctx.fillRect(x - arm, y, arm * 2 + 1, 1);
+			this.ctx.fillRect(x, y - arm, 1, arm * 2 + 1);
+			this.ctx.fillStyle = '#FFFFFF';
+			this.ctx.fillRect(x, y, 1, 1);
+		}
+		this.ctx.restore();
 	}
 
 	public drawGlowingBlur(x: number, y: number, radius: number, color: string, blur: number, intensity = 1) {

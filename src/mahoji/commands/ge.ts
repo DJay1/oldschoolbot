@@ -115,7 +115,7 @@ export const geCommand = defineCommand({
 								value: itemID.toString()
 							}));
 						}
-						const res = itemArr.filter(i => i.key.includes(value.toLowerCase()) && !isGEUntradeable(i));
+						const res = itemArr.filter(i => i.key.includes(value.toLowerCase()) && !isGEUntradeable(i, userId));
 						return res.map(i => ({ name: `${i.name}`, value: i.id.toString() }));
 					}
 				},
@@ -136,7 +136,7 @@ export const geCommand = defineCommand({
 					autocomplete: async ({ value, user }: StringAutoComplete) => {
 						return user.bank
 							.items()
-							.filter(i => !isGEUntradeable(i[0].id))
+							.filter(i => !isGEUntradeable(i[0].id, user.id))
 							.filter(i => (!value ? true : i[0].name.toLowerCase().includes(value.toLowerCase())))
 							.map(i => ({ name: `${i[0].name} (${i[1]}x Owned)`, value: i[0].name }));
 					}
@@ -370,7 +370,7 @@ The next buy limit reset is at: ${dateFm(GrandExchange.getInterval().end)}, it r
 		if (options.view) {
 			const item = Items.getItem(options.view.item);
 			if (!item) return 'Invalid item.';
-			if (!itemIsTradeable(item.id)) return 'That item is not tradeable on the Grand Exchange.';
+			if (!itemIsTradeable(item.id, false, user.id)) return 'That item is not tradeable on the Grand Exchange.';
 			const priceData = marketPricemap.get(item.id);
 			let baseMessage = `**${item.name}**
 **Buy Limit Per 4 hours:** ${GrandExchange.getItemBuyLimit(item).toLocaleString()}`;

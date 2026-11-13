@@ -11,6 +11,7 @@ import { Bank, type ItemBank, resolveItems } from 'oldschooljs';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { resolveAttackStyles } from '@/lib/minions/functions/resolveAttackStyles.js';
 import { TeamLoot } from '@/lib/simulation/TeamLoot.js';
+import { launchPetRate } from '@/lib/util.js';
 
 async function handleDOAXP(user: MUser, qty: number, isCm: boolean) {
 	let rangeXP = 10_000 * qty;
@@ -127,14 +128,14 @@ export const doaTask: MinionTask = {
 					totalLoot.add(user.id, DOANonUniqueTable.roll());
 				}
 
-				if (cm && roll(globalDroprates.doaMetamorphPet.baseRate)) {
+				if (cm && roll(launchPetRate(globalDroprates.doaMetamorphPet.baseRate))) {
 					const unownedCMPets = randArrItem(doaMetamorphPets.filter(t => !user.cl.has(t)));
 					if (unownedCMPets) {
 						totalLoot.add(user.id, unownedCMPets);
 					}
 				}
 
-				if (roll(petDroprate)) {
+				if (roll(launchPetRate(petDroprate))) {
 					totalLoot.add(user.id, 'Crush');
 				}
 			}

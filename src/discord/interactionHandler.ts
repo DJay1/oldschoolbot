@@ -14,6 +14,7 @@ import type { OldSchoolBotClient } from '@/discord/OldSchoolBotClient.js';
 import { DISCORD_USER_IDS_INSERTED_CACHE } from '@/lib/cache.js';
 import { OSInteraction } from '@/lib/structures/OSInteraction.js';
 import { claimDiscordEvent } from '@/lib/util/discordEventGate.js';
+import { handlePollUpdateComponent } from '@/lib/bsc/pollService.js';
 import { globalButtonInteractionHandlerWrapper } from '@/lib/util/globalInteractions.js';
 
 export async function interactionHandler(client: OldSchoolBotClient, itx: APIInteraction) {
@@ -41,6 +42,19 @@ export async function interactionHandler(client: OldSchoolBotClient, itx: APIInt
 			options: itx.data.options
 		};
 		return autoCompleteHandler(d);
+	}
+
+	if (itx.type === InteractionType.MessageComponent && itx.data.component_type === ComponentType.StringSelect) {
+		await handlePollUpdateComponent({
+			id: itx.id,
+			token: itx.token,
+			userId,
+			guildId,
+			roleIds: itx.member?.roles,
+			customId: itx.data.custom_id,
+			values: itx.data.values
+		});
+		return;
 	}
 
 	// Button

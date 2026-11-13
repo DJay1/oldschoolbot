@@ -536,12 +536,12 @@ Perks, as totals for that tier:
 
 | Tier | Perks |
 | --- | --- |
-| Pup | +3 min max trip, supporter badge |
-| Good Boy | +6 min, Discord role, higher sim caps, +2 Grand Exchange slots |
-| Top Dog | +10 min, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots |
-| Alpha | +15 min, bank backgrounds and background commands, spawn lamp, spawn box, unlimited giveaways, +8 Grand Exchange slots |
-| Pack Leader | exclusive bank background (Barrows), `/patron double_loot` once a month (40 min, server-wide), gift 1 week of Good Boy once a month |
-| Biggest of Dogs | custom bank background while they stay Pack Leader or higher, `/patron double_loot` once a month (90 min), gift 1 week of Alpha once a month |
+| Pup | +3 min trips, scrollable bank, queue 3 trips every 2 days, 3 pts/mo, loyalty badges (1-month right away; 3/6/12 with a continuous paid streak), `/tools patron purple_glow`, Barrows bank background (night, bright day sky on a good drop) |
+| Good Boy | All Pup perks, plus +6 min trips, +2 GE slots, 5 pts/mo, queue 4 trips every 2 days, Good Boy bank background pair, Corgo collar badge, Discord role, higher sim caps |
+| Top Dog | All Good Boy perks, plus +10 min trips, +4 GE slots, 10 pts/mo, queue 5 trips every 2 days, give a mystery box (23.5 hour cooldown), trip-repeat buttons, custom minion icon and tame image, `/patron title`, `/patron flair`, `/patron profile`, dye shop |
+| Alpha | All Top Dog perks, plus +15 min trips, +8 GE slots, 15 pts/mo, queue 6 trips every 2 days, every paid bank background plus custom colour, spawn lamp and spawn box, unlimited giveaways |
+| Pack Leader | All Alpha perks, plus +18 min trips, 25 pts/mo, queue 7 trips every 2 days, Verzik bank background (fight, purple chest on a good drop), 40 min server `/patron double_loot` once every 31 days, gift 1 week of Good Boy once a month |
+| Biggest of Dogs | All Pack Leader perks, plus +20 min trips, 50 pts/mo, queue 8 trips every 2 days, fully custom background while they stay Pack Leader or higher, 90 min server `/patron double_loot` once every 31 days, gift 1 week of Alpha once a month |
 
 ### Checklist for DJ
 
@@ -595,7 +595,17 @@ Player commands:
 
 ```
 /patron info
+
+/patron title
+
+/patron flair
+
+/patron profile
+
+/patron dyes
 ```
+
+`/patron dyes` sells Biscuit, Fetch, Pawberry, Midnight Pup, and Golden Corgo dyes. The first four have distinct seer-style glow colours; Midnight Pup always sparkles. Golden Corgo is a catch-all: players set `glow_hex` and `recolour_hex` (`#RRGGBB`) and can toggle `sparkle`. Dyes are an account cosmetic, so dyed items stay tradeable. `/patron dye` can be used even if the item is not in the bank. `/patron dyeclaim` (or `/patron undye`) returns the bottle and removes the record. `/patron dye_preview` shows all five dyes on a chosen item, with a Golden Corgo note that it can use any glow colour, any dye colour, and sparkle on or off. Apply `prisma/sql/bsc_patron_dye_custom.sql` with `prisma db execute` (never `db push`) before using custom Golden Corgo colours in production.
 
 ```
 /patron gift user:@Friend

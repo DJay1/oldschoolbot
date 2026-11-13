@@ -36,4 +36,12 @@ describe('calculateShopBuyCost', () => {
 		const result = calculateShopBuyCost({ gpCost: 10, quantity: 5, shopQuantity: 5, changePer: 0 });
 		expect(result).toEqual({ totalCost: 50, averageCost: 10 });
 	});
+
+	test('rejects negative, non-integer, and non-finite quantities', () => {
+		for (const quantity of [-1, -50_000, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+			expect(() => calculateShopBuyCost({ gpCost: 50, quantity })).toThrow(
+				/non-negative whole number|too large/i
+			);
+		}
+	});
 });

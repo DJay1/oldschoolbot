@@ -10,6 +10,7 @@ import { trackLoot } from '@/lib/lootTrack.js';
 import announceLoot from '@/lib/minions/functions/announceLoot.js';
 import { TeamLoot } from '@/lib/simulation/TeamLoot.js';
 import { getUsersCurrentSlayerInfo } from '@/lib/slayer/slayerUtil.js';
+import { launchPetTertiaryChanges } from '@/lib/util.js';
 
 const methodsOfDeath = ['Burnt to death', 'Eaten', 'Crushed', 'Incinerated'];
 
@@ -92,7 +93,7 @@ export const ignecarusTask: MinionTask = {
 				if (deaths[user.id].qty === quantity) continue;
 				else lootRolls = quantity - deaths[user.id].qty;
 			}
-			const loot = new Bank().add(IgnecarusLootTable.roll(lootRolls));
+			const loot = new Bank().add(IgnecarusLootTable.roll(lootRolls, { tertiaryItemPercentageChanges: launchPetTertiaryChanges() }));
 			if (isDoubleLootActive(duration)) {
 				loot.multiply(2);
 			}

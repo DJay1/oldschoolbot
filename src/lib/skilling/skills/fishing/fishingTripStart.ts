@@ -7,6 +7,7 @@ import { Bank, EItem, Items } from 'oldschooljs';
 import { summerFishingStartAdjustments } from '@/lib/events/summer/fishing.js';
 import type { Fish } from '@/lib/skilling/types.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
+import { finalizeTripLength } from '@/lib/util/tripLength.js';
 import {
 	calcLeapingExpectedBait,
 	calcRadasBlessingBoost,
@@ -468,6 +469,7 @@ export async function calcFishingTripStart({
 			boosts.push("Fish barrel won't help you while powerfishing!");
 		}
 	}
+	maxTrip = finalizeTripLength(maxTrip);
 
 	const calculateTrip = (currentTripSpeedMultiplier: number, baseBoosts: string[]) => {
 		const tripTicks = (maxTrip * currentTripSpeedMultiplier) / (Time.Second * 0.6);

@@ -7,6 +7,7 @@ import { Bank, type Item, Items, LootTable, SimpleTable } from 'oldschooljs';
 
 import { BitField } from '@/lib/constants.js';
 import type { Plant } from '@/lib/skilling/types.js';
+import { launchPetRate } from '@/lib/util.js';
 
 export const zygomiteSeedMutChance = 15;
 
@@ -168,7 +169,7 @@ export const zygomitePlants: Plant[] = zygomiteFarmingSource.map(src => ({
 		if (src.lootTable) {
 			for (let i = 0; i < quantity; i++) {
 				loot.add(src.lootTable.roll());
-				if (roll(dropRate)) {
+				if (roll(launchPetRate(dropRate))) {
 					loot.add('Fungo');
 				}
 			}

@@ -11,13 +11,29 @@ import { Cookables } from '@/lib/skilling/skills/cooking/cooking.js';
 import type { Fish, SkillNameType } from '@/lib/skilling/types.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import { UpdateBank } from '@/lib/structures/UpdateBank.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import type { XPBank } from '@/lib/structures/XPBank.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 import {
 	calcLeapingExpectedCookingXP,
 	calcMinnowQuantityRange,
 	type SharkLureQuantity,
 	sharkLureConfig
 } from './fishingUtil.js';
+
+/** Build the trip-return XP/hr segments from the amounts actually granted (after addXP multipliers). */
+export function formatFishingXpPerHour(xpBank: XPBank, duration: number): string[] {
+	const perHour = (amount: number) => (duration === 0 ? 0 : Math.floor((amount * Time.Hour) / duration));
+	const segments = [`${toKMB(perHour(xpBank.amount('fishing')))}/Hr`];
+	for (const entry of xpBank.xpList) {
+		if (entry.skillName === 'fishing') continue;
+		const rate = perHour(entry.amount);
+		if (rate > 0) {
+			const formattedSkill = `${entry.skillName.charAt(0).toUpperCase()}${entry.skillName.slice(1)}`;
+			segments.push(`${toKMB(rate)}/Hr ${formattedSkill}`);
+		}
+	}
+	return segments;
+}
 
 export function calcFishingTripResult({
 	fish,
@@ -227,7 +243,7 @@ export function calcFishingTripResult({
 			globalDroprates.shelldon.clIncrease
 		);
 		for (let i = 0; i < minutesInTrip; i++) {
-			if (roll(petChance)) {
+			if (roll(launchPetRate(petChance))) {
 				updateBank.itemLootBank.add('Shelldon');
 				messages.push(
 					customEmoji('shelldon') +

@@ -67,24 +67,36 @@ function resolveComponents(
 	}));
 }
 
-export async function sendableMsgToApiCreate({ msg }: { msg: SendableMessage }): Promise<APISendableMessage> {
+export async function sendableMsgToApiCreate({
+	msg,
+	forEdit = false
+}: {
+	msg: SendableMessage;
+	forEdit?: boolean;
+}): Promise<APISendableMessage> {
 	if (typeof msg === 'string') {
-		return sendableMsgToApiCreate({ msg: { content: msg } });
+		return sendableMsgToApiCreate({ msg: { content: msg }, forEdit });
 	}
 
 	if ('build' in msg) {
 		// TODO: if content >2k, send as txt file
-		return sendableMsgToApiCreate({ msg: await msg.build() });
+		return sendableMsgToApiCreate({ msg: await msg.build(), forEdit });
 	}
 
 	const message: RESTPostAPIChannelMessageJSONBody = {
-		content: msg.content ?? '',
 		components: resolveComponents(msg.components),
 		embeds: msg.embeds?.map(embed => embed.toJSON()),
 		flags: msg.ephemeral ? MessageFlags.Ephemeral : undefined,
 		allowed_mentions: resolveAllowedMentions(msg.content, msg.allowedMentions),
 		message_reference: msg.messageReference
 	};
+	if (forEdit) {
+		if (msg.content !== undefined) {
+			message.content = msg.content;
+		}
+	} else {
+		message.content = msg.content ?? '';
+	}
 
 	if ('files' in msg && msg.files && msg.files.length > 0) {
 		const files: RawFile[] = [];

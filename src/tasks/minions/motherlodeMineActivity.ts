@@ -7,7 +7,7 @@ import { Bank, LootTable } from 'oldschooljs';
 
 import Mining from '@/lib/skilling/skills/mining.js';
 import type { MotherlodeMiningActivityTaskOptions } from '@/lib/types/minions.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 
 export const motherlodeMiningTask: MinionTask = {
 	type: 'MotherlodeMining',
@@ -99,7 +99,7 @@ export const motherlodeMiningTask: MinionTask = {
 				globalDroprates.doug.clIncrease
 			);
 			for (let i = 0; i < minutesInTrip; i++) {
-				if (rng.roll(droprate)) {
+				if (rng.roll(launchPetRate(droprate))) {
 					loot.add('Doug');
 					str +=
 						'\n' +

@@ -14,12 +14,14 @@ import {
 	ZWebhook,
 	ZWebhookPermissions
 } from '@oldschoolgg/schemas';
-import { cleanUsername, Time } from '@oldschoolgg/toolkit';
+import { cleanUsername, resolveEmojiText, Time } from '@oldschoolgg/toolkit';
 import { isValidDiscordSnowflake, MockedRedis, RedisKeys } from '@oldschoolgg/util';
 import { Redis } from 'ioredis';
 
 import type { Guild, Prisma } from '@/prisma/main.js';
+import type { PollRecord } from '@/lib/bsc/polls.js';
 import { BitField, BOT_TYPE, globalConfig } from '@/lib/constants.js';
+import { type BuyDailyReserveResult, buyDailyLimitKeyType } from '@/lib/data/buyables/skillingSupplyLimits.js';
 import type { RobochimpUser } from '@/lib/roboChimp.js';
 import { makeBadgeString } from '@/lib/util/makeBadgeString.js';
 
@@ -36,14 +38,21 @@ type RatelimitConfig = {
 	max: number;
 };
 
-type RatelimitType = 'random_events' | 'global_buttons' | 'stats_command' | 'delay_member_fetch' | 'delay_guild_fetch';
+type RatelimitType =
+	| 'random_events'
+	| 'global_buttons'
+	| 'stats_command'
+	| 'delay_member_fetch'
+	| 'delay_guild_fetch'
+	| 'buy_gf';
 
 const RATELIMITS: Record<RatelimitType, RatelimitConfig> = {
 	global_buttons: { windowSeconds: 2, max: 1 },
 	random_events: { windowSeconds: TTL.Hour * 3, max: 5 },
 	stats_command: { windowSeconds: 5, max: 1 },
 	delay_member_fetch: { windowSeconds: 5 * 60, max: 1 },
-	delay_guild_fetch: { windowSeconds: 5 * 60, max: 1 }
+	delay_guild_fetch: { windowSeconds: 5 * 60, max: 1 },
+	buy_gf: { windowSeconds: TTL.Day, max: 1 }
 } as const;
 
 const BotKeys = RedisKeys[BOT_TYPE];
@@ -425,7 +434,7 @@ class CacheManager {
 		}
 		const key = BotKeys.User.BadgedUsername(userId);
 		const cached = await this.getExpiringString(key);
-		if (cached) return cached;
+		if (cached) return resolveEmojiText(cached);
 
 		const username = await this.getUsername(userId);
 		const user = await prisma.user.findUnique({
@@ -650,6 +659,169 @@ class CacheManager {
 			await this.client.del(key);
 		}
 		return existing;
+	}
+
+	private pollKey(id: string) {
+		return `${BOT_TYPE}:poll:record:${id}`;
+	}
+
+	private pollIndexKey() {
+		return `${BOT_TYPE}:poll:index`;
+	}
+
+	private pollWeeklyReminderKey(weekId: string) {
+		return `${BOT_TYPE}:poll:weeklyReminder:${weekId}`;
+	}
+
+	private pollCloseLockKey(id: string) {
+		return `${BOT_TYPE}:poll:closeLock:${id}`;
+	}
+
+	async savePoll(poll: PollRecord): Promise<void> {
+		const key = this.pollKey(poll.id);
+		await this.client.set(key, JSON.stringify(poll));
+		await this.client.sadd(this.pollIndexKey(), poll.id);
+	}
+
+	async getPoll(id: string): Promise<PollRecord | null> {
+		const raw = await this.client.get(this.pollKey(id));
+		if (!raw) return null;
+		try {
+			return JSON.parse(raw) as PollRecord;
+		} catch {
+			return null;
+		}
+	}
+
+	async deletePoll(id: string): Promise<void> {
+		await this.client.del(this.pollKey(id));
+		await this.client.srem(this.pollIndexKey(), id);
+	}
+
+	async listPolls(): Promise<PollRecord[]> {
+		const ids = await this.client.smembers(this.pollIndexKey());
+		if (ids.length === 0) return [];
+		const rows = await this.client.mget(ids.map(id => this.pollKey(id)));
+		const polls: PollRecord[] = [];
+		for (const row of rows) {
+			if (!row) continue;
+			try {
+				polls.push(JSON.parse(row) as PollRecord);
+			} catch {}
+		}
+		return polls;
+	}
+
+	async tryClaimPollCloseLock(id: string): Promise<boolean> {
+		const result = await this.client.set(this.pollCloseLockKey(id), '1', 'EX', 60, 'NX');
+		return result === 'OK';
+	}
+
+	async releasePollCloseLock(id: string): Promise<void> {
+		await this.client.del(this.pollCloseLockKey(id));
+	}
+
+	async tryClaimPollWeeklyReminder(weekId: string): Promise<boolean> {
+		const result = await this.client.set(this.pollWeeklyReminderKey(weekId), '1', 'EX', 60 * 60 * 24 * 10, 'NX');
+		return result === 'OK';
+	}
+
+	async releasePollWeeklyReminder(weekId: string): Promise<void> {
+		await this.client.del(this.pollWeeklyReminderKey(weekId));
+	}
+
+	private pollUpdateNoteKey(userId: string) {
+		return `${BOT_TYPE}:poll:updateNote:${userId}`;
+	}
+
+	async savePollUpdateNote(userId: string, note: string | null): Promise<void> {
+		const key = this.pollUpdateNoteKey(userId);
+		if (!note) {
+			await this.client.del(key);
+			return;
+		}
+		await this.client.set(key, note, 'EX', 60 * 10);
+	}
+
+	async getPollUpdateNote(userId: string): Promise<string | null> {
+		return await this.client.get(this.pollUpdateNoteKey(userId));
+	}
+
+	async clearPollUpdateNote(userId: string): Promise<void> {
+		await this.client.del(this.pollUpdateNoteKey(userId));
+	}
+
+	private buyDailyLimitKey(userId: string, buyableName: string): string {
+		return BotKeys.User.Ratelimit(buyDailyLimitKeyType(buyableName), userId);
+	}
+
+	public async peekBuyDailyLimit(
+		userId: string,
+		buyableName: string
+	): Promise<{ used: number; resetAtSeconds: number | null }> {
+		const key = this.buyDailyLimitKey(userId, buyableName);
+		const raw = await this.client.get(key);
+		const used = Math.max(0, Number(raw ?? 0) || 0);
+		const pttl = await this.client.pttl(key);
+		return {
+			used,
+			resetAtSeconds: pttl > 0 ? Math.floor((Date.now() + pttl) / 1000) : null
+		};
+	}
+
+	public async tryReserveBuyDailyLimit(
+		userId: string,
+		buyableName: string,
+		quantity: number,
+		cap: number,
+		windowSeconds: number
+	): Promise<BuyDailyReserveResult> {
+		const peek = await this.peekBuyDailyLimit(userId, buyableName);
+		if (!Number.isSafeInteger(quantity) || quantity < 1 || !Number.isSafeInteger(cap) || cap < 1) {
+			return {
+				ok: false,
+				used: peek.used,
+				remaining: Math.max(0, cap - peek.used),
+				resetAtSeconds: peek.resetAtSeconds
+			};
+		}
+
+		const raw = (await this.client.eval(
+			"local current = tonumber(redis.call('GET', KEYS[1]) or '0')\nlocal qty = tonumber(ARGV[1])\nlocal cap = tonumber(ARGV[2])\nlocal window = tonumber(ARGV[3])\nif current + qty > cap then\n	local pttl = redis.call('PTTL', KEYS[1])\n	return {0, current, pttl}\nend\nlocal newv = redis.call('INCRBY', KEYS[1], qty)\nif current == 0 then\n	redis.call('EXPIRE', KEYS[1], window)\nend\nlocal pttl = redis.call('PTTL', KEYS[1])\nif pttl < 0 then\n	redis.call('EXPIRE', KEYS[1], window)\n	pttl = window * 1000\nend\nreturn {1, newv, pttl}",
+			1,
+			this.buyDailyLimitKey(userId, buyableName),
+			String(quantity),
+			String(cap),
+			String(windowSeconds)
+		)) as (string | number)[];
+
+		const ok = Number(raw[0]) === 1;
+		const used = Number(raw[1]);
+		const pttl = Number(raw[2]);
+		const resetAtSeconds = pttl > 0 ? Math.floor((Date.now() + pttl) / 1000) : null;
+		if (ok) {
+			return {
+				ok: true,
+				used,
+				resetAtSeconds: resetAtSeconds ?? Math.floor(Date.now() / 1000) + windowSeconds
+			};
+		}
+		return {
+			ok: false,
+			used,
+			remaining: Math.max(0, cap - used),
+			resetAtSeconds
+		};
+	}
+
+	public async releaseBuyDailyLimit(userId: string, buyableName: string, quantity: number): Promise<void> {
+		if (!Number.isSafeInteger(quantity) || quantity < 1) return;
+		await this.client.eval(
+			"local current = tonumber(redis.call('GET', KEYS[1]) or '0')\nlocal qty = tonumber(ARGV[1])\nif current <= 0 or qty <= 0 then\n	return 0\nend\nif qty >= current then\n	redis.call('DEL', KEYS[1])\n	return 0\nend\nreturn redis.call('DECRBY', KEYS[1], qty)",
+			1,
+			this.buyDailyLimitKey(userId, buyableName),
+			String(quantity)
+		);
 	}
 
 	async close() {

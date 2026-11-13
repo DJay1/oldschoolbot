@@ -5,6 +5,7 @@ import { determineMiningTime } from '@/lib/skilling/functions/determineMiningTim
 import { pickaxes } from '@/lib/skilling/functions/miningBoosts.js';
 import Mining from '@/lib/skilling/skills/mining.js';
 import type { MotherlodeMiningActivityTaskOptions } from '@/lib/types/minions.js';
+import { getPatronTripBonusMs } from '@/lib/util/calcMaxTripLength.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 
 export async function motherlodeMineCommand({
@@ -76,6 +77,7 @@ export async function motherlodeMineCommand({
 		hasGlory: user.hasEquippedOrInBank('Amulet of glory'),
 		maxTripLength: await user.calcMaxTripLength('MotherlodeMining'),
 		hasKaramjaMedium: false,
+		patronBonusMs: await getPatronTripBonusMs(user),
 		rng
 	});
 

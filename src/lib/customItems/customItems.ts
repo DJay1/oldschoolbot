@@ -26,6 +26,7 @@ import './summoning.js';
 import './firstAge.js';
 import '../events/launch/items.js';
 import './bankPlaceholders.js';
+import './patronDyes.js';
 import './slayer2026.js';
 import './bloodMoon.js';
 

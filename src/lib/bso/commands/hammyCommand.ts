@@ -52,23 +52,25 @@ export async function feedHammyCommand(interaction: MInteraction, user: MUser, i
 		`${user}, are you sure you want to give ${firstItem.name} to Hammy? You probably won't get it back.`
 	);
 
-	const { bank } = user;
-	if (!bank.has(firstItem.id)) {
-		return `You don't have a ${firstItem.name}.`;
-	}
-	if (!bank.has('Hammy')) {
+	await user.sync();
+	if (!user.bank.has('Hammy')) {
 		return "You don't have a Hammy, so how could you feed it?";
 	}
 
+	const cost = new Bank().add(firstItem.id);
+	try {
+		await user.removeItemsFromBank(cost);
+	} catch {
+		return `You don't have a ${firstItem.name}.`;
+	}
+
 	if (roll(chanceToDouble)) {
-		const loot = new Bank();
-		loot.add(firstItem.id);
-		await user.addItemsToBank({ items: loot, collectionLog: false });
+		await user.addItemsToBank({ items: new Bank().add(firstItem.id, 2), collectionLog: false });
 		return randArrItem(hammyDoubleMessages)!.replace(/\{item\}/g, firstItem.name);
 	}
 	if (roll(chanceToSave)) {
+		await user.addItemsToBank({ items: cost, collectionLog: false });
 		return randArrItem(hammyFailMessages)!.replace(/\{item\}/g, firstItem.name);
 	}
-	await user.removeItemsFromBank(new Bank().add(firstItem.id));
 	return randArrItem(hammyMessages)!.replace(/\{item\}/g, firstItem.name);
 }

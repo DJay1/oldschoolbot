@@ -8,7 +8,7 @@ import {
 	QUEUE_RESET_MS,
 	queueResetAtMs,
 	refundUnstartedTrips,
-	utcDayStartMs
+	startQueueWindowIfNeeded
 } from '@/lib/bsc/tripQueueLimits.js';
 import { PerkTier } from '@/lib/constants.js';
 
@@ -34,23 +34,49 @@ describe('trip queue limits', () => {
 		expect(dailyQueueAllowance(PerkTier.Seven)).toBe(8);
 	});
 
-	test('windows are 2 days long', () => {
-		const now = Date.parse('2026-11-08T15:41:00.000Z');
-		const start = utcDayStartMs(now);
-		expect(start).toBeLessThanOrEqual(now);
-		expect(now - start).toBeLessThan(QUEUE_RESET_MS);
-		expect(start % QUEUE_RESET_MS).toBe(0);
-		expect(queueResetAtMs(now)).toBe(start + QUEUE_RESET_MS);
+	test('queueResetAtMs is the personal window start plus the reset interval', () => {
+		const start = Date.parse('2026-11-08T15:41:00.000Z');
+		expect(queueResetAtMs(start)).toBe(start + QUEUE_RESET_MS);
+		expect(queueResetAtMs(0)).toBe(0);
 	});
 
-	test('applyQueueDailyReset clears usage once a new window starts', () => {
-		const now = Date.parse('2026-11-08T15:41:00.000Z');
-		const start = utcDayStartMs(now);
+	test('applyQueueDailyReset honors a stored personal window and clears it when it expires', () => {
+		const start = Date.parse('2026-11-08T15:41:00.000Z');
 		const stale = { dailyUsed: 2, dailyReset: start };
 		expect(applyQueueDailyReset(stale, start + QUEUE_RESET_MS - 1)).toEqual(stale);
 		expect(applyQueueDailyReset(stale, start + QUEUE_RESET_MS)).toEqual({
 			dailyUsed: 0,
-			dailyReset: start + QUEUE_RESET_MS
+			dailyReset: 0
+		});
+	});
+
+	test('applyQueueDailyReset does not start a new window just by viewing', () => {
+		const now = Date.parse('2026-11-09T12:00:00.000Z');
+		expect(applyQueueDailyReset({ dailyUsed: 0, dailyReset: 0 }, now)).toEqual({
+			dailyUsed: 0,
+			dailyReset: 0
+		});
+		expect(applyQueueDailyReset({ dailyUsed: 3, dailyReset: 0 }, now)).toEqual({
+			dailyUsed: 0,
+			dailyReset: 0
+		});
+	});
+
+	test('startQueueWindowIfNeeded starts a personal window on use', () => {
+		const now = Date.parse('2026-11-09T12:00:00.000Z');
+		expect(startQueueWindowIfNeeded({ dailyUsed: 0, dailyReset: 0 }, now)).toEqual({
+			dailyUsed: 0,
+			dailyReset: now
+		});
+		const start = now - 1000;
+		expect(startQueueWindowIfNeeded({ dailyUsed: 2, dailyReset: start }, now)).toEqual({
+			dailyUsed: 2,
+			dailyReset: start
+		});
+		const expired = now - QUEUE_RESET_MS;
+		expect(startQueueWindowIfNeeded({ dailyUsed: 2, dailyReset: expired }, now)).toEqual({
+			dailyUsed: 0,
+			dailyReset: now
 		});
 	});
 });

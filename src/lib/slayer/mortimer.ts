@@ -2,8 +2,8 @@ import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
 import { Monsters } from 'oldschooljs';
 
 import { BitField } from '@/lib/constants.js';
+import { makeSlayerActionButtons } from '@/lib/slayer/slayerActionButtons.js';
 import { getSlayerBlocks } from '@/lib/slayer/slayerBlocks.js';
-import { makeSlayerActionButtons } from '@/lib/slayer/slayerButtons.js';
 import { SlayerRewardsShop, SlayerTaskUnlocksEnum } from '@/lib/slayer/slayerUnlocks.js';
 import {
 	type MortimerModifierKind,

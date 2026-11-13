@@ -332,6 +332,26 @@ export class OldSchoolBotClient extends DiscordClient {
 		await this.rest.put(route);
 	}
 
+	async removeUserReaction({
+		channelId,
+		messageId,
+		emojiId,
+		userId
+	}: {
+		channelId: string;
+		messageId: string;
+		emojiId: keyof typeof ReactEmoji;
+		userId: string;
+	}) {
+		const route = Routes.channelMessageUserReaction(
+			channelId,
+			messageId,
+			encodeURIComponent(ReactEmoji[emojiId]),
+			userId
+		);
+		await this.rest.delete(route);
+	}
+
 	async awaitMessages({
 		channelId,
 		max = 1,

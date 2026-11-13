@@ -1748,8 +1748,7 @@ ${META_CONSTANTS.RENDERED_STR}`
 			});
 
 			return {
-				content: 'Admin giveaway started. The items were spawned and were not taken from your bank.',
-				ephemeral: true
+				content: 'Admin giveaway started. The items were spawned and were not taken from your bank.'
 			};
 		}
 

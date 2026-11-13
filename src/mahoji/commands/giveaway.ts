@@ -15,6 +15,7 @@ import { generateGiveawayContent } from '@/lib/util/giveaway.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
+import { takeBankAfterConfirm } from '@/lib/util/takeBankAfterConfirm.js';
 
 async function userHasUnlimitedGiveaways(user: MUser) {
 	const perkTier = user.perkTierIsCached ? user.perkTier : await user.fetchPerkTier();
@@ -151,7 +152,7 @@ export const giveawayCommand = defineCommand({
 				return "You don't own those items.";
 			}
 
-			if (bank.items().some(i => !itemIsTradeable(i[0].id, true))) {
+			if (bank.items().some(i => !itemIsTradeable(i[0].id, true, user.id))) {
 				return "You can't giveaway untradeable items.";
 			}
 
@@ -167,14 +168,16 @@ export const giveawayCommand = defineCommand({
 				return 'Your giveaway cannot last longer than 7 days, or be faster than 5 seconds.';
 			}
 
-			await user.sync();
-			if (!user.bankWithGP.has(bank)) {
-				return "You don't own those items.";
+			const taken = await takeBankAfterConfirm(user, bank, "You don't own those items.");
+			if (!taken.ok) {
+				return taken.message === 'No items were given.'
+					? 'You cannot have a giveaway with no items in it.'
+					: taken.message;
 			}
 
-			if (bank.length === 0) {
-				return 'You cannot have a giveaway with no items in it.';
-			}
+			const refundGiveawayItems = async () => {
+				await user.addItemsToBank({ items: bank, collectionLog: false });
+			};
 
 			const giveawayID = rng.randInt(1, 500_000_000);
 
@@ -190,10 +193,9 @@ export const giveawayCommand = defineCommand({
 				allowedMentions: { users: [user.id] }
 			});
 			if (!message) {
+				await refundGiveawayItems();
 				return `There was an error sending the giveaway message. Please ensure I have permission to send messages and attach files in <#${channelId}>.`;
 			}
-
-			await user.removeItemsFromBank(bank);
 
 			if (bank.has('Coins')) {
 				await ClientSettings.addToGPTaxBalance(user, bank.amount('Coins'));
@@ -221,12 +223,12 @@ export const giveawayCommand = defineCommand({
 					user_id: user.id,
 					giveaway: bank.toString()
 				});
+				await refundGiveawayItems();
 				return 'Error starting giveaway.';
 			}
 
 			return {
 				content: 'Giveaway started.',
-				ephemeral: true,
 				components: [makeGiveawayRepeatButton(giveawayID)]
 			};
 		}

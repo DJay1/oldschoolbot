@@ -94,6 +94,13 @@ import type {
 	WoodcuttingActivityTaskOptions,
 	ZalcanoActivityTaskOptions
 } from '@/lib/types/minions.js';
+import {
+	markQueuedTripTrimmed,
+	runInQueuedTripContext,
+	storedTripQuantity,
+	trimQueuedTripArgs,
+	wasQueuedTripTrimmed
+} from '@/lib/util/tripLength.js';
 import { giantsFoundryAlloys } from '@/mahoji/lib/abstracted_commands/giantsFoundryCommand.js';
 import puroOptions from '@/mahoji/lib/abstracted_commands/puroPuroCommand.js';
 
@@ -1030,7 +1037,30 @@ export async function makeRepeatTripButtons(user: MUser) {
 	return buttons;
 }
 
-export async function repeatTrip(user: MUser, interaction: OSInteraction, activity: Activity): CommandResponse {
+async function runRepeatTripCommand(
+	user: MUser,
+	interaction: OSInteraction,
+	activity: Activity,
+	commandArgs: CommandOptions,
+	continueDeltaMillis: number | null
+) {
+	const handler = tripHandlers[activity.type];
+	return runCommand({
+		commandName: handler.commandName,
+		isContinue: true,
+		args: commandArgs,
+		interaction,
+		user,
+		continueDeltaMillis
+	});
+}
+
+export async function repeatTrip(
+	user: MUser,
+	interaction: OSInteraction,
+	activity: Activity,
+	options?: { applyQueueCap?: boolean; onQueueTrim?: (trimmed: boolean) => void }
+): CommandResponse {
 	if (!activity || !activity.data || !activity.type) {
 		return { content: "Couldn't find any trip to repeat.", ephemeral: true };
 	}
@@ -1051,15 +1081,25 @@ export async function repeatTrip(user: MUser, interaction: OSInteraction, activi
 		continueDeltaMillis = interaction.createdTimestamp - idToUnixTs(interaction.messageId);
 	} catch {}
 
-	return runCommand({
-		commandName: handler.commandName,
-		isContinue: true,
+	if (!options?.applyQueueCap) {
+		return runRepeatTripCommand(user, interaction, activity, commandArgs, continueDeltaMillis);
+	}
+
+	const trim = trimQueuedTripArgs({
+		durationMs: activity.duration,
 		args: commandArgs,
-		interaction,
-		user,
-		continueDeltaMillis
-		// TODO: continueDeltaMillis: interaction.createdAt.getTime() - (interaction.message?.createdTimestamp ?? 0)
+		storedQuantity: storedTripQuantity(activity.data)
 	});
+
+	return runInQueuedTripContext(
+		async () => {
+			if (trim.trimmed) markQueuedTripTrimmed();
+			const response = await runRepeatTripCommand(user, interaction, activity, trim.args, continueDeltaMillis);
+			options.onQueueTrim?.(wasQueuedTripTrimmed());
+			return response;
+		},
+		{ skipCap: trim.singleUnitExceedsCap }
+	);
 }
 
 function commandResponseText(response: Awaited<CommandResponse>): string | null {
@@ -1074,18 +1114,24 @@ export async function startRepeatTripFromActivity(
 	user: MUser,
 	activity: Activity,
 	interaction: OSInteraction
-): Promise<{ ok: boolean; message: string }> {
+): Promise<{ ok: boolean; message: string; trimmed?: boolean }> {
 	if (await user.minionIsBusy()) {
 		return { ok: false, message: 'Your minion is busy.' };
 	}
 	try {
-		const response = await repeatTrip(user, interaction, activity);
+		let trimmed = false;
+		const response = await repeatTrip(user, interaction, activity, {
+			applyQueueCap: true,
+			onQueueTrim: value => {
+				trimmed = value;
+			}
+		});
 		const started = await user.minionIsBusy();
 		const text = commandResponseText(response);
 		if (started) {
-			return { ok: true, message: text ?? `Started a ${activity.type} trip.` };
+			return { ok: true, message: text ?? `Started a ${activity.type} trip.`, trimmed };
 		}
-		return { ok: false, message: text ?? 'The trip could not be started.' };
+		return { ok: false, message: text ?? 'The trip could not be started.', trimmed };
 	} catch (err) {
 		if (err instanceof UserError) {
 			return { ok: false, message: err.message };

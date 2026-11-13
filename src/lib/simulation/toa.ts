@@ -36,6 +36,7 @@ import type { TOAOptions } from '@/lib/types/minions.js';
 import { assert } from '@/lib/util/logError.js';
 import { bankToStrShortNames, formatList, formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
+import { launchPetPercent } from '@/lib/util.js';
 
 const teamSizeScale: Record<number, number> = {
 	1: 1.0,
@@ -671,7 +672,7 @@ export function calcTOALoot({
 
 		const pointsForOnePercentPetChance = 350_000 - 700 * (x + y / 3);
 		const chanceOfPet = Math.min(user.points / pointsForOnePercentPetChance, 55);
-		const didGetPet = rng.percentChance(chanceOfPet);
+		const didGetPet = rng.percentChance(launchPetPercent(chanceOfPet));
 		if (didGetPet) {
 			loot.add(user.id, "Tumeken's guardian");
 		}

@@ -6,8 +6,10 @@ import { Bank, Items } from 'oldschooljs';
 import Smithing from '@/lib/skilling/skills/smithing/index.js';
 import smithables from '@/lib/skilling/skills/smithing/smithables/index.js';
 import type { SmithingActivityTaskOptions } from '@/lib/types/minions.js';
+import { getPatronTripBonusMs } from '@/lib/util/calcMaxTripLength.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { pluraliseItemName } from '@/lib/util/smallUtils.js';
+import { applyTripLengthMultiplier, finalizeTripLength } from '@/lib/util/tripLength.js';
 
 export const smithCommand = defineCommand({
 	name: 'smith',
@@ -106,8 +108,9 @@ export const smithCommand = defineCommand({
 		let maxTripLength = await user.calcMaxTripLength('Smithing');
 
 		if (smithedItem.name === 'Cannonball') {
-			maxTripLength *= 2;
+			maxTripLength = applyTripLengthMultiplier(maxTripLength, 2, await getPatronTripBonusMs(user));
 		}
+		maxTripLength = finalizeTripLength(maxTripLength);
 
 		let { quantity } = options;
 		if (!quantity) {

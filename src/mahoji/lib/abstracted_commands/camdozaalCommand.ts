@@ -6,6 +6,7 @@ import { pickaxes } from '@/lib/skilling/functions/miningBoosts.js';
 import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
 import Mining from '@/lib/skilling/skills/mining.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
+import { getPatronTripBonusMs } from '@/lib/util/calcMaxTripLength.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 
 async function miningCommand(rng: RNGProvider, user: MUser, channelId: string, quantity: number | undefined) {
@@ -56,6 +57,7 @@ async function miningCommand(rng: RNGProvider, user: MUser, channelId: string, q
 		hasGlory: user.hasEquipped('Amulet of glory'),
 		maxTripLength: await user.calcMaxTripLength('CamdozaalMining'),
 		hasKaramjaMedium: false,
+		patronBonusMs: await getPatronTripBonusMs(user),
 		rng
 	});
 

@@ -257,10 +257,14 @@ const LOTTERY_ITEM_BANK_TRANSFORMER = async (args: LotteryItemBankTransformerArg
 	return args.itemBank.clone();
 };
 
-function removeIneligibleLotteryItems(input: Bank) {
+function removeIneligibleLotteryItems(input: Bank, _userId?: string) {
 	const cleaned = input.clone();
 	for (const [item] of cleaned.items()) {
-		if (isSuperUntradeable(item.id) || item.id === LOTTERY_TICKET_ITEM.id || item.name === 'Coins') {
+		if (
+			isSuperUntradeable(item.id) ||
+			item.id === LOTTERY_TICKET_ITEM.id ||
+			item.name === 'Coins'
+		) {
 			cleaned.clear(item);
 		}
 	}
@@ -548,7 +552,8 @@ Top ticket holders: ${users
 				await LOTTERY_ITEM_BANK_TRANSFORMER({
 					user,
 					itemBank: bankToSell
-				})
+				}),
+				user.id
 			);
 			validatePositiveLotteryBank(bankToSell, 'lottery item deposit');
 			if (bankToSell.length === 0) return 'No items were given.';

@@ -1,5 +1,6 @@
 import { sumArr, Time } from '@oldschoolgg/toolkit';
 
+import { bscTripBonusForPerkTier } from '@/lib/bsc/patronTiers.js';
 import { MAX_GLOBAL_QP, MAX_QP, quests } from '@/lib/minions/data/quests.js';
 import type { ActivityTaskOptionsWithNoChanges, SpecificQuestOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
@@ -81,7 +82,7 @@ export async function questCommand(user: MUser, channelId: string, name?: string
 
 	const boosts = [];
 
-	let duration = Time.Minute * 30;
+	let duration = Time.Minute * 30 + bscTripBonusForPerkTier(await user.fetchPerkTier());
 
 	if (user.hasGracefulEquipped()) {
 		duration *= 0.9;

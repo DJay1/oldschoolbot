@@ -3,7 +3,10 @@ import type { CustomMonster } from '@/lib/bso/monsters/CustomMonster.js';
 
 import { GearStat } from '@oldschoolgg/gear';
 import { Time } from '@oldschoolgg/toolkit';
+import { isEventActive } from '@/lib/events/registry.js';
+import { roll } from 'node-rng';
 import {
+	Bank,
 	deepResolveItems,
 	GemTable,
 	itemID,
@@ -101,6 +104,14 @@ const AbyssalDragonLootTable = new LootTable()
 	.tertiary(100, 'Lump of crystal')
 	.tertiary(140, 'Clue scroll (grandmaster)');
 
+
+/** Extra 1/300 pet-troll roll during launch, matching the nested tertiary the loot-table hook cannot see. */
+export function applyLaunchMalygosPetRolls(loot: Bank, quantity: number) {
+	if (!isEventActive('launch')) return;
+	for (let i = 0; i < quantity; i++) {
+		if (roll(300)) loot.add(petTrollTable.roll());
+	}
+}
 export const Malygos: CustomMonster = {
 	isCustom: true,
 	id: EBSOMonster.MALYGOS,

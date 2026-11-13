@@ -25,20 +25,23 @@ export interface BscPatronTier {
 	/** Extra Grand Exchange slots at this tier. Totals, not stacked on the tier below. */
 	geSlots: number;
 	roleEnv:
-		| 'PATRON_ROLE_PUP'
-		| 'PATRON_ROLE_GOODBOY'
-		| 'PATRON_ROLE_TOPDOG'
-		| 'PATRON_ROLE_ALPHA'
-		| 'PATRON_ROLE_PACKLEADER'
-		| 'PATRON_ROLE_BIGGESTOFDOGS';
+	| 'PATRON_ROLE_PUP'
+	| 'PATRON_ROLE_GOODBOY'
+	| 'PATRON_ROLE_TOPDOG'
+	| 'PATRON_ROLE_ALPHA'
+	| 'PATRON_ROLE_PACKLEADER'
+	| 'PATRON_ROLE_BIGGESTOFDOGS';
 	patreonTierIdEnv:
-		| 'PATREON_TIER_PUP_ID'
-		| 'PATREON_TIER_GOODBOY_ID'
-		| 'PATREON_TIER_TOPDOG_ID'
-		| 'PATREON_TIER_ALPHA_ID'
-		| 'PATREON_TIER_PACKLEADER_ID'
-		| 'PATREON_TIER_BIGGESTOFDOGS_ID';
+	| 'PATREON_TIER_PUP_ID'
+	| 'PATREON_TIER_GOODBOY_ID'
+	| 'PATREON_TIER_TOPDOG_ID'
+	| 'PATREON_TIER_ALPHA_ID'
+	| 'PATREON_TIER_PACKLEADER_ID'
+	| 'PATREON_TIER_BIGGESTOFDOGS_ID';
 	badge: string;
+	/** New perks at this tier, with trip/GE/queue/points totals. */
+	adds: string;
+	/** Full cumulative perks for denial messages. */
 	summary: string;
 }
 
@@ -55,8 +58,9 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_PUP',
 		patreonTierIdEnv: 'PATREON_TIER_PUP_ID',
 		badge: customEmoji('patron_pup'),
+		adds: '+3 min trips, full scrollable bank (show_all) and bank page buttons, queue 3 trips everyday, 3 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop)',
 		summary:
-			'+3 min max trip length, full scrollable bank (show_all) and bank page buttons, queue 3 trips every 2 days, supporter badge'
+			'+3 min trips, full scrollable bank (show_all) and bank page buttons, queue 3 trips everyday, 3 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop)'
 	},
 	{
 		level: 2,
@@ -70,7 +74,9 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_GOODBOY',
 		patreonTierIdEnv: 'PATREON_TIER_GOODBOY_ID',
 		badge: customEmoji('patron_goodboy'),
-		summary: '+6 min trips, Discord role, higher sim caps, +2 Grand Exchange slots, queue 4 trips every 2 days'
+		adds: 'All Pup perks, plus +6 min trips, +2 Grand Exchange slots, 5 pts/mo, queue 4 trips everyday, Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps',
+		summary:
+			'+6 min trips, full scrollable bank (show_all) and bank page buttons, queue 4 trips everyday, +2 Grand Exchange slots, 5 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps'
 	},
 	{
 		level: 3,
@@ -84,8 +90,9 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_TOPDOG',
 		patreonTierIdEnv: 'PATREON_TIER_TOPDOG_ID',
 		badge: customEmoji('patron_topdog'),
+		adds: 'All Good Boy perks, plus +10 min trips, +4 Grand Exchange slots, 10 pts/mo, queue 5 trips everyday, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, Transparent bank background',
 		summary:
-			'+10 min trips, give a mystery box, full trip-repeat buttons, +4 Grand Exchange slots, queue 5 trips every 2 days'
+			'+10 min trips, full scrollable bank (show_all) and bank page buttons, queue 5 trips everyday, +4 Grand Exchange slots, 10 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, Transparent bank background'
 	},
 	{
 		level: 4,
@@ -99,8 +106,9 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		roleEnv: 'PATRON_ROLE_ALPHA',
 		patreonTierIdEnv: 'PATREON_TIER_ALPHA_ID',
 		badge: customEmoji('patron_alpha'),
+		adds: 'All Top Dog perks, plus +15 min trips, +8 Grand Exchange slots, 15 pts/mo, queue 6 trips everyday, every paid bank background plus custom bank colour, spawn lamp and spawn box, unlimited giveaways',
 		summary:
-			'+15 min trips, bank backgrounds and background commands, spawn lamp and spawn box, unlimited giveaways, +8 Grand Exchange slots, queue 6 trips every 2 days'
+			'+15 min trips, full scrollable bank (show_all) and bank page buttons, queue 6 trips everyday, +8 Grand Exchange slots, 15 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, every paid bank background plus custom bank colour, spawn lamp and spawn box, unlimited giveaways'
 	},
 	{
 		level: 5,
@@ -109,13 +117,14 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		priceUsd: 25,
 		bit: BitField.PatronTier5,
 		perkTier: PerkTier.Six,
-		tripBonusMs: Time.Minute * 15,
+		tripBonusMs: Time.Minute * 18,
 		geSlots: 8,
 		roleEnv: 'PATRON_ROLE_PACKLEADER',
 		patreonTierIdEnv: 'PATREON_TIER_PACKLEADER_ID',
 		badge: customEmoji('patron_packleader'),
+		adds: 'All Alpha perks, plus +18 min trips, 25 pts/mo, queue 7 trips everyday, Verzik bank background (the fight normally, the purple chest on a good drop), 40 min server double loot once a week, gift 1 week of Good Boy once a month',
 		summary:
-			'exclusive bank background, double loot once a month, gift 1 week of Good Boy once a month, queue 7 trips every 2 days'
+			'+18 min trips, full scrollable bank (show_all) and bank page buttons, queue 7 trips everyday, +8 Grand Exchange slots, 25 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, every paid bank background plus custom bank colour, spawn lamp and spawn box, unlimited giveaways, Verzik bank background (the fight normally, the purple chest on a good drop), 40 min server double loot once a week, gift 1 week of Good Boy once a month'
 	},
 	{
 		level: 6,
@@ -124,13 +133,14 @@ export const BSC_PATRON_TIERS: readonly BscPatronTier[] = [
 		priceUsd: 50,
 		bit: BitField.PatronTier6,
 		perkTier: PerkTier.Seven,
-		tripBonusMs: Time.Minute * 15,
+		tripBonusMs: Time.Minute * 20,
 		geSlots: 8,
 		roleEnv: 'PATRON_ROLE_BIGGESTOFDOGS',
 		patreonTierIdEnv: 'PATREON_TIER_BIGGESTOFDOGS_ID',
 		badge: customEmoji('patron_biggestofdogs'),
+		adds: 'All Pack Leader perks, plus +20 min trips, 50 pts/mo, queue 8 trips everyday, fully custom bank background while you stay Pack Leader or higher, 90 min server double loot once a week, gift 1 week of Alpha once a month',
 		summary:
-			'custom bank background while you stay Pack Leader or higher, gift 1 week of Alpha once a month, queue 8 trips every 2 days'
+			'+20 min trips, full scrollable bank (show_all) and bank page buttons, queue 8 trips everyday, +8 Grand Exchange slots, 50 pts/mo, loyalty badges (1-month as soon as you are a patron; 3/6/12 from a continuous paid streak), /tools patron purple_glow, /patron profile, patron dye shop, Barrows bank background (night normally, bright day sky on a good drop), Good Boy bank background (normal and celebratory), Corgo collar badge, Discord role, higher sim caps, give a mystery box (23.5 hour cooldown), full trip-repeat buttons, custom minion icon, custom tame image, /patron title, /patron flair, every paid bank background plus custom bank colour, spawn lamp and spawn box, unlimited giveaways, Verzik bank background (the fight normally, the purple chest on a good drop), 40 min server double loot once a week, gift 1 week of Good Boy once a month, fully custom bank background while you stay Pack Leader or higher, 90 min server double loot once a week, gift 1 week of Alpha once a month'
 	}
 ] as const;
 
@@ -157,7 +167,7 @@ export const BSC_PATRON_GIFT_COOLDOWN_MS = Time.Day * 30;
 export const BSC_PATRON_GIFT_DURATION_MS = Time.Week;
 
 /** Same monthly window the existing double-loot command already used. */
-export const PATRON_DOUBLE_LOOT_COOLDOWN = Time.Day * 31;
+export const PATRON_DOUBLE_LOOT_COOLDOWN = Time.Day * 7;
 
 export function bscSupportServerId(): string {
 	const fromEnv = process.env.SUPPORT_SERVER_ID?.trim();
@@ -206,6 +216,15 @@ export function bscPatronTierByKey(key: string): BscPatronTier | null {
 
 export function bscPatronNameForPerkTier(perkTier: number): string | null {
 	return BSC_PATRON_TIERS.find(tier => tier.perkTier === perkTier)?.name ?? null;
+}
+
+/** Player-facing denial: names the required BSC tier and its current perks. */
+export function formatBscPatronRequirement(perkTierNeeded: number): string {
+	const tier = BSC_PATRON_TIERS.find(entry => entry.perkTier === perkTierNeeded);
+	if (!tier) {
+		return 'You need to be a Bark School Corgo patron to use this.';
+	}
+	return `This needs ${tier.name} or higher. ${tier.name} ($${tier.priceUsd}) includes: ${tier.summary}.`;
 }
 
 function clampLevel(level: number): BscPatronLevel {
@@ -526,6 +545,12 @@ export function formatBscPatronOverview(input: {
 	customBackground: boolean;
 	lastDoubleLootAt: number | null;
 	now?: number;
+	title?: string | null;
+	flair?: string | null;
+	points?: number | null;
+	monthsTotal?: number | null;
+	monthsStreak?: number | null;
+	loyaltyLabel?: string | null;
 }): string {
 	const now = input.now ?? Date.now();
 	const bitLevel = bscPatronLevelFromBits(input.bits);
@@ -545,6 +570,10 @@ export function formatBscPatronOverview(input: {
 		lines.push(
 			`You are ${tier.name} ($${tier.priceUsd}). Trip bonus: +${tier.tripBonusMs / Time.Minute} min. Extra Grand Exchange slots: ${tier.geSlots}.${giftNote}`
 		);
+		if (input.title) lines.push(`Title: ${input.title}`);
+		if (input.flair) lines.push(`Trip flair: ${input.flair}`);
+		if (input.loyaltyLabel) lines.push(`Loyalty: ${input.loyaltyLabel}`);
+		if (typeof input.points === 'number') lines.push(`Patron points: ${input.points}`);
 	}
 	if (input.customBackground && effective >= 5) {
 		lines.push('Your custom bank background is active while you stay Pack Leader or higher.');
@@ -570,9 +599,11 @@ export function formatBscPatronOverview(input: {
 	}
 	lines.push('');
 	for (const entry of BSC_PATRON_TIERS) {
-		lines.push(`${entry.name} ($${entry.priceUsd}) — ${entry.summary}`);
+		lines.push(`${entry.name} ($${entry.priceUsd}) — ${entry.adds}`);
 	}
 	lines.push('');
-	lines.push('Commands: /patron info, /patron double_loot, /patron gift user:@friend');
+	lines.push(
+		'Commands: /patron info, /patron title, /patron flair, /patron profile, /patron dyes, /patron dye, /patron dyeclaim, /patron dye_preview, /patron undye, /patron double_loot, /patron gift user:@friend'
+	);
 	return lines.join('\n');
 }

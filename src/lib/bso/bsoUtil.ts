@@ -59,7 +59,7 @@ export function usingPet(
 	return isUsingPet;
 }
 
-export function isGEUntradeable(item: number | Item) {
+export function isGEUntradeable(item: number | Item, _userId?: string) {
 	const fullItem = typeof item === 'number' ? Items.get(item) : item;
 	if (!fullItem) return true;
 	if (fullItem.customItemData) {

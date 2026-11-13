@@ -12,8 +12,9 @@ import {
 	mortimerOfferMessage,
 	rollMortimerOffers
 } from '@/lib/slayer/mortimer.js';
+import { makeSlayerActionButtons } from '@/lib/slayer/slayerActionButtons.js';
 import { addSlayerBlock, getAllSlayerBlocks, getSlayerBlocks, removeSlayerBlock } from '@/lib/slayer/slayerBlocks.js';
-import { makeSlayerActionButtons } from '@/lib/slayer/slayerButtons.js';
+import { slayerTaskReturnButtons } from '@/lib/slayer/slayerButtons.js';
 import { slayerMasters } from '@/lib/slayer/slayerMasters.js';
 import {
 	assignNewSlayerTask,
@@ -201,7 +202,7 @@ export async function slayerNewTaskCommand({
 			return {
 				content: `${extraContent ?? ''}\n\n${returnMessage}`,
 				ephemeral: true,
-				components: slayerButtonsFor(slayerMaster)
+				components: await slayerTaskReturnButtons(user, slayerButtonsFor(slayerMaster))
 			};
 		}
 		return `${extraContent ?? ''}\n\n${returnMessage}`;
@@ -235,7 +236,10 @@ export async function slayerNewTaskCommand({
 				return {
 					content: `You already have a slayer task: ${resultMessage}`,
 					ephemeral: true,
-					components: slayerButtonsFor(slayerMasters.find(m => m.id === currentTask.slayer_master_id))
+					components: await slayerTaskReturnButtons(
+						user,
+						slayerButtonsFor(slayerMasters.find(m => m.id === currentTask.slayer_master_id))
+					)
 				};
 			}
 		}
@@ -269,7 +273,7 @@ export async function slayerNewTaskCommand({
 		return {
 			content: resultMessage,
 			ephemeral: true,
-			components: slayerButtonsFor(slayerMaster)
+			components: await slayerTaskReturnButtons(user, slayerButtonsFor(slayerMaster))
 		};
 	}
 

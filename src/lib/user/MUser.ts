@@ -78,6 +78,7 @@ import type { GearColumns, GearWithSetupType, HasDiaryDiaryKey } from '@/lib/use
 import { calcMaxTripLength } from '@/lib/util/calcMaxTripLength.js';
 import { determineRunes } from '@/lib/util/determineRunes.js';
 import { fetchUserStats } from '@/lib/util/fetchUserStats.js';
+import { hydratePatronDyeCache } from '@/lib/bsc/patronDyeShop.js';
 import { getKCByName } from '@/lib/util/getKCByName.js';
 import { hasMonsterRequirements } from '@/lib/util/hasMonsterRequirements.js';
 import { hasSkillReqsRaw } from '@/lib/util/smallUtils.js';
@@ -85,6 +86,7 @@ import { type TransactItemsArgs, transactItemsFromBank } from '@/lib/util/transa
 import { applyBalanceDecrements, prepareNumericUpdate } from '@/lib/util/validateQuantity.js';
 import type { JsonKeys } from '@/lib/util.js';
 import { getParsedStashUnits } from '@/mahoji/lib/abstracted_commands/stashUnitsCommand.js';
+import { launchPetTertiaryChanges } from '@/lib/util.js';
 
 export class MUserClass extends BaseUser {
 	constructor(user: User) {
@@ -749,6 +751,13 @@ Charge your items using ${globalClient.mentionCommand('minion', 'charge')}.`
 			changes.set('Mossy key', 77.6);
 		}
 
+		const launchPets = launchPetTertiaryChanges();
+		if (launchPets) {
+			for (const [name, change] of launchPets) {
+				changes.set(name, (changes.get(name) ?? 0) + change);
+			}
+		}
+
 		return changes;
 	}
 
@@ -1298,7 +1307,9 @@ export async function srcMUserFetch(userID: string, updates?: Prisma.UserUpdateI
 		return srcMUserFetch(userID, {});
 	}
 	user.username = await Cache.getUsername(user.id);
-	return new MUserClass(user);
+	const mUser = new MUserClass(user);
+	await hydratePatronDyeCache(user.id).catch(() => null);
+	return mUser;
 }
 
 global.mUserFetch = srcMUserFetch;

@@ -1,9 +1,10 @@
 import { isEventActive } from '@/lib/events/registry.js';
 import { removeFromArr } from '@oldschoolgg/toolkit';
-import { convertXPtoLVL, type ItemBank } from 'oldschooljs';
+import { convertXPtoLVL, type ItemBank, Items } from 'oldschooljs';
 
 import type { Prisma } from '@/prisma/main.js';
 import { type BitField, BitFieldData, MAX_LEVEL, MAX_XP } from '@/lib/constants.js';
+import { allPetIDs } from '@/lib/data/CollectionsExport.js';
 import type { SkillNameType } from '@/lib/skilling/types.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 
@@ -11,6 +12,33 @@ import type { GearBank } from '@/lib/structures/GearBank.js';
 BigInt.prototype.toJSON = function () {
 	return this.toString();
 };
+
+/** Halve a 1/n pet-chance denominator during the launch event (twice as likely). */
+export function launchPetRate(n: number): number {
+	if (!isEventActive('launch')) return n;
+	return Math.max(1, Math.floor(n / 2));
+}
+
+/** Double a percent-based pet chance during the launch event, capped at 100. */
+export function launchPetPercent(chancePercent: number): number {
+	if (!isEventActive('launch')) return chancePercent;
+	return Math.min(100, chancePercent * 2);
+}
+
+/**
+ * 50% tertiary boost (halves the 1/n chance) for boss/PvM pets during launch.
+ * Used by loot tables via tertiaryItemPercentageChanges. Skips Smokey (mystery box).
+ */
+export function launchPetTertiaryChanges(): Map<string, number> | undefined {
+	if (!isEventActive('launch')) return undefined;
+	const changes = new Map<string, number>();
+	for (const id of allPetIDs) {
+		const item = Items.get(id);
+		if (!item?.name || item.name === 'Smokey') continue;
+		changes.set(item.name, 50);
+	}
+	return changes;
+}
 
 export function skillingPetDropRate(
 	user: MUser | GearBank | number,
@@ -21,8 +49,7 @@ export function skillingPetDropRate(
 	const twoHundredMillXP = xp >= MAX_XP;
 	const skillLevel = convertXPtoLVL(xp, MAX_LEVEL);
 	const petRateDivisor = twoHundredMillXP ? 15 : 1;
-	const launchDivisor = isEventActive('launch') ? 2 : 1;
-	const dropRate = Math.floor((baseDropRate - skillLevel * 25) / petRateDivisor / launchDivisor);
+	const dropRate = launchPetRate(Math.floor((baseDropRate - skillLevel * 25) / petRateDivisor));
 	return { petDropRate: dropRate };
 }
 

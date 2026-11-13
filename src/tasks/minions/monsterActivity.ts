@@ -1,6 +1,7 @@
 import { isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
 import { EBSOMonster } from '@/lib/bso/EBSOMonster.js';
 import { CUSTOM_KONAR_KEY_RATES, rollMaggotKingEggs } from '@/lib/bso/monsters/bosses/MaggotKing.js';
+import { applyLaunchMalygosPetRolls, Malygos } from '@/lib/bso/monsters/demi-bosses/Malygos.js';
 import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import {
@@ -412,6 +413,9 @@ export function doMonsterTrip(data: newOptions) {
 			: monster.table.kill(oriEffect({ gearBank, quantity: finalQuantity, duration, messages }), killOptions);
 	if (takingEggs && !wiped) {
 		messages.push('You took the eggs instead of the normal loot.');
+	}
+	if (!wiped && !takingEggs && monster.id === Malygos.id) {
+		applyLaunchMalygosPetRolls(loot, finalQuantity);
 	}
 	if (isDoubleLootActive(duration)) {
 		loot.multiply(2);

@@ -13,6 +13,8 @@ import { createTeam } from '@/lib/data/cox.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { resolveAttackStyles } from '@/lib/minions/functions/resolveAttackStyles.js';
 import type { RaidsOptions } from '@/lib/types/minions.js';
+import { launchPetRate } from '@/lib/util.js';
+import { isEventActive } from '@/lib/events/registry.js';
 
 interface RaidResultUser {
 	personalPoints: number;
@@ -31,6 +33,21 @@ const greenItems = resolveItems(['Twisted ancestral colour kit']);
 const blueItems = resolveItems(['Metamorphic dust']);
 
 const coxPurpleItems = chambersOfXericCL.filter(i => !notPurple.includes(i));
+
+const coxUniques = resolveItems([
+	'Dexterous prayer scroll',
+	'Arcane prayer scroll',
+	'Twisted buckler',
+	'Dragon hunter crossbow',
+	"Dinh's bulwark",
+	'Ancestral hat',
+	'Ancestral robe top',
+	'Ancestral robe bottom',
+	'Dragon claws',
+	'Elder maul',
+	'Kodai insignia',
+	'Twisted bow'
+]);
 
 async function handleCoxXP(user: MUser, qty: number, isCm: boolean) {
 	let hitpointsXP = 12_000 * qty;
@@ -130,11 +147,22 @@ export const raidsTask: MinionTask = {
 				userData.deathChance = member.deathChance;
 				totalPoints += member.personalPoints;
 
+				// Extra Olmlet roll during launch, before double loot so chance is 2x and qty is not 4x'd.
+				if (
+
+					isEventActive('launch') &&
+					!userLoot.has('Olmlet') &&
+					coxUniques.some(id => userLoot.has(id)) &&
+					roll(53)
+				) {
+					userLoot.add('Olmlet');
+				}
+
 				// Double loot now, so we don't double Steve / Takon / etc
 				if (userData.naturalDouble || userData.flappyMsg) userLoot.multiply(2);
 
 				const hasDust = userData.loot.has('Metamorphic dust') || userData.mUser.cl.has('Metamorphic dust');
-				if (challengeMode && roll(50) && hasDust) {
+				if (challengeMode && roll(launchPetRate(50)) && hasDust) {
 					const result = userData.loot.clone().add(userData.mUser.allItemsOwned);
 					const unownedPet = MathRNG.shuffle(chambersOfXericMetamorphPets).find(pet => !result.has(pet));
 					if (unownedPet) {

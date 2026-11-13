@@ -177,11 +177,11 @@ const cmCapes: Buyable[] = [
 ];
 
 const constructionBuyables: Buyable[] = [
-	{ name: 'Bolt of cloth', outputItems: new Bank({ 'Bolt of cloth': 1 }), gpCost: 5000 },
+	{ name: 'Bolt of cloth', outputItems: new Bank({ 'Bolt of cloth': 1 }), gpCost: 10_000 },
 	{
 		name: 'Limestone brick',
-		gpCost: 1000,
-		ironmanPrice: 40
+		gpCost: 2_000,
+		ironmanPrice: 272
 	},
 	{
 		name: 'Gold leaf',
@@ -229,8 +229,8 @@ const constructionBuyables: Buyable[] = [
 	},
 	{
 		name: 'Bucket of water',
-		gpCost: 500,
-		ironmanPrice: 12
+		gpCost: 1_000,
+		ironmanPrice: 80
 	}
 ];
 
@@ -784,24 +784,24 @@ const Buyables: Buyable[] = [
 	{
 		name: 'Rope',
 		aliases: ['rope'],
-		gpCost: 100,
-		ironmanPrice: 25
+		gpCost: 220,
+		ironmanPrice: 110
 	},
 	{
 		name: 'Fishing Bait',
 		aliases: ['fishing bait'],
-		gpCost: 20,
-		ironmanPrice: 3
+		gpCost: 40,
+		ironmanPrice: 6
 	},
 	{
 		name: 'Jug of Water',
 		aliases: ['jug of water', 'jugs of water'],
-		gpCost: 100
+		gpCost: 200
 	},
 	{
 		name: 'Feather',
 		aliases: ['feather'],
-		gpCost: 50,
+		gpCost: 100,
 		ironmanPrice: 4
 	},
 	{
@@ -819,30 +819,30 @@ const Buyables: Buyable[] = [
 	{
 		name: 'Eye of newt',
 		aliases: ['eye of newt', 'newt eye'],
-		gpCost: 300,
-		ironmanPrice: 3
+		gpCost: 600,
+		ironmanPrice: 4
 	},
 	{
 		name: 'Vial of water',
 		aliases: ['vial of water'],
-		gpCost: 60,
-		ironmanPrice: 3
+		gpCost: 120,
+		ironmanPrice: 4
 	},
 	{
 		name: 'Vial',
 		aliases: ['vial'],
-		gpCost: 30,
-		ironmanPrice: 2
+		gpCost: 60,
+		ironmanPrice: 4
 	},
 	{
 		name: 'Bucket',
-		gpCost: 30,
+		gpCost: 60,
 		ironmanPrice: 10
 	},
 	{
 		name: 'Cup of hot water',
 		aliases: ['cup of hot water', 'hot water'],
-		gpCost: 1500
+		gpCost: 3_000
 	},
 	{
 		name: 'Chocolate bar',
@@ -852,18 +852,18 @@ const Buyables: Buyable[] = [
 	{
 		name: 'Ball of wool',
 		aliases: ['wool ball', 'ball wool'],
-		gpCost: 300
+		gpCost: 600
 	},
 	{
 		name: 'Empty bucket pack',
 		outputItems: new Bank({
 			Bucket: 100
 		}),
-		gpCost: 10_000
+		gpCost: 20_000
 	},
 	{
 		name: 'Compost',
-		gpCost: 700
+		gpCost: 1_400
 	},
 	{
 		name: 'Amylase pack (Mark of grace)',
@@ -911,7 +911,7 @@ const Buyables: Buyable[] = [
 	},
 	{
 		name: 'Sandworms',
-		gpCost: 500
+		gpCost: 1_000
 	},
 	{
 		name: 'Granite Body',
@@ -976,7 +976,7 @@ const Buyables: Buyable[] = [
 	})),
 	{
 		name: 'Mithril seeds',
-		gpCost: 3000,
+		gpCost: 6_000,
 		ironmanPrice: 1000,
 		outputItems: new Bank({
 			'Mithril seeds': 1
@@ -1102,16 +1102,38 @@ const Buyables: Buyable[] = [
 		ironmanPrice: 200
 	},
 	{
+		name: 'Black axe',
+		gpCost: 4000,
+		// Black axes are not sold in a shop; this is the OSRS item value.
+		ironmanPrice: 384
+	},
+	{
+		name: 'Mithril axe',
+		gpCost: 5000,
+		// Perry's Chop-chop Shop (Bob's only stocks up to steel).
+		ironmanPrice: 1664
+	},
+	{
+		name: 'Adamant axe',
+		gpCost: 10_000,
+		ironmanPrice: 4096
+	},
+	{
+		name: 'Rune axe',
+		gpCost: 100_000,
+		ironmanPrice: 40_960
+	},
+	{
 		name: 'Broken coffin',
 		gpCost: 2000
 	},
 	{
 		name: 'Olive oil(4)',
-		gpCost: 220
+		gpCost: 640
 	},
 	{
 		name: 'Olive oil pack',
-		gpCost: 2670
+		gpCost: 5_340
 	},
 	{
 		name: 'Keris partisan',

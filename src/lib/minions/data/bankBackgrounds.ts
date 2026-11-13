@@ -29,7 +29,6 @@ export type BankBackground = {
 	uniqueImage?: CanvasImage | null;
 };
 
-
 const backgroundImages: BankBackground[] = [
 	{
 		id: 1,
@@ -73,9 +72,9 @@ const backgroundImages: BankBackground[] = [
 		name: 'Barrows',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Six,
-		gpCost: 10_000_000,
-		storeBitField: StoreBitfield.HasSetTwoDarkPermanentBankBackgrounds
+		perkTierNeeded: PerkTier.Two,
+		hasPurple: true,
+		purpleImage: null
 	},
 	{
 		id: 7,
@@ -320,7 +319,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Transparent',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Five,
+		perkTierNeeded: PerkTier.Four,
 		gpCost: 20_000_000,
 		transparent: true
 	},
@@ -672,14 +671,18 @@ const backgroundImages: BankBackground[] = [
 		name: 'Good Boy',
 		image: null,
 		available: true,
-		perkTierNeeded: PerkTier.Three
+		perkTierNeeded: PerkTier.Three,
+		hasPurple: true,
+		purpleImage: null
 	},
 	{
 		id: 1020,
 		name: 'Krypt CustomBG',
 		image: null,
 		available: false,
-		owners: ['611598764574114049']
+		owners: ['611598764574114049'],
+		purpleImage: null,
+		hasPurple: true
 	},
 	{
 		id: 1023,
@@ -712,6 +715,24 @@ const backgroundImages: BankBackground[] = [
 		image: null,
 		available: false,
 		owners: ['603327620234608661'],
+		purpleImage: null,
+		hasPurple: true
+	},
+	{
+		id: 1027,
+		name: 'Verzik',
+		image: null,
+		available: true,
+		perkTierNeeded: PerkTier.Six,
+		hasPurple: true,
+		purpleImage: null
+	},
+	{
+		id: 1028,
+		name: 'WastedBank CustomBG',
+		image: null,
+		available: false,
+		owners: ['246813910999629824'],
 		purpleImage: null,
 		hasPurple: true
 	}

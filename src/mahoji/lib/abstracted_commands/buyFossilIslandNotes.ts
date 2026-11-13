@@ -1,13 +1,15 @@
 import { Bank, Items } from 'oldschooljs';
 
 import { fossilIslandNotesCL } from '@/lib/data/CollectionsExport.js';
+import { MAX_SHOP_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
 
 export async function buyFossilIslandNotes(itx: OSInteraction, quantity: number) {
+	const parsedQuantity = validateQuantity(quantity, { min: 1, max: MAX_SHOP_QUANTITY });
+	if (!parsedQuantity.ok) return parsedQuantity.error;
+	quantity = parsedQuantity.value;
+
 	const { user, rng } = itx;
 	const cost = new Bank().add('Numulite', 300).multiply(quantity);
-	if (await user.minionIsBusy()) {
-		return 'Your minion is busy.';
-	}
 	if (user.QP < 3) {
 		return 'You need 3 QP to reach the stone chest';
 	}

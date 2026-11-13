@@ -1,6 +1,6 @@
 import { customEmoji, Emoji } from '@oldschoolgg/toolkit';
 
-import { BSC_SUPPORTER_COSMETIC, bscPatronTierFromBits } from '@/lib/bsc/patronTiers.js';
+import { bscPatronTierFromBits } from '@/lib/bsc/patronTiers.js';
 import { BadgesEnum, BitField, badges } from '@/lib/constants.js';
 import { LAUNCH_FOUNDER_BADGE } from '@/lib/events/launch/constants.js';
 
@@ -10,13 +10,18 @@ import { LAUNCH_FOUNDER_BADGE } from '@/lib/events/launch/constants.js';
  * (PatronTier3 bit from role sync) uses patron_topdog. customEmoji is called at
  * render time so a prior Redis cache of the dog fallback is not sticky after emojis:sync.
  */
-export function makeBadgeString(
+function emojiToFileName(emoji: string): string | null {
+	const match = /<a?:(\w+):\d+>/.exec(emoji);
+	return match?.[1] ?? null;
+}
+
+function makeBadgeEmojiList(
 	badgeIDs: number[] | null | undefined,
 	isIronman: boolean,
 	isBSCEarlySupporter: boolean,
 	isLaunchFounder = false,
 	patronBits: readonly number[] = []
-) {
+): string[] {
 	const badgeList = [...(badgeIDs ?? [])];
 	if (patronBits.includes(BitField.Developer) && !badgeList.includes(BadgesEnum.Developer)) {
 		badgeList.unshift(BadgesEnum.Developer);
@@ -26,7 +31,7 @@ export function makeBadgeString(
 		rawBadges.push(Emoji.Ironman);
 	}
 	if (patronBits.includes(BitField.BSCPatronCosmetic)) {
-		rawBadges.unshift(BSC_SUPPORTER_COSMETIC);
+		rawBadges.unshift(customEmoji('patron_collar'));
 	}
 	const patron = bscPatronTierFromBits(patronBits);
 	if (patron) {
@@ -38,5 +43,40 @@ export function makeBadgeString(
 	if (isBSCEarlySupporter) {
 		rawBadges.unshift(Emoji.EsbCorgi);
 	}
-	return rawBadges.join(' ').trim();
+	return rawBadges;
+}
+
+export function makeBadgeString(
+	badgeIDs: number[] | null | undefined,
+	isIronman: boolean,
+	isBSCEarlySupporter: boolean,
+	isLaunchFounder = false,
+	patronBits: readonly number[] = []
+) {
+	return makeBadgeEmojiList(badgeIDs, isIronman, isBSCEarlySupporter, isLaunchFounder, patronBits).join(' ').trim();
+}
+
+export function makeBadgeEmojiNames(
+	badgeIDs: number[] | null | undefined,
+	isIronman: boolean,
+	isBSCEarlySupporter: boolean,
+	isLaunchFounder = false,
+	patronBits: readonly number[] = []
+): string[] {
+	const badgeList = [...(badgeIDs ?? [])];
+	if (patronBits.includes(BitField.Developer) && !badgeList.includes(BadgesEnum.Developer)) {
+		badgeList.unshift(BadgesEnum.Developer);
+	}
+	const names: string[] = [];
+	for (const id of badgeList) {
+		const name = emojiToFileName(badges[id] ?? '');
+		if (name) names.push(name);
+	}
+	if (isIronman) names.push('ironman');
+	if (patronBits.includes(BitField.BSCPatronCosmetic)) names.unshift('patron_collar');
+	const patron = bscPatronTierFromBits(patronBits);
+	if (patron) names.unshift(`patron_${patron.key}`);
+	if (isLaunchFounder) names.unshift('bscicon');
+	if (isBSCEarlySupporter) names.unshift('esbcorgi');
+	return names;
 }

@@ -91,10 +91,16 @@ export class BaseInteraction {
 		return this._data.message.id;
 	}
 
-	private async toBody(msg: SendableMessage): Promise<APISendableMessage> {
-		const result = await sendableMsgToApiCreate({ msg });
+	private async toBody(msg: SendableMessage, forEdit = false): Promise<APISendableMessage> {
+		const result = await sendableMsgToApiCreate({ msg, forEdit });
 		if (result.message.flags === MessageFlags.Ephemeral) {
-			this._ephemeral = true;
+			// Editing a public interaction reply with the ephemeral flag removes it
+			// from the channel ("Original message was deleted") instead of converting it.
+			if (forEdit && !this._ephemeral) {
+				result.message.flags = undefined;
+			} else {
+				this._ephemeral = true;
+			}
 		}
 		return result;
 	}
@@ -107,7 +113,9 @@ export class BaseInteraction {
 			with_response: options?.withResponse ?? false,
 			thread_id: isObject(options) && 'threadId' in options ? options.threadId : undefined
 		});
-		const { files, message } = options ? await this.toBody(options) : { files: undefined, message: undefined };
+		const { files, message } = options
+			? await this.toBody(options, type === InteractionResponseType.UpdateMessage)
+			: { files: undefined, message: undefined };
 		return this.rest.post(Routes.interactionCallback(this.id, this.token), {
 			auth: false,
 			body: { type, data: message },
@@ -130,7 +138,7 @@ export class BaseInteraction {
 		messageId: string,
 		options: SendableMessage
 	): Promise<RESTPostAPIInteractionCallbackWithResponseResult> {
-		const { files, message } = await this.toBody(options);
+		const { files, message } = await this.toBody(options, true);
 		return this.rest.patch(Routes.webhookMessage(this.applicationId, this.token, messageId), {
 			auth: false,
 			body: message,
@@ -162,10 +170,10 @@ export class BaseInteraction {
 
 	/**
 	 * Discord does not send mention notifications for edited messages. After a
-	 * defer, the first reply that needs to ping users is posted as a follow-up
-	 * (a new message). Later replies edit that follow-up, unless they need to
-	 * ping additional users, in which case a new follow-up is created and the
-	 * previous message is removed so confirmation buttons do not linger.
+	 * defer, the first reply edits the original message so earlier replies are
+	 * never deleted. If a later reply needs to ping additional users, a
+	 * follow-up is posted and the previous message is left in place with its
+	 * buttons disabled.
 	 */
 	async baseReply(
 		options: SendableMessage
@@ -175,28 +183,19 @@ export class BaseInteraction {
 			const users = prepared.message.allowed_mentions?.users ?? [];
 			const newPings = users.filter(id => !this._pingedUserIds.has(id));
 
-			if (newPings.length > 0) {
-				if (this._deferred && !this._replied) {
-					try {
-						await this.sendWebhookEdit('@original', { content: '\u200b', components: [] });
-					} catch {}
-					this._replied = true;
-				}
+			if (newPings.length > 0 && this._replied) {
 				const created = await this.sendWebhookCreate(options);
 				this.rememberPingedUsers(prepared.message.allowed_mentions);
-				const previousNotify = this._notifyMessageId;
-				this._notifyMessageId = created.id;
+				const previousId = this._notifyMessageId ?? '@original';
 				try {
-					await this.deleteReply('@original');
+					await this.sendWebhookEdit(previousId, { components: [] });
 				} catch {}
-				if (previousNotify) {
-					try {
-						await this.deleteReply(previousNotify);
-					} catch {}
-				}
+				this._notifyMessageId = created.id;
 				return created;
 			}
 
+			this.rememberPingedUsers(prepared.message.allowed_mentions);
+			this._replied = true;
 			if (this._notifyMessageId) {
 				return this.sendWebhookEdit(this._notifyMessageId, options);
 			}

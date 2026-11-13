@@ -9,6 +9,7 @@ import type { Star } from '@/lib/minions/types.js';
 import { determineMiningTime } from '@/lib/skilling/functions/determineMiningTime.js';
 import { pickaxes } from '@/lib/skilling/functions/miningBoosts.js';
 import type { ActivityTaskData, ShootingStarsOptions } from '@/lib/types/minions.js';
+import { getPatronTripBonusMs } from '@/lib/util/calcMaxTripLength.js';
 import { makeShootingStarButton } from '@/lib/util/interactions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 
@@ -220,6 +221,7 @@ export async function shootingStarsCommand({
 			hasGlory: user.hasEquipped('Amulet of glory'),
 			maxTripLength: await user.calcMaxTripLength('ShootingStars'),
 			hasKaramjaMedium: false,
+			patronBonusMs: await getPatronTripBonusMs(user),
 			rng
 		});
 		duration += timeToMine;

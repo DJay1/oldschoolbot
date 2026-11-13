@@ -1,4 +1,7 @@
+import { bsoChallengeLeaderboard } from '@/lib/bso/leaderboards/boxSpawnsLb.js';
+import { bsoCompletionistLb } from '@/lib/bso/leaderboards/completionistLb.js';
 import { bsoItemContractDonationGivenLb, bsoItemContractLb } from '@/lib/bso/leaderboards/itemContractsLb.js';
+import { bsoLeaguesLeaderboard } from '@/lib/bso/leaderboards/leaguesLb.js';
 import { bsoTamesHatchedLb } from '@/lib/bso/leaderboards/tamesHatchedLb.js';
 
 import { calcWhatPercent, formatDuration, stringMatches, toTitleCase } from '@oldschoolgg/toolkit';
@@ -995,6 +998,22 @@ export const leaderboardCommand = defineCommand({
 
 		if (options.mastery) {
 			return masteryLb(interaction);
+		}
+
+		if (options.leagues) {
+			return bsoLeaguesLeaderboard(interaction, options.leagues.type);
+		}
+
+		if (options.challenges) {
+			return bsoChallengeLeaderboard(interaction);
+		}
+
+		if (options.completion) {
+			return bsoCompletionistLb(
+				interaction,
+				Boolean(options.completion.untrimmed),
+				Boolean(options.completion.ironmen_only)
+			);
 		}
 
 		return 'Invalid input.';

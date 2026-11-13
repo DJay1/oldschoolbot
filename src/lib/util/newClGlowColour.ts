@@ -5,7 +5,7 @@ import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
 import { patronMsg } from '@/lib/util/smallUtils.js';
 
 export const DEFAULT_NEW_CL_GLOW_COLOUR = OSRSCanvas.COLORS.PURPLE;
-export const NEW_CL_GLOW_PERK_TIER = PerkTier.Four;
+export const NEW_CL_GLOW_PERK_TIER = PerkTier.Two;
 
 export async function getNewClGlowColour(user: MUser | null | undefined): Promise<string> {
 	const custom = user?.user.new_cl_glow_hex;

@@ -2,21 +2,23 @@ import { feedHammyCommand } from '@/lib/bso/commands/hammyCommand.js';
 import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
 
 import { bold } from '@oldschoolgg/discord';
-import { FormattedCustomEmoji, formatOrdinal, notEmpty, roboChimpCLRankQuery } from '@oldschoolgg/toolkit';
+import { customEmoji, FormattedCustomEmoji, formatOrdinal, notEmpty, roboChimpCLRankQuery } from '@oldschoolgg/toolkit';
 import { convertLVLtoXP, Items } from 'oldschooljs';
 
 import { ownedItemOption, skillOption } from '@/discord/index.js';
-import { BSC_PATRON_TIERS } from '@/lib/bsc/patronTiers.js';
+import { BSC_PATRON_TIERS, bscPatronNameForPerkTier } from '@/lib/bsc/patronTiers.js';
 import { bscTierDisplay } from '@/lib/bsc/tierDisplay.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { BitFieldData, MAX_LEVEL, PerkTier } from '@/lib/constants.js';
 import { degradeableItems } from '@/lib/degradeableItems.js';
 import { diaries } from '@/lib/diaries.js';
+import { hasLaunchBoxOpenBadge, launchBoxOpenCount } from '@/lib/events/launch/launchBox.js';
 import { calculateMastery } from '@/lib/mastery.js';
 import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 import { blowpipeCommand, blowpipeDarts } from '@/lib/minions/functions/blowpipeCommand.js';
 import { degradeableItemsCommand } from '@/lib/minions/functions/degradeableItemsCommand.js';
 import { allPossibleStyles, trainCommand } from '@/lib/minions/functions/trainCommand.js';
+import { patreonUrl } from '@/lib/patreonLink.js';
 import { Minigames } from '@/lib/settings/minigames.js';
 import creatures from '@/lib/skilling/skills/hunter/creatures/index.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
@@ -71,10 +73,14 @@ export async function getUserInfo(user: MUser) {
 	const task = await ActivityManager.getActivityOfUser(user.id);
 	const taskText = task ? `${task.type}` : 'None';
 
+	const launchBoxOpens = await launchBoxOpenCount(user);
+	const minionBadges = hasLaunchBoxOpenBadge(launchBoxOpens)
+		? [user.badgesString, customEmoji('launchbox')].filter(part => part.length > 0).join(' ')
+		: user.badgesString;
 	const result = {
 		perkTier: user.perkTier,
 		isBlacklisted: await user.isBlacklisted(),
-		badges: user.badgesString,
+		badges: minionBadges,
 		isIronman: user.isIronman,
 		bitfields,
 		currentTask: taskText,
@@ -97,9 +103,8 @@ export async function getUserInfo(user: MUser) {
 **Ironman:** ${result.isIronman}
 **Bitfields:** ${result.bitfields}
 **Github Connected:** ${result.github}
-**Leagues:** ${roboChimpUser.leagues_completed_tasks_ids.length} tasks, ${
-			roboChimpUser.leagues_points_total
-		} points (Rank ${leaguesRanking > 500 ? 'Unranked! Get more points!' : formatOrdinal(leaguesRanking)})
+**Leagues:** ${roboChimpUser.leagues_completed_tasks_ids.length} tasks, ${roboChimpUser.leagues_points_total
+			} points (Rank ${leaguesRanking > 500 ? 'Unranked! Get more points!' : formatOrdinal(leaguesRanking)})
 **Global CL:** ${globalCLPercent}% (${clRank > 500 ? 'Unranked! Get more CL slots completed!' : formatOrdinal(clRank)})
 `
 	};
@@ -181,6 +186,10 @@ export const minionCommand = defineCommand({
 					name: 'name',
 					description: 'The name of the bank background you want.',
 					autocomplete: async ({ value, user }: StringAutoComplete) => {
+						if (!bankImageTask.ready) {
+							await bankImageTask.init();
+							bankImageTask.ready = true;
+						}
 						const allAccounts = await findGroupOfUser(user.id);
 						const bankImages = bankImageTask.backgroundImages;
 						const owned = bankImages
@@ -200,7 +209,7 @@ export const minionCommand = defineCommand({
 							.filter(bg => (!value ? true : bg.name.toLowerCase().includes(value.toLowerCase())))
 							.map(i => {
 								const name = i.perkTierNeeded
-									? `${i.name} (Tier ${i.perkTierNeeded - 1} patrons)`
+									? `${i.name} (${bscPatronNameForPerkTier(i.perkTierNeeded) ?? 'patron'} or higher)`
 									: i.name;
 								return { name, value: i.name };
 							});
@@ -608,8 +617,8 @@ ${substr}`;
 });
 
 function bscPerksLine(perkTier: number): string {
+	const url = `<${patreonUrl()}>`;
 	const tier = [...BSC_PATRON_TIERS].reverse().find(t => perkTier >= t.perkTier);
-	if (!tier) return 'Free player: queue 2 trips every 2 days with /queue (each patron tier adds 1 more)';
-	const below = tier.level > 1 ? ', plus every perk from the tiers below' : '';
-	return `__${tier.name}__: ${tier.summary}${below}`;
+	if (!tier) return `Free player, see all perks at ${url}`;
+	return `${tier.name}, see all perks at ${url}`;
 }

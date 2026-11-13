@@ -1,7 +1,7 @@
 import { stringMatches } from '@oldschoolgg/toolkit';
 import { Bank, resolveItems, toKMB } from 'oldschooljs';
 
-import { bscPatronNameForPerkTier } from '@/lib/bsc/patronTiers.js';
+import { formatBscPatronRequirement } from '@/lib/bsc/patronTiers.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import type { BankBackground } from '@/lib/minions/data/bankBackgrounds.js';
 import { userCanAccessBankBg } from '@/lib/bsc/bankBgAccess.js';
@@ -44,12 +44,7 @@ export async function bankBgUnavailableReason(
 	}
 
 	if (bg.perkTierNeeded) {
-		const tierName = bscPatronNameForPerkTier(bg.perkTierNeeded);
-		return withPatreonLink(
-			tierName
-				? `This background requires **${tierName}** (or higher) on Patreon.`
-				: `This background requires Tier ${Number(bg.perkTierNeeded) - 1} patrons or higher.`
-		);
+		return withPatreonLink(formatBscPatronRequirement(bg.perkTierNeeded));
 	}
 
 	if (bg.bitfield) {
@@ -146,12 +141,7 @@ export async function bankBgCommand(interaction: MInteraction, user: MUser, name
 
 	// Check they have the required perk tier.
 	if (selectedImage.perkTierNeeded && (await user.fetchPerkTier()) < selectedImage.perkTierNeeded) {
-		const tierName = bscPatronNameForPerkTier(selectedImage.perkTierNeeded);
-		return withPatreonLink(
-			tierName
-				? `This background requires **${tierName}** (or higher) on Patreon.`
-				: `This background requires Tier ${Number(selectedImage.perkTierNeeded) - 1} patrons or higher.`
-		);
+		return withPatreonLink(formatBscPatronRequirement(selectedImage.perkTierNeeded));
 	}
 
 	if (selectedImage.name === 'Pets') {

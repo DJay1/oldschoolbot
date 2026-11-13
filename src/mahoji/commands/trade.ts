@@ -79,13 +79,13 @@ export const tradeCommand = defineCommand({
 						filters: [options.filter],
 						search: options.search,
 						noDuplicateItems: true
-					}).filter(i => itemIsTradeable(i.id, true));
+					}).filter(i => itemIsTradeable(i.id, true, senderUser.id));
 		const itemsReceived = parseBank({
 			inputStr: options.receive,
 			maxSize: 70,
 			flags: { tradeables: 'tradeables' },
 			noDuplicateItems: true
-		}).filter(i => itemIsTradeable(i.id, true));
+		}).filter(i => itemIsTradeable(i.id, true, recipientUser.id));
 
 		if (options.price) {
 			const gp = mahojiParseNumber({ input: options.price, min: 1 });
@@ -94,8 +94,8 @@ export const tradeCommand = defineCommand({
 			}
 		}
 
-		const allItems = new Bank().add(itemsSent).add(itemsReceived);
-		if (allItems.items().some(i => !itemIsTradeable(i[0].id, true))) {
+		if (itemsSent.items().some(i => !itemIsTradeable(i[0].id, true, senderUser.id)) ||
+			itemsReceived.items().some(i => !itemIsTradeable(i[0].id, true, recipientUser.id))) {
 			return "You're trying to trade untradeable items.";
 		}
 

@@ -8,7 +8,7 @@ import { Bank, EItem } from 'oldschooljs';
 import { bloodEssence, raimentBonus } from '@/lib/skilling/functions/calcsRunecrafting.js';
 import Runecraft from '@/lib/skilling/skills/runecraft.js';
 import type { RunecraftActivityTaskOptions } from '@/lib/types/minions.js';
-import { skillingPetDropRate } from '@/lib/util.js';
+import { launchPetRate, skillingPetDropRate } from '@/lib/util.js';
 import { calcMaxRCQuantity } from '@/mahoji/mahojiSettings.js';
 
 export const runecraftTask: MinionTask = {
@@ -67,7 +67,7 @@ export const runecraftTask: MinionTask = {
 		if (duration >= MIN_LENGTH_FOR_PET) {
 			const minutes = duration / Time.Minute;
 			const droprate = clAdjustedDroprate(user, 'Obis', Math.floor(5000 / minutes), 1.5);
-			if (roll(droprate)) {
+			if (roll(launchPetRate(droprate))) {
 				str +=
 					'\n**' +
 					customEmoji('obis') +

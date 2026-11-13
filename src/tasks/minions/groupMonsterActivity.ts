@@ -7,6 +7,8 @@ import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
 import announceLoot from '@/lib/minions/functions/announceLoot.js';
 import isImportantItemForMonster from '@/lib/minions/functions/isImportantItemForMonster.js';
 import type { GroupMonsterActivityTaskOptions } from '@/lib/types/minions.js';
+import { launchPetTertiaryChanges } from '@/lib/util.js';
+import { applyLaunchMalygosPetRolls, Malygos } from '@/lib/bso/monsters/demi-bosses/Malygos.js';
 
 export const groupoMonsterTask: MinionTask = {
 	type: 'GroupMonsterKilling',
@@ -17,8 +19,13 @@ export const groupoMonsterTask: MinionTask = {
 		const teamsLoot: { [key: string]: Bank } = {};
 		const kcAmounts: { [key: string]: number } = {};
 
+		const launchTertiaries = launchPetTertiaryChanges();
+		const launchKillOptions = launchTertiaries
+			? { lootTableOptions: { tertiaryItemPercentageChanges: launchTertiaries } }
+			: {};
 		for (let i = 0; i < quantity; i++) {
-			const loot = monster.table.kill(1, {});
+			const loot = monster.table.kill(1, launchKillOptions);
+			if (monster.id === Malygos.id) applyLaunchMalygosPetRolls(loot, 1);
 			if (rng.roll(10) && monster.id !== 696_969) {
 				loot.multiply(4);
 				loot.add(MysteryBoxes.roll());
@@ -46,7 +53,7 @@ export const groupoMonsterTask: MinionTask = {
 
 			const kcToAdd = kcAmounts[user.id];
 			if (user.usingPet('Ori') && duration > Time.Minute * 5) {
-				loot.add(monster.table.kill(Math.ceil(kcToAdd * 0.25), {}));
+				loot.add(monster.table.kill(Math.ceil(kcToAdd * 0.25), launchKillOptions));
 			}
 			await user.transactItems({
 				collectionLog: true,

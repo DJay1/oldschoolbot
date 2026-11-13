@@ -10,6 +10,7 @@ import { inventionBoosts } from '@/lib/bso/skills/invention/inventions.js';
 import { calcPercentOfNum, Emoji, increaseNumByPercent } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { Bank } from 'oldschooljs';
+import { launchPetRate } from '@/lib/util.js';
 
 const SECONDS_TO_HARVEST = 60;
 const SECONDS_TO_CONVERT = 1;
@@ -128,7 +129,7 @@ export function memoryHarvestResult({
 		const clueChance = 1200;
 		// Step 3: Roll for pet
 		for (let t = 0; t < memoriesHarvested; t++) {
-			if (roll(petChance)) {
+			if (roll(launchPetRate(petChance))) {
 				loot.add('Doopy');
 			}
 			if (hasDivineHand && roll(clueChance) && 'clueTable' in energy && energy.clueTable) {

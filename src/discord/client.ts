@@ -1,3 +1,4 @@
+import { WebSocketShardEvents } from '@discordjs/ws';
 import { ActivityType, GatewayIntentBits, PresenceUpdateStatus } from '@oldschoolgg/discord';
 
 import { onRawGuildCreate } from '@/discord/handlers/guildCreate.js';
@@ -6,6 +7,7 @@ import { OldSchoolBotClient } from '@/discord/OldSchoolBotClient.js';
 import { handleBscGuildMemberRemove, handleBscGuildMemberUpdate } from '@/lib/bsc/patronSync.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { onMessage } from '@/lib/events.js';
+import { handlePollReactionAdd } from '@/lib/util/pollReactions.js';
 import { onStartup } from '@/mahoji/lib/events.js';
 
 const client = new OldSchoolBotClient({
@@ -37,6 +39,10 @@ declare global {
 }
 
 global.globalClient = client;
+client.ws.on(WebSocketShardEvents.Dispatch, packet => {
+	if (packet.t !== 'MESSAGE_REACTION_ADD') return;
+	void handlePollReactionAdd(packet.d).catch(err => Logging.logError(err as Error));
+});
 client.on('messageCreate', async msg => {
 	try {
 		const [isUserBlacklisted, isGuildBlacklisted] = await Promise.all([

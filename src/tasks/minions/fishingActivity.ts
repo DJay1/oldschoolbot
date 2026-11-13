@@ -7,6 +7,7 @@ import { applySummerFishingLoot } from '@/lib/events/summer/fishing.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
 import { FISHING_REWORK_MESSAGE, findFishingSpotForStoredTrip } from '@/lib/skilling/skills/fishing/fishingRework.js';
+import { formatFishingXpPerHour } from '@/lib/skilling/skills/fishing/fishingTrip.js';
 import type { FishingActivityTaskOptions } from '@/lib/types/minions.js';
 import { rollForMoonKeyHalf } from '@/lib/util/minionUtils.js';
 
@@ -127,14 +128,7 @@ export const fishingTask: MinionTask = {
 			message += '\n**Since you were powerfishing, you dropped all of those fish on the ground!**\n';
 		}
 
-		const bonusXpEntries = Object.entries(result.bonusXpPerHour ?? {}).filter(([, value]) => value);
-		const perHourSegments = [`${result.xpPerHour}/Hr`];
-		if (bonusXpEntries.length > 0) {
-			for (const [skill, value] of bonusXpEntries) {
-				const formattedSkill = `${skill.charAt(0).toUpperCase()}${skill.slice(1)}`;
-				perHourSegments.push(`${value}/Hr ${formattedSkill}`);
-			}
-		}
+		const perHourSegments = formatFishingXpPerHour(result.updateBank.xpBank, data.duration);
 		message += `You received ${result.updateBank.xpBank} (${perHourSegments.join(', ')}).`;
 		const bonusClauses = skillXpBonusClauses(xpMessage ?? '');
 		if (bonusClauses) message += ` ${bonusClauses}`;

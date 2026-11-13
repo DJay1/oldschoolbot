@@ -1,7 +1,8 @@
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
+import { launchPetRate } from '@/lib/util.js';
 
-import { Emoji } from '@oldschoolgg/toolkit';
+import { Emoji, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import { MAX_QP } from '@/lib/minions/data/quests.js';
@@ -15,7 +16,8 @@ export const questingTask: MinionTask = {
 		const currentQP = user.QP;
 
 		// This assumes you do quests in order of scaling difficulty, ~115 hours for max qp
-		let qpReceived = rng.randInt(1, 30);
+		const maxQPFromTrip = Math.max(1, Math.floor(data.duration / Time.Minute));
+		let qpReceived = rng.randInt(1, maxQPFromTrip);
 
 		const newQP = currentQP + qpReceived;
 
@@ -47,7 +49,7 @@ export const questingTask: MinionTask = {
 			str += `${Emoji.Herblore} You received 250 Herblore XP for completing Druidic Ritual.`;
 		}
 
-		if (rng.roll(globalDroprates.zippyQuesting.baseRate)) {
+		if (rng.roll(launchPetRate(globalDroprates.zippyQuesting.baseRate))) {
 			str += `\n${BSOEmoji.Zippy} While you walk through the forest north of falador, a small ferret jumps onto your back and joins you on your adventures!`;
 			await user.addItemsToBank({ items: new Bank().add('Zippy'), collectionLog: true });
 		}
