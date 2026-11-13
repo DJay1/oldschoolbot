@@ -5,7 +5,7 @@ import { LampTable } from '@/lib/bso/xpLamps.js';
 
 import { LootTable, TreeHerbSeedTable } from 'oldschooljs';
 
-import { PATRON_DYES, type PatronDyeDefinition } from '@/lib/bsc/patronDyes.js';
+import { PATRON_DYES } from '@/lib/bsc/patronDyes.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
 
 export const MysteryBoxes = new LootTable()
@@ -51,20 +51,14 @@ const baseTGBTable = new LootTable()
 	.add('Tchiki monkey nuts')
 	.add('Magic seed', [20, 50]);
 
-const testerDyeWeights: Record<PatronDyeDefinition['key'], number> = {
-	biscuit: 10,
-	fetch: 6,
-	pawberry: 4,
-	midnight: 2,
-	golden: 1
-};
-
 const testerDyeTable = new LootTable();
-for (const dye of PATRON_DYES) testerDyeTable.add(dye.itemID, 1, testerDyeWeights[dye.key]);
+for (const dye of PATRON_DYES.filter(d => ['biscuit', 'fetch', 'pawberry'].includes(d.key))) {
+	testerDyeTable.add(dye.itemID, 1, Math.round(120 / dye.points));
+}
 
 export const testerGiftTable = new LootTable()
 	.every(baseTGBTable, [3, 7])
-	.tertiary(25, testerDyeTable)
+	.tertiary(10, testerDyeTable)
 	.tertiary(50, BSOItem.DOUBLE_LOOT_TOKEN)
 	.tertiary(50, LaunchItem.DOUBLE_XP_TOKEN)
 	.every('Clue scroll (grandmaster)', [1, 3])
