@@ -45,8 +45,6 @@ export const EVENT_START_ANNOUNCEMENTS: Partial<Record<SeasonalEventId, EventSta
 				'🦃 **THE STRAW HAT HARVEST IS LIVE!** 🏴‍☠️',
 				'**Sun Nov 22 – Mon Dec 7 (CT)**',
 				'',
-				'The Straw Hat crew docked the Going Merry for Thanksgiving, and they brought a feast!',
-				'',
 				'**How it works**',
 				'• Every trip can drop **Harvest bundles** and **Wicker baskets**',
 				'• 5 Harvest bundles + 1 Wicker basket makes a **Bountiful cornucopia**',
@@ -65,19 +63,28 @@ export const EVENT_START_ANNOUNCEMENTS: Partial<Record<SeasonalEventId, EventSta
 				'• A lucky Harvest turkey during a Harvest feast adds more time to it'
 			].join('\n'),
 			[
-				'**Pets, hats & more**',
-				'• **Gobbles** is guaranteed by 150 offers',
-				'• **Laboon** and **Captain Laboon** boost your fishing, Aerial fishing included',
-				'• **Straw hats**, **Going Merry** bank backgrounds, a collection log and the **Harvest Blessing**',
+				'**Rare rewards & boosts**',
+				'• **Gobbles**: 1.4x trip length on every trip, 15% chance each raw food is saved when cooking. Guaranteed by 150 offers',
+				'• **Gobble gobble**: all of Gobbles, plus a Pilgrim hat boost',
+				'• **Pilgrim hat** (worn): +10% cooking speed, +3% cooking yield',
+				'• **Laboon**: 2.2x fishing speed and 1.3x fishing trip length (Aerial fishing included), 2.2x fish from Fishing Trawler and Drift net fishing',
+				'• **Captain Laboon**: all of Laboon, plus a Straw hat boost and +7% more fishing yield (+10% total)',
+				'• **Straw hat** (worn): +10% fishing speed, +3% fishing yield',
+				'• **Harvest Blessing** (own a Cornucopia): +3% cooking yield. During the event: +15% offer supplies and better odds on some offer rewards',
 				'• Every Gobbles, Gobble gobble, Laboon and Captain Laboon gets announced, so flex away!',
 				'',
+				'**Bank backgrounds**',
+				'• **Going Merry**: complete The Straw Hat Harvest collection log (Laboon and Captain Laboon not needed)',
+				'• **Going Merry (storm)**: an extra version for Patreon supporters (Pup tier and up) with the same log',
+				'',
 				'Check your progress with `/thanksgiving status`',
+				'📄 Full details in the event guide PDF below',
 				'',
 				'🙏 **Huge thanks to our testers**',
 				THANKSGIVING_TESTERS.map(id => `<@${id}>`).join(' '),
 				'Thank you for helping shape this event!',
 				'',
-				'Happy Thanksgiving, and good luck on the Grand Line! 🌊'
+				'Happy Thanksgiving! 🦃'
 			].join('\n')
 		]
 	}

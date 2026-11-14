@@ -58,8 +58,11 @@ describe('event start announcements', () => {
 		for (const cmd of all.match(/\/[a-z]+(?: [a-z]+)?/g) ?? []) {
 			expect(['/thanksgiving offer', '/thanksgiving harvest', '/thanksgiving status']).toContain(cmd);
 		}
-		// "cornucopia" only ever appears as the in-game name.
-		expect(all.match(/cornucopia/gi)?.length).toBe(all.match(/Bountiful cornucopia/g)?.length);
+		// Lowercase "cornucopia" only as Bountiful cornucopia; capital Cornucopia is the 2021 item.
+		expect(all.match(/(?<!Bountiful )cornucopia/g)).toBeNull();
+		expect(all).not.toContain('Grand Line');
+		expect(all.trimEnd().endsWith('Happy Thanksgiving! 🦃')).toBe(true);
+		expect(all).not.toContain('docked the Going Merry');
 	});
 
 	test('due only inside the catch-up window of a scheduled, active, code-enabled event', () => {
