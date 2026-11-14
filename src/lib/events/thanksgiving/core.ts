@@ -61,6 +61,7 @@ export const THANKSGIVING_STATIC_PACK: readonly (readonly [string, number])[] = 
 	['Iron ore', 40],
 	['Coal', 40],
 	['Raw karambwan', 6],
+	['Harvest turkey', 1],
 	['Big bones', 15],
 	['Small lamp', 1]
 ];
@@ -73,6 +74,8 @@ const LAUNCH_BASELINE_RATE_MINUTES = 112;
 const LAUNCH_TRIP_EXPONENT = 1.08;
 export const THANKSGIVING_PACE_MULTIPLIER = 3;
 export const BUNDLES_PER_OFFER = 5;
+/** Every offer gives 1 Harvest turkey (in the pack) and this chance of a 2nd. Harvest Blessing scales it like other supplies. */
+export const EXTRA_TURKEY_CHANCE = 0.5;
 export const BASKETS_PER_OFFER = 1;
 
 const SCALE = 1_000_000;
@@ -257,6 +260,9 @@ export function rollThanksgivingOffers({
 			gotPityGobbles = true;
 		}
 		if (trackedChance(rng, rareMult / OFFER_RATES.laboon, rares.laboon)) loot.add(ThanksgivingItem.LABOON);
+
+		// Supplies: chance of a 2nd Harvest turkey (rolled after rares so rare odds are untouched).
+		if (chance(rng, EXTRA_TURKEY_CHANCE * uncommonMult)) loot.add(ThanksgivingItem.HARVEST_TURKEY);
 	}
 
 	return { loot, gotPityGobbles, streakOffers, rares };

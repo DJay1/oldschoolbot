@@ -31,6 +31,7 @@ import {
 } from '@/lib/canvas/canvasUtil.js';
 import { type IconPackID, ItemIconPacks } from '@/lib/canvas/iconPacks.js';
 import { BitField, BOT_TYPE } from '@/lib/constants.js';
+import { isProductionMode } from '@/lib/hosting/productionMode.js';
 
 const Fonts = {
 	Compact: '16px OSRSFontCompact',
@@ -377,7 +378,11 @@ export class OSRSCanvas {
 		}
 	}
 
+	/** Test bot only: icons redrawn for The Straw Hat Harvest that must load from bso_icons instead of the spritesheet. */
+	private static readonly LOCAL_ICON_OVERRIDES: ReadonlySet<number> = new Set([48_333]);
+
 	private static getItemSpriteData(itemID: number): CanvasSpritesheet | null {
+		if (OSRSCanvas.LOCAL_ICON_OVERRIDES.has(itemID) && !isProductionMode()) return null;
 		if (BOT_TYPE === 'BSO' && CanvasModule.Spritesheet.BSOItems.has(itemID)) {
 			return CanvasModule.Spritesheet.BSOItems;
 		}

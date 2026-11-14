@@ -1,7 +1,10 @@
 import { Bank, Items } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
-import { rollThanksgivingOffers, thanksgivingStaticPack } from '@/lib/events/thanksgiving/core.js';
+import { allCollectionLogs } from '@/lib/data/Collections.js';
+import { Eatables } from '@/lib/data/eatables.js';
+import { rollThanksgivingOffers, thanksgivingCL, thanksgivingStaticPack } from '@/lib/events/thanksgiving/core.js';
+import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { sellPriceOfItem } from '@/mahoji/commands/sell.js';
 
 function seededRng(seed: number) {
@@ -20,6 +23,7 @@ describe('Thanksgiving offers without a per-command cap', () => {
 		expect(pack.amount('Lobster')).toBe(0);
 		expect(pack.amount('Raw karambwan')).toBe(6);
 		expect(thanksgivingStaticPack(true).amount('Raw karambwan')).toBe(6);
+		expect(pack.amount(ThanksgivingItem.HARVEST_TURKEY)).toBe(1);
 	});
 
 	test('karambwan supplies are not worth more on /sell than the lobsters they replace', () => {
@@ -44,7 +48,26 @@ describe('Thanksgiving offers without a per-command cap', () => {
 		}
 	});
 
-	test('100,000 offers roll quickly and spend exactly 6 rolls per offer', () => {
+	test('Harvest turkey is cheap on /sell, edible, and not in any turkey/event log', () => {
+		const turkey = Items.getOrThrow('Harvest turkey');
+		expect(turkey.id).toBe(ThanksgivingItem.HARVEST_TURKEY);
+		expect(sellPriceOfItem(turkey).price).toBeLessThanOrEqual(1000);
+		expect(sellPriceOfItem(turkey).price).toBeLessThan(sellPriceOfItem(Items.getOrThrow('Raw turkey')).price / 50);
+		expect(Eatables.find(e => e.id === turkey.id)?.healAmount).toBe(18);
+		expect(thanksgivingCL).not.toContain(turkey.id);
+		const old2021 = Object.values(allCollectionLogs).find(c => c.activities['Thanksgiving 2021'])!.activities[
+			'Thanksgiving 2021'
+		];
+		expect(old2021.items).not.toContain(turkey.id);
+	});
+
+	test('Captain Laboon name and old alias', () => {
+		expect(Items.itemNameFromId(ThanksgivingItem.LABOON_STRAW_HAT)).toBe('Captain Laboon');
+		expect(Items.getOrThrow('Captain Laboon').id).toBe(ThanksgivingItem.LABOON_STRAW_HAT);
+		expect(Items.getOrThrow('Laboon (straw hat)').id).toBe(ThanksgivingItem.LABOON_STRAW_HAT);
+	});
+
+	test('100,000 offers roll quickly and spend exactly 7 rolls per offer', () => {
 		let calls = 0;
 		const base = seededRng(42);
 		const rng = {
@@ -63,10 +86,13 @@ describe('Thanksgiving offers without a per-command cap', () => {
 			rng
 		});
 		const ms = performance.now() - start;
-		expect(calls).toBe(600_000);
+		expect(calls).toBe(700_000);
 		expect(ms).toBeLessThan(5000);
 		expect(result.loot.amount('Oak logs')).toBe(5_000_000);
 		expect(result.loot.amount('Raw karambwan')).toBe(600_000);
+		const turkeys = result.loot.amount(ThanksgivingItem.HARVEST_TURKEY);
+		expect(turkeys).toBeGreaterThan(140_000);
+		expect(turkeys).toBeLessThan(160_000);
 		// Gobbles guarantee still fires once at most.
 		expect(result.rares.gobbles.got).toBeGreaterThanOrEqual(1);
 	});

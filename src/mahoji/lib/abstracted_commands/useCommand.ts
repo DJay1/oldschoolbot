@@ -211,7 +211,7 @@ export const genericUsables: {
 		items: [Items.getOrThrow(ThanksgivingItem.STRAW_HAT), Items.getOrThrow(ThanksgivingItem.LABOON)],
 		cost: new Bank().add(ThanksgivingItem.STRAW_HAT).add(ThanksgivingItem.LABOON).freeze(),
 		loot: new Bank().add(ThanksgivingItem.LABOON_STRAW_HAT).freeze(),
-		response: () => 'You put the Straw hat on Laboon. He is now **Laboon (straw hat)**!',
+		response: () => 'You put the Straw hat on Laboon. Say ahoy to **Captain Laboon**!',
 		addToCL: true
 	},
 	{

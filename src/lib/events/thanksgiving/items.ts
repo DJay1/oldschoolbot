@@ -1,3 +1,6 @@
+import { replaceWhitespaceAndUppercase } from '@oldschoolgg/toolkit';
+import { Items } from 'oldschooljs';
+
 import { setCustomItem, UN_EQUIPPABLE } from '@/lib/customItems/util.js';
 
 /**
@@ -14,7 +17,10 @@ export const ThanksgivingItem = {
 	GOBBLES: 74_215,
 	GOBBLE_GOBBLE: 74_216,
 	LABOON: 74_217,
+	/** Laboon wearing the Straw hat, named Captain Laboon. */
 	LABOON_STRAW_HAT: 74_218,
+	/** Event-only supply food from offers. Low value, not part of the Thanksgiving 2021 log. */
+	HARVEST_TURKEY: 74_219,
 	/** The existing 2021 item. Reused as the rare offer result and for Harvest Blessing. */
 	CORNUCOPIA_2021: 48_333
 } as const;
@@ -81,7 +87,7 @@ for (const [id, name] of [
 	[ThanksgivingItem.GOBBLES, 'Gobbles'],
 	[ThanksgivingItem.GOBBLE_GOBBLE, 'Gobble gobble'],
 	[ThanksgivingItem.LABOON, 'Laboon'],
-	[ThanksgivingItem.LABOON_STRAW_HAT, 'Laboon (straw hat)']
+	[ThanksgivingItem.LABOON_STRAW_HAT, 'Captain Laboon']
 ] as const) {
 	setCustomItem(
 		id,
@@ -95,3 +101,26 @@ for (const [id, name] of [
 		1
 	);
 }
+
+// Old name still works in commands (for example /bank search or /use).
+for (const alias of ['Laboon (straw hat)', 'Straw hat Laboon']) {
+	Items.itemNameMap.set(alias, ThanksgivingItem.LABOON_STRAW_HAT);
+	Items.itemNameMap.set(replaceWhitespaceAndUppercase(alias), ThanksgivingItem.LABOON_STRAW_HAT);
+}
+
+// Supply food from offers. Priced low (about 750 GP on /sell) so it cannot be farmed for GP,
+// and kept separate from the discontinued 2021 turkeys (100k each).
+setCustomItem(
+	ThanksgivingItem.HARVEST_TURKEY,
+	'Harvest turkey',
+	'Coal',
+	{
+		tradeable: true,
+		tradeable_on_ge: true,
+		...UN_EQUIPPABLE,
+		lowalch: 100,
+		highalch: 150,
+		customItemData: { cantDropFromMysteryBoxes: true }
+	},
+	1000
+);
