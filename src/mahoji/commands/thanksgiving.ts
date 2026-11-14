@@ -4,7 +4,7 @@ import { thanksgivingFeast, thanksgivingOffer, thanksgivingStatus } from '@/lib/
 
 export const thanksgivingCommand = defineCommand({
 	name: 'thanksgiving',
-	description: 'The Straw Hat Harvest: offer cornucopias and check your progress.',
+	description: 'The Straw Hat Harvest: offer Bountiful cornucopias and check your progress.',
 	options: [
 		{
 			type: 'Subcommand',
@@ -18,14 +18,17 @@ export const thanksgivingCommand = defineCommand({
 					required: false,
 					choices: [
 						{ name: 'Bountiful cornucopia', value: 'cornucopia' },
-						{ name: 'Harvest turkey (1 in 3: 2x loot or XP feast, or more feast time)', value: 'turkey' }
+						{
+							name: 'Harvest turkey (1 in 3: 2x loot or XP Harvest feast, or more feast time)',
+							value: 'turkey'
+						}
 					]
 				},
 				{
 					type: 'String',
 					name: 'quantity',
 					description:
-						"How many cornucopias: a number or 'all' (default: all you own). Turkeys go one at a time.",
+						"How many Bountiful cornucopias: a number or 'all' (default: all you own). Harvest turkeys go one at a time.",
 					required: false,
 					autocomplete: async ({ value, userId }: StringAutoComplete) => {
 						const user = await mUserFetch(userId);
@@ -46,7 +49,7 @@ export const thanksgivingCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'focus',
-					description: 'Which part to gather.',
+					description: 'Harvest bundles or Wicker baskets.',
 					required: true,
 					choices: [
 						{ name: 'Harvest bundles', value: 'bundles' },

@@ -16,6 +16,27 @@ const neverRng = { randInt: (_min: number, max: number) => max };
 const alwaysRng = { randInt: (min: number) => min };
 
 describe('The Straw Hat Harvest', () => {
+	test('offer loot has no XP lamps (removed for release)', () => {
+		for (const blessing of [false, true]) {
+			for (const [item] of thanksgivingStaticPack(blessing).items()) {
+				expect(item.name.toLowerCase()).not.toContain('lamp');
+			}
+		}
+		for (const rng of [alwaysRng, neverRng]) {
+			const many = rollThanksgivingOffers({
+				quantity: 200,
+				offersBefore: 0,
+				offersTodayBefore: 0,
+				hasHadGobbles: false,
+				blessing: true,
+				rng
+			});
+			for (const [item] of many.loot.items()) {
+				expect(item.name.toLowerCase()).not.toContain('lamp');
+			}
+		}
+	});
+
 	test('off by default', () => {
 		expect(isThanksgivingActive()).toBe(false);
 	});

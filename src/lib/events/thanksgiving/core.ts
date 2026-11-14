@@ -55,7 +55,7 @@ export const HARVEST_BLESSING_COOKING_YIELD_PERCENT = 3;
 export const HARVEST_BLESSING_EVENT_MULTIPLIER = 1.15;
 
 /**
- * Static pack given on every offer. Edit freely; quantities are per offer.
+ * Static pack given on every offer. Edit freely; quantities are per offer. No XP lamps (removed for release).
  * Harvest Blessing multiplies these by 1.15 (rounded down) during the event.
  */
 export const THANKSGIVING_STATIC_PACK: readonly (readonly [string, number])[] = [
@@ -64,8 +64,7 @@ export const THANKSGIVING_STATIC_PACK: readonly (readonly [string, number])[] = 
 	['Iron ore', 40],
 	['Coal', 40],
 	['Raw karambwan', 6],
-	['Big bones', 15],
-	['Small lamp', 1]
+	['Big bones', 15]
 ];
 
 /** Trips shorter than this drop no parts. */

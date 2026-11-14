@@ -30,7 +30,7 @@ export async function thanksgivingHarvestCommand({
 	minutes: number | null | undefined;
 }) {
 	if (!isThanksgivingActive()) return 'The Straw Hat Harvest is not running right now.';
-	if (focus !== 'bundles' && focus !== 'baskets') return 'Choose a focus: bundles or baskets.';
+	if (focus !== 'bundles' && focus !== 'baskets') return 'Choose a focus: Harvest bundles or Wicker baskets.';
 	if (await user.minionIsBusy()) return `${user.minionName} is busy.`;
 
 	const maxTripLength = await user.calcMaxTripLength(THANKSGIVING_HARVEST_ACTIVITY);
@@ -63,5 +63,5 @@ export async function thanksgivingHarvestCommand({
 		doubleLoot: false,
 		blessing: hasHarvestBlessing(user)
 	});
-	return `🌾 ${user.minionName} is now gathering **${thanksgivingHarvestPartName(chosen)}** for The Straw Hat Harvest, it'll take around ${formatTripDuration(user, duration)} to finish.\nExpected: about **${expected.toFixed(1)}** ${thanksgivingHarvestPartName(chosen)} (random amount; ${Math.round(THANKSGIVING_HARVEST_DISCOUNT * 100)}% of a normal trip's event value, counting 1 basket as 5 bundles, all in this part; Double Loot doubles it). Focused trips don't also drop normal event parts.`;
+	return `🌾 ${user.minionName} is now gathering **${thanksgivingHarvestPartName(chosen)}** for The Straw Hat Harvest, it'll take around ${formatTripDuration(user, duration)} to finish.\nExpected: about **${expected.toFixed(1)}** ${thanksgivingHarvestPartName(chosen)} (random amount; ${Math.round(THANKSGIVING_HARVEST_DISCOUNT * 100)}% of a normal trip's event value, counting 1 Wicker basket as 5 Harvest bundles, all in this part; Double Loot doubles it). Harvest trips don't also roll the normal trip drops of Harvest bundles and Wicker baskets.`;
 }

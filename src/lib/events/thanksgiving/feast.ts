@@ -189,7 +189,7 @@ export function harvestFeastStatusLine(userID: string, now = Date.now()): string
 	if (!feast) {
 		return `Harvest feast: none. Offer a Harvest turkey (\`/thanksgiving offer item:Harvest turkey\`): 1 in ${HARVEST_FEAST_SUCCESS_ONE_IN} chance of a random 2x loot or 2x XP feast (${HARVEST_FEAST_MIN_MINUTES}-${HARVEST_FEAST_MAX_MINUTES} minutes).`;
 	}
-	return `Harvest feast: **${harvestFeastName(feast.kind)}** for ${formatDuration(feast.endMs - now, true)} more (ends <t:${Math.floor(feast.endMs / 1000)}:R>). Each turkey has a 1 in ${HARVEST_FEAST_SUCCESS_ONE_IN} chance to add ${HARVEST_FEAST_MIN_MINUTES}-${HARVEST_FEAST_MAX_MINUTES} minutes (up to ${HARVEST_FEAST_MAX_TOTAL_MS / Time.Hour} hours left).`;
+	return `Harvest feast: **${harvestFeastName(feast.kind)}** for ${formatDuration(feast.endMs - now, true)} more (ends <t:${Math.floor(feast.endMs / 1000)}:R>). Each Harvest turkey has a 1 in ${HARVEST_FEAST_SUCCESS_ONE_IN} chance to add ${HARVEST_FEAST_MIN_MINUTES}-${HARVEST_FEAST_MAX_MINUTES} minutes (up to ${HARVEST_FEAST_MAX_TOTAL_MS / Time.Hour} hours left).`;
 }
 
 /* ---------- Storage: rows in the existing bsc_thanksgiving_daily table (no schema change) ---------- */

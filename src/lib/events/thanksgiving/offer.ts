@@ -175,14 +175,14 @@ export async function thanksgivingFeast(user: MUser, rng: ThanksgivingRng) {
 		const now = Date.now();
 		const active = activeHarvestFeast(user.id, now);
 		if (active && harvestFeastIsFull(active, now)) {
-			return `Your ${harvestFeastName(active.kind)} feast already has the maximum ${HARVEST_FEAST_MAX_TOTAL_MS / Time.Hour} hours left. Keep your turkey for later.`;
+			return `Your ${harvestFeastName(active.kind)} feast already has the maximum ${HARVEST_FEAST_MAX_TOTAL_MS / Time.Hour} hours left. Keep your Harvest turkey for later.`;
 		}
 		const turkey = new Bank().add(ThanksgivingItem.HARVEST_TURKEY, 1);
 		await unqueuedTransactItems({ user, itemsToRemove: turkey });
 
 		const result = rollTurkeyOffer(rng, active, now);
 		if (result.outcome === 'none') {
-			return `🦃 You offer a Harvest turkey to the harvest... the turkey was eaten, but no feast this time. (Each turkey has a 1 in ${HARVEST_FEAST_SUCCESS_ONE_IN} chance.)`;
+			return `🦃 You offer a Harvest turkey to the harvest... the Harvest turkey was eaten, but no Harvest feast this time. (Each Harvest turkey has a 1 in ${HARVEST_FEAST_SUCCESS_ONE_IN} chance.)`;
 		}
 		try {
 			await saveHarvestFeast(user.id, result.feast);
