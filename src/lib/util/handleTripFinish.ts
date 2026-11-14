@@ -22,6 +22,7 @@ import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
 import { getBscPatronAccount } from '@/lib/bsc/patronAccount.js';
 import { formatTripFlairLine } from '@/lib/bsc/patronFlair.js';
 import { bscPatronLevelFromBits } from '@/lib/bsc/patronTiers.js';
+import { announceThanksgivingPets } from '@/lib/bsc/rareAnnouncements.js';
 import { tryStartQueuedTrip } from '@/lib/bsc/tripQueue.js';
 import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
@@ -213,6 +214,14 @@ const tripFinishEffects: TripFinishEffect[] = [
 					itemsToAddWithCL: bonusLoot
 				};
 			}
+		}
+	},
+	{
+		// Straw Hat Harvest: announce every event pet from a trip (Laboon while fishing).
+		name: 'Straw Hat Harvest pet announcements',
+		fn: async ({ data, user, loot }) => {
+			if (!loot) return;
+			void announceThanksgivingPets(user, loot, user.cl, data.type === 'Fishing' ? 'while fishing' : 'on a trip');
 		}
 	},
 	{

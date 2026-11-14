@@ -10,6 +10,7 @@ import { notEmpty, objectEntries, Time } from '@oldschoolgg/toolkit';
 import { randArrItem, randInt } from 'node-rng';
 import { Bank, type Item, Items, resolveItems } from 'oldschooljs';
 
+import { announceThanksgivingPets } from '@/lib/bsc/rareAnnouncements.js';
 import { gearImages } from '@/lib/canvas/gearImageData.js';
 import { BitField } from '@/lib/constants.js';
 import { easterUseTrollResponse } from '@/lib/events/easter/use.js';
@@ -682,6 +683,8 @@ for (const genericU of genericUsables) {
 					itemsToRemove: cost,
 					collectionLog: genericU.addToCL ?? false
 				});
+			// Straw Hat Harvest: making Gobble gobble / Captain Laboon is announced (no-op for other usables).
+			if (loot) void announceThanksgivingPets(user, loot, user.cl, 'by giving their pet a hat');
 			return genericU.response(loot ?? new Bank());
 		}
 	});
@@ -707,6 +710,7 @@ for (const [hat, pet, result] of [
 				itemsToAdd: new Bank().add(result),
 				collectionLog: true
 			});
+			void announceThanksgivingPets(user, new Bank().add(result), user.cl, 'by giving their pet a hat');
 			return `You put the ${hatName} on ${petName}. Say hello to **${Items.itemNameFromId(result)}**!`;
 		}
 	});

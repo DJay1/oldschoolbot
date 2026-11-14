@@ -1,6 +1,6 @@
 import { Bank, type ItemBank } from 'oldschooljs';
 
-import { announceToRareChannel } from '@/lib/bsc/rareAnnouncements.js';
+import { announceThanksgivingPets, announceToRareChannel } from '@/lib/bsc/rareAnnouncements.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
 import { userQueueFn } from '@/lib/util/userQueues.js';
@@ -128,6 +128,14 @@ export async function thanksgivingOffer(
 				`🌽 ${user.notificationName} just received ${cornucopias > 1 ? `${cornucopias}x ` : ''}**Cornucopia** from a Straw Hat Harvest offer!`
 			);
 		}
+
+		// Every event pet from this offer, in one message.
+		void announceThanksgivingPets(
+			user,
+			result.loot,
+			previousCL.clone().add(result.loot),
+			'from a Straw Hat Harvest offer'
+		);
 
 		const offersAfter = offersBefore + quantity;
 		const content = formatOfferReply({

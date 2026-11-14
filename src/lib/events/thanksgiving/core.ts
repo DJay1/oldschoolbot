@@ -1,5 +1,5 @@
-import { Time } from '@oldschoolgg/toolkit';
-import { Bank, type ItemBank } from 'oldschooljs';
+import { formatOrdinal, Time } from '@oldschoolgg/toolkit';
+import { Bank, type ItemBank, Items } from 'oldschooljs';
 
 import { isEventActive } from '@/lib/events/registry.js';
 import { isProductionMode } from '@/lib/hosting/productionMode.js';
@@ -569,3 +569,36 @@ export const thanksgivingCL: number[] = [
 export const thanksgivingBankBgCL: number[] = thanksgivingCL.filter(id => !LABOON_IDS.includes(id));
 
 export const thanksgivingPetIDs: number[] = [...GOBBLES_IDS, ...LABOON_IDS];
+
+/**
+ * Announcement text for event pets gained in one action (offer, trip, /use). One line for all of them.
+ * `clAfter` is the collection log after the pets were added, so the count says which one this is
+ * (collection logs count every copy ever obtained). Returns null when no event pet was gained.
+ */
+export function thanksgivingPetAnnouncement({
+	name,
+	gained,
+	clAfter,
+	source
+}: {
+	name: string;
+	gained: Bank;
+	clAfter: Bank;
+	source: string;
+}): string | null {
+	const parts: string[] = [];
+	for (const id of thanksgivingPetIDs) {
+		const qty = gained.amount(id);
+		if (qty <= 0) continue;
+		const petName = Items.itemNameFromId(id) ?? 'pet';
+		const total = Math.max(qty, clAfter.amount(id));
+		parts.push(
+			qty === 1
+				? `**${petName}** (their ${formatOrdinal(total)})`
+				: `**${qty}x ${petName}** (${total.toLocaleString()} total)`
+		);
+	}
+	if (parts.length === 0) return null;
+	const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+	return `🦃 ${name} just got ${list} ${source}!`;
+}
