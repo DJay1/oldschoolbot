@@ -6,6 +6,7 @@ import { customEmoji } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
+import { rollPercentOfQuantity } from '@/lib/events/thanksgiving/core.js';
 import { calcBurntCookables } from '@/lib/skilling/functions/calcBurntCookables.js';
 import Cooking from '@/lib/skilling/skills/cooking/cooking.js';
 import type { CookingActivityTaskOptions } from '@/lib/types/minions.js';
@@ -58,6 +59,24 @@ export const cookingTask: MinionTask = {
 		loot.remove(cookable.id, burnedAmount);
 		loot.add(cookable.burntCookable, burnedAmount);
 
+		// Straw Hat Harvest perks, decided when the trip started.
+		const cookedAmount = quantity - burnedAmount;
+		if (data.harvestYieldPercent && cookedAmount > 0) {
+			const extra = rollPercentOfQuantity(rng, cookedAmount, data.harvestYieldPercent);
+			if (extra > 0) {
+				loot.add(cookable.id, extra);
+				str += `\n+${extra}x ${cookable.name} extra cooking yield.`;
+			}
+		}
+		const harvestRefund = new Bank();
+		if (data.harvestSaveRawPercent) {
+			const saved = rollPercentOfQuantity(rng, quantity, data.harvestSaveRawPercent);
+			if (saved > 0) {
+				harvestRefund.add(new Bank(cookable.inputCookables).multiply(saved));
+				str += `\nGobbles saved ${harvestRefund} from the pot.`;
+			}
+		}
+
 		if (duration >= MIN_LENGTH_FOR_PET) {
 			const dropRate = clAdjustedDroprate(
 				user,
@@ -84,6 +103,10 @@ export const cookingTask: MinionTask = {
 			collectionLog: true,
 			itemsToAdd: loot
 		});
+		if (harvestRefund.length > 0) {
+			// Raw items given back, not new loot, so they skip the collection log.
+			await user.transactItems({ itemsToAdd: harvestRefund });
+		}
 
 		handleTripFinish({ user, channelId, message: str, data, loot });
 	}

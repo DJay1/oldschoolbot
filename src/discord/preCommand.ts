@@ -1,6 +1,7 @@
 import type { command_name_enum } from '@/prisma/main/enums.js';
 import { getInteractionOptionsForLog } from '@/discord/index.js';
 import { runInhibitors } from '@/discord/inhibitors.js';
+import { isLoggableCommandName } from '@/lib/util/commandUsageName.js';
 
 interface PreCommandOptions {
 	command: AnyCommand;
@@ -47,21 +48,25 @@ export async function preCommand({
 		);
 	}
 	// Todo: get the promise, and pass it thru to the commandFinish to get inihibited, duration, result, etc
-	prisma.commandUsage
-		.create({
-			data: {
-				user_id: BigInt(user.id),
-				channel_id: BigInt(interaction.channelId),
-				guild_id: interaction.guildId ? BigInt(interaction.guildId) : undefined,
-				command_name: commandName,
-				args: logArgs,
-				inhibited: false,
-				is_mention_command: false,
-				is_continue: isContinue ?? false,
-				continue_delta_millis: continueDeltaMs ?? null
-			}
-		})
-		.catch(err => Logging.logError({ err, interaction, context: logContext }));
+	// Background usage log only. Commands missing from the DB enum are skipped, and a failed insert is
+	// logged without the interaction so the raw database error is never sent to the player.
+	if (isLoggableCommandName(commandName)) {
+		prisma.commandUsage
+			.create({
+				data: {
+					user_id: BigInt(user.id),
+					channel_id: BigInt(interaction.channelId),
+					guild_id: interaction.guildId ? BigInt(interaction.guildId) : undefined,
+					command_name: commandName,
+					args: logArgs,
+					inhibited: false,
+					is_mention_command: false,
+					is_continue: isContinue ?? false,
+					continue_delta_millis: continueDeltaMs ?? null
+				}
+			})
+			.catch(err => Logging.logError({ err, context: { ...logContext, where: 'commandUsage.create' } }));
+	}
 
 	if (user.isAdmin()) return;
 

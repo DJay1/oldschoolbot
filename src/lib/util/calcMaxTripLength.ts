@@ -4,6 +4,12 @@ import type { activity_type_enum } from '@/prisma/main.js';
 import { bscPatronTripBonusMs, bscTripBonusForPerkTier } from '@/lib/bsc/patronTiers.js';
 import { BitField, PerkTier } from '@/lib/constants.js';
 import { isEventActive } from '@/lib/events/registry.js';
+import {
+	GOBBLES_TRIP_LENGTH_MULTIPLIER,
+	LABOON_TRIP_LENGTH_MULTIPLIER,
+	usingGobblesPet,
+	usingLaboonPet
+} from '@/lib/events/thanksgiving/core.js';
 import { getCyrTripBonus, RobochimpBitfieldEnum } from '@/lib/perkTiers.js';
 import { applyTripLengthMultiplier, finalizeTripLength } from '@/lib/util/tripLength.js';
 
@@ -99,6 +105,16 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 			if (user.usingPet('Shelldon')) {
 				max *= 1.25;
 			}
+			if (usingLaboonPet(user)) {
+				max = applyTripLengthMultiplier(max, LABOON_TRIP_LENGTH_MULTIPLIER, patronBonusMs);
+			}
+			break;
+		}
+		case 'AerialFishing': {
+			// Straw Hat Harvest: Laboon helps with Aerial fishing the same way as normal fishing.
+			if (usingLaboonPet(user)) {
+				max = applyTripLengthMultiplier(max, LABOON_TRIP_LENGTH_MULTIPLIER, patronBonusMs);
+			}
 			break;
 		}
 		case 'BeachCombing': {
@@ -131,6 +147,9 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 
 	if (user.usingPet('Zak')) {
 		max *= 1.4;
+	}
+	if (usingGobblesPet(user)) {
+		max = applyTripLengthMultiplier(max, GOBBLES_TRIP_LENGTH_MULTIPLIER, patronBonusMs);
 	}
 
 	const sac = Number(user.user.sacrificedValue);

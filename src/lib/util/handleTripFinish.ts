@@ -1,8 +1,6 @@
 import { tearsOfGuthixIronmanReqs, tearsOfGuthixSkillReqs } from '@/lib/bso/commands/tearsOfGuthixCommand.js';
-import { getBscPatronAccount } from '@/lib/bsc/patronAccount.js';
-import { formatTripFlairLine } from '@/lib/bsc/patronFlair.js';
-import { bscPatronLevelFromBits } from '@/lib/bsc/patronTiers.js';
 import { isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
+import { isDoubleXpActive } from '@/lib/bso/doubleXp.js';
 import { consolidateSkillXpBonusLines } from '@/lib/bso/firstAge/skillOutfits.js';
 import { gods } from '@/lib/bso/minigames/divineDominion.js';
 import { mysteriousStepData } from '@/lib/bso/mysteryTrail.js';
@@ -21,6 +19,10 @@ import { Bank, EItem, itemID, toKMB } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main.js';
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import { getBscPatronAccount } from '@/lib/bsc/patronAccount.js';
+import { formatTripFlairLine } from '@/lib/bsc/patronFlair.js';
+import { bscPatronLevelFromBits } from '@/lib/bsc/patronTiers.js';
+import { announceThanksgivingPets } from '@/lib/bsc/rareAnnouncements.js';
 import { tryStartQueuedTrip } from '@/lib/bsc/tripQueue.js';
 import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
@@ -32,11 +34,25 @@ import { LaunchItem } from '@/lib/events/launch/items.js';
 import { rollLaunchBoxFromTrip } from '@/lib/events/launch/launchBox.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
+import {
+	hasHarvestBlessing,
+	isThanksgivingActive,
+	rollFarmingCornucopias,
+	rollThanksgivingTripParts,
+	THANKSGIVING_HARVEST_ACTIVITY
+} from '@/lib/events/thanksgiving/core.js';
+import {
+	activeHarvestFeast,
+	HARVEST_FEAST_LOOT_EXCLUDED_ACTIVITIES,
+	harvestFeastBonusLoot,
+	harvestFeastFraction
+} from '@/lib/events/thanksgiving/feast.js';
+import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { handleGrowablePetGrowth } from '@/lib/growablePets.js';
 import { handlePassiveImplings } from '@/lib/implings.js';
 import { triggerRandomEvent } from '@/lib/randomEvents.js';
 import { canShowAutoFarmButton } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
-import type { ActivityTaskData } from '@/lib/types/minions.js';
+import type { ActivityTaskData, FarmingActivityTaskOptions } from '@/lib/types/minions.js';
 import { MUserClass } from '@/lib/user/MUser.js';
 import { deferTripFinish } from '@/lib/util/activityTransaction.js';
 import { deliverTripFinishMessage } from '@/lib/util/deliverTripFinishMessage.js';
@@ -126,9 +142,28 @@ const tripFinishEffects: TripFinishEffect[] = [
 		}
 	},
 	{
+		name: 'Straw Hat Harvest parts',
+		fn: async ({ data, messages, user, rng }) => {
+			if (!isThanksgivingActive()) return;
+			// The focused /thanksgiving harvest trip pays its own parts and never also rolls these.
+			if (data.type === THANKSGIVING_HARVEST_ACTIVITY) return;
+			const parts = rollThanksgivingTripParts({
+				durationMs: data.duration,
+				doubleLoot: isDoubleLootActive(data.duration),
+				blessing: hasHarvestBlessing(user),
+				rng
+			});
+			if (parts.length === 0) return;
+			messages.push(`🌽 You gathered ${parts} for The Straw Hat Harvest.`);
+			return { itemsToAddWithCL: parts };
+		}
+	},
+	{
 		name: 'Implings',
 		fn: async ({ data, messages, user }) => {
-			const imp = await handlePassiveImplings(user, data, messages);
+			// No Webshooter on Straw Hat Harvest trips, so it never uses invention materials there.
+			const harvestTrip = 'thanksgivingHarvest' in data && data.thanksgivingHarvest === true;
+			const imp = await handlePassiveImplings(user, data, messages, harvestTrip);
 			if (imp && imp.bank.length > 0) {
 				messages.push(`Caught ${imp.bank}`);
 				await user.statsBankUpdate('passive_implings_bank', imp.bank);
@@ -183,6 +218,65 @@ const tripFinishEffects: TripFinishEffect[] = [
 					itemsToAddWithCL: bonusLoot
 				};
 			}
+		}
+	},
+	{
+		// Straw Hat Harvest: each harvested patch of a fully grown crop with a base grow time of 60+ minutes
+		// has a 1/15 roll for a whole Bountiful cornucopia (Blessing applies, Double Loot does not).
+		name: 'Straw Hat Harvest farming cornucopia',
+		fn: async ({ data, messages, user, rng }) => {
+			if (!isThanksgivingActive() || data.type !== 'Farming') return;
+			const patches = (data as FarmingActivityTaskOptions).thanksgivingHarvestedPatches;
+			const { cornucopias } = rollFarmingCornucopias({ patches, blessing: hasHarvestBlessing(user), rng });
+			if (cornucopias <= 0) return;
+			messages.push(
+				`🌽 While harvesting your patches you found ${cornucopias > 1 ? `${cornucopias}x ` : 'a '}**Bountiful cornucopia** for The Straw Hat Harvest!`
+			);
+			return { itemsToAddWithCL: new Bank().add(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA, cornucopias) };
+		}
+	},
+	{
+		// Straw Hat Harvest: announce every event pet from a trip (Laboon while fishing).
+		name: 'Straw Hat Harvest pet announcements',
+		fn: async ({ data, user, loot }) => {
+			if (!loot) return;
+			void announceThanksgivingPets(user, loot, user.cl, data.type === 'Fishing' ? 'while fishing' : 'on a trip');
+		}
+	},
+	{
+		// Straw Hat Harvest: personal Harvest feast from a turkey. Separate from global Double Loot / XP.
+		name: 'Harvest feast',
+		fn: async ({ data, messages, user, loot, rng }) => {
+			if (!isThanksgivingActive()) return;
+			const left = (() => {
+				const active = activeHarvestFeast(user.id);
+				return active ? ` (ends <t:${Math.floor(active.endMs / 1000)}:R>)` : '';
+			})();
+			const pct = (f: number) => `${Math.max(1, Math.round(f * 100))}%`;
+
+			const xpFraction = harvestFeastFraction(user.id, 'xp', data.duration, data.finishDate);
+			if (xpFraction > 0) {
+				messages.push(
+					isDoubleXpActive(data.duration)
+						? '🦃 Harvest feast 2x XP does not stack with Double XP'
+						: `🦃 Harvest feast: 2x XP on ${pct(xpFraction)} of this trip${left}`
+				);
+				return;
+			}
+
+			const lootFraction = harvestFeastFraction(user.id, 'loot', data.duration, data.finishDate);
+			if (lootFraction <= 0 || !loot) return;
+			if (data.cantBeDoubled || HARVEST_FEAST_LOOT_EXCLUDED_ACTIVITIES.includes(data.type)) return;
+			if (isDoubleLootActive(data.duration)) {
+				messages.push('🦃 Harvest feast 2x loot does not stack with Double Loot');
+				return;
+			}
+			const bonus = harvestFeastBonusLoot(loot, lootFraction, rng);
+			if (bonus.length === 0) return;
+			messages.push(
+				`🦃 Harvest feast: 2x loot on ${pct(lootFraction)} of this trip, you got an extra ${bonus}${left}`
+			);
+			return { itemsToAddWithCL: bonus };
 		}
 	},
 	{
@@ -865,4 +959,3 @@ export async function handleTripFinish(
 
 	await deliverTripFinishMessage(user.id, channelId, message);
 }
-

@@ -43,7 +43,16 @@ export interface FarmingStepXPBreakdown {
 
 export interface FarmingStepSummary {
 	planted?: { itemName: string; quantity: number };
-	harvested?: { itemName: string; quantity: number; alive: number; died: number };
+	harvested?: {
+		itemName: string;
+		quantity: number;
+		alive: number;
+		died: number;
+		/** Base grow time of the harvested crop in minutes (farming data, before growth-speed boosts). */
+		growthMinutes?: number;
+		/** True when the patch had finished growing when this trip started. */
+		fullyGrown?: boolean;
+	};
 	reminder?: string;
 	payNote?: string;
 	duration: number;
@@ -1109,7 +1118,11 @@ export async function executeFarmingStep({
 			itemName: plantToHarvest.name,
 			quantity: patchType.lastQuantity,
 			alive: alivePlants,
-			died: patchType.lastQuantity - alivePlants
+			died: patchType.lastQuantity - alivePlants,
+			growthMinutes: plantToHarvest.growthTime,
+			fullyGrown:
+				patchType.plantTime > 0 &&
+				currentDate - patchType.plantTime >= plantToHarvest.growthTime * user.getFarmingGrowthSpeed() * 60_000
 		},
 		reminder,
 		payNote: payStr || undefined,

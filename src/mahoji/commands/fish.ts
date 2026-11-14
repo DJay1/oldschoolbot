@@ -2,6 +2,7 @@ import { stringSearch } from '@oldschoolgg/toolkit';
 import { Bank, Monsters } from 'oldschooljs';
 
 import { isEventActive } from '@/lib/events/registry.js';
+import { oldCrabCageRetired } from '@/lib/events/summer/fishing.js';
 import { getEclipsePetName } from '@/lib/events/summer/summerDays.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
@@ -201,6 +202,7 @@ export const fishCommand = defineCommand({
 			if (
 				spot.name !== 'Lobster' &&
 				hasPatricia &&
+				!oldCrabCageRetired() &&
 				user.hasEquipped('Old crab cage') &&
 				!user.cl.has('Partycrab')
 			) {

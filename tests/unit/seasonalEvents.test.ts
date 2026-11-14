@@ -37,6 +37,7 @@ test('seasonal events are on hold by default', () => {
 	expect(isEventActive('easter')).toBe(false);
 	expect(isEventActive('birthday')).toBe(false);
 	expect(isEventActive('launch')).toBe(false);
+	expect(isEventActive('thanksgiving')).toBe(false);
 });
 
 test('an enabled event is active only inside its window', () => {
@@ -144,10 +145,11 @@ test('owned holiday items keep their benefits while every event is off', () => {
 	expect(patriciaBoost.speedMultiplier).toBeCloseTo(2.15);
 	expect(patriciaBoost.boosts.some(line => line.includes('expert fishing pair'))).toBe(true);
 
+	// The Old crab cage is retired wherever the Straw Hat Harvest code is enabled (tests run in test mode).
 	const lobsterBoost = summerFishingStartAdjustments(withCage, 'Lobster');
-	expect(lobsterBoost.speedMultiplier).toBe(3);
-	expect(lobsterBoost.extraMaxTripLength).toBeGreaterThan(0);
-	expect(lobsterBoost.boosts.some(line => line.includes('Lydia'))).toBe(true);
+	expect(lobsterBoost.speedMultiplier).toBeCloseTo(2.15);
+	expect(lobsterBoost.extraMaxTripLength).toBe(0);
+	expect(lobsterBoost.boosts.some(line => line.includes('Old crab cage'))).toBe(false);
 
 	for (const name of [
 		'Christmas dye',

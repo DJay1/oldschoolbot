@@ -1,5 +1,6 @@
 import { Bank } from 'oldschooljs';
 
+import { rollPercentOfQuantity, thanksgivingFishingBoosts } from '@/lib/events/thanksgiving/core.js';
 import addSkillingClueToLoot from '@/lib/minions/functions/addSkillingClueToLoot.js';
 import aerialFishingCreatures from '@/lib/skilling/skills/hunter/aerialFishing.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
@@ -60,6 +61,12 @@ export const aerialFishingTask: MinionTask = {
 			bluegillCaught++;
 		}
 
+		// Straw Hat Harvest: Straw hat / Captain Laboon yield gives extra Molch pearls (the only aerial catch item).
+		const harvest = thanksgivingFishingBoosts(user);
+		const extraPearls =
+			harvest.yieldPercent > 0 ? rollPercentOfQuantity(rng, molchPearls, harvest.yieldPercent) : 0;
+		molchPearls += extraPearls;
+
 		loot.add('Molch pearl', molchPearls);
 
 		const huntXpReceived =
@@ -98,7 +105,9 @@ export const aerialFishingTask: MinionTask = {
 			await user.incrementCreatureScore(greaterSiren.id, greaterSirenCaught);
 		}
 
-		let str = `${user}, ${user.minionName} finished aerial fishing and caught ${greaterSirenCaught}x ${greaterSiren.name}, ${mottledEelCaught}x ${mottledEel.name}, ${commonTenchCaught}x ${commonTench.name}, ${bluegillCaught}x ${bluegill.name}, ${huntXP}, ${fishXP}. ${user.minionName} asks if you'd like them to do another of the same trip.`;
+		let str = `${user}, ${user.minionName} finished aerial fishing and caught ${greaterSirenCaught}x ${greaterSiren.name}, ${mottledEelCaught}x ${mottledEel.name}, ${commonTenchCaught}x ${commonTench.name}, ${bluegillCaught}x ${bluegill.name}, ${huntXP}, ${fishXP}.`;
+		if (extraPearls > 0)
+			str += `\n+${extraPearls} extra Molch pearl${extraPearls === 1 ? '' : 's'} from ${harvest.yieldLabel}.`;
 
 		// Add clue scrolls
 		const clueScrollChance = 636_833;

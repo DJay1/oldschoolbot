@@ -1,6 +1,7 @@
 import { customEmoji, formatDuration, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank, itemID } from 'oldschooljs';
 
+import { thanksgivingCookingBoosts } from '@/lib/events/thanksgiving/core.js';
 import Cooking, { Cookables } from '@/lib/skilling/skills/cooking/cooking.js';
 import ForestryRations from '@/lib/skilling/skills/cooking/forestersRations.js';
 import { LeapingFish } from '@/lib/skilling/skills/cooking/leapingFish.js';
@@ -118,9 +119,16 @@ export const cookCommand = defineCommand({
 				cookingBoost += 1.5;
 			}
 		}
+		const harvestCooking = thanksgivingCookingBoosts(user);
+		if (harvestCooking.speedBonus > 0) {
+			cookingBoost += harvestCooking.speedBonus;
+		}
+		boosts.push(...harvestCooking.lines);
 		timeToCookSingleCookable /= cookingBoost;
 		if (cookingBoost !== 1) {
-			boosts.push(`+${(cookingBoost - 1) * 100}% for ${cookingBoostItems.join(', ')}.`);
+			boosts.push(
+				`+${Math.round((cookingBoost - 1) * 100)}% speed total${cookingBoostItems.length > 0 ? ` (${cookingBoostItems.join(', ')})` : ''}.`
+			);
 		}
 
 		const userBank = user.bank;
@@ -158,7 +166,9 @@ export const cookCommand = defineCommand({
 			channelId,
 			quantity,
 			duration,
-			type: 'Cooking'
+			type: 'Cooking',
+			harvestYieldPercent: harvestCooking.yieldPercent || undefined,
+			harvestSaveRawPercent: harvestCooking.saveRawPercent || undefined
 		});
 
 		return `${user.minionName} is now cooking ${quantity}x ${cookable.name}, it'll take around ${formatTripDuration(

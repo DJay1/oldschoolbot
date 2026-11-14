@@ -88,6 +88,7 @@ import { smeltingCommand } from '@/mahoji/commands/smelt.js';
 import { smithCommand } from '@/mahoji/commands/smith.js';
 import { stealCommand } from '@/mahoji/commands/steal.js';
 import { testPotatoCommand } from '@/mahoji/commands/testpotato.js';
+import { thanksgivingCommand } from '@/mahoji/commands/thanksgiving.js';
 import { tksCommand } from '@/mahoji/commands/tokkulshop.js';
 import { toolsCommand } from '@/mahoji/commands/tools.js';
 import { tradeCommand } from '@/mahoji/commands/trade.js';
@@ -186,7 +187,8 @@ export const allCommandsDONTIMPORT: AnyCommand[] = [
 	tamesCommand,
 	testerShopCommand,
 	bsoLeaguesCommand,
-	firstAgeCommand
+	firstAgeCommand,
+	thanksgivingCommand
 ];
 
 if (testPotatoCommand) {
@@ -195,7 +197,8 @@ if (testPotatoCommand) {
 
 // testpotato stays on the live bot, hidden and owner-only (see testpotato.ts and discord/utils.ts).
 // testershop is a live command (tester points / shop). qualitycheck stays test-bot only.
-const devOnlyCommandNames = new Set(['qualitycheck']);
+// thanksgiving (The Straw Hat Harvest) is test-bot only until it goes live; see thanksgivingCodeEnabled().
+const devOnlyCommandNames = new Set(['qualitycheck', 'thanksgiving']);
 if (!testingShortcutsEnabled()) {
 	for (let i = allCommandsDONTIMPORT.length - 1; i >= 0; i--) {
 		if (devOnlyCommandNames.has(allCommandsDONTIMPORT[i].name)) {

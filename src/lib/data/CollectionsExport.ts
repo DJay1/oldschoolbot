@@ -16,6 +16,7 @@ import {
 	gracefulLegs,
 	gracefulTops
 } from '@/lib/data/gracefulVariants.js';
+import { thanksgivingPetIDs } from '@/lib/events/thanksgiving/core.js';
 import { growablePets } from '@/lib/growablePets.js';
 import { EItem, type Item, Items, removeDiscontinuedItems, resolveItems } from '@/lib/items/index.js';
 import type { MinigameScore } from '@/lib/settings/minigames.js';
@@ -2288,7 +2289,8 @@ export const allPetIDs = [
 	...metamorphPets,
 	...toaMetamorphPets,
 	...allDOAPets,
-	...mumpkinMetamorphPets
+	...mumpkinMetamorphPets,
+	...thanksgivingPetIDs
 ];
 
 export const antiSantaOutfit = new Bank({

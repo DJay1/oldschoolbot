@@ -332,6 +332,18 @@ export const farmingTask: MinionTask = {
 		const combinedMode = Boolean(data.autoFarmCombined);
 		let result: FarmingStepResult | null = null;
 		let updatedSummary = data.autoFarmSummary;
+		// Patches actually harvested this trip (Straw Hat Harvest farming cornucopia rolls, one per patch).
+		const harvestedPatches: NonNullable<FarmingActivityTaskOptions['thanksgivingHarvestedPatches']> = [];
+		const recordHarvest = (summary: FarmingStepSummary | undefined) => {
+			const h = summary?.harvested;
+			if (!h) return;
+			harvestedPatches.push({
+				itemName: h.itemName,
+				alive: h.alive,
+				growthMinutes: h.growthMinutes ?? 0,
+				fullyGrown: h.fullyGrown === true
+			});
+		};
 
 		if (combinedMode) {
 			const storedPlan = data.autoFarmPlan ?? [];
@@ -354,6 +366,7 @@ export const farmingTask: MinionTask = {
 				if (result.stopChain) {
 					break;
 				}
+				recordHarvest(result.summary);
 				updatedSummary = updateAutoFarmSummary({
 					existingSummary: updatedSummary,
 					data: stepData,
@@ -363,6 +376,7 @@ export const farmingTask: MinionTask = {
 			}
 		} else {
 			result = await executeFarmingStep({ user, channelID: channelId, data, rng });
+			recordHarvest(result?.summary);
 			if (!result) {
 				await handleTripFinish({
 					user,
@@ -408,9 +422,13 @@ export const farmingTask: MinionTask = {
 			);
 		}
 		const message = files.length > 0 ? { content: finalContent, files } : finalContent;
-		const tripFinishData = shouldRenderCombinedSummary
+		const baseTripFinishData = shouldRenderCombinedSummary
 			? ({ ...data, duration: updatedSummary!.totalDuration } satisfies FarmingActivityTaskOptions)
 			: data;
+		const tripFinishData: FarmingActivityTaskOptions =
+			harvestedPatches.length > 0
+				? { ...baseTripFinishData, thanksgivingHarvestedPatches: harvestedPatches }
+				: baseTripFinishData;
 
 		await handleTripFinish({
 			user,

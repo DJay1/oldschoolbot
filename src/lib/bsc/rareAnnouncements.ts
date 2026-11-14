@@ -1,10 +1,11 @@
 import { customPetsCL } from '@/lib/bso/collection-log/main.js';
 
 import { formatOrdinal, toTitleCase } from '@oldschoolgg/toolkit';
-import { Items, itemID } from 'oldschooljs';
+import { type Bank, Items, itemID } from 'oldschooljs';
 
 import { Channel } from '@/lib/constants.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
+import { thanksgivingCodeEnabled, thanksgivingPetAnnouncement } from '@/lib/events/thanksgiving/core.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 
 export type RareAnnounceKind = 'custom_pet' | 'discord_event_rare' | 'rare_drop';
@@ -56,6 +57,21 @@ export function rareAnnounceKindForItem(itemID: number): RareAnnounceKind | null
 	if (isCustomPetItem(itemID)) return 'custom_pet';
 	if (isDiscordEventRareItem(itemID)) return 'discord_event_rare';
 	return null;
+}
+
+/**
+ * Plain announcement in the same notifications channel as rare drops, with no pings.
+ * Never throws: an announcement failure must not affect loot that was already given.
+ */
+export async function announceToRareChannel(content: string): Promise<void> {
+	try {
+		await globalClient.sendMessage(Channel.Notifications, {
+			content,
+			allowedMentions: { parse: [], users: [], roles: [] }
+		});
+	} catch (err) {
+		Logging.logError(err as Error);
+	}
 }
 
 export interface RareAnnounceInput {
@@ -138,4 +154,24 @@ export async function announceNewClRares({
 		);
 	}
 	return results;
+}
+
+/**
+ * Straw Hat Harvest: announce EVERY Gobbles, Gobble gobble, Laboon and Captain Laboon obtained (one message
+ * per action, all pets from it listed). Test bot only until the event code is enabled on the live bot.
+ * Call after the items were added; never throws.
+ */
+export async function announceThanksgivingPets(
+	user: MUser,
+	gained: Bank | null | undefined,
+	clAfter: Bank,
+	source: string
+): Promise<void> {
+	if (!thanksgivingCodeEnabled() || !gained) return;
+	try {
+		const content = thanksgivingPetAnnouncement({ name: user.usernameOrMention, gained, clAfter, source });
+		if (content) await announceToRareChannel(content);
+	} catch (err) {
+		Logging.logError(err as Error);
+	}
 }

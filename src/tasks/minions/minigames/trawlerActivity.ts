@@ -3,6 +3,7 @@ import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { roll } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
+import { LABOON_EXTRA_FISH_MULTIPLIER, usingLaboonPet } from '@/lib/events/thanksgiving/core.js';
 import { fishingTrawlerLoot } from '@/lib/simulation/fishingTrawler.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
@@ -34,6 +35,16 @@ export const trawlerTask: MinionTask = {
 			loot.multiply(2);
 			totalXP *= 1.5;
 			str += '\nYou received **2x** extra fish from Shelldon helping you.';
+		}
+		if (usingLaboonPet(user)) {
+			// Fish only, so trawler outfit pieces and junk are not multiplied.
+			for (const [item, qty] of loot.items()) {
+				if (!item.name.startsWith('Raw ')) continue;
+				const extra = Math.floor(qty * LABOON_EXTRA_FISH_MULTIPLIER) - qty;
+				if (extra > 0) loot.add(item.id, extra);
+			}
+			totalXP *= 1.5;
+			str += `\nYou received **${LABOON_EXTRA_FISH_MULTIPLIER}x** fish from Laboon helping you.`;
 		}
 
 		str += await user.addXP({
