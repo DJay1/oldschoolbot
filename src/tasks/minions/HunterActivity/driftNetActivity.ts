@@ -93,7 +93,7 @@ export const driftNetTask: MinionTask = {
 		xpRes += `\n${await user.addXP({ skillName: 'fishing', amount: fishXpReceived, duration })}`;
 		await user.incrementCreatureScore(fishShoal.id, fishShoalCaught);
 
-		let str = `${user}, ${user.minionName} finished drift net fishing and caught ${quantity}x ${fishShoal.name}.${xpRes}${shelldonStr}\n${user.minionName} asks if you'd like them to do another of the same trip.`;
+		let str = `${user}, ${user.minionName} finished drift net fishing and caught ${quantity}x ${fishShoal.name}.${xpRes}${shelldonStr}`;
 
 		await user.transactItems({
 			collectionLog: true,

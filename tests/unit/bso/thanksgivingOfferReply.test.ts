@@ -69,7 +69,10 @@ describe('Thanksgiving offer reply', () => {
 			offersTodayAfter: 2
 		});
 		expect(text).toContain('**Laboon: ✅ Got it! x2**');
-		expect(text).toContain('Harvest Blessing: +15% supplies, Paint box 1/39, Cornucopia 1/52.');
+		expect(text).toContain('**Harvest turkey: ✅ Got it! x2**');
+		expect(text).toContain(
+			'Harvest Blessing: +15% supplies, Paint box 1/39, Cornucopia 1/52, Harvest turkey 1/43.'
+		);
 		expect(text).not.toContain('Gobbles guarantee');
 
 		const pity = rollThanksgivingOffers({

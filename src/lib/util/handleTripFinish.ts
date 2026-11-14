@@ -1,5 +1,6 @@
 import { tearsOfGuthixIronmanReqs, tearsOfGuthixSkillReqs } from '@/lib/bso/commands/tearsOfGuthixCommand.js';
 import { isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
+import { isDoubleXpActive } from '@/lib/bso/doubleXp.js';
 import { consolidateSkillXpBonusLines } from '@/lib/bso/firstAge/skillOutfits.js';
 import { gods } from '@/lib/bso/minigames/divineDominion.js';
 import { mysteriousStepData } from '@/lib/bso/mysteryTrail.js';
@@ -33,6 +34,12 @@ import { rollLaunchBoxFromTrip } from '@/lib/events/launch/launchBox.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
 import { hasHarvestBlessing, isThanksgivingActive, rollThanksgivingTripParts } from '@/lib/events/thanksgiving/core.js';
+import {
+	activeHarvestFeast,
+	HARVEST_FEAST_LOOT_EXCLUDED_ACTIVITIES,
+	harvestFeastBonusLoot,
+	harvestFeastFraction
+} from '@/lib/events/thanksgiving/feast.js';
 import { handleGrowablePetGrowth } from '@/lib/growablePets.js';
 import { handlePassiveImplings } from '@/lib/implings.js';
 import { triggerRandomEvent } from '@/lib/randomEvents.js';
@@ -199,6 +206,42 @@ const tripFinishEffects: TripFinishEffect[] = [
 					itemsToAddWithCL: bonusLoot
 				};
 			}
+		}
+	},
+	{
+		// Straw Hat Harvest: personal Harvest feast from a turkey. Separate from global Double Loot / XP.
+		name: 'Harvest feast',
+		fn: async ({ data, messages, user, loot, rng }) => {
+			if (!isThanksgivingActive()) return;
+			const left = (() => {
+				const active = activeHarvestFeast(user.id);
+				return active ? ` (ends <t:${Math.floor(active.endMs / 1000)}:R>)` : '';
+			})();
+			const pct = (f: number) => `${Math.max(1, Math.round(f * 100))}%`;
+
+			const xpFraction = harvestFeastFraction(user.id, 'xp', data.duration);
+			if (xpFraction > 0) {
+				messages.push(
+					isDoubleXpActive(data.duration)
+						? '🦃 Harvest feast 2x XP does not stack with Double XP'
+						: `🦃 Harvest feast: 2x XP on ${pct(xpFraction)} of this trip${left}`
+				);
+				return;
+			}
+
+			const lootFraction = harvestFeastFraction(user.id, 'loot', data.duration);
+			if (lootFraction <= 0 || !loot) return;
+			if (data.cantBeDoubled || HARVEST_FEAST_LOOT_EXCLUDED_ACTIVITIES.includes(data.type)) return;
+			if (isDoubleLootActive(data.duration)) {
+				messages.push('🦃 Harvest feast 2x loot does not stack with Double Loot');
+				return;
+			}
+			const bonus = harvestFeastBonusLoot(loot, lootFraction, rng);
+			if (bonus.length === 0) return;
+			messages.push(
+				`🦃 Harvest feast: 2x loot on ${pct(lootFraction)} of this trip, you got an extra ${bonus}${left}`
+			);
+			return { itemsToAddWithCL: bonus };
 		}
 	},
 	{

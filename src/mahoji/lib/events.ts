@@ -12,6 +12,7 @@ import { ensureTripQueueStore } from '@/lib/bsc/tripQueue.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { loadSeasonalEventOverrides } from '@/lib/events/store.js';
+import { syncHarvestFeasts } from '@/lib/events/thanksgiving/feast.js';
 import { initTickers } from '@/lib/tickers.js';
 
 export const onStartup = async () => {
@@ -20,6 +21,7 @@ export const onStartup = async () => {
 	await syncDoubleXp();
 	await loadSeasonalEventOverrides().catch(err => Logging.logError(err));
 	await ensureTripQueueStore().catch(err => Logging.logError(err));
+	await syncHarvestFeasts().catch(err => Logging.logError(err));
 	syncSlayerMaskLeaderboardCache();
 	// Load bank backgrounds up front so /minion bankbg works right after a restart.
 	if (!bankImageTask.ready) {

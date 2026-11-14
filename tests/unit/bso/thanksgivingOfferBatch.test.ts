@@ -23,7 +23,8 @@ describe('Thanksgiving offers without a per-command cap', () => {
 		expect(pack.amount('Lobster')).toBe(0);
 		expect(pack.amount('Raw karambwan')).toBe(6);
 		expect(thanksgivingStaticPack(true).amount('Raw karambwan')).toBe(6);
-		expect(pack.amount(ThanksgivingItem.HARVEST_TURKEY)).toBe(1);
+		// Turkey is a rare roll now, not part of the supply pack.
+		expect(pack.amount(ThanksgivingItem.HARVEST_TURKEY)).toBe(0);
 	});
 
 	test('karambwan supplies are not worth more on /sell than the lobsters they replace', () => {
@@ -48,12 +49,13 @@ describe('Thanksgiving offers without a per-command cap', () => {
 		}
 	});
 
-	test('Harvest turkey is cheap on /sell, edible, and not in any turkey/event log', () => {
+	test('Harvest turkey is cheap on /sell, not food, tradeable, and not in any turkey/event log', () => {
 		const turkey = Items.getOrThrow('Harvest turkey');
 		expect(turkey.id).toBe(ThanksgivingItem.HARVEST_TURKEY);
 		expect(sellPriceOfItem(turkey).price).toBeLessThanOrEqual(1000);
 		expect(sellPriceOfItem(turkey).price).toBeLessThan(sellPriceOfItem(Items.getOrThrow('Raw turkey')).price / 50);
-		expect(Eatables.find(e => e.id === turkey.id)?.healAmount).toBe(18);
+		expect(Eatables.find(e => e.id === turkey.id)).toBeUndefined();
+		expect(turkey.tradeable).toBe(true);
 		expect(thanksgivingCL).not.toContain(turkey.id);
 		const old2021 = Object.values(allCollectionLogs).find(c => c.activities['Thanksgiving 2021'])!.activities[
 			'Thanksgiving 2021'
@@ -90,9 +92,11 @@ describe('Thanksgiving offers without a per-command cap', () => {
 		expect(ms).toBeLessThan(5000);
 		expect(result.loot.amount('Oak logs')).toBe(5_000_000);
 		expect(result.loot.amount('Raw karambwan')).toBe(600_000);
+		// About 1/50, x1.15 Gobble Streak from the 4th offer of the day: ~2,300 expected.
 		const turkeys = result.loot.amount(ThanksgivingItem.HARVEST_TURKEY);
-		expect(turkeys).toBeGreaterThan(140_000);
-		expect(turkeys).toBeLessThan(160_000);
+		expect(turkeys).toBe(result.rares.turkey.got);
+		expect(turkeys).toBeGreaterThan(2_000);
+		expect(turkeys).toBeLessThan(2_600);
 		// Gobbles guarantee still fires once at most.
 		expect(result.rares.gobbles.got).toBeGreaterThanOrEqual(1);
 	});

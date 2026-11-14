@@ -36,7 +36,9 @@ export const OFFER_RATES = {
 	pilgrimHat: 225,
 	strawHat: 225,
 	gobbles: 225,
-	laboon: 750
+	laboon: 750,
+	/** Harvest turkey: offer it with `/thanksgiving offer item:turkey` for a Harvest feast (2x loot or XP). */
+	turkey: 50
 } as const;
 
 export const GOBBLES_PITY_OFFERS = 300;
@@ -61,7 +63,6 @@ export const THANKSGIVING_STATIC_PACK: readonly (readonly [string, number])[] = 
 	['Iron ore', 40],
 	['Coal', 40],
 	['Raw karambwan', 6],
-	['Harvest turkey', 1],
 	['Big bones', 15],
 	['Small lamp', 1]
 ];
@@ -74,8 +75,6 @@ const LAUNCH_BASELINE_RATE_MINUTES = 112;
 const LAUNCH_TRIP_EXPONENT = 1.08;
 export const THANKSGIVING_PACE_MULTIPLIER = 3;
 export const BUNDLES_PER_OFFER = 5;
-/** Every offer gives 1 Harvest turkey (in the pack) and this chance of a 2nd. Harvest Blessing scales it like other supplies. */
-export const EXTRA_TURKEY_CHANCE = 0.5;
 export const BASKETS_PER_OFFER = 1;
 
 const SCALE = 1_000_000;
@@ -147,7 +146,15 @@ export function ctDayKey(now = Date.now()): string {
 export const GOBBLES_IDS: readonly number[] = [ThanksgivingItem.GOBBLES, ThanksgivingItem.GOBBLE_GOBBLE];
 export const LABOON_IDS: readonly number[] = [ThanksgivingItem.LABOON, ThanksgivingItem.LABOON_STRAW_HAT];
 
-export const OFFER_RARE_ORDER = ['pilgrimHat', 'strawHat', 'gobbles', 'laboon', 'paintBox', 'cornucopia'] as const;
+export const OFFER_RARE_ORDER = [
+	'pilgrimHat',
+	'strawHat',
+	'gobbles',
+	'laboon',
+	'paintBox',
+	'cornucopia',
+	'turkey'
+] as const;
 export type OfferRareKey = (typeof OFFER_RARE_ORDER)[number];
 
 export const OFFER_RARE_NAMES: Record<OfferRareKey, string> = {
@@ -156,7 +163,8 @@ export const OFFER_RARE_NAMES: Record<OfferRareKey, string> = {
 	gobbles: 'Gobbles',
 	laboon: 'Laboon',
 	paintBox: 'Paint box',
-	cornucopia: 'Cornucopia'
+	cornucopia: 'Cornucopia',
+	turkey: 'Harvest turkey'
 };
 
 /** Best near-miss for one drop across a batch of offers, Launch box style (hit the top number to win). */
@@ -261,8 +269,11 @@ export function rollThanksgivingOffers({
 		}
 		if (trackedChance(rng, rareMult / OFFER_RATES.laboon, rares.laboon)) loot.add(ThanksgivingItem.LABOON);
 
-		// Supplies: chance of a 2nd Harvest turkey (rolled after rares so rare odds are untouched).
-		if (chance(rng, EXTRA_TURKEY_CHANCE * uncommonMult)) loot.add(ThanksgivingItem.HARVEST_TURKEY);
+		// Harvest turkey: rolled last (same RNG slot as the old supply roll, so earlier rolls do not change).
+		// Gobble Streak and Harvest Blessing both apply.
+		if (trackedChance(rng, (rareMult * uncommonMult) / OFFER_RATES.turkey, rares.turkey)) {
+			loot.add(ThanksgivingItem.HARVEST_TURKEY);
+		}
 	}
 
 	return { loot, gotPityGobbles, streakOffers, rares };
@@ -274,6 +285,10 @@ const BLESSING_KEYS: readonly OfferRareKey[] = ['paintBox', 'cornucopia'];
 /** 1/N odds for a drop, after the Gobble Streak or Harvest Blessing boost if it applies. */
 export function offerOddsDenominator(key: OfferRareKey, { streak, blessing }: { streak: boolean; blessing: boolean }) {
 	const base = OFFER_RATES[key];
+	if (key === 'turkey') {
+		const mult = (streak ? GOBBLE_STREAK_RARE_MULTIPLIER : 1) * (blessing ? HARVEST_BLESSING_EVENT_MULTIPLIER : 1);
+		return Math.round(base / mult);
+	}
 	if (streak && STREAK_KEYS.includes(key)) return Math.round(base / GOBBLE_STREAK_RARE_MULTIPLIER);
 	if (blessing && BLESSING_KEYS.includes(key)) return Math.round(base / HARVEST_BLESSING_EVENT_MULTIPLIER);
 	return base;
@@ -319,7 +334,7 @@ export function formatOfferReply({
 	}
 	if (blessing) {
 		lines.push(
-			`Harvest Blessing: +15% supplies, Paint box 1/${offerOddsDenominator('paintBox', { streak: false, blessing })}, Cornucopia 1/${offerOddsDenominator('cornucopia', { streak: false, blessing })}.`
+			`Harvest Blessing: +15% supplies, Paint box 1/${offerOddsDenominator('paintBox', { streak: false, blessing })}, Cornucopia 1/${offerOddsDenominator('cornucopia', { streak: false, blessing })}, Harvest turkey 1/${offerOddsDenominator('turkey', { streak: false, blessing })}.`
 		);
 	}
 	if (result.gotPityGobbles) {
@@ -329,6 +344,20 @@ export function formatOfferReply({
 	}
 	lines.push(`Total offers: ${offersAfter.toLocaleString()}.`);
 	return lines.join('\n');
+}
+
+/**
+ * Quantity text from the command: blank or 'all' means every cornucopia owned, otherwise a whole number
+ * (commas allowed). Returns null for anything else.
+ */
+export function parseOfferQuantity(input: string | number | null | undefined): number | 'all' | null {
+	if (input === null || input === undefined) return 'all';
+	if (typeof input === 'number') return Number.isSafeInteger(input) && input >= 1 ? input : null;
+	const text = input.trim().toLowerCase().replace(/,/g, '');
+	if (text === '' || text === 'all') return 'all';
+	if (!/^\d+$/.test(text)) return null;
+	const n = Number(text);
+	return Number.isSafeInteger(n) && n >= 1 ? n : null;
 }
 
 export function offersFromScores(scores: ItemBank | null | undefined): number {
@@ -386,6 +415,11 @@ export const LABOON_TRIP_LENGTH_MULTIPLIER = 1.3;
 export const LABOON_EXTRA_FISH_MULTIPLIER = 2.2;
 export const STRAW_HAT_SPEED_PERCENT = 10;
 export const STRAW_HAT_YIELD_PERCENT = 3;
+/**
+ * Extra fishing yield from Captain Laboon on top of its Straw hat stack (3% -> 10% total).
+ * Tuned from tester trips: about +100 Rocktail on a 49 minute trip, matching Shelldon + Old crab cage.
+ */
+export const CAPTAIN_LABOON_YIELD_PERCENT = 7;
 
 export interface CookingBoosts {
 	/** Added to the cooking speed boost (0.1 = +10%). */
@@ -422,10 +456,18 @@ export interface FishingBoosts {
 	yieldPercent: number;
 	lines: string[];
 	usingLaboon: boolean;
+	/** Who gets credit for the extra fish in the trip message. */
+	yieldLabel: string;
 }
 
 export function thanksgivingFishingBoosts(g: PetAndGear): FishingBoosts {
-	const out: FishingBoosts = { speedMultiplier: 1, yieldPercent: 0, lines: [], usingLaboon: false };
+	const out: FishingBoosts = {
+		speedMultiplier: 1,
+		yieldPercent: 0,
+		lines: [],
+		usingLaboon: false,
+		yieldLabel: 'the Straw hat'
+	};
 	if (!thanksgivingCodeEnabled()) return out;
 	if (usingLaboonPet(g)) {
 		out.usingLaboon = true;
@@ -439,6 +481,11 @@ export function thanksgivingFishingBoosts(g: PetAndGear): FishingBoosts {
 		out.lines.push(
 			`+${STRAW_HAT_SPEED_PERCENT * hats}% fishing speed and +${STRAW_HAT_YIELD_PERCENT * hats}% fishing yield (Straw hat)`
 		);
+	}
+	if (g.usingPet(ThanksgivingItem.LABOON_STRAW_HAT, { ignoreSimilar: true })) {
+		out.yieldPercent += CAPTAIN_LABOON_YIELD_PERCENT;
+		out.yieldLabel = 'Captain Laboon and the Straw hat';
+		out.lines.push(`+${CAPTAIN_LABOON_YIELD_PERCENT}% fishing yield (Captain Laboon)`);
 	}
 	return out;
 }

@@ -239,7 +239,7 @@ export function calcFishingTripResult({
 				extraFish += extra;
 			}
 		}
-		if (extraFish > 0) messages.push(`+${extraFish} extra fish from the Straw hat.`);
+		if (extraFish > 0) messages.push(`+${extraFish} extra fish from ${harvestFishing.yieldLabel}.`);
 	}
 
 	// BSO Klik pet

@@ -110,6 +110,13 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 			}
 			break;
 		}
+		case 'AerialFishing': {
+			// Straw Hat Harvest: Laboon helps with Aerial fishing the same way as normal fishing.
+			if (usingLaboonPet(user)) {
+				max = applyTripLengthMultiplier(max, LABOON_TRIP_LENGTH_MULTIPLIER, patronBonusMs);
+			}
+			break;
+		}
 		case 'BeachCombing': {
 			if (!isEventActive('summer')) break;
 			if (user.usingPet('Patricia')) {

@@ -1,7 +1,6 @@
 import { itemID } from 'oldschooljs';
 
 import { MaggotKingItem } from '@/lib/customItems/bloodMoon.js';
-import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 
 export interface Eatable {
@@ -128,13 +127,6 @@ export const Eatables: readonly Eatable[] = [
 		id: itemID('Lobster'),
 		healAmount: 12,
 		raw: itemID('Raw lobster')
-	},
-	{
-		// The Straw Hat Harvest supply food. Ready to eat, heals like a karambwan.
-		name: 'Harvest turkey',
-		id: ThanksgivingItem.HARVEST_TURKEY,
-		healAmount: 18,
-		raw: null
 	},
 	{
 		name: 'Bass',

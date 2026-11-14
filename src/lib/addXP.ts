@@ -22,6 +22,7 @@ import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { LAUNCH_XP_BONUS_SENTENCE, LAUNCH_XP_BOOST_PERCENT } from '@/lib/events/launch/constants.js';
 import { maybeAnnounceLaunchFirst99, maybeAnnounceLaunchFirstMax } from '@/lib/events/launch/milestones.js';
 import { isEventActive } from '@/lib/events/registry.js';
+import { harvestFeastFraction } from '@/lib/events/thanksgiving/feast.js';
 import type { AddXpParams } from '@/lib/minions/types.js';
 import Skillcapes from '@/lib/skilling/skillcapes.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
@@ -147,6 +148,12 @@ export async function addXP(user: MUser, params: AddXpParams): Promise<string> {
 	const doubleXpApplied = multiplier && isDoubleXpActive(params.duration ?? 0);
 	if (doubleXpApplied) {
 		params.amount *= 2;
+	}
+	// Straw Hat Harvest feast (personal, from a turkey): 2x for the share of the trip inside the feast.
+	// Never stacks with Double XP. 0 unless the event is active (test bot only for now).
+	if (multiplier && !doubleXpApplied && !params.artificial) {
+		const feastFraction = harvestFeastFraction(user.id, 'xp', params.duration ?? 0);
+		if (feastFraction > 0) params.amount *= 1 + feastFraction;
 	}
 	const launchSentence = `${launchBoostApplied ? ` ${LAUNCH_XP_BONUS_SENTENCE}` : ''}${
 		doubleXpApplied ? ' You received 2x XP from Double XP.' : ''
