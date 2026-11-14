@@ -30,16 +30,22 @@ function pngSize(file: string) {
 }
 
 describe('Straw Hat Harvest icons', () => {
-	test('event icons: items standard size, pets like discontinued pets, Laboon a bit wider', () => {
+	test('event icons: items fit the old Cornucopia box, pets like discontinued pets, Laboon a bit wider', () => {
+		const corn = pngSize(path.join(ICON_DIR, `${ThanksgivingItem.CORNUCOPIA_2021}.png`));
+		expect(corn).toEqual({ width: 23, height: 17 });
 		for (const id of NEW_ICON_IDS) {
 			const size = pngSize(path.join(ICON_DIR, `${id}.png`));
-			const [maxW, maxH] = PET_IDS.includes(id) ? [28, 30] : LABOON_ICON_IDS.includes(id) ? [34, 27] : [36, 32];
+			const [maxW, maxH] = PET_IDS.includes(id)
+				? [28, 30]
+				: LABOON_ICON_IDS.includes(id)
+					? [34, 27]
+					: id === ThanksgivingItem.HARVEST_TURKEY
+						? [36, 32]
+						: [corn.width, corn.height];
 			expect(size.width, `${id} width`).toBeLessThanOrEqual(maxW);
 			expect(size.height, `${id} height`).toBeLessThanOrEqual(maxH);
-			expect(Math.max(size.width, size.height), `${id} not tiny`).toBeGreaterThanOrEqual(28);
+			expect(Math.max(size.width, size.height), `${id} not tiny`).toBeGreaterThanOrEqual(16);
 		}
-		const corn = pngSize(path.join(ICON_DIR, `${ThanksgivingItem.CORNUCOPIA_2021}.png`));
-		expect(corn.width).toBe(36);
 	});
 
 	test('offer loot bank image renders', async () => {
