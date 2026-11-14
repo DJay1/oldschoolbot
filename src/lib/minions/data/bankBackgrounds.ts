@@ -28,6 +28,8 @@ export type BankBackground = {
 	purpleImage?: CanvasImage | null;
 	/** Unique-drop alternate art. Loaded from {id}_unique.jpg or {id}_purple.jpg. */
 	uniqueImage?: CanvasImage | null;
+	/** Seasonal/event background: listed near the top of the /minion bankbg picker. */
+	seasonal?: boolean;
 };
 
 const backgroundImages: BankBackground[] = [
@@ -743,6 +745,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Going Merry',
 		image: null,
 		available: true,
+		seasonal: true,
 		collectionLogItemsNeeded: new Bank(Object.fromEntries(thanksgivingBankBgCL.map(id => [id, 1]))),
 		hasPurple: true,
 		purpleImage: null
@@ -753,6 +756,7 @@ const backgroundImages: BankBackground[] = [
 		name: 'Going Merry (storm)',
 		image: null,
 		available: true,
+		seasonal: true,
 		collectionLogItemsNeeded: new Bank(Object.fromEntries(thanksgivingBankBgCL.map(id => [id, 1]))),
 		perkTierNeeded: PerkTier.Two,
 		hasPurple: true,

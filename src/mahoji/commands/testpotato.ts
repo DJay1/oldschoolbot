@@ -574,7 +574,15 @@ export const testPotatoCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'max',
-			description: 'Set all your stats to the maximum level, and get max QP.'
+			description: 'Set all your stats to the maximum level, and get max QP.',
+			options: [
+				{
+					type: 'Boolean',
+					name: 'leave_quests_undone',
+					description: 'Max everything but leave every quest not done, so you can test questing.',
+					required: false
+				}
+			]
 		},
 		{
 			type: 'Subcommand',
@@ -1073,11 +1081,14 @@ export const testPotatoCommand = defineCommand({
 						dartQuantity: 100000,
 						dartID: itemID('Dragon dart')
 					},
-					finished_quest_ids: quests.map(q => q.id)
+					// Testers can keep quests undone (and clear finished ones) to test questing. QP is still maxed.
+					finished_quest_ids: options.max.leave_quests_undone ? [] : quests.map(q => q.id)
 				}
 			});
 			await giveMaxStats(user);
-			return 'Fully maxed your account, stocked your bank, charged all chargeable items.';
+			return options.max.leave_quests_undone
+				? 'Fully maxed your account, stocked your bank and charged all chargeable items. Quests are left not done (QP is still maxed), so you can send quest trips.'
+				: 'Fully maxed your account, stocked your bank, charged all chargeable items.';
 		}
 		if (options.elder) {
 			return giveElderClueRequirements(user);

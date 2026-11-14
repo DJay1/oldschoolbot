@@ -6,6 +6,7 @@ import { customEmoji, FormattedCustomEmoji, formatOrdinal, notEmpty, roboChimpCL
 import { convertLVLtoXP, Items } from 'oldschooljs';
 
 import { ownedItemOption, skillOption } from '@/discord/index.js';
+import { sortBankBgsForAutocomplete } from '@/lib/bsc/bankBgAutocomplete.js';
 import { BSC_PATRON_TIERS, bscPatronNameForPerkTier } from '@/lib/bsc/patronTiers.js';
 import { bscTierDisplay } from '@/lib/bsc/tierDisplay.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
@@ -200,20 +201,23 @@ export const minionCommand = defineCommand({
 									bg.owners?.some(i => allAccounts.includes(i))
 							)
 							.map(bg => bg.id);
-						return bankImages
-							.filter(bg => {
-								if (user.isModOrAdmin()) return true;
-								// Owner-locked customs never appear for anyone else.
-								if (bg.owners && bg.owners.length > 0 && !owned.includes(bg.id)) return false;
-								return bg.available || owned.includes(bg.id);
-							})
-							.filter(bg => (!value ? true : bg.name.toLowerCase().includes(value.toLowerCase())))
-							.map(i => {
-								const name = i.perkTierNeeded
-									? `${i.name} (${bscPatronNameForPerkTier(i.perkTierNeeded) ?? 'patron'} or higher)`
-									: i.name;
-								return { name, value: i.name };
-							});
+						const visible = bankImages.filter(bg => {
+							if (user.isModOrAdmin()) return true;
+							// Owner-locked customs never appear for anyone else.
+							if (bg.owners && bg.owners.length > 0 && !owned.includes(bg.id)) return false;
+							return bg.available || owned.includes(bg.id);
+						});
+						return sortBankBgsForAutocomplete(visible, {
+							value,
+							ownedIDs: owned,
+							currentID: user.user.bankBackground,
+							cl: user.cl
+						}).map(i => {
+							const name = i.perkTierNeeded
+								? `${i.name} (${bscPatronNameForPerkTier(i.perkTierNeeded) ?? 'patron'} or higher)`
+								: i.name;
+							return { name, value: i.name };
+						});
 					}
 				}
 			]

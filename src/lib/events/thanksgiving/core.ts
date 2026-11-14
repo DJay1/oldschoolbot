@@ -60,7 +60,7 @@ export const THANKSGIVING_STATIC_PACK: readonly (readonly [string, number])[] = 
 	['Willow logs', 50],
 	['Iron ore', 40],
 	['Coal', 40],
-	['Lobster', 15],
+	['Raw karambwan', 6],
 	['Big bones', 15],
 	['Small lamp', 1]
 ];
@@ -227,14 +227,15 @@ export function rollThanksgivingOffers({
 	const uncommonMult = blessing ? HARVEST_BLESSING_EVENT_MULTIPLIER : 1;
 	const rares = emptyTracks();
 
+	// The supply pack is the same every offer, so add it once for the whole batch (fast for big offers).
+	if (quantity > 0) loot.add(thanksgivingStaticPack(blessing).multiply(quantity));
+
 	for (let i = 0; i < quantity; i++) {
 		const offerNumber = offersBefore + i + 1;
 		const todayNumber = offersTodayBefore + i + 1;
 		const streak = todayNumber >= GOBBLE_STREAK_OFFERS;
 		if (streak) streakOffers++;
 		const rareMult = streak ? GOBBLE_STREAK_RARE_MULTIPLIER : 1;
-
-		loot.add(thanksgivingStaticPack(blessing));
 
 		// Below rares: Harvest Blessing applies.
 		if (trackedChance(rng, uncommonMult / OFFER_RATES.paintBox, rares.paintBox)) loot.add('Paint box');

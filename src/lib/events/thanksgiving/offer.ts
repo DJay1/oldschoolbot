@@ -18,8 +18,6 @@ import {
 } from './core.js';
 import { ThanksgivingItem } from './items.js';
 
-export const MAX_OFFERS_PER_COMMAND = 50;
-
 const ready = { done: false };
 
 async function ensureDailyTable() {
@@ -63,7 +61,11 @@ function hasHadGobbles(user: MUser): boolean {
  */
 export async function thanksgivingOffer(user: MUser, quantityInput: number | null | undefined, rng: ThanksgivingRng) {
 	if (!isThanksgivingActive()) return 'The Straw Hat Harvest is not running right now.';
-	const quantity = Math.max(1, Math.min(MAX_OFFERS_PER_COMMAND, Math.floor(quantityInput ?? 1)));
+	// No per-command cap: you can offer as many as you own. Rolls are a simple loop (a few hundred ms
+	// for 100k offers), the reply text is a fixed size, and the loot image only grows by item types.
+	const requested = Math.floor(quantityInput ?? 1);
+	if (!Number.isSafeInteger(requested) || requested < 1) return 'Offer at least 1 Bountiful cornucopia.';
+	const quantity = requested;
 
 	return userQueueFn(user.id, async () => {
 		await user.sync();

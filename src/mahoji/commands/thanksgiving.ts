@@ -1,4 +1,4 @@
-import { MAX_OFFERS_PER_COMMAND, thanksgivingOffer, thanksgivingStatus } from '@/lib/events/thanksgiving/offer.js';
+import { thanksgivingOffer, thanksgivingStatus } from '@/lib/events/thanksgiving/offer.js';
 
 export const thanksgivingCommand = defineCommand({
 	name: 'thanksgiving',
@@ -12,10 +12,9 @@ export const thanksgivingCommand = defineCommand({
 				{
 					type: 'Integer',
 					name: 'quantity',
-					description: 'How many to offer (default 1).',
+					description: 'How many to offer (default 1, up to as many as you own).',
 					required: false,
-					min_value: 1,
-					max_value: MAX_OFFERS_PER_COMMAND
+					min_value: 1
 				}
 			]
 		},
