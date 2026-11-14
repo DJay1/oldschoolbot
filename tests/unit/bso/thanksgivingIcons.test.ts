@@ -30,15 +30,15 @@ function pngSize(file: string) {
 }
 
 describe('Straw Hat Harvest icons', () => {
-	test('event icons: items about 1.3x the old Cornucopia box, pets like discontinued pets, Laboon a bit wider', () => {
+	test('event icons: items about 1.3x the old Cornucopia box, pets about discontinued-pet size (up to 1.15x), Laboon a bit wider', () => {
 		const corn = pngSize(path.join(ICON_DIR, `${ThanksgivingItem.CORNUCOPIA_2021}.png`));
 		expect(corn).toEqual({ width: 23, height: 17 });
 		for (const id of NEW_ICON_IDS) {
 			const size = pngSize(path.join(ICON_DIR, `${id}.png`));
 			const [maxW, maxH] = PET_IDS.includes(id)
-				? [28, 30]
+				? [33, 34]
 				: LABOON_ICON_IDS.includes(id)
-					? [34, 27]
+					? [39, 31]
 					: id === ThanksgivingItem.HARVEST_TURKEY
 						? [36, 32]
 						: [Math.ceil(corn.width * 1.3), Math.ceil(corn.height * 1.3)];
