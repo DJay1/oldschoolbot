@@ -2,6 +2,7 @@ import { ButtonBuilder, ButtonStyle, dateFm } from '@oldschoolgg/discord';
 import { UserError } from '@oldschoolgg/toolkit';
 import { DateTime } from 'luxon';
 
+import { queueTimeLabel, queueTimezoneLabel } from '@/lib/bsc/queueTimeChoices.js';
 import {
 	formatQueuedTripLabel,
 	formatQueuedTripsForCooldownList,
@@ -11,6 +12,8 @@ import {
 	applyQueueDailyReset,
 	dailyQueueAllowance,
 	maxQueuedTripsForPerkTier,
+	QUEUE_RESET_LABEL,
+	queueRefillDisplayMs,
 	queueResetAtMs,
 	refundUnstartedTrips,
 	startQueueWindowIfNeeded
@@ -246,13 +249,13 @@ export async function setQueueReminders(
 		return 'Queue reminders are off.';
 	}
 	if ((time && !timezone) || (!time && timezone)) {
-		return 'Set both a reminder time and timezone, for example 22:00 and America/Chicago.';
+		return 'Pick both a reminder time and a timezone from the lists.';
 	}
 	if (clearTime && (time || timezone)) {
 		return 'Choose either a new reminder time or clear the existing one, not both.';
 	}
 	if (time && timezone && !isValidQueueLocalTime(time, timezone)) {
-		return 'Use a valid 24-hour time (HH:mm) and IANA timezone, for example 22:00 and America/Chicago.';
+		return 'Pick a time and a timezone from the lists.';
 	}
 	if (!state.remindersEnabled) state.lastRefillReminderReset = state.dailyReset;
 	state.remindersEnabled = true;
@@ -268,8 +271,8 @@ export async function setQueueReminders(
 	}
 	await saveState(state);
 	return state.reminderTime && state.reminderTimezone
-		? `Queue reminders are on. You'll be reminded when your queue refills and at ${state.reminderTime} (${state.reminderTimezone}).`
-		: 'Queue refill reminders are on. You can also set a local reminder time with /queue reminders time:HH:mm timezone:Area/Location.';
+		? `Queue reminders are on. You'll be reminded when your queue refills and at ${queueTimeLabel(state.reminderTime)} ${queueTimezoneLabel(state.reminderTimezone)}.`
+		: 'Queue refill reminders are on. You can also pick a daily reminder time and timezone in /queue reminders.';
 }
 
 export async function disableQueueRemindersFromButton(user: MUser, customId: string): Promise<CommandResponse> {
@@ -292,7 +295,7 @@ export async function scheduleQueuedTrips(
 	const now = Date.now();
 	const scheduledAt = nextQueueScheduleAt(time, timezone, now);
 	if (scheduledAt === null) {
-		return 'Use a valid 24-hour time (HH:mm) and IANA timezone, for example 22:00 and America/Chicago.';
+		return 'Pick a time and a timezone from the lists.';
 	}
 
 	const days = options?.days !== undefined ? parseRecurringDays(options.days) : undefined;
@@ -358,7 +361,7 @@ export async function scheduleQueuedTrips(
 		if (replacedRecurring) {
 			extras.push('This replaces your previous recurring schedule.');
 		}
-		return `Scheduled ${recurringTripSummary(trips)} to start daily at <t:${Math.floor(scheduledAt / 1000)}:F> (${timezone}) for ${days} day${days === 1 ? '' : 's'}. Use /queue unschedule to cancel.${extras.length ? ` ${extras.join(' ')}` : ''}`;
+		return `Scheduled ${recurringTripSummary(trips)} to start daily at <t:${Math.floor(scheduledAt / 1000)}:F> (${queueTimezoneLabel(timezone)}) for ${days} day${days === 1 ? '' : 's'}. Use /queue unschedule to cancel.${extras.length ? ` ${extras.join(' ')}` : ''}`;
 	}
 
 	const existing = await getTripQueueState(user.id, now);
@@ -380,7 +383,7 @@ export async function scheduleQueuedTrips(
 	state.scheduledStartAt = scheduledAt;
 	state.scheduledChannelId = channelId;
 	await saveState(state);
-	return `Your queued trips will start automatically at <t:${Math.floor(scheduledAt / 1000)}:F> (${timezone}). If you're on a trip then, they'll start when it finishes.`;
+	return `Your queued trips will start automatically at <t:${Math.floor(scheduledAt / 1000)}:F> (${queueTimezoneLabel(timezone)}). If you're on a trip then, they'll start when it finishes.`;
 }
 
 export async function unscheduleQueuedTrips(userId: string): Promise<string> {
@@ -417,11 +420,11 @@ export async function addTripsToQueue(
 	let scheduledAt: number | null = null;
 	if (scheduleTime || scheduleTimezone) {
 		if (!scheduleTime || !scheduleTimezone) {
-			return 'Set both a start time and timezone, for example 22:00 and America/Chicago.';
+			return 'Pick both a start time and a timezone from the lists.';
 		}
 		scheduledAt = nextQueueScheduleAt(scheduleTime, scheduleTimezone, Date.now());
 		if (scheduledAt === null) {
-			return 'Use a valid 24-hour time (HH:mm) and IANA timezone, for example 22:00 and America/Chicago.';
+			return 'Pick a time and a timezone from the lists.';
 		}
 	}
 	const deferStart = Boolean(options?.deferStart || scheduledAt);
@@ -531,8 +534,8 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 		);
 	}
 	lines.push(`You can have up to ${maxAtOnce} trips queued at once.`);
-	const resetAt = queueResetAtMs(state.dailyReset);
-	const refillNote = resetAt > 0 ? ` (refills <t:${Math.floor(resetAt / 1000)}:R>)` : '';
+	const resetAt = queueRefillDisplayMs(state.dailyReset, Date.now());
+	const refillNote = ` (refills daily at ${QUEUE_RESET_LABEL}, next <t:${Math.floor(resetAt / 1000)}:R>)`;
 	lines.push(
 		`You get ${dailyCap} queued trips everyday and have used ${state.dailyUsed}${refillNote}. Clearing unused trips refunds those points.`
 	);
@@ -547,7 +550,7 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 	if (state.remindersEnabled) {
 		lines.push(
 			state.reminderTime && state.reminderTimezone
-				? `Queue reminders are on, including ${state.reminderTime} (${state.reminderTimezone}).`
+				? `Queue reminders are on, including ${queueTimeLabel(state.reminderTime)} ${queueTimezoneLabel(state.reminderTimezone)}.`
 				: 'Queue refill reminders are on.'
 		);
 	}
@@ -559,8 +562,7 @@ export async function describeQueuedTripsForCooldown(user: MUser, now = Date.now
 	const allowanceMax = dailyQueueAllowance(perkTier);
 	const state = await getTripQueueState(user.id, now);
 	const allowanceLeft = Math.max(0, allowanceMax - state.dailyUsed);
-	const resetAt = queueResetAtMs(state.dailyReset);
-	const refillsAtFormatted = resetAt > 0 ? dateFm(new Date(resetAt)) : null;
+	const refillsAtFormatted = dateFm(new Date(queueRefillDisplayMs(state.dailyReset, now)));
 
 	const withRecurring = (line: string | null) => {
 		if (!state.recurring) return line;

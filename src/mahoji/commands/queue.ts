@@ -1,3 +1,4 @@
+import { queueTimeOptionChoices, queueTimezoneOptionChoices } from '@/lib/bsc/queueTimeChoices.js';
 import {
 	addTripsToQueue,
 	clearTripQueue,
@@ -15,11 +16,11 @@ export const queueCommand = defineCommand({
 	attributes: {
 		examples: [
 			'/queue add trip:MonsterKilling times:3',
-			'/queue add trip:Woodcutting times:2 time:22:00 timezone:America/Chicago',
+			'/queue add trip:Woodcutting times:2 time:10 PM timezone:CT (Central US)',
 			'/queue view',
 			'/queue clear',
-			'/queue reminders enabled:true time:22:00 timezone:America/Chicago',
-			'/queue schedule time:22:00 timezone:America/Chicago days:5',
+			'/queue reminders enabled:true time:10 PM timezone:CT (Central US)',
+			'/queue schedule time:10 PM timezone:CT (Central US) days:5',
 			'/queue unschedule'
 		]
 	},
@@ -62,19 +63,21 @@ export const queueCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'time',
-					description: 'Optional local start time in 24-hour HH:mm format, such as 22:00.'
+					description: 'Optional start time (pick a timezone too).',
+					choices: queueTimeOptionChoices
 				},
 				{
 					type: 'String',
 					name: 'timezone',
-					description: 'IANA timezone for the start time, such as America/Chicago.'
+					description: 'Your timezone for the start time.',
+					choices: queueTimezoneOptionChoices
 				}
 			]
 		},
 		{
 			type: 'Subcommand',
 			name: 'view',
-			description: 'See your queued trips, remaining allowance, and when it refills.'
+			description: 'See your queued trips, remaining allowance, and when it refills (daily at 8 PM CT).'
 		},
 		{
 			type: 'Subcommand',
@@ -95,12 +98,14 @@ export const queueCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'time',
-					description: 'Optional local reminder time in 24-hour HH:mm format, such as 22:00.'
+					description: 'Optional daily reminder time (pick a timezone too).',
+					choices: queueTimeOptionChoices
 				},
 				{
 					type: 'String',
 					name: 'timezone',
-					description: 'IANA timezone for the local time, such as America/Chicago.'
+					description: 'Your timezone for the reminder time.',
+					choices: queueTimezoneOptionChoices
 				},
 				{
 					type: 'Boolean',
@@ -117,14 +122,16 @@ export const queueCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'time',
-					description: 'Local start time in 24-hour HH:mm format, such as 22:00.',
-					required: true
+					description: 'Start time.',
+					required: true,
+					choices: queueTimeOptionChoices
 				},
 				{
 					type: 'String',
 					name: 'timezone',
-					description: 'IANA timezone, such as America/Chicago.',
-					required: true
+					description: 'Your timezone.',
+					required: true,
+					choices: queueTimezoneOptionChoices
 				},
 				{
 					type: 'String',
