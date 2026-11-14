@@ -1,7 +1,4 @@
 import { tearsOfGuthixIronmanReqs, tearsOfGuthixSkillReqs } from '@/lib/bso/commands/tearsOfGuthixCommand.js';
-import { getBscPatronAccount } from '@/lib/bsc/patronAccount.js';
-import { formatTripFlairLine } from '@/lib/bsc/patronFlair.js';
-import { bscPatronLevelFromBits } from '@/lib/bsc/patronTiers.js';
 import { isDoubleLootActive } from '@/lib/bso/doubleLoot.js';
 import { consolidateSkillXpBonusLines } from '@/lib/bso/firstAge/skillOutfits.js';
 import { gods } from '@/lib/bso/minigames/divineDominion.js';
@@ -21,6 +18,9 @@ import { Bank, EItem, itemID, toKMB } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main.js';
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import { getBscPatronAccount } from '@/lib/bsc/patronAccount.js';
+import { formatTripFlairLine } from '@/lib/bsc/patronFlair.js';
+import { bscPatronLevelFromBits } from '@/lib/bsc/patronTiers.js';
 import { tryStartQueuedTrip } from '@/lib/bsc/tripQueue.js';
 import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
@@ -32,6 +32,7 @@ import { LaunchItem } from '@/lib/events/launch/items.js';
 import { rollLaunchBoxFromTrip } from '@/lib/events/launch/launchBox.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
+import { hasHarvestBlessing, isThanksgivingActive, rollThanksgivingTripParts } from '@/lib/events/thanksgiving/core.js';
 import { handleGrowablePetGrowth } from '@/lib/growablePets.js';
 import { handlePassiveImplings } from '@/lib/implings.js';
 import { triggerRandomEvent } from '@/lib/randomEvents.js';
@@ -123,6 +124,21 @@ const tripFinishEffects: TripFinishEffect[] = [
 					: `${customEmoji('launchbox')} You found ${result.amount} Launch boxes!`
 			);
 			return { itemsToAddWithCL: new Bank().add(LaunchItem.LAUNCH_BOX, result.amount) };
+		}
+	},
+	{
+		name: 'Straw Hat Harvest parts',
+		fn: async ({ data, messages, user, rng }) => {
+			if (!isThanksgivingActive()) return;
+			const parts = rollThanksgivingTripParts({
+				durationMs: data.duration,
+				doubleLoot: isDoubleLootActive(data.duration),
+				blessing: hasHarvestBlessing(user),
+				rng
+			});
+			if (parts.length === 0) return;
+			messages.push(`🌽 You gathered ${parts} for The Straw Hat Harvest.`);
+			return { itemsToAddWithCL: parts };
 		}
 	},
 	{
@@ -865,4 +881,3 @@ export async function handleTripFinish(
 
 	await deliverTripFinishMessage(user.id, channelId, message);
 }
-

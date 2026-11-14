@@ -3,6 +3,7 @@ import { Bank } from 'oldschooljs';
 
 import type { CanvasImage } from '@/lib/canvas/canvasUtil.js';
 import { BitField } from '@/lib/constants.js';
+import { thanksgivingBankBgCL } from '@/lib/events/thanksgiving/core.js';
 import type { Skills } from '@/lib/types/index.js';
 
 export type BankBackground = {
@@ -735,6 +736,27 @@ const backgroundImages: BankBackground[] = [
 		owners: ['246813910999629824'],
 		purpleImage: null,
 		hasPurple: true
+	},
+	{
+		// The Straw Hat Harvest: sunset Going Merry, purple treasure scene on a new log item.
+		id: 1029,
+		name: 'Going Merry',
+		image: null,
+		available: true,
+		collectionLogItemsNeeded: new Bank(Object.fromEntries(thanksgivingBankBgCL.map(id => [id, 1]))),
+		hasPurple: true,
+		purpleImage: null
+	},
+	{
+		// Patreon variant: storm scene, purple storm flag on a new log item. Cosmetic only.
+		id: 1030,
+		name: 'Going Merry (storm)',
+		image: null,
+		available: true,
+		collectionLogItemsNeeded: new Bank(Object.fromEntries(thanksgivingBankBgCL.map(id => [id, 1]))),
+		perkTierNeeded: PerkTier.Two,
+		hasPurple: true,
+		purpleImage: null
 	}
 ];
 

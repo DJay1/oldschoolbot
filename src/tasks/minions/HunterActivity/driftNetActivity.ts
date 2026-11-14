@@ -1,5 +1,6 @@
 import { resolveItems } from 'oldschooljs';
 
+import { LABOON_EXTRA_FISH_MULTIPLIER, usingLaboonPet } from '@/lib/events/thanksgiving/core.js';
 import driftNetCreatures from '@/lib/skilling/skills/hunter/driftNet.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
 
@@ -73,6 +74,15 @@ export const driftNetTask: MinionTask = {
 			}
 			fishXpReceived *= 1.5;
 			shelldonStr += '\nYou received **2x** extra fish from Shelldon helping you.';
+		}
+		if (usingLaboonPet(user)) {
+			for (const [item, qty] of loot.items()) {
+				if (!shelldonFish.includes(item.id)) continue;
+				const extra = Math.floor(qty * LABOON_EXTRA_FISH_MULTIPLIER) - qty;
+				if (extra > 0) loot.add(item.id, extra);
+			}
+			fishXpReceived *= 1.5;
+			shelldonStr += `\nYou received **${LABOON_EXTRA_FISH_MULTIPLIER}x** fish from Laboon helping you.`;
 		}
 
 		let xpRes = `\n${await user.addXP({

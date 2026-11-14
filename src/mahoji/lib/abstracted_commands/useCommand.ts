@@ -14,8 +14,9 @@ import { gearImages } from '@/lib/canvas/gearImageData.js';
 import { BitField } from '@/lib/constants.js';
 import { easterUseTrollResponse } from '@/lib/events/easter/use.js';
 import { getLydiaQuote } from '@/lib/events/summer/summerDays.js';
-import { assert } from '@/lib/util/logError.js';
+import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
+import { assert } from '@/lib/util/logError.js';
 import { flowerTable } from '@/mahoji/lib/abstracted_commands/hotColdCommand.js';
 
 const messageInABottleMessages = [
@@ -197,6 +198,20 @@ export const genericUsables: {
 		cost: new Bank().add('Turkey'),
 		loot: new Bank().add('Turkey drumstick', 3),
 		response: () => 'You cut your Turkey into 3 drumsticks!',
+		addToCL: true
+	},
+	{
+		items: [Items.getOrThrow(ThanksgivingItem.PILGRIM_HAT), Items.getOrThrow(ThanksgivingItem.GOBBLES)],
+		cost: new Bank().add(ThanksgivingItem.PILGRIM_HAT).add(ThanksgivingItem.GOBBLES).freeze(),
+		loot: new Bank().add(ThanksgivingItem.GOBBLE_GOBBLE).freeze(),
+		response: () => 'You put the Pilgrim hat on Gobbles. Say hello to **Gobble gobble**!',
+		addToCL: true
+	},
+	{
+		items: [Items.getOrThrow(ThanksgivingItem.STRAW_HAT), Items.getOrThrow(ThanksgivingItem.LABOON)],
+		cost: new Bank().add(ThanksgivingItem.STRAW_HAT).add(ThanksgivingItem.LABOON).freeze(),
+		loot: new Bank().add(ThanksgivingItem.LABOON_STRAW_HAT).freeze(),
+		response: () => 'You put the Straw hat on Laboon. He is now **Laboon (straw hat)**!',
 		addToCL: true
 	},
 	{
@@ -671,6 +686,32 @@ for (const genericU of genericUsables) {
 		}
 	});
 }
+// Straw Hat Harvest: /use a hat on its own combines it with the matching pet in your bank.
+for (const [hat, pet, result] of [
+	[ThanksgivingItem.PILGRIM_HAT, ThanksgivingItem.GOBBLES, ThanksgivingItem.GOBBLE_GOBBLE],
+	[ThanksgivingItem.STRAW_HAT, ThanksgivingItem.LABOON, ThanksgivingItem.LABOON_STRAW_HAT]
+] as const) {
+	usables.push({
+		items: [Items.getOrThrow(hat)],
+		run: async user => {
+			const hatName = Items.itemNameFromId(hat);
+			const petName = Items.itemNameFromId(pet);
+			if (!user.bank.has(pet)) {
+				return user.usingPet(pet, { ignoreSimilar: true })
+					? `Unequip ${petName} first (so he is in your bank), then use the ${hatName} again.`
+					: `You need ${petName} in your bank to use the ${hatName} on. You can also just wear it.`;
+			}
+			// One transaction: takes the hat and the pet, gives one upgraded pet. Fails if either is gone.
+			await user.transactItems({
+				itemsToRemove: new Bank().add(hat).add(pet),
+				itemsToAdd: new Bank().add(result),
+				collectionLog: true
+			});
+			return `You put the ${hatName} on ${petName}. Say hello to **${Items.itemNameFromId(result)}**!`;
+		}
+	});
+}
+
 usables.push({
 	items: [Items.getOrThrow('Double loot token')],
 	run: async (user: MUser) => {

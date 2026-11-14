@@ -25,6 +25,7 @@ import './paintCans.js';
 import './summoning.js';
 import './firstAge.js';
 import '../events/launch/items.js';
+import '../events/thanksgiving/items.js';
 import './bankPlaceholders.js';
 import './patronDyes.js';
 import './coralPotions.js';

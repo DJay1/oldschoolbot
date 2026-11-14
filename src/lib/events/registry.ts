@@ -55,6 +55,13 @@ export const seasonalEvents: readonly SeasonalEventDefinition[] = [
 		summary:
 			'Launch: +25% XP, triple daily mystery boxes, 12-hour dailies, double skilling pet chance, Launch boxes from finished trips, a claimable Founder title with a starter kit, and one-time first-to-99 and first-to-max announcements. Owned Founder titles stay visible while this is on hold. Launch boxes can still be opened after the event.',
 		enabled: false
+	},
+	{
+		id: 'thanksgiving',
+		name: 'The Straw Hat Harvest',
+		summary:
+			'Thanksgiving 2026: Harvest bundles and Wicker baskets from trips, /thanksgiving offer, Laboon fishing roll. Test bot only for now: it stays off on the live bot even if enabled here.',
+		enabled: false
 	}
 ];
 

@@ -6,6 +6,7 @@ import { Bank, EItem, Items } from 'oldschooljs';
 
 import { CoralPotionItem } from '@/lib/customItems/coralPotions.js';
 import { summerFishingStartAdjustments } from '@/lib/events/summer/fishing.js';
+import { thanksgivingFishingBoosts } from '@/lib/events/thanksgiving/core.js';
 import type { Fish } from '@/lib/skilling/types.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
 import { finalizeTripLength } from '@/lib/util/tripLength.js';
@@ -379,6 +380,12 @@ export async function calcFishingTripStart({
 		tripSpeedMultiplier *= 2;
 		boosts.push(customEmoji('shelldon') + ' Shelldon helps you fish!');
 	}
+
+	const harvestFishing = thanksgivingFishingBoosts(gearBank);
+	if (harvestFishing.speedMultiplier !== 1) {
+		tripSpeedMultiplier *= harvestFishing.speedMultiplier;
+	}
+	boosts.push(...harvestFishing.lines);
 
 	if (gearBank.hasEquippedOrInBank('Shark tooth necklace')) {
 		tripSpeedMultiplier *= speedMultiplierFromPercentReduction(5);

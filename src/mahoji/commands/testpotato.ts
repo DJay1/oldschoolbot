@@ -29,6 +29,9 @@ import { BitField, BitFieldData, globalConfig, MAX_LEVEL, MAX_XP, testingShortcu
 import { expertCapesCL, spiritAnglerOutfit } from '@/lib/data/CollectionsExport.js';
 import { Eatables } from '@/lib/data/eatables.js';
 import { TOBMaxMageGear, TOBMaxMeleeGear, TOBMaxRangeGear } from '@/lib/data/tob.js';
+import { saveSeasonalEventOverride } from '@/lib/events/store.js';
+import { isThanksgivingActive, thanksgivingCodeEnabled } from '@/lib/events/thanksgiving/core.js';
+import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 import potions from '@/lib/minions/data/potions.js';
 import { MAX_QP, quests } from '@/lib/minions/data/quests.js';
@@ -336,6 +339,18 @@ async function giveElderClueRequirements(user: MUser) {
 	return `Spawned Elder clue requirements, including Falo the Bard items: ${faloTheBardPreset}.`;
 }
 
+const thanksgivingSpawnPreset = new Bank()
+	.add(ThanksgivingItem.HARVEST_BUNDLE, 50)
+	.add(ThanksgivingItem.WICKER_BASKET, 10)
+	.add(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA, 10)
+	.add(ThanksgivingItem.PILGRIM_HAT)
+	.add(ThanksgivingItem.STRAW_HAT)
+	.add(ThanksgivingItem.GOBBLES)
+	.add(ThanksgivingItem.LABOON)
+	.add(ThanksgivingItem.CORNUCOPIA_2021);
+
+const THANKSGIVING_TOGGLE_OWNER_ID = '290167629966999552';
+
 const spawnPresets = [
 	['fishing', fishingPreset],
 	['openables', openablesBank],
@@ -346,7 +361,8 @@ const spawnPresets = [
 	['stashunits', allStashUnitItems],
 	['potions', potionsPreset],
 	['food', foodPreset],
-	['runes', runePreset]
+	['runes', runePreset],
+	['thanksgiving', thanksgivingSpawnPreset]
 ] as const;
 
 const thingsToWipe = [
@@ -423,6 +439,19 @@ export const testPotatoCommand = defineCommand({
 					autocomplete: async () => {
 						return thingsToWipe.map(i => ({ name: i, value: i }));
 					}
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'thanksgiving',
+			description: 'Test bot only: turn The Straw Hat Harvest on or off.',
+			options: [
+				{
+					type: 'Boolean',
+					name: 'active',
+					description: 'True to run the event now, false to stop it.',
+					required: true
 				}
 			]
 		},
@@ -1075,6 +1104,16 @@ export const testPotatoCommand = defineCommand({
 		}
 		if (options.setxp) {
 			return setXP(user, options.setxp.skill, options.setxp.xp);
+		}
+		if (options.thanksgiving) {
+			if (globalConfig.isProduction) return 'This only works on the test bot.';
+			if (user.id !== THANKSGIVING_TOGGLE_OWNER_ID) return 'Only the bot owner can use this.';
+			const active = options.thanksgiving.active;
+			// No start/end: the active flag alone controls it on the test bot.
+			await saveSeasonalEventOverride('thanksgiving', { enabled: active, start: null, end: null });
+			return active
+				? `The Straw Hat Harvest is now **active** on the test bot (code enabled: ${thanksgivingCodeEnabled()}, active: ${isThanksgivingActive()}).`
+				: 'The Straw Hat Harvest is now **off** on the test bot.';
 		}
 		if (options.spawn) {
 			const { preset, collectionlog, item, items } = options.spawn;

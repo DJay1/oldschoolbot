@@ -141,6 +141,10 @@ export interface CookingActivityTaskOptions extends ActivityTaskOptions {
 	type: 'Cooking';
 	cookableID: number;
 	quantity: number;
+	/** Straw Hat Harvest: % extra cooked food (Pilgrim hat, Harvest Blessing). */
+	harvestYieldPercent?: number;
+	/** Straw Hat Harvest: % chance each raw item is refunded (Gobbles). */
+	harvestSaveRawPercent?: number;
 }
 
 export interface ConstructionActivityTaskOptions extends ActivityTaskOptions {

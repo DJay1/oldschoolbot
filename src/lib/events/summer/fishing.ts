@@ -6,7 +6,13 @@ import { type Bank, Items } from 'oldschooljs';
 
 import { isEventActive } from '@/lib/events/registry.js';
 import { convertMysteriousBottleToSeaWater, getEclipsePetName } from '@/lib/events/summer/summerDays.js';
+import { thanksgivingCodeEnabled } from '@/lib/events/thanksgiving/core.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
+
+/** Old crab cage removal (approved by DJ). Follows the Straw Hat Harvest master switch, so it is test-bot only for now. */
+export function oldCrabCageRetired(): boolean {
+	return thanksgivingCodeEnabled();
+}
 
 function speedMultiplierFromPercentReduction(percent: number) {
 	return 1 / (1 - percent / 100);
@@ -21,7 +27,8 @@ export function summerFishingStartAdjustments(gearBank: GearBank, fishName: stri
 	const boosts: string[] = [];
 	let speedMultiplier = 1;
 	let extraMaxTripLength = 0;
-	const hasOldCrabCageEquipped = gearBank.hasEquipped(BSOItem.OLD_CRAB_CAGE);
+	// The Old crab cage is being retired: no effects once the Straw Hat Harvest code is enabled.
+	const hasOldCrabCageEquipped = !oldCrabCageRetired() && gearBank.hasEquipped(BSOItem.OLD_CRAB_CAGE);
 	const patriciaPetID = gearBank.usingPet('Patricia', { returnID: true });
 	const hasPatriciaEquipped = Boolean(patriciaPetID);
 	const eclipsePetName = patriciaPetID ? Items.getOrThrow(patriciaPetID).name : 'Patricia';
@@ -129,7 +136,7 @@ function rollSummerFishingDrops({
 		}
 	}
 
-	if (!userAlreadyHasCrabCage) {
+	if (!userAlreadyHasCrabCage && !oldCrabCageRetired()) {
 		for (let i = 0; i < minutes; i++) {
 			if (rng.roll(crabCageRate)) {
 				result.updateBank.itemLootBank.add(BSOItem.OLD_CRAB_CAGE);
@@ -143,7 +150,12 @@ function rollSummerFishingDrops({
 		}
 	}
 	if (hasPatriciaEquipped) {
-		if (fish.name === 'Lobster' && user.hasEquipped(BSOItem.OLD_CRAB_CAGE) && !user.cl.has(BSOItem.PARTYCRAB)) {
+		if (
+			fish.name === 'Lobster' &&
+			!oldCrabCageRetired() &&
+			user.hasEquipped(BSOItem.OLD_CRAB_CAGE) &&
+			!user.cl.has(BSOItem.PARTYCRAB)
+		) {
 			for (let i = 0; i < minutes; i++) {
 				if (rng.roll(24 * 60)) {
 					result.updateBank.itemLootBank.add(BSOItem.PARTYCRAB);

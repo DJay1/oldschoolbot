@@ -216,6 +216,8 @@ import { allChristmasEvent2024Items, allChristmasEvent2025Items } from '@/lib/ev
 import { launchBoxCL } from '@/lib/events/launch/collectionLog.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
 import { beachOutfitTable } from '@/lib/events/summer/summerDays.js';
+import { thanksgivingCL } from '@/lib/events/thanksgiving/core.js';
+import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { growablePetsCL } from '@/lib/growablePets.js';
 import { implingsCL } from '@/lib/implings.js';
 import killableMonsters, { NightmareMonster } from '@/lib/minions/data/killableMonsters/index.js';
@@ -1554,6 +1556,19 @@ export const allCollectionLogs: ICollection = {
 						openableScores.amount(LaunchItem.LAUNCH_BOX)
 				},
 				fmtProg: ({ stats }) => `${stats.openableScores.amount(LaunchItem.LAUNCH_BOX)} Launch boxes opened`
+			},
+			'The Straw Hat Harvest': {
+				alias: ['thanksgiving', 'straw hat harvest', 'thanksgiving 2026'],
+				items: thanksgivingCL,
+				// Not in CL totals while the event is test-only; flip to count when it goes live.
+				counts: false,
+				isActivity: true,
+				kcActivity: {
+					Default: async (_user, _minigames, { openableScores }) =>
+						openableScores.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA)
+				},
+				fmtProg: ({ stats }) =>
+					`${stats.openableScores.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA)} Bountiful cornucopias offered`
 			},
 			'Random Events': {
 				alias: ['random'],

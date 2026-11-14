@@ -6,6 +6,14 @@ import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { type Bank, EItem, toKMB } from 'oldschooljs';
 
+import {
+	isThanksgivingActive,
+	LABOON_FISHING_MIN_TRIP_MS,
+	LABOON_FISHING_RATE_PER_MINUTE,
+	rollPercentOfQuantity,
+	thanksgivingFishingBoosts
+} from '@/lib/events/thanksgiving/core.js';
+import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import addSkillingClueToLoot from '@/lib/minions/functions/addSkillingClueToLoot.js';
 import { Cookables } from '@/lib/skilling/skills/cooking/cooking.js';
 import type { Fish, SkillNameType } from '@/lib/skilling/types.js';
@@ -218,6 +226,22 @@ export function calcFishingTripResult({
 			}
 		}
 	}
+	// Straw Hat Harvest: Straw hat yield (worn, or on Laboon).
+	const harvestFishing = thanksgivingFishingBoosts(gearBank);
+	if (harvestFishing.yieldPercent > 0) {
+		let extraFish = 0;
+		for (const subfish of fish.subfishes ?? []) {
+			const quantity = updateBank.itemLootBank.amount(subfish.id);
+			if (quantity <= 0) continue;
+			const extra = rollPercentOfQuantity(rng, quantity, harvestFishing.yieldPercent);
+			if (extra > 0) {
+				updateBank.itemLootBank.add(subfish.id, extra);
+				extraFish += extra;
+			}
+		}
+		if (extraFish > 0) messages.push(`+${extraFish} extra fish from the Straw hat.`);
+	}
+
 	// BSO Klik pet
 	if (gearBank.usingPet('Klik')) {
 		for (const subfish of fish.subfishes ?? []) {
@@ -249,6 +273,17 @@ export function calcFishingTripResult({
 					customEmoji('shelldon') +
 						' A crab steals your fish just as you catch it! After some talking, the crab, called shelldon, decides to join you on your fishing adventures. You can equip Shelldon and he will help you fish!'
 				);
+				break;
+			}
+		}
+	}
+
+	if (isThanksgivingActive() && duration >= LABOON_FISHING_MIN_TRIP_MS) {
+		const minutesInTrip = Math.floor(duration / Time.Minute);
+		for (let i = 0; i < minutesInTrip; i++) {
+			if (rng.randInt(1, LABOON_FISHING_RATE_PER_MINUTE) === 1) {
+				updateBank.itemLootBank.add(ThanksgivingItem.LABOON);
+				messages.push('🐋 A huge whale with a scar surfaces beside you... **Laboon** wants to join your crew!');
 				break;
 			}
 		}

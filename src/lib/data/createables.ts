@@ -26,6 +26,8 @@ import { shadesOfMortonCreatables } from '@/lib/data/creatables/shadesOfMorton.j
 import { slayerCreatables } from '@/lib/data/creatables/slayer.js';
 import { toaCreatables } from '@/lib/data/creatables/toa.js';
 import { tobCreatables } from '@/lib/data/creatables/tob.js';
+import { thanksgivingCodeEnabled } from '@/lib/events/thanksgiving/core.js';
+import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { blisterwoodRequirements, ivandisRequirements } from '@/lib/minions/data/templeTrekking.js';
 import { SlayerTaskUnlocksEnum } from '@/lib/slayer/slayerUnlocks.js';
 import type { Skills } from '@/lib/types/index.js';
@@ -2806,7 +2808,13 @@ const Createables: Createable[] = [
 	...caCreatables,
 	...forestryCreatables,
 	...camdozaalItems,
-	...bsoCreatables
+	...bsoCreatables,
+	{
+		name: 'Bountiful cornucopia',
+		inputItems: new Bank().add(ThanksgivingItem.HARVEST_BUNDLE, 5).add(ThanksgivingItem.WICKER_BASKET, 1),
+		outputItems: new Bank().add(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA, 1),
+		customReq: async () => (thanksgivingCodeEnabled() ? null : 'You cannot make this right now.')
+	}
 ];
 
 for (const createable of Createables) {

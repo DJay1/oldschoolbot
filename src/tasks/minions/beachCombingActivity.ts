@@ -7,6 +7,7 @@ import { Bank, type ItemBank, LootTable, randArrItem, SimpleTable } from 'oldsch
 import { globalConfig } from '@/lib/constants.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
+import { oldCrabCageRetired } from '@/lib/events/summer/fishing.js';
 import {
 	BEACH_COMBING_PET,
 	beachOutfitTable,
@@ -152,7 +153,7 @@ export const beachCombingTask: MinionTask = {
 		const loot = new Bank();
 		const discoveries: string[] = [];
 
-		const hasCageBonus = user.hasEquipped(BSOItem.OLD_CRAB_CAGE);
+		const hasCageBonus = !oldCrabCageRetired() && user.hasEquipped(BSOItem.OLD_CRAB_CAGE);
 		const hasPatricia = user.usingPet(BEACH_COMBING_PET.itemID);
 		const eclipsePetName = hasPatricia ? getEclipsePetName(user) : BEACH_COMBING_PET.name;
 		let crateDurationMultiplier = hasCageBonus ? 1.15 : 1;
@@ -201,7 +202,7 @@ export const beachCombingTask: MinionTask = {
 				loot.add(damagedLoot);
 			}
 		}
-		const hasOldCrabCageEquipped = user.hasEquipped(BSOItem.OLD_CRAB_CAGE);
+		const hasOldCrabCageEquipped = !oldCrabCageRetired() && user.hasEquipped(BSOItem.OLD_CRAB_CAGE);
 		const crateKeyLoot = new Bank();
 
 		let patriciaRate = clAdjustedDroprate(
