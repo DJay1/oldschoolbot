@@ -13,7 +13,7 @@ import { MathRNG, randInt } from 'node-rng';
  * clears the buttons.
  */
 /** The spawner can answer alone for this long before everyone else can. */
-export const SPAWNER_HEAD_START_MS = 5 * Time.Second;
+export const SPAWNER_HEAD_START_MS = 2 * Time.Second;
 
 export async function buttonUserPicker({
 	interaction,

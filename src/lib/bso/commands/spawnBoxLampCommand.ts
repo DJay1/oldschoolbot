@@ -1,6 +1,6 @@
 import { giveBoxResetTime, SPAWN_BOX_COOLDOWN, SPAWN_LAMP_COOLDOWN } from '@/lib/bso/bsoConstants.js';
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
-import { buttonUserPicker } from '@/lib/bso/buttonUserPicker.js';
+import { buttonUserPicker, SPAWNER_HEAD_START_MS } from '@/lib/bso/buttonUserPicker.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
 import { LampTable } from '@/lib/bso/xpLamps.js';
@@ -114,7 +114,7 @@ async function spawnCommand(user: MUser, interaction: MInteraction, kind: SpawnK
 	const timeToAnswer = Time.Second * 30;
 	const winnerId = await buttonUserPicker({
 		interaction,
-		str: `${cfg.emoji()} ${userMention(user.id)} spawned a ${cfg.label} (they get a 5s head start). Answer within ${time(Math.floor((now + timeToAnswer) / 1000), 'R')}.
+		str: `${cfg.emoji()} ${userMention(user.id)} spawned a ${cfg.label} (they get a ${SPAWNER_HEAD_START_MS / Time.Second}s head start). Answer within ${time(Math.floor((now + timeToAnswer) / 1000), 'R')}.
 
 ${question}`,
 		timer: timeToAnswer,
