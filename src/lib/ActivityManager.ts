@@ -2,6 +2,7 @@ import { cryptoRng } from 'node-rng/crypto';
 
 import type { Activity, activity_type_enum } from '@/prisma/main.js';
 import { testingShortcutsEnabled } from '@/lib/constants.js';
+import { runWithTripWindow } from '@/lib/events/thanksgiving/feast.js';
 import { onMinionActivityFinish } from '@/lib/events.js';
 import type { OSInteraction } from '@/lib/structures/OSInteraction.js';
 import { allTasks } from '@/lib/Task.js';
@@ -77,13 +78,15 @@ class SActivityManager {
 				tx,
 				activityId: _activity.id,
 				run: () =>
-					task.run(
-						{ ...activity, channelId: activity.channelId },
-						{
-							user,
-							handleTripFinish,
-							rng: cryptoRng
-						}
+					runWithTripWindow(activity.finishDate, () =>
+						task.run(
+							{ ...activity, channelId: activity.channelId },
+							{
+								user,
+								handleTripFinish,
+								rng: cryptoRng
+							}
+						)
 					),
 				onError: async err => {
 					const date = new Date();

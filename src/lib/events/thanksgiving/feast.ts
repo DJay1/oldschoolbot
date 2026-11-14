@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { formatDuration, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -11,9 +12,12 @@ import { ThanksgivingItem } from './items.js';
  * double_loot_finish_time or double_xp_finish_time). Only applies while The Straw Hat
  * Harvest is active, which is test-bot only for now.
  *
- * A trip only gets the boost for the part of it that overlapped the feast window, so a
- * 15 minute feast cannot double a 3 hour trip, and offering a turkey just before a long
- * trip returns only boosts those last minutes.
+ * Each turkey has a 1 in 3 chance to feast. A successful turkey starts a new feast (random
+ * kind) or, if one is running, adds 10-30 minutes to it (same kind), capped at 3 hours left.
+ *
+ * A trip only gets the boost for the part of it that overlapped the feast window. The trip
+ * window is the trip's own [finishDate - duration, finishDate], so it is right for real trips
+ * and for instant test-bot trips (which finish before their finishDate).
  */
 
 export type HarvestFeastKind = 'loot' | 'xp';
@@ -24,8 +28,12 @@ export interface HarvestFeast {
 	endMs: number;
 }
 
-export const HARVEST_FEAST_MIN_MINUTES = 15;
-export const HARVEST_FEAST_MAX_MINUTES = 60;
+export const HARVEST_FEAST_MIN_MINUTES = 10;
+export const HARVEST_FEAST_MAX_MINUTES = 30;
+/** 1 in N turkeys start or extend a feast. The rest are eaten with no feast. */
+export const HARVEST_FEAST_SUCCESS_ONE_IN = 3;
+/** A feast never has more than this much time left. */
+export const HARVEST_FEAST_MAX_TOTAL_MS = 3 * Time.Hour;
 
 /** Group/boss trips and trips that are never doubled are skipped, same list as the Mystery box loot doubling. */
 export const HARVEST_FEAST_LOOT_EXCLUDED_ACTIVITIES: readonly string[] = [
@@ -48,12 +56,63 @@ const START_ROW = 'feast:start';
 /** userID -> latest feast. Loaded at startup, updated on every save. Single bot process, so this stays in sync. */
 const feastCache = new Map<string, HarvestFeast>();
 
-export function rollHarvestFeast(rng: ThanksgivingRng, now = Date.now()): HarvestFeast {
+export type TurkeyOfferResult =
+	| { outcome: 'none' }
+	| { outcome: 'new' | 'extended'; feast: HarvestFeast; addedMs: number };
+
+/** True when the running feast is at the time cap, so another turkey could add nothing. */
+export function harvestFeastIsFull(active: HarvestFeast | null | undefined, now = Date.now()): boolean {
+	if (!active || active.endMs <= now) return false;
+	return active.endMs - now >= HARVEST_FEAST_MAX_TOTAL_MS - Time.Minute;
+}
+
+/**
+ * Roll one offered turkey. 1/3: feast. With a feast running (pass it as `active`), adds 10-30
+ * minutes to it and keeps its kind; otherwise starts a new 2x loot or 2x XP feast (50/50).
+ * Time left is capped at 3 hours. Whole seconds, because that is what gets stored.
+ */
+export function rollTurkeyOffer(
+	rng: ThanksgivingRng,
+	active: HarvestFeast | null | undefined,
+	now = Date.now()
+): TurkeyOfferResult {
+	if (rng.randInt(1, HARVEST_FEAST_SUCCESS_ONE_IN) !== 1) return { outcome: 'none' };
+	const nowS = Math.floor(now / 1000) * 1000;
+	const cap = nowS + HARVEST_FEAST_MAX_TOTAL_MS;
+	if (active && active.endMs > now) {
+		const minutes = rng.randInt(HARVEST_FEAST_MIN_MINUTES, HARVEST_FEAST_MAX_MINUTES);
+		const endMs = Math.min(cap, active.endMs + minutes * Time.Minute);
+		return {
+			outcome: 'extended',
+			feast: { kind: active.kind, startMs: active.startMs, endMs },
+			addedMs: Math.max(0, endMs - active.endMs)
+		};
+	}
 	const kind: HarvestFeastKind = rng.randInt(1, 2) === 1 ? 'loot' : 'xp';
 	const minutes = rng.randInt(HARVEST_FEAST_MIN_MINUTES, HARVEST_FEAST_MAX_MINUTES);
-	// Whole seconds, because that is what gets stored.
-	const startMs = Math.floor(now / 1000) * 1000;
-	return { kind, startMs, endMs: startMs + minutes * Time.Minute };
+	const endMs = Math.min(cap, nowS + minutes * Time.Minute);
+	return { outcome: 'new', feast: { kind, startMs: nowS, endMs }, addedMs: endMs - nowS };
+}
+
+/** Rare-channel text for a successful turkey. No pings (sent with mentions disabled). */
+export function harvestFeastAnnouncement(name: string, result: TurkeyOfferResult): string | null {
+	if (result.outcome === 'none') return null;
+	const minutes = Math.max(1, Math.round(result.addedMs / Time.Minute));
+	const kind = harvestFeastName(result.feast.kind);
+	return result.outcome === 'new'
+		? `🦃 ${name} offered a Harvest turkey and started a ${kind} Harvest feast (${minutes} min)!`
+		: `🦃 ${name} offered a Harvest turkey and added ${minutes} min to their ${kind} feast!`;
+}
+
+/**
+ * The trip being completed right now (set by ActivityManager around task.run), so addXP can
+ * use the trip's own window. Async-local, so concurrent trips never see each other's window.
+ */
+const tripWindowStorage = new AsyncLocalStorage<{ finishDate: number }>();
+
+export function runWithTripWindow<T>(finishDate: number | null | undefined, fn: () => T): T {
+	if (typeof finishDate !== 'number' || !Number.isFinite(finishDate)) return fn();
+	return tripWindowStorage.run({ finishDate }, fn);
 }
 
 /** 0 to 1: how much of the trip [tripEnd - duration, tripEnd] was inside the feast window. */
@@ -77,12 +136,27 @@ export function activeHarvestFeast(userID: string, now = Date.now()): HarvestFea
 	return feast;
 }
 
-/** Share of a trip that ended now that gets the feast boost of this kind. 0 when the event is off. */
-export function harvestFeastFraction(userID: string, kind: HarvestFeastKind, durationMs: number, now = Date.now()) {
+/**
+ * Share of a trip that gets the feast boost of this kind. 0 when the event is off.
+ * The trip is [tripFinishMs - duration, tripFinishMs]: tripFinishMs is the trip's stored finishDate
+ * (passed in, or from the trip being completed), falling back to now. Using the stored finishDate
+ * instead of the wall clock keeps instant test-bot trips (completed before finishDate) correct.
+ */
+export function harvestFeastFraction(
+	userID: string,
+	kind: HarvestFeastKind,
+	durationMs: number,
+	tripFinishMs?: number | null,
+	now = Date.now()
+) {
 	if (!isThanksgivingActive(now)) return 0;
 	const feast = getHarvestFeast(userID);
 	if (!feast || feast.kind !== kind) return 0;
-	return feastOverlapFraction(feast, now, durationMs);
+	const end =
+		typeof tripFinishMs === 'number' && Number.isFinite(tripFinishMs)
+			? tripFinishMs
+			: (tripWindowStorage.getStore()?.finishDate ?? now);
+	return feastOverlapFraction(feast, end, durationMs);
 }
 
 /**
@@ -113,9 +187,9 @@ export function harvestFeastName(kind: HarvestFeastKind): string {
 export function harvestFeastStatusLine(userID: string, now = Date.now()): string {
 	const feast = activeHarvestFeast(userID, now);
 	if (!feast) {
-		return `Harvest feast: none. Offer a Harvest turkey (\`/thanksgiving offer item:Harvest turkey\`) for a random 2x loot or 2x XP feast (${HARVEST_FEAST_MIN_MINUTES}-${HARVEST_FEAST_MAX_MINUTES} minutes).`;
+		return `Harvest feast: none. Offer a Harvest turkey (\`/thanksgiving offer item:Harvest turkey\`): 1 in ${HARVEST_FEAST_SUCCESS_ONE_IN} chance of a random 2x loot or 2x XP feast (${HARVEST_FEAST_MIN_MINUTES}-${HARVEST_FEAST_MAX_MINUTES} minutes).`;
 	}
-	return `Harvest feast: **${harvestFeastName(feast.kind)}** for ${formatDuration(feast.endMs - now, true)} more (ends <t:${Math.floor(feast.endMs / 1000)}:R>).`;
+	return `Harvest feast: **${harvestFeastName(feast.kind)}** for ${formatDuration(feast.endMs - now, true)} more (ends <t:${Math.floor(feast.endMs / 1000)}:R>). Each turkey has a 1 in ${HARVEST_FEAST_SUCCESS_ONE_IN} chance to add ${HARVEST_FEAST_MIN_MINUTES}-${HARVEST_FEAST_MAX_MINUTES} minutes (up to ${HARVEST_FEAST_MAX_TOTAL_MS / Time.Hour} hours left).`;
 }
 
 /* ---------- Storage: rows in the existing bsc_thanksgiving_daily table (no schema change) ---------- */
@@ -155,7 +229,7 @@ export async function syncHarvestFeasts() {
 	}
 }
 
-/** Replace the player's feast (feasts never stack). Memory is only updated after the database write succeeds. */
+/** Save the player's feast (new or extended; one row set per player). Memory is only updated after the database write succeeds. */
 export async function saveHarvestFeast(userID: string, feast: HarvestFeast) {
 	await ensureDailyTable();
 	const kindRow = `${ROW_PREFIX}${feast.kind}`;

@@ -169,7 +169,7 @@ export async function announceThanksgivingPets(
 ): Promise<void> {
 	if (!thanksgivingCodeEnabled() || !gained) return;
 	try {
-		const content = thanksgivingPetAnnouncement({ name: user.notificationName, gained, clAfter, source });
+		const content = thanksgivingPetAnnouncement({ name: user.usernameOrMention, gained, clAfter, source });
 		if (content) await announceToRareChannel(content);
 	} catch (err) {
 		Logging.logError(err as Error);

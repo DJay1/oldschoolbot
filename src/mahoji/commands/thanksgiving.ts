@@ -18,7 +18,7 @@ export const thanksgivingCommand = defineCommand({
 					required: false,
 					choices: [
 						{ name: 'Bountiful cornucopia', value: 'cornucopia' },
-						{ name: 'Harvest turkey (random 2x loot or XP feast)', value: 'turkey' }
+						{ name: 'Harvest turkey (1 in 3: 2x loot or XP feast, or more feast time)', value: 'turkey' }
 					]
 				},
 				{

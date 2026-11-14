@@ -1,3 +1,4 @@
+import { Time } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank } from 'oldschooljs';
 
 import { announceThanksgivingPets, announceToRareChannel } from '@/lib/bsc/rareAnnouncements.js';
@@ -20,9 +21,13 @@ import {
 } from './core.js';
 import {
 	activeHarvestFeast,
+	HARVEST_FEAST_MAX_TOTAL_MS,
+	HARVEST_FEAST_SUCCESS_ONE_IN,
+	harvestFeastAnnouncement,
+	harvestFeastIsFull,
 	harvestFeastName,
 	harvestFeastStatusLine,
-	rollHarvestFeast,
+	rollTurkeyOffer,
 	saveHarvestFeast
 } from './feast.js';
 import { ThanksgivingItem } from './items.js';
@@ -121,11 +126,10 @@ export async function thanksgivingOffer(
 		await addOffersToday(user.id, day, quantity).catch(err => Logging.logError(err as Error));
 
 		// Cornucopia (Harvest Blessing item): one announcement per offer command, however many dropped.
-		// The pets announce through the first-in-collection-log rare announcement instead.
 		const cornucopias = result.loot.amount(ThanksgivingItem.CORNUCOPIA_2021);
 		if (cornucopias > 0) {
 			void announceToRareChannel(
-				`🌽 ${user.notificationName} just received ${cornucopias > 1 ? `${cornucopias}x ` : ''}**Cornucopia** from a Straw Hat Harvest offer!`
+				`🌽 ${user.usernameOrMention} just received ${cornucopias > 1 ? `${cornucopias}x ` : ''}**Cornucopia** from a Straw Hat Harvest offer!`
 			);
 		}
 
@@ -157,9 +161,9 @@ export async function thanksgivingOffer(
 }
 
 /**
- * Offer one Harvest turkey for a Harvest feast (2x loot or 2x XP, 15-60 minutes, replaces any feast
- * still running). The turkey is removed first in its own transaction; if saving the feast then fails,
- * the turkey is given back, so a failure can never leave both a feast and the turkey.
+ * Offer one Harvest turkey. It is always used up. 1 in 3: starts a 2x loot or 2x XP feast, or adds
+ * 10-30 minutes to the running one (same kind), capped at 3 hours left. The turkey is removed first in
+ * its own transaction; if saving the feast then fails, the turkey is given back.
  */
 export async function thanksgivingFeast(user: MUser, rng: ThanksgivingRng) {
 	if (!isThanksgivingActive()) return 'The Straw Hat Harvest is not running right now.';
@@ -168,32 +172,43 @@ export async function thanksgivingFeast(user: MUser, rng: ThanksgivingRng) {
 		if (!user.bank.has(ThanksgivingItem.HARVEST_TURKEY)) {
 			return 'You need a Harvest turkey. They are a rare roll from `/thanksgiving offer` (about 1 in 50 offers).';
 		}
-		const previous = activeHarvestFeast(user.id);
+		const now = Date.now();
+		const active = activeHarvestFeast(user.id, now);
+		if (active && harvestFeastIsFull(active, now)) {
+			return `Your ${harvestFeastName(active.kind)} feast already has the maximum ${HARVEST_FEAST_MAX_TOTAL_MS / Time.Hour} hours left. Keep your turkey for later.`;
+		}
 		const turkey = new Bank().add(ThanksgivingItem.HARVEST_TURKEY, 1);
 		await unqueuedTransactItems({ user, itemsToRemove: turkey });
 
-		const feast = rollHarvestFeast(rng);
+		const result = rollTurkeyOffer(rng, active, now);
+		if (result.outcome === 'none') {
+			return `🦃 You offer a Harvest turkey to the harvest... the turkey was eaten, but no feast this time. (Each turkey has a 1 in ${HARVEST_FEAST_SUCCESS_ONE_IN} chance.)`;
+		}
 		try {
-			await saveHarvestFeast(user.id, feast);
+			await saveHarvestFeast(user.id, result.feast);
 		} catch (err) {
 			Logging.logError(err as Error, { user_id: user.id, source: 'thanksgivingFeast' });
 			await unqueuedTransactItems({ user, itemsToAdd: turkey, collectionLog: false });
-			return 'The feast could not be started, so your Harvest turkey was given back. Please try again.';
+			return 'The feast could not be saved, so your Harvest turkey was given back. Please try again.';
 		}
 
-		const minutes = Math.round((feast.endMs - feast.startMs) / 60_000);
-		// One announcement per turkey offered (each turkey is used up, so this cannot be spammed).
-		void announceToRareChannel(
-			`🦃 ${user.notificationName} offered a Harvest turkey and got a **${harvestFeastName(feast.kind)}** Harvest feast for **${minutes} minutes**!`
-		);
+		// Only successful turkeys are announced (each is used up, so this cannot be spammed).
+		const announcement = harvestFeastAnnouncement(user.usernameOrMention, result);
+		if (announcement) void announceToRareChannel(announcement);
+
+		const feast = result.feast;
+		const added = Math.max(1, Math.round(result.addedMs / Time.Minute));
+		const ends = `<t:${Math.floor(feast.endMs / 1000)}:R>`;
 		const lines = [
-			`🦃 You offer a Harvest turkey to the harvest... **Harvest feast: ${harvestFeastName(feast.kind)}** for **${minutes} minutes** (ends <t:${Math.floor(feast.endMs / 1000)}:R>).`,
+			result.outcome === 'new'
+				? `🦃 You offer a Harvest turkey to the harvest... **Harvest feast: ${harvestFeastName(feast.kind)}** for **${added} minutes** (ends ${ends}).`
+				: `🦃 You offer a Harvest turkey to the harvest... **+${added} minutes** added to your **${harvestFeastName(feast.kind)}** feast (ends ${ends}).`,
 			feast.kind === 'loot'
 				? 'Trips get 2x loot for the part of the trip inside the feast (event items, pets and untradeables are not doubled; does not stack with Double Loot).'
 				: 'Trips get 2x XP for the part of the trip inside the feast (does not stack with Double XP).'
 		];
-		if (previous) {
-			lines.push(`This replaced your ${harvestFeastName(previous.kind)} feast. Feasts do not stack.`);
+		if (result.outcome === 'extended' && feast.endMs - now >= HARVEST_FEAST_MAX_TOTAL_MS - Time.Minute) {
+			lines.push(`Your feast is now at the ${HARVEST_FEAST_MAX_TOTAL_MS / Time.Hour} hour maximum.`);
 		}
 		return lines.join('\n');
 	});

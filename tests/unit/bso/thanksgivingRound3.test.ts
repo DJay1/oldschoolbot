@@ -15,7 +15,7 @@ import {
 	HARVEST_FEAST_MAX_MINUTES,
 	HARVEST_FEAST_MIN_MINUTES,
 	harvestFeastBonusLoot,
-	rollHarvestFeast
+	rollTurkeyOffer
 } from '@/lib/events/thanksgiving/feast.js';
 import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 
@@ -49,13 +49,26 @@ describe('Straw Hat Harvest round 3', () => {
 		expect(offerOddsDenominator('turkey', { streak: true, blessing: true })).toBe(38);
 	});
 
-	test('feast roll: loot or XP, 15-60 minutes', () => {
-		const a = rollHarvestFeast(minRng, 1_000_000);
-		expect(a.kind).toBe('loot');
-		expect(a.endMs - a.startMs).toBe(HARVEST_FEAST_MIN_MINUTES * Time.Minute);
-		const b = rollHarvestFeast(maxRng, 1_000_000);
-		expect(b.kind).toBe('xp');
-		expect(b.endMs - b.startMs).toBe(HARVEST_FEAST_MAX_MINUTES * Time.Minute);
+	test('turkey feast roll: loot or XP, 10-30 minutes on a success', () => {
+		const a = rollTurkeyOffer(minRng, null, 1_000_000);
+		if (a.outcome !== 'new') throw new Error('expected new feast');
+		expect(a.feast.kind).toBe('loot');
+		expect(a.feast.endMs - a.feast.startMs).toBe(HARVEST_FEAST_MIN_MINUTES * Time.Minute);
+		// maxRng fails the 1 in 3 roll, so check the max duration with a success-then-max rng.
+		let first = true;
+		const successThenMax = {
+			randInt: (min: number, max: number) => {
+				if (first) {
+					first = false;
+					return min;
+				}
+				return max;
+			}
+		};
+		const b = rollTurkeyOffer(successThenMax, null, 1_000_000);
+		if (b.outcome !== 'new') throw new Error('expected new feast');
+		expect(b.feast.kind).toBe('xp');
+		expect(b.feast.endMs - b.feast.startMs).toBe(HARVEST_FEAST_MAX_MINUTES * Time.Minute);
 	});
 
 	test('feast only boosts the part of the trip inside the window', () => {

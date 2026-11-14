@@ -159,7 +159,9 @@ const tripFinishEffects: TripFinishEffect[] = [
 	{
 		name: 'Implings',
 		fn: async ({ data, messages, user }) => {
-			const imp = await handlePassiveImplings(user, data, messages);
+			// No Webshooter on Straw Hat Harvest trips, so it never uses invention materials there.
+			const harvestTrip = 'thanksgivingHarvest' in data && data.thanksgivingHarvest === true;
+			const imp = await handlePassiveImplings(user, data, messages, harvestTrip);
 			if (imp && imp.bank.length > 0) {
 				messages.push(`Caught ${imp.bank}`);
 				await user.statsBankUpdate('passive_implings_bank', imp.bank);
@@ -235,7 +237,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 			})();
 			const pct = (f: number) => `${Math.max(1, Math.round(f * 100))}%`;
 
-			const xpFraction = harvestFeastFraction(user.id, 'xp', data.duration);
+			const xpFraction = harvestFeastFraction(user.id, 'xp', data.duration, data.finishDate);
 			if (xpFraction > 0) {
 				messages.push(
 					isDoubleXpActive(data.duration)
@@ -245,7 +247,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 				return;
 			}
 
-			const lootFraction = harvestFeastFraction(user.id, 'loot', data.duration);
+			const lootFraction = harvestFeastFraction(user.id, 'loot', data.duration, data.finishDate);
 			if (lootFraction <= 0 || !loot) return;
 			if (data.cantBeDoubled || HARVEST_FEAST_LOOT_EXCLUDED_ACTIVITIES.includes(data.type)) return;
 			if (isDoubleLootActive(data.duration)) {
