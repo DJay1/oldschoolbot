@@ -20,10 +20,10 @@ describe('The Straw Hat Harvest', () => {
 		expect(isThanksgivingActive()).toBe(false);
 	});
 
-	test('trip parts follow ~3x Launch pace', () => {
+	test('trip parts follow ~1.5x Launch pace (halved in round 3)', () => {
 		const perHour = thanksgivingExpectedOffersFromTrip(60 * 60_000, { doubleLoot: false, blessing: false });
-		expect(perHour).toBeGreaterThan(1.5);
-		expect(perHour).toBeLessThan(2.5);
+		expect(perHour).toBeGreaterThan(0.75);
+		expect(perHour).toBeLessThan(1.25);
 		expect(thanksgivingExpectedOffersFromTrip(9 * 60_000, { doubleLoot: false, blessing: false })).toBe(0);
 		const doubled = thanksgivingExpectedOffersFromTrip(60 * 60_000, { doubleLoot: true, blessing: false });
 		expect(doubled).toBeCloseTo(perHour * 2);
@@ -48,7 +48,7 @@ describe('The Straw Hat Harvest', () => {
 		expect(res.loot.equals(thanksgivingStaticPack(false).multiply(2))).toBe(true);
 	});
 
-	test('Gobbles guarantee fires once at 300 and not if already had', () => {
+	test('Gobbles guarantee fires once at 150 and not if already had', () => {
 		const at = rollThanksgivingOffers({
 			quantity: 3,
 			offersBefore: GOBBLES_PITY_OFFERS - 2,

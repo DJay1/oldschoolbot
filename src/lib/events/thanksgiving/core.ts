@@ -41,7 +41,8 @@ export const OFFER_RATES = {
 	turkey: 50
 } as const;
 
-export const GOBBLES_PITY_OFFERS = 300;
+/** Lowered from 300 with the halved trip drops (round 3), so a steady player still reaches it. */
+export const GOBBLES_PITY_OFFERS = 150;
 export const LABOON_FISHING_RATE_PER_MINUTE = 3000;
 export const LABOON_FISHING_MIN_TRIP_MS = 5 * Time.Minute;
 
@@ -73,7 +74,8 @@ export const THANKSGIVING_MIN_TRIP_MS = 10 * Time.Minute;
 const LAUNCH_BASE_MINUTES = 20;
 const LAUNCH_BASELINE_RATE_MINUTES = 112;
 const LAUNCH_TRIP_EXPONENT = 1.08;
-export const THANKSGIVING_PACE_MULTIPLIER = 3;
+/** Round 3: halved from 3 (Bountiful cornucopia recipe stays 5 bundles + 1 basket). */
+export const THANKSGIVING_PACE_MULTIPLIER = 1.5;
 export const BUNDLES_PER_OFFER = 5;
 export const BASKETS_PER_OFFER = 1;
 
