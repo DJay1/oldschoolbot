@@ -132,8 +132,19 @@ export function rollThanksgivingTripParts({
 
 export type ThanksgivingHarvestFocus = 'bundles' | 'baskets';
 export const THANKSGIVING_HARVEST_FOCUSES: readonly ThanksgivingHarvestFocus[] = ['bundles', 'baskets'];
-/** A focused trip pays this share of a normal trip's offer-worth, all in the chosen part. */
+/**
+ * A focused trip pays this share of a normal trip's value, all in the chosen part. Value is counted in
+ * bundle-equivalents (1 basket = 5 bundles), so one offer-worth (5 bundles + 1 basket) = 10 bundles = 2 baskets.
+ * This lets players make up whichever part they are short of, at a 30% penalty.
+ */
 export const THANKSGIVING_HARVEST_DISCOUNT = 0.7;
+export const BASKET_BUNDLE_VALUE = 5;
+/** Offer-worth in each part: 5 + 1x5 = 10 bundles, or 10 / 5 = 2 baskets. */
+export const HARVEST_FOCUS_BUNDLES_PER_OFFER = BUNDLES_PER_OFFER + BASKETS_PER_OFFER * BASKET_BUNDLE_VALUE;
+export const HARVEST_FOCUS_BASKETS_PER_OFFER = HARVEST_FOCUS_BUNDLES_PER_OFFER / BASKET_BUNDLE_VALUE;
+/** Each focused trip's amount is the expectation times a random 50%-150% (mean exactly 100%), then rounded randomly. */
+export const HARVEST_FOCUS_SPREAD_MIN_PERCENT = 50;
+export const HARVEST_FOCUS_SPREAD_MAX_PERCENT = 150;
 /**
  * The trip reuses the retired TrickOrTreat activity type (no task used it any more), so no
  * database enum change is needed. Trips are also tagged with `thanksgivingHarvest: true`.
@@ -153,7 +164,7 @@ export function thanksgivingHarvestExpectedParts(
 ): number {
 	const offers =
 		thanksgivingExpectedOffersFromTrip(durationMs, { doubleLoot, blessing }) * THANKSGIVING_HARVEST_DISCOUNT;
-	return focus === 'bundles' ? offers * BUNDLES_PER_OFFER : offers * BASKETS_PER_OFFER;
+	return focus === 'bundles' ? offers * HARVEST_FOCUS_BUNDLES_PER_OFFER : offers * HARVEST_FOCUS_BASKETS_PER_OFFER;
 }
 
 export function rollThanksgivingHarvestParts({
@@ -169,12 +180,65 @@ export function rollThanksgivingHarvestParts({
 	blessing: boolean;
 	rng: ThanksgivingRng;
 }): Bank {
-	const amount = rollExpected(rng, thanksgivingHarvestExpectedParts(durationMs, focus, { doubleLoot, blessing }));
+	const expected = thanksgivingHarvestExpectedParts(durationMs, focus, { doubleLoot, blessing });
+	if (expected <= 0) return new Bank();
+	// Random amount: a uniform 50%-150% spread (mean 1), then the fraction rolled as a chance. Never negative.
+	const spread = rng.randInt(HARVEST_FOCUS_SPREAD_MIN_PERCENT, HARVEST_FOCUS_SPREAD_MAX_PERCENT) / 100;
+	const amount = Math.max(0, rollExpected(rng, expected * spread));
 	const loot = new Bank();
 	if (amount > 0) {
 		loot.add(focus === 'bundles' ? ThanksgivingItem.HARVEST_BUNDLE : ThanksgivingItem.WICKER_BASKET, amount);
 	}
 	return loot;
+}
+
+/* ---------- Farming: whole Bountiful cornucopias from harvested patches ---------- */
+
+/** Each qualifying harvested patch has a 1 in 15 roll. Harvest Blessing applies, Double Loot does not. */
+export const FARMING_CORNUCOPIA_ONE_IN = 15;
+/** Only crops whose base grow time (farming data) is at least this long qualify, so quick crops cannot be spammed. */
+export const FARMING_CORNUCOPIA_MIN_GROWTH_MINUTES = 60;
+
+export interface FarmingHarvestedPatch {
+	itemName: string;
+	alive: number;
+	growthMinutes: number;
+	fullyGrown: boolean;
+}
+
+export function farmingCornucopiaChance(blessing: boolean): number {
+	return (1 / FARMING_CORNUCOPIA_ONE_IN) * (blessing ? HARVEST_BLESSING_EVENT_MULTIPLIER : 1);
+}
+
+/** A real harvest of a fully grown, long crop with at least one live plant. Dead, cleared or early patches never count. */
+export function farmingPatchQualifies(patch: FarmingHarvestedPatch): boolean {
+	return (
+		patch.fullyGrown === true &&
+		Number.isFinite(patch.alive) &&
+		patch.alive >= 1 &&
+		Number.isFinite(patch.growthMinutes) &&
+		patch.growthMinutes >= FARMING_CORNUCOPIA_MIN_GROWTH_MINUTES
+	);
+}
+
+/** One roll per qualifying patch harvested. Returns how many cornucopias dropped and how many patches rolled. */
+export function rollFarmingCornucopias({
+	patches,
+	blessing,
+	rng
+}: {
+	patches: readonly FarmingHarvestedPatch[] | null | undefined;
+	blessing: boolean;
+	rng: ThanksgivingRng;
+}): { rolls: number; cornucopias: number } {
+	let rolls = 0;
+	let cornucopias = 0;
+	for (const patch of patches ?? []) {
+		if (!farmingPatchQualifies(patch)) continue;
+		rolls++;
+		if (chance(rng, farmingCornucopiaChance(blessing))) cornucopias++;
+	}
+	return { rolls, cornucopias };
 }
 
 export function thanksgivingStaticPack(blessing: boolean): Bank {

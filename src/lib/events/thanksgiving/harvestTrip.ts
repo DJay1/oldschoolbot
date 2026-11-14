@@ -15,7 +15,7 @@ import {
 
 /**
  * `/thanksgiving harvest`: a trip that only gathers the chosen part, at 70% of a normal trip's
- * event value. Length uses the normal max trip length (patron bonus included, finalized by
+ * event value in bundle-equivalents (1 basket = 5 bundles), with a random 50%-150% amount. Length uses the normal max trip length (patron bonus included, finalized by
  * calcMaxTripLength -> finalizeTripLength). Busy/double-start is blocked by startTrip.
  */
 export async function thanksgivingHarvestCommand({
@@ -63,5 +63,5 @@ export async function thanksgivingHarvestCommand({
 		doubleLoot: false,
 		blessing: hasHarvestBlessing(user)
 	});
-	return `🌾 ${user.minionName} is now gathering **${thanksgivingHarvestPartName(chosen)}** for The Straw Hat Harvest, it'll take around ${formatTripDuration(user, duration)} to finish.\nExpected: about **${expected.toFixed(1)}** ${thanksgivingHarvestPartName(chosen)} (${Math.round(THANKSGIVING_HARVEST_DISCOUNT * 100)}% of a normal trip's event value, all in this part; Double Loot doubles it). Focused trips don't also drop normal event parts.`;
+	return `🌾 ${user.minionName} is now gathering **${thanksgivingHarvestPartName(chosen)}** for The Straw Hat Harvest, it'll take around ${formatTripDuration(user, duration)} to finish.\nExpected: about **${expected.toFixed(1)}** ${thanksgivingHarvestPartName(chosen)} (random amount; ${Math.round(THANKSGIVING_HARVEST_DISCOUNT * 100)}% of a normal trip's event value, counting 1 basket as 5 bundles, all in this part; Double Loot doubles it). Focused trips don't also drop normal event parts.`;
 }

@@ -432,6 +432,8 @@ export interface FarmingActivityTaskOptions extends ActivityTaskOptions, Farming
 	autoFarmPlan?: AutoFarmStepData[];
 	autoFarmCombined?: boolean;
 	autoFarmSummary?: AutoFarmSummary;
+	/** Set in memory by the farming task for trip-finish effects only (never stored): patches harvested this trip. */
+	thanksgivingHarvestedPatches?: { itemName: string; alive: number; growthMinutes: number; fullyGrown: boolean }[];
 }
 
 export interface BirdhouseActivityTaskOptions extends ActivityTaskOptions {

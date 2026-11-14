@@ -37,6 +37,7 @@ import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
 import {
 	hasHarvestBlessing,
 	isThanksgivingActive,
+	rollFarmingCornucopias,
 	rollThanksgivingTripParts,
 	THANKSGIVING_HARVEST_ACTIVITY
 } from '@/lib/events/thanksgiving/core.js';
@@ -46,11 +47,12 @@ import {
 	harvestFeastBonusLoot,
 	harvestFeastFraction
 } from '@/lib/events/thanksgiving/feast.js';
+import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { handleGrowablePetGrowth } from '@/lib/growablePets.js';
 import { handlePassiveImplings } from '@/lib/implings.js';
 import { triggerRandomEvent } from '@/lib/randomEvents.js';
 import { canShowAutoFarmButton } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
-import type { ActivityTaskData } from '@/lib/types/minions.js';
+import type { ActivityTaskData, FarmingActivityTaskOptions } from '@/lib/types/minions.js';
 import { MUserClass } from '@/lib/user/MUser.js';
 import { deferTripFinish } from '@/lib/util/activityTransaction.js';
 import { deliverTripFinishMessage } from '@/lib/util/deliverTripFinishMessage.js';
@@ -216,6 +218,21 @@ const tripFinishEffects: TripFinishEffect[] = [
 					itemsToAddWithCL: bonusLoot
 				};
 			}
+		}
+	},
+	{
+		// Straw Hat Harvest: each harvested patch of a fully grown crop with a base grow time of 60+ minutes
+		// has a 1/15 roll for a whole Bountiful cornucopia (Blessing applies, Double Loot does not).
+		name: 'Straw Hat Harvest farming cornucopia',
+		fn: async ({ data, messages, user, rng }) => {
+			if (!isThanksgivingActive() || data.type !== 'Farming') return;
+			const patches = (data as FarmingActivityTaskOptions).thanksgivingHarvestedPatches;
+			const { cornucopias } = rollFarmingCornucopias({ patches, blessing: hasHarvestBlessing(user), rng });
+			if (cornucopias <= 0) return;
+			messages.push(
+				`🌽 While harvesting your patches you found ${cornucopias > 1 ? `${cornucopias}x ` : 'a '}**Bountiful cornucopia** for The Straw Hat Harvest!`
+			);
+			return { itemsToAddWithCL: new Bank().add(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA, cornucopias) };
 		}
 	},
 	{
