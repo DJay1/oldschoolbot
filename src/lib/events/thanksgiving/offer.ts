@@ -5,6 +5,7 @@ import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
 import { userQueueFn } from '@/lib/util/userQueues.js';
 import {
 	ctDayKey,
+	formatOfferReply,
 	GOBBLE_STREAK_OFFERS,
 	GOBBLES_IDS,
 	GOBBLES_PITY_OFFERS,
@@ -79,12 +80,13 @@ export async function thanksgivingOffer(user: MUser, quantityInput: number | nul
 		const day = ctDayKey();
 		const todayBefore = await offersToday(user.id, day);
 		const blessing = hasHarvestBlessing(user);
+		const hadGobblesBefore = hasHadGobbles(user);
 
 		const result = rollThanksgivingOffers({
 			quantity,
 			offersBefore,
 			offersTodayBefore: todayBefore,
-			hasHadGobbles: hasHadGobbles(user),
+			hasHadGobbles: hadGobblesBefore,
 			blessing,
 			rng
 		});
@@ -102,25 +104,21 @@ export async function thanksgivingOffer(user: MUser, quantityInput: number | nul
 		await addOffersToday(user.id, day, quantity).catch(err => Logging.logError(err as Error));
 
 		const offersAfter = offersBefore + quantity;
-		const todayAfter = todayBefore + quantity;
-		const lines = [
-			`You offered ${quantity}x Bountiful cornucopia and received: ${itemsAdded}.`,
-			result.gotPityGobbles ? `You reached ${GOBBLES_PITY_OFFERS} offers and Gobbles joined you!` : null,
-			result.streakOffers > 0
-				? `🦃 Gobble Streak: ${result.streakOffers} of these offers had +15% rare chances.`
-				: todayAfter < GOBBLE_STREAK_OFFERS
-					? `Gobble Streak: ${todayAfter}/${GOBBLE_STREAK_OFFERS} offers today (CT).`
-					: null,
-			blessing ? 'Harvest Blessing: +15% to the supplies and drops below rares.' : null,
-			`Total offers: ${offersAfter.toLocaleString()}.`
-		].filter(Boolean);
+		const content = formatOfferReply({
+			result,
+			quantity,
+			blessing,
+			hadGobblesBefore,
+			offersAfter,
+			offersTodayAfter: todayBefore + quantity
+		});
 		const image = await makeBankImage({
 			bank: itemsAdded,
 			title: `Loot from ${quantity}x Bountiful cornucopia`,
 			user,
 			previousCL
 		});
-		return { content: lines.join('\n'), files: [image] };
+		return { content, files: [image] };
 	});
 }
 

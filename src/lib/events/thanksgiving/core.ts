@@ -144,10 +144,61 @@ export function ctDayKey(now = Date.now()): string {
 export const GOBBLES_IDS: readonly number[] = [ThanksgivingItem.GOBBLES, ThanksgivingItem.GOBBLE_GOBBLE];
 export const LABOON_IDS: readonly number[] = [ThanksgivingItem.LABOON, ThanksgivingItem.LABOON_STRAW_HAT];
 
+export const OFFER_RARE_ORDER = ['pilgrimHat', 'strawHat', 'gobbles', 'laboon', 'paintBox', 'cornucopia'] as const;
+export type OfferRareKey = (typeof OFFER_RARE_ORDER)[number];
+
+export const OFFER_RARE_NAMES: Record<OfferRareKey, string> = {
+	pilgrimHat: 'Pilgrim hat',
+	strawHat: 'Straw hat',
+	gobbles: 'Gobbles',
+	laboon: 'Laboon',
+	paintBox: 'Paint box',
+	cornucopia: 'Cornucopia'
+};
+
+/** Best near-miss for one drop across a batch of offers, Launch box style (hit the top number to win). */
+export interface OfferRareTrack {
+	got: number;
+	/** Best non-winning roll, shown as bestRoll/bestDenominator. 0 when nothing was rolled. */
+	bestRoll: number;
+	bestDenominator: number;
+}
+
 export interface OfferRollResult {
 	loot: Bank;
 	gotPityGobbles: boolean;
 	streakOffers: number;
+	rares: Record<OfferRareKey, OfferRareTrack>;
+}
+
+/**
+ * Same RNG use as chance(): one randInt(1, SCALE) per roll, so results do not change.
+ * Also records the closest miss on the 1/denominator scale that applied to that roll.
+ */
+function trackedChance(rng: ThanksgivingRng, probability: number, track: OfferRareTrack): boolean {
+	if (probability <= 0) return false;
+	if (probability >= 1) {
+		track.got++;
+		return true;
+	}
+	const raw = rng.randInt(1, SCALE);
+	if (raw <= Math.round(probability * SCALE)) {
+		track.got++;
+		return true;
+	}
+	const denominator = Math.max(2, Math.round(1 / probability));
+	const roll = Math.max(1, Math.min(denominator - 1, denominator - Math.ceil((raw / SCALE) * denominator) + 1));
+	if (track.bestDenominator === 0 || roll / denominator > track.bestRoll / track.bestDenominator) {
+		track.bestRoll = roll;
+		track.bestDenominator = denominator;
+	}
+	return false;
+}
+
+function emptyTracks(): Record<OfferRareKey, OfferRareTrack> {
+	const tracks = {} as Record<OfferRareKey, OfferRareTrack>;
+	for (const key of OFFER_RARE_ORDER) tracks[key] = { got: 0, bestRoll: 0, bestDenominator: 0 };
+	return tracks;
 }
 
 /**
@@ -174,6 +225,7 @@ export function rollThanksgivingOffers({
 	let gotPityGobbles = false;
 	let streakOffers = 0;
 	const uncommonMult = blessing ? HARVEST_BLESSING_EVENT_MULTIPLIER : 1;
+	const rares = emptyTracks();
 
 	for (let i = 0; i < quantity; i++) {
 		const offerNumber = offersBefore + i + 1;
@@ -185,24 +237,91 @@ export function rollThanksgivingOffers({
 		loot.add(thanksgivingStaticPack(blessing));
 
 		// Below rares: Harvest Blessing applies.
-		if (chance(rng, uncommonMult / OFFER_RATES.paintBox)) loot.add('Paint box');
-		if (chance(rng, uncommonMult / OFFER_RATES.cornucopia)) loot.add(ThanksgivingItem.CORNUCOPIA_2021);
+		if (trackedChance(rng, uncommonMult / OFFER_RATES.paintBox, rares.paintBox)) loot.add('Paint box');
+		if (trackedChance(rng, uncommonMult / OFFER_RATES.cornucopia, rares.cornucopia)) {
+			loot.add(ThanksgivingItem.CORNUCOPIA_2021);
+		}
 
 		// Rares and above: Gobble Streak applies, Harvest Blessing does not.
-		if (chance(rng, rareMult / OFFER_RATES.pilgrimHat)) loot.add(ThanksgivingItem.PILGRIM_HAT);
-		if (chance(rng, rareMult / OFFER_RATES.strawHat)) loot.add(ThanksgivingItem.STRAW_HAT);
-		if (chance(rng, rareMult / OFFER_RATES.gobbles)) {
+		if (trackedChance(rng, rareMult / OFFER_RATES.pilgrimHat, rares.pilgrimHat))
+			loot.add(ThanksgivingItem.PILGRIM_HAT);
+		if (trackedChance(rng, rareMult / OFFER_RATES.strawHat, rares.strawHat)) loot.add(ThanksgivingItem.STRAW_HAT);
+		if (trackedChance(rng, rareMult / OFFER_RATES.gobbles, rares.gobbles)) {
 			loot.add(ThanksgivingItem.GOBBLES);
 			hadGobbles = true;
 		} else if (!hadGobbles && offerNumber >= GOBBLES_PITY_OFFERS) {
 			loot.add(ThanksgivingItem.GOBBLES);
+			rares.gobbles.got++;
 			hadGobbles = true;
 			gotPityGobbles = true;
 		}
-		if (chance(rng, rareMult / OFFER_RATES.laboon)) loot.add(ThanksgivingItem.LABOON);
+		if (trackedChance(rng, rareMult / OFFER_RATES.laboon, rares.laboon)) loot.add(ThanksgivingItem.LABOON);
 	}
 
-	return { loot, gotPityGobbles, streakOffers };
+	return { loot, gotPityGobbles, streakOffers, rares };
+}
+
+const STREAK_KEYS: readonly OfferRareKey[] = ['pilgrimHat', 'strawHat', 'gobbles', 'laboon'];
+const BLESSING_KEYS: readonly OfferRareKey[] = ['paintBox', 'cornucopia'];
+
+/** 1/N odds for a drop, after the Gobble Streak or Harvest Blessing boost if it applies. */
+export function offerOddsDenominator(key: OfferRareKey, { streak, blessing }: { streak: boolean; blessing: boolean }) {
+	const base = OFFER_RATES[key];
+	if (streak && STREAK_KEYS.includes(key)) return Math.round(base / GOBBLE_STREAK_RARE_MULTIPLIER);
+	if (blessing && BLESSING_KEYS.includes(key)) return Math.round(base / HARVEST_BLESSING_EVENT_MULTIPLIER);
+	return base;
+}
+
+/**
+ * Offer reply text (the loot itself is shown as a bank image). Launch box style best rolls,
+ * then the short status lines.
+ */
+export function formatOfferReply({
+	result,
+	quantity,
+	blessing,
+	hadGobblesBefore,
+	offersAfter,
+	offersTodayAfter
+}: {
+	result: OfferRollResult;
+	quantity: number;
+	blessing: boolean;
+	hadGobblesBefore: boolean;
+	offersAfter: number;
+	offersTodayAfter: number;
+}): string {
+	const rareLines = OFFER_RARE_ORDER.map(key => {
+		const track = result.rares[key];
+		const name = OFFER_RARE_NAMES[key];
+		if (track.got > 0) {
+			const pity = key === 'gobbles' && result.gotPityGobbles ? ` (${GOBBLES_PITY_OFFERS}-offer guarantee)` : '';
+			return `**${name}: ✅ Got it!${track.got > 1 ? ` x${track.got}` : ''}${pity}**`;
+		}
+		return `${name}: best roll ${track.bestRoll}/${track.bestDenominator}`;
+	});
+
+	const lines: string[] = [`Your best rolls (hit the top number to win):`, ...rareLines];
+	const streakOdds = STREAK_KEYS.map(k => offerOddsDenominator(k, { streak: true, blessing }));
+	if (result.streakOffers > 0) {
+		lines.push(
+			`🦃 Gobble Streak: ${result.streakOffers}/${quantity} offers had +15% rare chances (hats and Gobbles 1/${streakOdds[0]}, Laboon 1/${streakOdds[3]}).`
+		);
+	} else if (offersTodayAfter < GOBBLE_STREAK_OFFERS) {
+		lines.push(`Gobble Streak: ${offersTodayAfter}/${GOBBLE_STREAK_OFFERS} offers today (CT).`);
+	}
+	if (blessing) {
+		lines.push(
+			`Harvest Blessing: +15% supplies, Paint box 1/${offerOddsDenominator('paintBox', { streak: false, blessing })}, Cornucopia 1/${offerOddsDenominator('cornucopia', { streak: false, blessing })}.`
+		);
+	}
+	if (result.gotPityGobbles) {
+		lines.push(`You reached ${GOBBLES_PITY_OFFERS} offers and Gobbles joined you!`);
+	} else if (!hadGobblesBefore && result.rares.gobbles.got === 0) {
+		lines.push(`Gobbles guarantee: ${Math.min(offersAfter, GOBBLES_PITY_OFFERS)}/${GOBBLES_PITY_OFFERS} offers.`);
+	}
+	lines.push(`Total offers: ${offersAfter.toLocaleString()}.`);
+	return lines.join('\n');
 }
 
 export function offersFromScores(scores: ItemBank | null | undefined): number {
