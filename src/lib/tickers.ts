@@ -15,6 +15,7 @@ import { serverFirstsTick } from '@/lib/bsc/serverFirsts.js';
 import { processQueueReminders, processScheduledQueueStarts } from '@/lib/bsc/tripQueue.js';
 import { weeklyRecapTick } from '@/lib/bsc/weeklyRecap.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
+import { processEventStartAnnouncements } from '@/lib/events/announcements.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { cacheGEPrices } from '@/lib/marketPrices.js';
 import { collectMetrics } from '@/lib/metrics.js';
@@ -141,6 +142,17 @@ export const tickers: {
 		timer: null,
 		cb: async () => {
 			await processScheduledQueueStarts();
+		}
+	},
+	{
+		// Posts a seasonal event's start announcement once when its scheduled window opens (live bot only).
+		name: 'event_start_announcements',
+		startupWait: Time.Minute,
+		interval: Time.Minute,
+		timer: null,
+		productionOnly: true,
+		cb: async () => {
+			await processEventStartAnnouncements();
 		}
 	},
 	{
