@@ -1,6 +1,7 @@
 import { ApplicationCommandType, type RESTPostAPIApplicationGuildCommandsJSONBody, Routes } from '@oldschoolgg/discord';
 
 import { convertCommandOptionToAPIOption } from '@/discord/index.js';
+import { isTestPotatoOpenForEveryone } from '@/lib/bsc/testPotatoAccess.js';
 import { globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 
 export async function resolveBotSendableMessage(rawMessage: SendableMessage): Promise<BaseSendableMessage> {
@@ -41,15 +42,23 @@ type RegisteredCommandBody = RESTPostAPIApplicationGuildCommandsJSONBody & {
 	contexts?: number[];
 };
 
-function convertCommandToAPICommand(cmd: AnyCommand, allowDms: boolean): RegisteredCommandBody {
+function convertCommandToAPICommand(
+	cmd: AnyCommand,
+	allowDms: boolean,
+	registrationGuildId?: string
+): RegisteredCommandBody {
 	const body: RegisteredCommandBody = {
 		type: ApplicationCommandType.ChatInput,
 		name: cmd.name,
 		description: cmd.description,
 		options: cmd.options.map(convertCommandOptionToAPIOption)
 	};
-	if (cmd.name === 'testpotato') {
-		// Hidden from everyone except server administrators; the command itself only runs for the bot admin.
+	if (
+		cmd.name === 'testpotato' &&
+		!isTestPotatoOpenForEveryone({ applicationId: globalClient.applicationId, guildId: registrationGuildId })
+	) {
+		// Hidden from everyone except server administrators; the command itself only runs for the bot admins.
+		// Only the test bot's own Test Server registration (all checks in testPotatoAccess.ts) skips this.
 		(body as { default_member_permissions?: string }).default_member_permissions = '0';
 	}
 	if (!allowDms) return body;
@@ -66,7 +75,9 @@ function convertCommandToAPICommand(cmd: AnyCommand, allowDms: boolean): Registe
 
 export async function bulkUpdateCommands() {
 	if (testingShortcutsEnabled()) {
-		const body = globalClient.allCommands.map(cmd => convertCommandToAPICommand(cmd, false));
+		const body = globalClient.allCommands.map(cmd =>
+			convertCommandToAPICommand(cmd, false, globalConfig.supportServerID)
+		);
 		return globalClient.rest.put(globalClient.apiCommandsRoute(), {
 			body
 		});

@@ -23,9 +23,10 @@ import {
 	getBitFieldData,
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
+import { isTestPotatoOpenForEveryone, testPotatoAccess } from '@/lib/bsc/testPotatoAccess.js';
 import { allStashUnitsFlat, allStashUnitTiers } from '@/lib/clues/stashUnits.js';
 import { CombatAchievements } from '@/lib/combat_achievements/combatAchievements.js';
-import { BitField, BitFieldData, globalConfig, MAX_LEVEL, MAX_XP, testingShortcutsEnabled } from '@/lib/constants.js';
+import { BitField, BitFieldData, globalConfig, MAX_LEVEL, MAX_XP } from '@/lib/constants.js';
 import { expertCapesCL, spiritAnglerOutfit } from '@/lib/data/CollectionsExport.js';
 import { Eatables } from '@/lib/data/eatables.js';
 import { TOBMaxMageGear, TOBMaxMeleeGear, TOBMaxRangeGear } from '@/lib/data/tob.js';
@@ -377,7 +378,8 @@ const thingsToWipe = [
 	'giveaways'
 ] as const;
 
-// Live bot: only the bot admin (DJ) can see or run this; it is registered on the support server only.
+// Live bot: only the bot admins can see or run this; it is registered on the support server only.
+// Test bot in Test Server: open to everyone when every check in testPotatoAccess.ts passes.
 export const testPotatoCommand = defineCommand({
 	name: 'testpotato',
 	guildId: globalConfig.isProduction ? globalConfig.supportServerID : undefined,
@@ -757,10 +759,18 @@ export const testPotatoCommand = defineCommand({
 			]
 		}
 	],
-	run: async ({ options, user, interaction, rng }) => {
-		if (!testingShortcutsEnabled() && !user.isAdmin()) {
+	run: async ({ options, user, interaction, rng, guildId }) => {
+		const access = testPotatoAccess({
+			isAdmin: user.isAdmin(),
+			openForEveryone: isTestPotatoOpenForEveryone({ applicationId: globalClient.applicationId, guildId }),
+			options: options as Record<string, unknown>
+		});
+		if (access === 'denied') {
 			Logging.logError('Test command blocked for non-admin', { userID: user.id });
 			return 'Only the bot owner can use this.';
+		}
+		if (access === 'admin_only_subcommand') {
+			return 'Only bot admins can use this part of /testpotato.';
 		}
 
 		if (options.party) {
