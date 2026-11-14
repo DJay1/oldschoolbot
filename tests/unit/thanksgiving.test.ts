@@ -6,6 +6,8 @@ import {
 	isThanksgivingActive,
 	rollThanksgivingOffers,
 	rollThanksgivingTripParts,
+	THANKSGIVING_DEFAULT_END,
+	THANKSGIVING_DEFAULT_START,
 	thanksgivingBankBgCL,
 	thanksgivingExpectedOffersFromTrip,
 	thanksgivingStaticPack
@@ -35,6 +37,11 @@ describe('The Straw Hat Harvest', () => {
 				expect(item.name.toLowerCase()).not.toContain('lamp');
 			}
 		}
+	});
+
+	test('default window: Sat Nov 21 00:00 CT through Sat Dec 5 CT', () => {
+		expect(Date.parse(THANKSGIVING_DEFAULT_START)).toBe(Date.parse('2026-11-21T00:00:00-06:00'));
+		expect(Date.parse(THANKSGIVING_DEFAULT_END)).toBe(Date.parse('2026-12-06T00:00:00-06:00'));
 	});
 
 	test('off by default', () => {

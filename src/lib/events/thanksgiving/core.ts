@@ -22,8 +22,8 @@ export function isThanksgivingActive(now = Date.now()): boolean {
 }
 
 /** Planned live window (CT). The active flag still decides; these are the defaults for the toggle. */
-export const THANKSGIVING_DEFAULT_START = '2026-11-23T06:00:00Z'; // Mon Nov 23 00:00 CT
-export const THANKSGIVING_DEFAULT_END = '2026-12-08T06:00:00Z'; // through Mon Dec 7 CT
+export const THANKSGIVING_DEFAULT_START = '2026-11-21T06:00:00Z'; // Sat Nov 21 00:00 CT
+export const THANKSGIVING_DEFAULT_END = '2026-12-06T06:00:00Z'; // through Sat Dec 5 CT (end is exclusive: Sun Dec 6 00:00 CT)
 
 export interface ThanksgivingRng {
 	randInt(min: number, max: number): number;
