@@ -1,5 +1,6 @@
 import { Bank, type ItemBank } from 'oldschooljs';
 
+import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
 import { userQueueFn } from '@/lib/util/userQueues.js';
 import {
@@ -88,6 +89,7 @@ export async function thanksgivingOffer(user: MUser, quantityInput: number | nul
 			rng
 		});
 
+		const previousCL = user.cl.clone();
 		const newScores = scores.clone().add(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA, quantity);
 		const { itemsAdded } = await unqueuedTransactItems({
 			user,
@@ -112,7 +114,13 @@ export async function thanksgivingOffer(user: MUser, quantityInput: number | nul
 			blessing ? 'Harvest Blessing: +15% to the supplies and drops below rares.' : null,
 			`Total offers: ${offersAfter.toLocaleString()}.`
 		].filter(Boolean);
-		return lines.join('\n');
+		const image = await makeBankImage({
+			bank: itemsAdded,
+			title: `Loot from ${quantity}x Bountiful cornucopia`,
+			user,
+			previousCL
+		});
+		return { content: lines.join('\n'), files: [image] };
 	});
 }
 
