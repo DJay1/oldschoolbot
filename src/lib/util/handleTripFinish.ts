@@ -33,7 +33,12 @@ import { LaunchItem } from '@/lib/events/launch/items.js';
 import { rollLaunchBoxFromTrip } from '@/lib/events/launch/launchBox.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
-import { hasHarvestBlessing, isThanksgivingActive, rollThanksgivingTripParts } from '@/lib/events/thanksgiving/core.js';
+import {
+	hasHarvestBlessing,
+	isThanksgivingActive,
+	rollThanksgivingTripParts,
+	THANKSGIVING_HARVEST_ACTIVITY
+} from '@/lib/events/thanksgiving/core.js';
 import {
 	activeHarvestFeast,
 	HARVEST_FEAST_LOOT_EXCLUDED_ACTIVITIES,
@@ -137,6 +142,8 @@ const tripFinishEffects: TripFinishEffect[] = [
 		name: 'Straw Hat Harvest parts',
 		fn: async ({ data, messages, user, rng }) => {
 			if (!isThanksgivingActive()) return;
+			// The focused /thanksgiving harvest trip pays its own parts and never also rolls these.
+			if (data.type === THANKSGIVING_HARVEST_ACTIVITY) return;
 			const parts = rollThanksgivingTripParts({
 				durationMs: data.duration,
 				doubleLoot: isDoubleLootActive(data.duration),

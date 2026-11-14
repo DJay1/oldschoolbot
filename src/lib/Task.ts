@@ -113,6 +113,7 @@ import { smeltingTask } from '@/tasks/minions/smeltingActivity.js';
 import { smithingTask } from '@/tasks/minions/smithingActivity.js';
 import { specificQuestTask } from '@/tasks/minions/specificQuestActivity.js';
 import { strongholdTask } from '@/tasks/minions/strongholdOfSecurityActivity.js';
+import { thanksgivingHarvestTask } from '@/tasks/minions/thanksgivingHarvestActivity.js';
 import { tiaraRunecraftTask } from '@/tasks/minions/tiaraRunecraftActivity.js';
 import { tokkulShopTask } from '@/tasks/minions/tokkulShopActivity.js';
 import { underwaterAgilityThievingTask } from '@/tasks/minions/underwaterActivity.js';
@@ -248,6 +249,7 @@ export const allTasks: MinionTask[] = [
 	fishingContestTask,
 	ignecarusTask,
 	kibbleTask,
+	thanksgivingHarvestTask,
 	kingGoldemarTask,
 	moktangTask,
 	mrTask,

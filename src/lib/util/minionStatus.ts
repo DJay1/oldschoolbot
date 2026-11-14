@@ -99,6 +99,7 @@ import type {
 	SmeltingActivityTaskOptions,
 	SmithingActivityTaskOptions,
 	SpecificQuestOptions,
+	ThanksgivingHarvestOptions,
 	TheatreOfBloodTaskOptions,
 	TiaraRunecraftActivityTaskOptions,
 	TOAOptions,
@@ -738,6 +739,12 @@ export function minionStatus(user: MUser, currentTask: ActivityTaskData | null, 
 		case 'Ignecarus': {
 			return `${name} is currently killing Ignecarus. ${formattedDuration}`;
 		}
+		case 'TrickOrTreat': {
+			const data = currentTask as ThanksgivingHarvestOptions;
+			if (!data.thanksgivingHarvest) throw new Error('Removed');
+			const part = data.focus === 'baskets' ? 'Wicker baskets' : 'Harvest bundles';
+			return `${name} is currently gathering ${part} for The Straw Hat Harvest. ${formattedDuration}`;
+		}
 		case 'KibbleMaking': {
 			return `${name} is currently making Kibble. ${formattedDuration}`;
 		}
@@ -930,7 +937,6 @@ export function minionStatus(user: MUser, currentTask: ActivityTaskData | null, 
 		case 'HalloweenMiniMinigame':
 		case 'Easter':
 		case 'BlastFurnace':
-		case 'TrickOrTreat':
 		case 'Revenants': {
 			throw new Error(`Removed`);
 		}

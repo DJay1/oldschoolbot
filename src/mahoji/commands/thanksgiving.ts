@@ -1,3 +1,4 @@
+import { thanksgivingHarvestCommand } from '@/lib/events/thanksgiving/harvestTrip.js';
 import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { thanksgivingFeast, thanksgivingOffer, thanksgivingStatus } from '@/lib/events/thanksgiving/offer.js';
 
@@ -39,11 +40,43 @@ export const thanksgivingCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'harvest',
+			description: 'Send your minion to gather only Harvest bundles or only Wicker baskets (70% rate).',
+			options: [
+				{
+					type: 'String',
+					name: 'focus',
+					description: 'Which part to gather.',
+					required: true,
+					choices: [
+						{ name: 'Harvest bundles', value: 'bundles' },
+						{ name: 'Wicker baskets', value: 'baskets' }
+					]
+				},
+				{
+					type: 'Integer',
+					name: 'minutes',
+					description: 'Trip length in minutes (default: your max trip length, minimum 10).',
+					required: false,
+					min_value: 10
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
 			name: 'status',
 			description: 'See your offers, Gobble Streak, guarantee progress, and Harvest feast.'
 		}
 	],
-	run: async ({ options, user, rng }) => {
+	run: async ({ options, user, rng, channelId }) => {
+		if (options.harvest) {
+			return thanksgivingHarvestCommand({
+				user,
+				channelId,
+				focus: options.harvest.focus,
+				minutes: options.harvest.minutes
+			});
+		}
 		if (options.offer) {
 			if (options.offer.item === 'turkey') return thanksgivingFeast(user, rng);
 			return thanksgivingOffer(user, options.offer.quantity, rng);

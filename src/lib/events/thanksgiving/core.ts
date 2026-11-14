@@ -128,6 +128,55 @@ export function rollThanksgivingTripParts({
 	return loot;
 }
 
+/* ---------- Focused harvest trip (/thanksgiving harvest) ---------- */
+
+export type ThanksgivingHarvestFocus = 'bundles' | 'baskets';
+export const THANKSGIVING_HARVEST_FOCUSES: readonly ThanksgivingHarvestFocus[] = ['bundles', 'baskets'];
+/** A focused trip pays this share of a normal trip's offer-worth, all in the chosen part. */
+export const THANKSGIVING_HARVEST_DISCOUNT = 0.7;
+/**
+ * The trip reuses the retired TrickOrTreat activity type (no task used it any more), so no
+ * database enum change is needed. Trips are also tagged with `thanksgivingHarvest: true`.
+ */
+export const THANKSGIVING_HARVEST_ACTIVITY = 'TrickOrTreat' as const;
+
+export function thanksgivingHarvestPartName(focus: ThanksgivingHarvestFocus, plural = true): string {
+	if (focus === 'bundles') return plural ? 'Harvest bundles' : 'Harvest bundle';
+	return plural ? 'Wicker baskets' : 'Wicker basket';
+}
+
+/** Expected parts of the chosen kind from a focused trip (same curve, double loot and blessing as normal trips). */
+export function thanksgivingHarvestExpectedParts(
+	durationMs: number,
+	focus: ThanksgivingHarvestFocus,
+	{ doubleLoot, blessing }: { doubleLoot: boolean; blessing: boolean }
+): number {
+	const offers =
+		thanksgivingExpectedOffersFromTrip(durationMs, { doubleLoot, blessing }) * THANKSGIVING_HARVEST_DISCOUNT;
+	return focus === 'bundles' ? offers * BUNDLES_PER_OFFER : offers * BASKETS_PER_OFFER;
+}
+
+export function rollThanksgivingHarvestParts({
+	durationMs,
+	focus,
+	doubleLoot,
+	blessing,
+	rng
+}: {
+	durationMs: number;
+	focus: ThanksgivingHarvestFocus;
+	doubleLoot: boolean;
+	blessing: boolean;
+	rng: ThanksgivingRng;
+}): Bank {
+	const amount = rollExpected(rng, thanksgivingHarvestExpectedParts(durationMs, focus, { doubleLoot, blessing }));
+	const loot = new Bank();
+	if (amount > 0) {
+		loot.add(focus === 'bundles' ? ThanksgivingItem.HARVEST_BUNDLE : ThanksgivingItem.WICKER_BASKET, amount);
+	}
+	return loot;
+}
+
 export function thanksgivingStaticPack(blessing: boolean): Bank {
 	const pack = new Bank();
 	for (const [name, qty] of THANKSGIVING_STATIC_PACK) {

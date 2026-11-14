@@ -4,6 +4,7 @@ import type { ItemBank } from 'oldschooljs';
 
 import type { CropUpgradeType } from '@/prisma/main/enums.js';
 import type { NMZStrategy } from '@/lib/constants.js';
+import type { ThanksgivingHarvestFocus } from '@/lib/events/thanksgiving/core.js';
 import type { SlayerActivityConstants } from '@/lib/minions/data/combatConstants.js';
 import type { AttackStyles } from '@/lib/minions/functions/index.js';
 import type { MinigameName } from '@/lib/settings/minigames.js';
@@ -20,6 +21,13 @@ export interface ActivityTaskOptions {
 	finishDate: number;
 	channelId: string;
 	cantBeDoubled?: boolean;
+}
+
+/** Straw Hat Harvest focused trip. Stored as the retired TrickOrTreat activity type (no schema change). */
+export interface ThanksgivingHarvestOptions extends ActivityTaskOptions {
+	type: 'TrickOrTreat';
+	thanksgivingHarvest: true;
+	focus: ThanksgivingHarvestFocus;
 }
 
 export type BeachCombingMethod = 'Surfing' | 'BeachCombing' | 'BuildSandcastles' | 'PickupTrash';
@@ -48,7 +56,6 @@ export interface ActivityTaskOptionsWithNoChanges extends ActivityTaskOptions {
 		| 'ShootingStars'
 		| 'HalloweenEvent'
 		| 'StrongholdOfSecurity'
-		| 'TrickOrTreat'
 		| 'HalloweenMiniMinigame'
 		| 'BirthdayCollectIngredients'
 		| 'CombatRing'
@@ -727,6 +734,7 @@ export interface SpecificQuestOptions extends ActivityTaskOptions {
 }
 
 export type ActivityTaskData =
+	| ThanksgivingHarvestOptions
 	| MonsterActivityTaskOptions
 	| WoodcuttingActivityTaskOptions
 	| CollectingOptions

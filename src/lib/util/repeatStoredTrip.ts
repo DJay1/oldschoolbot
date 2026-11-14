@@ -86,6 +86,7 @@ import type {
 	SmeltingActivityTaskOptions,
 	SmithingActivityTaskOptions,
 	TempleTrekkingActivityTaskOptions,
+	ThanksgivingHarvestOptions,
 	TheatreOfBloodTaskOptions,
 	TiaraRunecraftActivityTaskOptions,
 	TOAOptions,
@@ -143,9 +144,15 @@ const tripHandlers: {
 		commandName: 'm',
 		args: () => ({})
 	},
+	// Straw Hat Harvest focused trip (reuses the retired TrickOrTreat type).
 	[activity_type_enum.TrickOrTreat]: {
-		commandName: 'm',
-		args: () => ({})
+		commandName: 'thanksgiving',
+		args: (data: ThanksgivingHarvestOptions) => {
+			if (!data.thanksgivingHarvest || !data.focus) {
+				throw new UserError('This trip can no longer be repeated.');
+			}
+			return { harvest: { focus: data.focus, minutes: Math.floor(data.duration / Time.Minute) } };
+		}
 	},
 	[activity_type_enum.SnoozeSpellActive]: {
 		commandName: 'm',
