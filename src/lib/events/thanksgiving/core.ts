@@ -2,18 +2,17 @@ import { formatOrdinal, Time } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank, Items } from 'oldschooljs';
 
 import { isEventActive } from '@/lib/events/registry.js';
-import { isProductionMode } from '@/lib/hosting/productionMode.js';
 import { ThanksgivingItem } from './items.js';
 
 /**
  * Master switch for every Straw Hat Harvest code path, including the year-round perks
  * (Harvest Blessing) and the Old crab cage removal.
  *
- * Test bot only for now: this returns false on the live bot, so merging this code
- * changes nothing in production. To go live later, change this one function.
+ * Live on every bot. Drops, offers, trips and announcements still need the event window
+ * (`/admin event`), see isThanksgivingActive().
  */
 export function thanksgivingCodeEnabled(): boolean {
-	return !isProductionMode();
+	return true;
 }
 
 /** Event window (drops, offers, Laboon fishing roll, blessing drop bonus). Off unless toggled on. */

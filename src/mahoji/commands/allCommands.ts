@@ -199,8 +199,7 @@ if (testPotatoCommand) {
 
 // testpotato stays on the live bot, hidden and owner-only (see testpotato.ts and discord/utils.ts).
 // testershop is a live command (tester points / shop). qualitycheck stays test-bot only.
-// thanksgiving (The Straw Hat Harvest) is test-bot only until it goes live; see thanksgivingCodeEnabled().
-const devOnlyCommandNames = new Set(['qualitycheck', 'thanksgiving']);
+const devOnlyCommandNames = new Set(['qualitycheck']);
 if (!testingShortcutsEnabled()) {
 	for (let i = allCommandsDONTIMPORT.length - 1; i >= 0; i--) {
 		if (devOnlyCommandNames.has(allCommandsDONTIMPORT[i].name)) {

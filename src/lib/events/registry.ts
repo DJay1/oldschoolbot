@@ -60,7 +60,7 @@ export const seasonalEvents: readonly SeasonalEventDefinition[] = [
 		id: 'thanksgiving',
 		name: 'The Straw Hat Harvest',
 		summary:
-			'Thanksgiving 2026: Harvest bundles and Wicker baskets from trips, /thanksgiving offer, Laboon fishing roll. Test bot only for now: it stays off on the live bot even if enabled here.',
+			'Thanksgiving 2026: Harvest bundles and Wicker baskets from trips, /thanksgiving offer, Laboon fishing roll. Turn on with /admin event schedule.',
 		enabled: false
 	}
 ];
