@@ -116,7 +116,7 @@ describe('formatRecurringQueueLine', () => {
 
 	test('shows the trip, runs left, next time, and last result', () => {
 		expect(formatRecurringQueueLine(recurring, { discordTimestamps: true })).toBe(
-			`Recurring: 2 Woodcutting trips, 4 runs left, next <t:${Math.floor(recurring.nextAt / 1000)}:F>, last Started your next queued Woodcutting trip. 1 left in the queue.`
+			`Recurring: 2 Woodcutting trips daily at 10 PM CT, 4 runs left, next <t:${Math.floor(recurring.nextAt / 1000)}:F>, last Started your next queued Woodcutting trip. 1 left in the queue.`
 		);
 	});
 });

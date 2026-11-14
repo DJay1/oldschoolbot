@@ -1,3 +1,4 @@
+import { formatQueueClock } from '@/lib/bsc/queueTimeChoices.js';
 import { type RecurringQueue, recurringTripSummary } from '@/lib/bsc/tripQueueState.js';
 import { autocompleteMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 
@@ -100,5 +101,5 @@ export function formatRecurringQueueLine(
 		next = `next <t:${Math.floor(recurring.nextAt / 1000)}:R>`;
 	}
 	const last = recurring.lastResult ? `, last ${recurring.lastResult}` : '';
-	return `Recurring: ${trips}, ${runs}, ${next}${last}`;
+	return `Recurring: ${trips} daily at ${formatQueueClock(recurring.time, recurring.timezone)}, ${runs}, ${next}${last}`;
 }

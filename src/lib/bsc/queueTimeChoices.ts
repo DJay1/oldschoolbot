@@ -33,3 +33,8 @@ export function queueTimezoneLabel(timezone: string): string {
 export function queueTimeLabel(time: string): string {
 	return QUEUE_TIME_CHOICES.find(choice => choice.value === time)?.name.replace(/ \((midnight|noon)\)$/, '') ?? time;
 }
+
+/** Short clock label used in every queue reply, e.g. '10 PM CT'. */
+export function formatQueueClock(time: string, timezone: string): string {
+	return `${queueTimeLabel(time)} ${queueTimezoneLabel(timezone)}`;
+}

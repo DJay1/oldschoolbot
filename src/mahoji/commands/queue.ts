@@ -5,6 +5,7 @@ import {
 	describeTripQueue,
 	scheduleQueuedTrips,
 	setQueueReminders,
+	setQueueResetTime,
 	unscheduleQueuedTrips
 } from '@/lib/bsc/tripQueue.js';
 import { formatQueuedTripLabel } from '@/lib/bsc/tripQueueDisplay.js';
@@ -21,7 +22,8 @@ export const queueCommand = defineCommand({
 			'/queue clear',
 			'/queue reminders enabled:true time:10 PM timezone:CT (Central US)',
 			'/queue schedule time:10 PM timezone:CT (Central US) days:5',
-			'/queue unschedule'
+			'/queue unschedule',
+			'/queue resettime time:9 AM timezone:UK (London)'
 		]
 	},
 	options: [
@@ -77,7 +79,7 @@ export const queueCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'view',
-			description: 'See your queued trips, remaining allowance, and when it refills (daily at 8 PM CT).'
+			description: 'See your queued trips, remaining allowance, your reset time, and when it refills.'
 		},
 		{
 			type: 'Subcommand',
@@ -171,6 +173,25 @@ export const queueCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'resettime',
+			description: 'See or change when your daily queue allowance refills (default 8 PM CT).',
+			options: [
+				{
+					type: 'String',
+					name: 'time',
+					description: 'New daily reset time. It starts after your next refill at your current time.',
+					choices: queueTimeOptionChoices
+				},
+				{
+					type: 'String',
+					name: 'timezone',
+					description: 'Your timezone for the reset time.',
+					choices: queueTimezoneOptionChoices
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
 			name: 'unschedule',
 			description: 'Cancel the scheduled start and any recurring trips, without clearing your queue.'
 		}
@@ -207,6 +228,7 @@ export const queueCommand = defineCommand({
 			});
 		}
 		if (options.unschedule) return unscheduleQueuedTrips(user.id);
+		if (options.resettime) return setQueueResetTime(user, options.resettime.time, options.resettime.timezone);
 		return describeTripQueue(user);
 	}
 });

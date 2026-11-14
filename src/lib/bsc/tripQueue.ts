@@ -2,7 +2,7 @@ import { ButtonBuilder, ButtonStyle, dateFm } from '@oldschoolgg/discord';
 import { UserError } from '@oldschoolgg/toolkit';
 import { DateTime } from 'luxon';
 
-import { queueTimeLabel, queueTimezoneLabel } from '@/lib/bsc/queueTimeChoices.js';
+import { formatQueueClock } from '@/lib/bsc/queueTimeChoices.js';
 import {
 	formatQueuedTripLabel,
 	formatQueuedTripsForCooldownList,
@@ -11,11 +11,14 @@ import {
 import {
 	applyQueueDailyReset,
 	dailyQueueAllowance,
+	defaultQueueResetState,
 	maxQueuedTripsForPerkTier,
-	QUEUE_RESET_LABEL,
+	parseQueueResetState,
+	type QueueResetState,
 	queueRefillDisplayMs,
 	queueResetAtMs,
 	refundUnstartedTrips,
+	requestQueueResetChange,
 	startQueueWindowIfNeeded
 } from '@/lib/bsc/tripQueueLimits.js';
 import {
@@ -51,6 +54,7 @@ interface TripQueueRow {
 	scheduled_start_at: bigint | number | null;
 	scheduled_channel_id: string | null;
 	recurring: unknown;
+	queue_reset?: unknown;
 	updated_at?: Date;
 }
 
@@ -68,6 +72,7 @@ export interface TripQueueState {
 	scheduledStartAt: number | null;
 	scheduledChannelId: string | null;
 	recurring: RecurringQueue | null;
+	reset: QueueResetState;
 }
 
 const ready = { done: false };
@@ -86,7 +91,8 @@ function emptyState(userId: string): TripQueueState {
 		lastLocalReminderDate: null,
 		scheduledStartAt: null,
 		scheduledChannelId: null,
-		recurring: null
+		recurring: null,
+		reset: defaultQueueResetState()
 	};
 }
 
@@ -106,7 +112,8 @@ function fromRow(row: TripQueueRow, now: number): TripQueueState {
 			lastLocalReminderDate: row.last_local_reminder_date ?? null,
 			scheduledStartAt: row.scheduled_start_at == null ? null : Number(row.scheduled_start_at),
 			scheduledChannelId: row.scheduled_channel_id ?? null,
-			recurring: parseRecurringQueue(row.recurring)
+			recurring: parseRecurringQueue(row.recurring),
+			reset: parseQueueResetState(row.queue_reset)
 		},
 		now
 	);
@@ -140,7 +147,8 @@ export async function ensureTripQueueStore() {
 			ADD COLUMN IF NOT EXISTS last_local_reminder_date text,
 			ADD COLUMN IF NOT EXISTS scheduled_start_at bigint,
 			ADD COLUMN IF NOT EXISTS scheduled_channel_id text,
-			ADD COLUMN IF NOT EXISTS recurring jsonb
+			ADD COLUMN IF NOT EXISTS recurring jsonb,
+			ADD COLUMN IF NOT EXISTS queue_reset jsonb
 	`);
 	ready.done = true;
 }
@@ -153,8 +161,8 @@ async function saveState(state: TripQueueState): Promise<void> {
 			user_id, trip, remaining, daily_used, daily_reset, reminders_enabled,
 			reminder_time, reminder_timezone, last_refill_reminder_reset,
 			last_local_reminder_date, scheduled_start_at, scheduled_channel_id,
-			recurring, updated_at
-		) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, NOW())
+			recurring, queue_reset, updated_at
+		) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, $14::jsonb, NOW())
 		 ON CONFLICT (user_id) DO UPDATE SET
 			trip = EXCLUDED.trip,
 			remaining = EXCLUDED.remaining,
@@ -168,6 +176,7 @@ async function saveState(state: TripQueueState): Promise<void> {
 			scheduled_start_at = EXCLUDED.scheduled_start_at,
 			scheduled_channel_id = EXCLUDED.scheduled_channel_id,
 			recurring = EXCLUDED.recurring,
+			queue_reset = EXCLUDED.queue_reset,
 			updated_at = NOW()`,
 		state.userId,
 		tripJson,
@@ -181,7 +190,8 @@ async function saveState(state: TripQueueState): Promise<void> {
 		state.lastLocalReminderDate,
 		state.scheduledStartAt,
 		state.scheduledChannelId,
-		state.recurring ? JSON.stringify(state.recurring) : null
+		state.recurring ? JSON.stringify(state.recurring) : null,
+		JSON.stringify(state.reset)
 	);
 }
 
@@ -199,11 +209,46 @@ export async function getTripQueueState(userId: string, now = Date.now()): Promi
 	if (
 		state.dailyUsed !== row.daily_used ||
 		state.dailyReset !== Number(row.daily_reset) ||
-		state.remaining !== row.remaining
+		state.remaining !== row.remaining ||
+		JSON.stringify(state.reset) !== JSON.stringify(parseQueueResetState(row.queue_reset))
 	) {
 		await saveState(state);
 	}
 	return state;
+}
+
+/** 'Queue resets daily at 8 PM CT, next refill X' plus any pending change, for /queue view and cd. */
+export function formatQueueResetLine(
+	state: Pick<TripQueueState, 'dailyReset' | 'reset'>,
+	now: number,
+	formatTime: (ms: number) => string
+): string {
+	const next = queueRefillDisplayMs(state.dailyReset, now, state.reset);
+	let line = `Queue resets daily at ${formatQueueClock(state.reset.time, state.reset.timezone)}, next refill ${formatTime(next)}`;
+	if (state.reset.pending) {
+		line += `. Changing to ${formatQueueClock(state.reset.pending.time, state.reset.pending.timezone)} after that refill`;
+	}
+	return line;
+}
+
+export async function setQueueResetTime(user: MUser, time?: string, timezone?: string): Promise<string> {
+	const now = Date.now();
+	const state = await getTripQueueState(user.id, now);
+	if (!time && !timezone) {
+		return `${formatQueueResetLine(state, now, ts => `<t:${Math.floor(ts / 1000)}:F>`)}. Pick a time and timezone to change it.`;
+	}
+	if (!time || !timezone || !isValidQueueLocalTime(time, timezone)) {
+		return 'Pick both a reset time and a timezone from the lists.';
+	}
+	const change = requestQueueResetChange(state, { time, timezone }, now);
+	state.reset = change.reset;
+	await saveState(state);
+	const label = formatQueueClock(time, timezone);
+	if (change.kind === 'unchanged') return `Your queue already resets daily at ${label}.`;
+	if (change.kind === 'cancelled') {
+		return `Pending change cancelled. Your queue keeps resetting daily at ${label}.`;
+	}
+	return `Your queue will reset daily at ${label} starting after your next refill <t:${Math.floor(change.from / 1000)}:F> at your current time (${formatQueueClock(state.reset.time, state.reset.timezone)}). You can change it again any time before then.`;
 }
 
 export async function clearTripQueue(userId: string): Promise<{ cleared: boolean; refunded: number }> {
@@ -271,7 +316,7 @@ export async function setQueueReminders(
 	}
 	await saveState(state);
 	return state.reminderTime && state.reminderTimezone
-		? `Queue reminders are on. You'll be reminded when your queue refills and at ${queueTimeLabel(state.reminderTime)} ${queueTimezoneLabel(state.reminderTimezone)}.`
+		? `Queue reminders are on. You'll be reminded when your queue refills and at ${formatQueueClock(state.reminderTime, state.reminderTimezone)}.`
 		: 'Queue refill reminders are on. You can also pick a daily reminder time and timezone in /queue reminders.';
 }
 
@@ -361,7 +406,7 @@ export async function scheduleQueuedTrips(
 		if (replacedRecurring) {
 			extras.push('This replaces your previous recurring schedule.');
 		}
-		return `Scheduled ${recurringTripSummary(trips)} to start daily at <t:${Math.floor(scheduledAt / 1000)}:F> (${queueTimezoneLabel(timezone)}) for ${days} day${days === 1 ? '' : 's'}. Use /queue unschedule to cancel.${extras.length ? ` ${extras.join(' ')}` : ''}`;
+		return `Scheduled ${recurringTripSummary(trips)} to start daily at ${formatQueueClock(time, timezone)} (next <t:${Math.floor(scheduledAt / 1000)}:F>) for ${days} day${days === 1 ? '' : 's'}. Use /queue unschedule to cancel.${extras.length ? ` ${extras.join(' ')}` : ''}`;
 	}
 
 	const existing = await getTripQueueState(user.id, now);
@@ -383,7 +428,7 @@ export async function scheduleQueuedTrips(
 	state.scheduledStartAt = scheduledAt;
 	state.scheduledChannelId = channelId;
 	await saveState(state);
-	return `Your queued trips will start automatically at <t:${Math.floor(scheduledAt / 1000)}:F> (${queueTimezoneLabel(timezone)}). If you're on a trip then, they'll start when it finishes.`;
+	return `Your queued trips will start automatically at ${formatQueueClock(time, timezone)} (<t:${Math.floor(scheduledAt / 1000)}:F>). If you're on a trip then, they'll start when it finishes.`;
 }
 
 export async function unscheduleQueuedTrips(userId: string): Promise<string> {
@@ -449,7 +494,7 @@ export async function addTripsToQueue(
 		}
 	}
 
-	const resetAt = `<t:${Math.floor(queueResetAtMs(state.dailyReset) / 1000)}:R>`;
+	const resetAt = `<t:${Math.floor(queueResetAtMs(state.dailyReset, state.reset) / 1000)}:R>`;
 	const dailyLeft = dailyCap - state.dailyUsed;
 	if (dailyLeft <= 0) {
 		return `You've used all ${dailyCap} of your queued trips. They refill ${resetAt}.`;
@@ -492,7 +537,7 @@ export async function addTripsToQueue(
 	const queuedLine = `Queued ${times} ${pretty} trip${times === 1 ? '' : 's'}. ${state.remaining} in the queue.${dailyNote}`;
 
 	if (scheduledAt !== null && scheduleTimezone) {
-		return `${queuedLine} They will start automatically at <t:${Math.floor(scheduledAt / 1000)}:F> (${scheduleTimezone}).`;
+		return `${queuedLine} They will start automatically at ${formatQueueClock(scheduleTime ?? '', scheduleTimezone)} (<t:${Math.floor(scheduledAt / 1000)}:F>).`;
 	}
 
 	if (deferStart) {
@@ -534,11 +579,10 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 		);
 	}
 	lines.push(`You can have up to ${maxAtOnce} trips queued at once.`);
-	const resetAt = queueRefillDisplayMs(state.dailyReset, Date.now());
-	const refillNote = ` (refills daily at ${QUEUE_RESET_LABEL}, next <t:${Math.floor(resetAt / 1000)}:R>)`;
 	lines.push(
-		`You get ${dailyCap} queued trips everyday and have used ${state.dailyUsed}${refillNote}. Clearing unused trips refunds those points.`
+		`You get ${dailyCap} queued trips everyday and have used ${state.dailyUsed}. Clearing unused trips refunds those points.`
 	);
+	lines.push(`${formatQueueResetLine(state, Date.now(), ts => `<t:${Math.floor(ts / 1000)}:R>`)}.`);
 	if (state.scheduledStartAt !== null) {
 		lines.push(`Scheduled to start <t:${Math.floor(state.scheduledStartAt / 1000)}:F>.`);
 	}
@@ -550,7 +594,7 @@ export async function describeTripQueue(user: MUser): Promise<string> {
 	if (state.remindersEnabled) {
 		lines.push(
 			state.reminderTime && state.reminderTimezone
-				? `Queue reminders are on, including ${queueTimeLabel(state.reminderTime)} ${queueTimezoneLabel(state.reminderTimezone)}.`
+				? `Queue reminders are on, including ${formatQueueClock(state.reminderTime, state.reminderTimezone)}.`
 				: 'Queue refill reminders are on.'
 		);
 	}
@@ -562,14 +606,19 @@ export async function describeQueuedTripsForCooldown(user: MUser, now = Date.now
 	const allowanceMax = dailyQueueAllowance(perkTier);
 	const state = await getTripQueueState(user.id, now);
 	const allowanceLeft = Math.max(0, allowanceMax - state.dailyUsed);
-	const refillsAtFormatted = dateFm(new Date(queueRefillDisplayMs(state.dailyReset, now)));
+	const refillsAtFormatted = null;
+	const resetLine = formatQueueResetLine(state, now, ts => dateFm(new Date(ts)));
 
 	const withRecurring = (line: string | null) => {
-		if (!state.recurring) return line;
-		const recurringLine = formatRecurringQueueLine(state.recurring, {
-			startsAtFormatted: dateFm(new Date(state.recurring.nextAt))
-		});
-		return line ? `${line}\n${recurringLine}` : recurringLine;
+		const extra = [resetLine];
+		if (state.recurring) {
+			extra.push(
+				formatRecurringQueueLine(state.recurring, {
+					startsAtFormatted: dateFm(new Date(state.recurring.nextAt))
+				})
+			);
+		}
+		return [line, ...extra].filter(Boolean).join('\n');
 	};
 
 	if (state.trips.length === 0 || state.remaining <= 0) {
@@ -670,7 +719,7 @@ export async function processQueueReminders(now = Date.now()): Promise<void> {
 			const needsRefillReminder = state.dailyReset === 0 && state.lastRefillReminderReset > 0;
 			if (needsRefillReminder) {
 				await globalClient.sendDm(user.id, {
-					content: `Your daily queue allowance has refreshed. You currently have ${Math.max(0, dailyCap - state.dailyUsed)} of ${dailyCap} queue trips available. Use /queue add to queue them.`,
+					content: `Your daily queue allowance has refreshed (your reset time is ${formatQueueClock(state.reset.time, state.reset.timezone)}). You currently have ${Math.max(0, dailyCap - state.dailyUsed)} of ${dailyCap} queue trips available. Use /queue add to queue them.`,
 					components: buttons
 				});
 				state.lastRefillReminderReset = 0;
