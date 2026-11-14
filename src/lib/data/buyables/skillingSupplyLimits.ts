@@ -3,7 +3,6 @@ import { Time } from '@oldschoolgg/toolkit';
 /** Per-player daily purchase caps for selected /buy skilling supplies. Unlisted items have no cap. */
 export const SKILLING_SUPPLY_DAILY_LIMITS: Record<string, number> = {
 	'Arrow shaft': 5_000,
-	Feather: 2_000,
 	'Air rune': 5_000,
 	'Earth rune': 5_000,
 	'Water rune': 5_000,
