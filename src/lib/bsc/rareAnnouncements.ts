@@ -5,9 +5,10 @@ import { Items, itemID } from 'oldschooljs';
 
 import { Channel } from '@/lib/constants.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
+import { thanksgivingCodeEnabled, thanksgivingPetIDs } from '@/lib/events/thanksgiving/core.js';
 import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 
-export type RareAnnounceKind = 'custom_pet' | 'discord_event_rare' | 'rare_drop';
+export type RareAnnounceKind = 'custom_pet' | 'discord_event_rare' | 'rare_drop' | 'event_rare';
 
 /** Discord-event launch rares that should announce with a received-so-far count. */
 export const DISCORD_EVENT_RARE_NAMES = ['Kuro', 'Gregoyle', 'Corgo party hat', 'Flappy'] as const;
@@ -55,7 +56,25 @@ export function isDiscordEventRareItem(itemID: number): boolean {
 export function rareAnnounceKindForItem(itemID: number): RareAnnounceKind | null {
 	if (isCustomPetItem(itemID)) return 'custom_pet';
 	if (isDiscordEventRareItem(itemID)) return 'discord_event_rare';
+	// Straw Hat Harvest pets (Gobbles, Gobble gobble, Laboon, Captain Laboon): first one per player, from any
+	// source (offer, fishing, /use). Off on the live bot until the event code is enabled there.
+	if (thanksgivingCodeEnabled() && thanksgivingPetIDs.includes(itemID)) return 'event_rare';
 	return null;
+}
+
+/**
+ * Plain announcement in the same notifications channel as rare drops, with no pings.
+ * Never throws: an announcement failure must not affect loot that was already given.
+ */
+export async function announceToRareChannel(content: string): Promise<void> {
+	try {
+		await globalClient.sendMessage(Channel.Notifications, {
+			content,
+			allowedMentions: { parse: [], users: [], roles: [] }
+		});
+	} catch (err) {
+		Logging.logError(err as Error);
+	}
 }
 
 export interface RareAnnounceInput {

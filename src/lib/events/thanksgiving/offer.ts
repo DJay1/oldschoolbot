@@ -1,5 +1,6 @@
 import { Bank, type ItemBank } from 'oldschooljs';
 
+import { announceToRareChannel } from '@/lib/bsc/rareAnnouncements.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
 import { userQueueFn } from '@/lib/util/userQueues.js';
@@ -119,6 +120,15 @@ export async function thanksgivingOffer(
 		// Streak counter only. If this write fails the loot is already safe; worst case the streak is one behind.
 		await addOffersToday(user.id, day, quantity).catch(err => Logging.logError(err as Error));
 
+		// Cornucopia (Harvest Blessing item): one announcement per offer command, however many dropped.
+		// The pets announce through the first-in-collection-log rare announcement instead.
+		const cornucopias = result.loot.amount(ThanksgivingItem.CORNUCOPIA_2021);
+		if (cornucopias > 0) {
+			void announceToRareChannel(
+				`🌽 ${user.notificationName} just received ${cornucopias > 1 ? `${cornucopias}x ` : ''}**Cornucopia** from a Straw Hat Harvest offer!`
+			);
+		}
+
 		const offersAfter = offersBefore + quantity;
 		const content = formatOfferReply({
 			result,
@@ -164,6 +174,10 @@ export async function thanksgivingFeast(user: MUser, rng: ThanksgivingRng) {
 		}
 
 		const minutes = Math.round((feast.endMs - feast.startMs) / 60_000);
+		// One announcement per turkey offered (each turkey is used up, so this cannot be spammed).
+		void announceToRareChannel(
+			`🦃 ${user.notificationName} offered a Harvest turkey and got a **${harvestFeastName(feast.kind)}** Harvest feast for **${minutes} minutes**!`
+		);
 		const lines = [
 			`🦃 You offer a Harvest turkey to the harvest... **Harvest feast: ${harvestFeastName(feast.kind)}** for **${minutes} minutes** (ends <t:${Math.floor(feast.endMs / 1000)}:R>).`,
 			feast.kind === 'loot'
