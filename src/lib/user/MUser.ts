@@ -764,15 +764,17 @@ Charge your items using ${globalClient.mentionCommand('minion', 'charge')}.`
 	async addXPCounter({
 		xpCounter,
 		source,
-		minimal
+		minimal,
+		duration
 	}: {
 		xpCounter: XPCounter;
 		source?: XpGainSource;
 		minimal?: boolean;
+		duration?: number;
 	}): Promise<string> {
 		const results = [];
 		for (const [skillName, amount] of xpCounter.entries()) {
-			results.push(await this.addXP({ skillName, amount, source, minimal }));
+			results.push(await this.addXP({ skillName, amount, source, minimal, duration }));
 		}
 		return results.join(' ');
 	}

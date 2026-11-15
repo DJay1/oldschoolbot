@@ -45,7 +45,7 @@ export const questingTask: MinionTask = {
 
 		const herbLevel = user.skillsAsLevels.herblore;
 		if (herbLevel === 1 && newQP > 5 && rng.roll(2)) {
-			await user.addXP({ skillName: 'herblore', amount: 250 });
+			await user.addXP({ skillName: 'herblore', amount: 250, duration: data.duration });
 			str += `${Emoji.Herblore} You received 250 Herblore XP for completing Druidic Ritual.`;
 		}
 
@@ -56,13 +56,13 @@ export const questingTask: MinionTask = {
 
 		const magicXP = Number(user.user.skills_magic);
 		if (magicXP === 0 && rng.roll(2)) {
-			await user.addXP({ skillName: 'magic', amount: 325 });
+			await user.addXP({ skillName: 'magic', amount: 325, duration: data.duration });
 			str += `${Emoji.Magic} You received 325 Magic XP for completing Witch's Potion.`;
 		} else if (magicXP < 1000 && newQP > 15 && rng.roll(2)) {
-			await user.addXP({ skillName: 'magic', amount: 1000 });
+			await user.addXP({ skillName: 'magic', amount: 1000, duration: data.duration });
 			str += `${Emoji.Magic} You received 1000 Magic XP for completing Fairytale I - Growing Pains.`;
 		} else if (user.skillsAsLevels.cooking >= 40 && newQP > 50 && magicXP < 2500 && rng.roll(2)) {
-			await user.addXP({ skillName: 'magic', amount: 2500 });
+			await user.addXP({ skillName: 'magic', amount: 2500, duration: data.duration });
 			str += `${Emoji.Magic} You received 2500 Magic XP for completing Recipe For Disaster (Lumbridge guide subquest).`;
 		}
 
