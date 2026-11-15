@@ -49,6 +49,10 @@ function makeInteraction({ failCreate = false }: { failCreate?: boolean } = {}) 
 }
 
 describe('deferred replies ping mentioned users', () => {
+	it('placeholder is small subtext, not a lone (jumbo) emoji', () => {
+		expect(DEFERRED_PING_PLACEHOLDER).toBe('-# ↓ See below');
+	});
+
 	it('first reply after defer with a user mention posts a follow-up and neutralizes the placeholder', async () => {
 		const { interaction, calls, webhookCreates, edits } = makeInteraction();
 		await interaction.baseDeferReply();

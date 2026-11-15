@@ -19,7 +19,8 @@ import { type APISendableMessage, type SendableMessage, sendableMsgToApiCreate }
 type EditMessageOptions = SendableMessage;
 
 /** Shown in place of "thinking..." when the real reply had to be posted as a new message to ping someone. */
-export const DEFERRED_PING_PLACEHOLDER = '⬇️';
+// Discord subtext ("-# "): small grey text. A lone emoji would render jumbo-sized and clutter the channel.
+export const DEFERRED_PING_PLACEHOLDER = '-# ↓ See below';
 
 export class BaseInteraction {
 	public client: DiscordClient;
