@@ -558,14 +558,6 @@ export function resolveToBUsersForStart(user: MUser, teamSize: ToBTeamSize | und
 	return partyUsers ?? [user];
 }
 
-export async function tobCheckCommand(user: MUser, hardMode: boolean) {
-	const result = await checkTOBUser(user, hardMode, 5);
-	if (result[0]) {
-		return `You aren't able to join a Theatre of Blood raid, address these issues first: ${result[1]}`;
-	}
-	return 'You are ready to do the Theatre of Blood!';
-}
-
 export async function tobHelpCommand(user: MUser) {
 	const [minigameScores, stats] = await Promise.all([user.fetchMinigames(), user.fetchStats()]);
 	const kc = minigameScores.tob;
