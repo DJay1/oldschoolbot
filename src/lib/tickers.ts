@@ -10,7 +10,9 @@ import { resolveBotSendableMessage } from '@/discord/utils.js';
 import { analyticsTick } from '@/lib/analytics.js';
 import { syncBscPatrons } from '@/lib/bsc/patronSync.js';
 import { processPollTicker } from '@/lib/bsc/pollService.js';
+import { serverFirstsTick } from '@/lib/bsc/serverFirsts.js';
 import { processQueueReminders, processScheduledQueueStarts } from '@/lib/bsc/tripQueue.js';
+import { weeklyRecapTick } from '@/lib/bsc/weeklyRecap.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { cacheGEPrices } from '@/lib/marketPrices.js';
@@ -330,6 +332,25 @@ LIMIT 10;`;
 		}
 	}
 ];
+
+tickers.push({
+	// Server firsts (first boss kills, Straw Hat Harvest firsts). Read-only scan + one-time claims; never throws.
+	name: 'server_firsts',
+	startupWait: Time.Minute * 2,
+	interval: Time.Minute * 3,
+	timer: null,
+	cb: serverFirstsTick
+});
+
+tickers.push({
+	// Weekly recap, Sundays 12:00 PM Central (catch-up up to 3 hours). Live bot only; once per week via a unique key.
+	name: 'weekly_recap',
+	startupWait: Time.Minute,
+	interval: Time.Minute * 5,
+	productionOnly: true,
+	timer: null,
+	cb: () => weeklyRecapTick()
+});
 
 tickers.push({
 	name: 'double_loot_presence',

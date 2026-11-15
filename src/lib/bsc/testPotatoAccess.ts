@@ -20,10 +20,10 @@ export const TESTPOTATO_OPEN_ENV_FLAG = 'BSC_TESTPOTATO_OPEN';
 
 /**
  * Subcommands that stay admin-only even when open access is on, because they change global state or
- * affect other players: the event toggle, starting a bingo other players are in, and deleting
+ * affect other players: the event toggle, starting a bingo other players are in, posting the weekly recap, and deleting
  * giveaways other players have entered.
  */
-export const TESTPOTATO_ADMIN_ONLY_SUBCOMMANDS = ['thanksgiving', 'bingo_tools'] as const;
+export const TESTPOTATO_ADMIN_ONLY_SUBCOMMANDS = ['thanksgiving', 'bingo_tools', 'weekly_recap'] as const;
 export const TESTPOTATO_ADMIN_ONLY_WIPE_THINGS = ['giveaways'] as const;
 
 export function isTestPotatoOpenForEveryone({

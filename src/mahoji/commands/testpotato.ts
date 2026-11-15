@@ -24,6 +24,8 @@ import {
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
 import { isTestPotatoOpenForEveryone, testPotatoAccess } from '@/lib/bsc/testPotatoAccess.js';
+import { sendRecap } from '@/lib/bsc/weeklyRecap.js';
+import { RECAP_WINDOW_MS } from '@/lib/bsc/weeklyRecapFormat.js';
 import { allStashUnitsFlat, allStashUnitTiers } from '@/lib/clues/stashUnits.js';
 import { CombatAchievements } from '@/lib/combat_achievements/combatAchievements.js';
 import { BitField, BitFieldData, globalConfig, MAX_LEVEL, MAX_XP } from '@/lib/constants.js';
@@ -454,6 +456,19 @@ export const testPotatoCommand = defineCommand({
 					name: 'active',
 					description: 'True to run the event now, false to stop it.',
 					required: true
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'weekly_recap',
+			description: 'Test bot only: post the weekly recap for the last 7 days now.',
+			options: [
+				{
+					type: 'Boolean',
+					name: 'ping',
+					description: 'True to tag the players it names (default false: names show, nobody is pinged).',
+					required: false
 				}
 			]
 		},
@@ -1135,6 +1150,12 @@ export const testPotatoCommand = defineCommand({
 			return active
 				? `The Straw Hat Harvest is now **active** on the test bot (code enabled: ${thanksgivingCodeEnabled()}, active: ${isThanksgivingActive()}).`
 				: 'The Straw Hat Harvest is now **off** on the test bot.';
+		}
+		if (options.weekly_recap) {
+			if (globalConfig.isProduction) return 'This only works on the test bot.';
+			const end = Date.now();
+			await sendRecap(end - RECAP_WINDOW_MS, end, { ping: options.weekly_recap.ping ?? false });
+			return 'Posted the weekly recap for the last 7 days in the rare drop channel.';
 		}
 		if (options.spawn) {
 			const { preset, collectionlog, item, items } = options.spawn;
