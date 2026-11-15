@@ -7,33 +7,18 @@ import { describe, expect, test } from 'vitest';
  * Trip handlers must pass the trip `duration` to addXP / addXPCounter, so a trip that overlapped
  * Double XP at any point is doubled (doubleXp.ts isDoubleXpActive, addXP.ts doubleXpApplied).
  *
+ * Needs PR #47 (raid, ToB, DoA, quest, Forestry and burying fixes) merged first.
  * KNOWN_MISSING_DURATION lists the current offenders (file -> number of calls without duration).
  * TODO: remove each entry as it is fixed. This test fails if a file gets a NEW call without duration,
  * and also fails if a file has FEWER than listed, so the list is shrunk as fixes land.
  */
 const KNOWN_MISSING_DURATION: Record<string, number> = {
-	// TODO: Chambers of Xeric combat XP
-	'src/tasks/minions/minigames/raidsActivity.ts': 4,
-	// TODO: Theatre of Blood (addXPCounter)
-	'src/tasks/minions/minigames/tobActivity.ts': 1,
-	// TODO: Depths of Atlantis combat XP
-	'src/lib/bso/tasks/doaActivity.ts': 4,
-	// TODO: questing bonus XP (Druidic Ritual etc.)
-	'src/tasks/minions/questingActivity.ts': 4,
-	// TODO: specific quest skill rewards
-	'src/tasks/minions/specificQuestActivity.ts': 1,
-	// TODO: Forestry event XP
-	'src/tasks/minions/woodcuttingActivity.ts': 1,
-	// TODO: second burying call (duplicate Prayer XP, see KNOWN_DUPLICATE_XP)
-	'src/tasks/minions/PrayerActivity/buryingActivity.ts': 1,
 	// TODO: woodcutting and herblore XP from farming (cleaning herbs / clearing trees)
 	'src/tasks/minions/farmingStep.ts': 2
 };
 
 /** TODO: remove as fixed. file -> number of back-to-back addXP calls with the same skill and amount. */
-const KNOWN_DUPLICATE_XP: Record<string, number> = {
-	'src/tasks/minions/PrayerActivity/buryingActivity.ts': 1
-};
+const KNOWN_DUPLICATE_XP: Record<string, number> = {};
 
 const ROOTS = ['src/tasks', 'src/lib/bso/tasks'];
 
