@@ -7,10 +7,16 @@ import { Bank, Items, resolveItems } from 'oldschooljs';
 
 import { trackLoot } from '@/lib/lootTrack.js';
 import { PercentCounter } from '@/lib/structures/PercentCounter.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 
 const requiredPickaxes = resolveItems(['Crystal pickaxe', 'Volcanic pickaxe', 'Dwarven pickaxe', 'Dragon pickaxe']);
 
-export async function moktangCommand(user: MUser, channelId: string, inputQuantity: number | undefined) {
+export async function moktangCommand(
+	user: MUser,
+	channelId: string,
+	inputQuantity: number | undefined,
+	preview = false
+) {
 	const timeToKill = new PercentCounter(Time.Minute * 15, 'time');
 	const miningLevel = user.skillLevel('mining');
 	if (miningLevel < 105) return 'You need 105 Mining to fight Moktang.';
@@ -43,6 +49,10 @@ export async function moktangCommand(user: MUser, channelId: string, inputQuanti
 	const restoresNeeded = Math.max(1, Math.floor(totalBrewsRequired / 3));
 	const cost = new Bank().add('Heat res. brew', totalBrewsRequired).add('Heat res. restore', restoresNeeded);
 	cost.add('Moktang totem', quantity);
+
+	if (preview) {
+		return formatTripPreview({ user, name: 'Moktang', quantity, duration, boosts: timeToKill.messages, cost });
+	}
 
 	if (!user.owns(cost)) {
 		return `You don't have the required items to fight Moktang: ${cost}.${

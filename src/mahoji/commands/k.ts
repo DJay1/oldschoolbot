@@ -95,7 +95,15 @@ export const minionKCommand = defineCommand({
 	],
 	run: async ({ options, user, channelId, interaction, rng }) => {
 		if (options.show_info) {
-			return minionKillInfoCommand(user, options.name, rng, options.method, options.wilderness);
+			return minionKillInfoCommand(
+				user,
+				interaction,
+				channelId,
+				options.name,
+				rng,
+				options.method,
+				options.wilderness
+			);
 		}
 		return minionKillCommand(
 			user,

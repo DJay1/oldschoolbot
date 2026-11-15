@@ -510,6 +510,31 @@ export class BossInstance {
 		};
 	}
 
+	async preview(name: string): Promise<string> {
+		if (!this.leader) return 'No user to preview.';
+		this.solo = true;
+		const [denied, reason] = await this.checkUser(this.leader);
+		const blocked = denied && reason !== 'minion is busy';
+		await this.init();
+		const bossUser = this.bossUsers[0];
+		const lines = [`**${name}** (solo)`];
+		if (blocked) lines.push(`You can't do this yet: you ${reason}.`);
+		lines.push(
+			'',
+			'**Trip**',
+			`You can kill **${this.quantity}x** in ${formatDuration(this.duration)} (${formatDuration(this.duration / this.quantity!)} per kill).`,
+			`${bossUser.debugStr.replace(/ \*\*Cost\*\*\[.*\]$/, '')}`
+		);
+		if (this.boosts.length > 0) lines.push('', '**Boosts**', this.boosts.join(', '));
+		if (bossUser.itemsToRemove.length > 0) {
+			lines.push('', `**Supplies for a full trip:** ${bossUser.itemsToRemove}`);
+			if (!this.leader.owns(bossUser.itemsToRemove)) {
+				lines.push(`You're missing: ${bossUser.itemsToRemove.clone().remove(this.leader.allItemsOwned)}`);
+			}
+		}
+		return lines.join('\n');
+	}
+
 	async simulate() {
 		const table = new Table();
 		table.addHeader(

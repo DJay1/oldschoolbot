@@ -26,6 +26,7 @@ import { ChargeBank } from '@/lib/structures/Bank.js';
 import type { Skills } from '@/lib/types/index.js';
 import type { ColoTaskOptions } from '@/lib/types/minions.js';
 import { formatList, formatSkillRequirements } from '@/lib/util/smallUtils.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 
 function combinedChance(percentages: number[]): number {
 	const failureProbabilities = percentages.map(p => (100 - p) / 100);
@@ -509,10 +510,10 @@ export const startColosseumRun = (options: {
 	throw new Error('Colosseum run did not end correctly.');
 };
 
-export async function colosseumCommand(itx: OSInteraction, inputQuantity?: number) {
+export async function colosseumCommand(itx: OSInteraction, inputQuantity?: number, preview = false) {
 	const { user, rng, channelId } = itx;
 	let quantity = inputQuantity;
-	if (await user.minionIsBusy()) {
+	if (!preview && (await user.minionIsBusy())) {
 		return `${user.usernameOrMention} is busy`;
 	}
 
@@ -765,6 +766,22 @@ export async function colosseumCommand(itx: OSInteraction, inputQuantity?: numbe
 		deathBoosts.push('-20% for Infernal bulwark');
 	} else {
 		missedDeathBoosts.push('-20% for Infernal bulwark');
+	}
+
+	if (preview) {
+		return formatTripPreview({
+			user,
+			name: 'Colosseum',
+			quantity,
+			duration: oneColoTripTime * quantity,
+			boosts,
+			notes: [
+				`Each wave takes about ${formatDuration(waveDuration)}.`,
+				...(deathBoosts.length > 0 ? [`Death chance: ${deathBoosts.join(', ')}`] : []),
+				...(missedBoosts.length > 0 ? [`Missed boosts: ${missedBoosts.join(', ')}`] : [])
+			],
+			cost
+		});
 	}
 
 	// attempt to remove resources and charges from the user

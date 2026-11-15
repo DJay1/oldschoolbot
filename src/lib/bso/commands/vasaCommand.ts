@@ -21,7 +21,13 @@ export const vasaBISGear = new Gear({
 	neck: 'Arcane blast necklace'
 });
 
-export async function vasaCommand(interaction: MInteraction, user: MUser, channelId: string, quantity?: number) {
+export async function vasaCommand(
+	interaction: MInteraction,
+	user: MUser,
+	channelId: string,
+	quantity?: number,
+	preview = false
+) {
 	await interaction.defer();
 	const instance = new BossInstance({
 		interaction,
@@ -69,6 +75,7 @@ export async function vasaCommand(interaction: MInteraction, user: MUser, channe
 		allowMoreThan1Solo: true,
 		quantity
 	});
+	if (preview) return instance.preview('Vasa Magus');
 	const { bossUsers } = await instance.start();
 	const embed = new EmbedBuilder().setDescription(
 		`Your team is off to fight ${instance.quantity}x Vasa Magus. The total trip will take ${formatDuration(

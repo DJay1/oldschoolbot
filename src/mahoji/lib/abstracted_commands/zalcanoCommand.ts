@@ -5,6 +5,7 @@ import { soteSkillRequirements } from '@/lib/skilling/functions/questRequirement
 import type { ZalcanoActivityTaskOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 
 function calcPerformance(kcLearned: number, skillPercentage: number) {
 	let basePerformance = 50;
@@ -18,7 +19,13 @@ function calcPerformance(kcLearned: number, skillPercentage: number) {
 	return Math.min(100, basePerformance);
 }
 
-export async function zalcanoCommand(rng: RNGProvider, user: MUser, channelId: string, quantity?: number) {
+export async function zalcanoCommand(
+	rng: RNGProvider,
+	user: MUser,
+	channelId: string,
+	quantity?: number,
+	preview = false
+) {
 	const hasReqs = user.hasSkillReqs(soteSkillRequirements);
 	if (!hasReqs) {
 		return `To fight Zalcano, you need: ${formatSkillRequirements(soteSkillRequirements)}.`;
@@ -67,6 +74,17 @@ export async function zalcanoCommand(rng: RNGProvider, user: MUser, channelId: s
 		)}, try a lower quantity. The highest amount you can do for Zalcano is ${Math.floor(
 			maxTripLength / baseTime
 		)}.`;
+	}
+
+	if (preview) {
+		return formatTripPreview({
+			user,
+			name: 'Zalcano',
+			quantity,
+			duration,
+			boosts,
+			notes: [`Food needed: ${(healAmountNeeded * quantity).toLocaleString()} HP worth.`]
+		});
 	}
 
 	const { foodRemoved } = await user.removeFoodFromUser({

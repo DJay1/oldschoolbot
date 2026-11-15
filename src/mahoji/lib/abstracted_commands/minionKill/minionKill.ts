@@ -61,25 +61,8 @@ export async function minionKillCommand(
 	if (user.usingPet('Ishi')) {
 		name = 'Ogress Warrior';
 	}
-	if (stringMatches(name, 'colosseum')) return colosseumCommand(interaction, inputQuantity);
-	if (stringMatches(name, 'zalcano')) return zalcanoCommand(rng, user, channelId, inputQuantity);
-	if (stringMatches(name, 'tempoross')) return temporossCommand(user, channelId, inputQuantity);
-	if (name.toLowerCase().includes('nightmare')) return nightmareCommand(user, channelId, name, inputQuantity);
-	if (name.toLowerCase().includes('wintertodt')) return wintertodtCommand(user, channelId);
-	if (['igne ', 'ignecarus'].some(i => name.toLowerCase().includes(i))) {
-		return igneCommand(interaction, user, channelId, name, inputQuantity);
-	}
-	if (['kg', 'king goldemar'].some(i => name.toLowerCase().includes(i))) {
-		return kgCommand(interaction, user, channelId, name, inputQuantity);
-	}
-	if (['kk', 'kalphite king'].some(i => name.toLowerCase().includes(i)))
-		return kkCommand(interaction, user, channelId, name, inputQuantity);
-	if (name.toLowerCase().includes('nex')) return nexCommand(interaction, user, channelId, name, inputQuantity);
-	if (name.toLowerCase().includes('moktang')) return moktangCommand(user, channelId, inputQuantity);
-	if (name.toLowerCase().includes('naxxus')) return naxxusCommand(user, channelId, inputQuantity);
-	if (['vasa', 'vasa magus'].some(i => name.toLowerCase().includes(i))) {
-		return vasaCommand(interaction, user, channelId, inputQuantity);
-	}
+	const special = specialBossCommand({ interaction, user, channelId, name, rng, inputQuantity, preview: false });
+	if (special) return special;
 
 	const monster = findKillMonster(name);
 	if (!monster) return invalidMonsterMsg;
@@ -102,6 +85,47 @@ export async function minionKillCommand(
 	}
 
 	return startMinionKillTrip({ user, channelId, monster, result, slayerInfo, inputQuantity, takeEggs });
+}
+
+function specialBossCommand({
+	interaction,
+	user,
+	channelId,
+	name,
+	rng,
+	inputQuantity,
+	preview
+}: {
+	interaction: OSInteraction;
+	user: MUser;
+	channelId: string;
+	name: string;
+	rng: RNGProvider;
+	inputQuantity: number | undefined;
+	preview: boolean;
+}): CommandResponse | null {
+	const lower = name.toLowerCase();
+	if (stringMatches(name, 'colosseum')) return colosseumCommand(interaction, inputQuantity, preview);
+	if (stringMatches(name, 'zalcano')) return zalcanoCommand(rng, user, channelId, inputQuantity, preview);
+	if (stringMatches(name, 'tempoross')) return temporossCommand(user, channelId, inputQuantity, preview);
+	if (lower.includes('nightmare')) return nightmareCommand(user, channelId, name, inputQuantity, preview);
+	if (lower.includes('wintertodt')) return wintertodtCommand(user, channelId, undefined, preview);
+	if (['igne ', 'ignecarus'].some(i => lower.includes(i))) {
+		return igneCommand(interaction, user, channelId, name, inputQuantity, preview);
+	}
+	if (['kg', 'king goldemar'].some(i => lower.includes(i))) {
+		return kgCommand(interaction, user, channelId, name, inputQuantity, preview);
+	}
+	if (['kk', 'kalphite king'].some(i => lower.includes(i))) {
+		return kkCommand(interaction, user, channelId, name, inputQuantity, preview);
+	}
+	if (lower.includes('nex')) return nexCommand(interaction, user, channelId, name, inputQuantity, preview);
+	if (lower.includes('moktang')) return moktangCommand(user, channelId, inputQuantity, preview);
+	if (lower.includes('naxxus')) return naxxusCommand(user, channelId, inputQuantity, preview);
+	if (['vasa', 'vasa magus'].some(i => lower.includes(i))) {
+		return vasaCommand(interaction, user, channelId, inputQuantity, preview);
+	}
+	return null;
 }
 
 function findKillMonster(name: string) {
@@ -270,11 +294,24 @@ async function startMinionKillTrip({
 
 export async function minionKillInfoCommand(
 	user: MUser,
+	interaction: OSInteraction,
+	channelId: string,
 	name: string,
 	rng: RNGProvider,
 	method: PvMMethod | undefined,
 	wilderness: boolean | undefined
 ): CommandResponse {
+	const special = specialBossCommand({
+		interaction,
+		user,
+		channelId,
+		name,
+		rng,
+		inputQuantity: undefined,
+		preview: true
+	});
+	if (special) return special;
+
 	const monster = findKillMonster(name);
 	if (!monster) return invalidMonsterMsg;
 

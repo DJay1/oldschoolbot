@@ -13,6 +13,7 @@ import { Gear } from '@/lib/structures/Gear.js';
 import type { MakePartyOptions } from '@/lib/types/index.js';
 import type { BossActivityTaskOptions } from '@/lib/types/minions.js';
 import calcDurQty from '@/lib/util/calcMassDurationQuantity.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 
 async function checkReqs(users: MUser[], monster: KillableMonster, quantity: number): Promise<string | undefined> {
 	// Check if every user has the requirements for this monster.
@@ -53,13 +54,19 @@ export async function kkCommand(
 	user: MUser,
 	channelId: string,
 	inputName: string,
-	inputQuantity: number | undefined
+	inputQuantity: number | undefined,
+	preview = false
 ) {
 	await interaction.defer();
-	const failureRes = await checkReqs([user], KalphiteKingMonster, 2);
-	if (failureRes) return failureRes;
+	if (preview) {
+		const [hasReqs, reason] = await user.hasMonsterRequirements(KalphiteKingMonster);
+		if (!hasReqs) return `You don't have the requirements for this monster: ${reason}`;
+	} else {
+		const failureRes = await checkReqs([user], KalphiteKingMonster, 2);
+		if (failureRes) return failureRes;
+	}
 
-	const type = inputName.toLowerCase().includes('mass') ? 'mass' : 'solo';
+	const type = !preview && inputName.toLowerCase().includes('mass') ? 'mass' : 'solo';
 
 	const partyOptions: MakePartyOptions = {
 		interaction,
@@ -100,7 +107,7 @@ export async function kkCommand(
 	};
 
 	const users: MUser[] = type === 'mass' ? await globalClient.makeParty(partyOptions) : [user];
-	if (await ActivityManager.anyMinionIsBusy(users.map(u => u.id))) {
+	if (!preview && (await ActivityManager.anyMinionIsBusy(users.map(u => u.id)))) {
 		return 'One or more party members have their minion busy.';
 	}
 
@@ -260,6 +267,19 @@ export async function kkCommand(
 	);
 	if (typeof durQtyRes === 'string') return durQtyRes;
 	const [quantity, duration, perKillTime] = durQtyRes;
+	if (preview) {
+		return formatTripPreview({
+			user,
+			name: `${KalphiteKingMonster.name} (solo)`,
+			quantity,
+			duration,
+			notes: [
+				`Each kill takes ${formatDuration(perKillTime)} instead of ${formatDuration(KalphiteKingMonster.timeToFinish)}.`,
+				debugStr.trim()
+			],
+			cost: await calcBossFood(user, KalphiteKingMonster, 1, quantity)
+		});
+	}
 	const secondCheck = await checkReqs(users, KalphiteKingMonster, quantity);
 	if (secondCheck) return secondCheck;
 

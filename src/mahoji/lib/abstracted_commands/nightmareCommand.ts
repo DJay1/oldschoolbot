@@ -13,6 +13,7 @@ import type { NightmareActivityTaskOptions } from '@/lib/types/minions.js';
 import calcDurQty from '@/lib/util/calcMassDurationQuantity.js';
 import { getNightmareGearStats } from '@/lib/util/getNightmareGearStats.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 
 async function soloMessage(user: MUser, duration: number, quantity: number, isPhosani: boolean) {
 	const name = isPhosani ? "Phosani's Nightmare" : 'The Nightmare';
@@ -50,13 +51,18 @@ const phosaniBISGear = new Gear({
 const shadowChargesPerKc = 40;
 const sangChargesPerKc = 60;
 
-async function checkReqs(user: MUser, monster: KillableMonster, isPhosani: boolean): Promise<string | undefined> {
+async function checkReqs(
+	user: MUser,
+	monster: KillableMonster,
+	isPhosani: boolean,
+	skipBusy = false
+): Promise<string | undefined> {
 	// Check the user has the requirements to kill The Nightmare
 	if (!user.hasMinion) {
 		return `${user.usernameOrMention} doesn't have a minion, so they can't fight the nightmare!`;
 	}
 
-	if (await user.minionIsBusy()) {
+	if (!skipBusy && (await user.minionIsBusy())) {
 		return `${user.usernameOrMention} is busy right now and can't fight the nightmare!`;
 	}
 
@@ -124,7 +130,13 @@ function perUserCost(
 	return cost;
 }
 
-export async function nightmareCommand(user: MUser, channelId: string, name: string, qty: number | undefined) {
+export async function nightmareCommand(
+	user: MUser,
+	channelId: string,
+	name: string,
+	qty: number | undefined,
+	preview = false
+) {
 	const hasMace = !!user.gear.melee.hasEquipped("Inquisitor's mace");
 	const hasShadow = !!user.gear.mage.hasEquipped("Tumeken's shadow");
 	const hasSang = !!user.gear.mage.hasEquipped('Sanguinesti staff');
@@ -138,7 +150,7 @@ export async function nightmareCommand(user: MUser, channelId: string, name: str
 	} else if (name.includes('mass')) {
 		type = 'mass';
 	}
-	const err = await checkReqs(user, NightmareMonster, isPhosani);
+	const err = await checkReqs(user, NightmareMonster, isPhosani, preview);
 	if (err) return err;
 
 	const users = type === 'mass' ? [user, user, user, user] : [user];
@@ -247,6 +259,24 @@ export async function nightmareCommand(user: MUser, channelId: string, name: str
 	);
 	if (typeof durQtyRes === 'string') return durQtyRes;
 	const [quantity, duration, perKillTime] = durQtyRes;
+	if (preview) {
+		const previewCost = perUserCost(user, quantity, isPhosani, hasShadow, hasSang, hasHarm);
+		const [healPreview] = calculateMonsterFood(NightmareMonster, user);
+		const healing = Math.ceil(healPreview / users.length) * quantity * (isPhosani ? 1.5 : 1);
+		return formatTripPreview({
+			user,
+			name: isPhosani ? "Phosani's Nightmare" : `The Nightmare (${type})`,
+			quantity,
+			duration,
+			boosts: soloBoosts,
+			notes: [
+				`Each kill takes ${formatDuration(perKillTime)}.`,
+				`Food needed: ${healing.toLocaleString()} HP worth.`,
+				...(typeof previewCost === 'string' ? [previewCost] : [])
+			],
+			cost: typeof previewCost === 'string' ? undefined : previewCost
+		});
+	}
 
 	const totalCost = new Bank();
 	let soloFoodUsage: Bank | null = null;
