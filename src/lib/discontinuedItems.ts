@@ -95,3 +95,7 @@ export function getDiscontinuedItemIDs(): Set<number> {
 export function isDiscontinuedItem(itemID: number): boolean {
 	return getDiscontinuedItemIDs().has(itemID);
 }
+
+export function getUnreleasedItemIDs(): number[] {
+	return [...getDiscontinuedItemIDs()].filter(itemID => getDiscontinuedItemStatus(itemID) === 'Unreleased');
+}

@@ -2105,7 +2105,7 @@ for (const crate of keyCrates) {
 	};
 }
 
-export const unreleasedCLItems = uniqueArr(
+export const discontinuedCLItems = uniqueArr(
 	Object.values(discontinuedCollections).flatMap(activity => [...activity.items, ...(activity.allItems ?? [])])
 );
 // Get all items, from all monsters and all CLs into a variable, for uses like mostdrops
@@ -2120,14 +2120,14 @@ export const allDroppedItems = uniqueArr([
 	...Object.values(Monsters)
 		.map(m => (m?.allItems ? m.allItems : []))
 		.flat(100),
-	...unreleasedCLItems
+	...discontinuedCLItems
 ]);
 
 export const allCLItems = new Set([
 	...Object.values(allCollectionLogs)
 		.map(e => Object.values(e.activities).map(a => a.items))
 		.flat(100),
-	...unreleasedCLItems
+	...discontinuedCLItems
 ]);
 
 export const allCLItemsFiltered = new Set(
@@ -2287,6 +2287,23 @@ for (const [category, val] of Object.entries(allCollectionLogs)) {
 for (const mon of killableMonsters) allClNames.push(mon.name);
 
 // Main function that gets the user collection based on its search parameter
+export async function buildItemCollection({
+	user,
+	name,
+	items,
+	logType = 'collection'
+}: {
+	user: MUser;
+	name: string;
+	items: number[];
+	logType?: CollectionLogType;
+}): Promise<IToReturnCollection> {
+	const userItems = getBank(user, logType, await user.fetchMStats());
+	const collection = new Set(items);
+	const [collectionTotal, collectionObtained] = getUserClData(userItems, collection);
+	return { category: name, name, collection, collectionObtained, collectionTotal, userItems, counts: false };
+}
+
 export async function getCollection(options: {
 	user: MUser;
 	search: string;
@@ -2304,12 +2321,9 @@ export async function getCollection(options: {
 
 	const userStats = await user.fetchMStats();
 	const userCheckBank = getBank(user, logType, userStats);
-	const isUnreleased = stringMatches(search, 'unreleased') && (user.isAdmin() || user.isDeveloper());
-	let clItems = isUnreleased
-		? new Set(unreleasedCLItems)
-		: getCollectionItems(search, allItems, logType === 'sacrifice');
+	let clItems = getCollectionItems(search, allItems, logType === 'sacrifice');
 
-	if (clItems.size >= 500 && !isUnreleased) {
+	if (clItems.size >= 500) {
 		flags.missing = 'missing';
 	}
 
@@ -2318,18 +2332,6 @@ export async function getCollection(options: {
 	}
 
 	const [totalCl, userAmount] = getUserClData(userCheckBank, clItems);
-
-	if (isUnreleased) {
-		return {
-			category: 'Unreleased',
-			name: 'Unreleased',
-			collection: clItems,
-			collectionObtained: userAmount,
-			collectionTotal: totalCl,
-			userItems: userCheckBank,
-			counts: false
-		};
-	}
 
 	if (stringMatches(search, 'overall+')) {
 		return {

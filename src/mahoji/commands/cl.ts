@@ -1,7 +1,8 @@
-import { toTitleCase } from '@oldschoolgg/toolkit';
+import { stringMatches, toTitleCase } from '@oldschoolgg/toolkit';
 
 import { CollectionLogFlags, clImageGenerator, collectionLogTypes } from '@/lib/collectionLogTask.js';
-import { allCollectionLogs, unreleasedCLItems } from '@/lib/data/Collections.js';
+import { allCollectionLogs, buildItemCollection } from '@/lib/data/Collections.js';
+import { getUnreleasedItemIDs } from '@/lib/discontinuedItems.js';
 
 export const collectionLogCommand = defineCommand({
 	name: 'cl',
@@ -22,7 +23,12 @@ export const collectionLogCommand = defineCommand({
 					{ name: 'Overall (Main Collection Log)', value: 'overall' },
 					{ name: 'Overall+', value: 'overall+' },
 					...(canSeeUnreleased
-						? [{ name: `Unreleased (${unreleasedCLItems.length} Items, staff only)`, value: 'unreleased' }]
+						? [
+								{
+									name: `Unreleased (${getUnreleasedItemIDs().length} Items, staff only)`,
+									value: 'unreleased'
+								}
+							]
 						: []),
 					...Object.entries(allCollectionLogs)
 						.map(i => {
@@ -81,11 +87,16 @@ export const collectionLogCommand = defineCommand({
 		if (options.flag_extra) flags[options.flag_extra] = options.flag_extra;
 		if (options.all) flags.all = 'all';
 		await interaction.defer();
+		const type = options.type ?? 'collection';
+		const showUnreleased = stringMatches(options.name, 'unreleased') && (user.isAdmin() || user.isDeveloper());
 		return await clImageGenerator.generateLogImage({
 			user,
-			type: options.type ?? 'collection',
+			type,
 			flags,
-			collection: options.name,
+			collection: showUnreleased ? '' : options.name,
+			collectionLog: showUnreleased
+				? await buildItemCollection({ user, name: 'Unreleased', items: getUnreleasedItemIDs(), logType: type })
+				: undefined,
 			stats: await user.fetchMStats()
 		});
 	}
