@@ -263,6 +263,41 @@ const stalls: Stealable[] = [
 		petChance: 36_490
 	},
 	{
+		name: 'Tarnished chest',
+		type: 'stall',
+		aliases: ['tarnished', 'tarnished chest'],
+		level: 54,
+		xp: 122.5,
+		id: 60_514,
+		table: new LootTable({ limit: 60 })
+			.add('Coins', [200, 400], 20)
+			.add('Silver bar', 1, 4)
+			.add('Gold bar', 1, 4)
+			.add('Chaos rune', [5, 10], 3)
+			.add('Emerald necklace', 1, 2)
+			.add('Ruby necklace', 1, 2)
+			.add('Mithril dagger', 1, 3)
+			.add('Mithril scimitar', 1, 3)
+			.add('Iron cannonball', [5, 10], 3)
+			.add('Cannonball', [5, 10], 2)
+			.add('Mithril cannonball', [5, 10], 1)
+			.add(
+				new LootTable()
+					.add('Uncut sapphire', 1, 4)
+					.add('Uncut emerald', 1, 3)
+					.add('Uncut ruby', 1, 2)
+					.add('Uncut diamond', 1, 1),
+				1,
+				8
+			)
+			.add('Pillar frag', 2, 3)
+			.add(new LootTable().add('Elkhorn frag', 1, 6).add('Pillar frag', 1, 3).add('Umbral frag', 1, 1), 1, 1)
+			.tertiary(150, 'Clue scroll (medium)'),
+		respawnTime: Time.Second * 10,
+		lootPercent: 100,
+		petChance: 36_490
+	},
+	{
 		name: 'Spice stall',
 		type: 'stall',
 		aliases: ['spice'],
