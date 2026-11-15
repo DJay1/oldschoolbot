@@ -12,10 +12,15 @@ import {
 	Routes
 } from 'discord-api-types/v10';
 
+import { userIdsMentionedInContent } from '../client/allowedMentions.js';
 import type { DiscordClient } from '../client/DiscordClient.js';
 import { type APISendableMessage, type SendableMessage, sendableMsgToApiCreate } from '../client/types.js';
 
 type EditMessageOptions = SendableMessage;
+
+/** Shown in place of "thinking..." when the real reply had to be posted as a new message to ping someone. */
+// Discord subtext ("-# "): small grey text. A lone emoji would render jumbo-sized and clutter the channel.
+export const DEFERRED_PING_PLACEHOLDER = '-# ↓ See below';
 
 export class BaseInteraction {
 	public client: DiscordClient;
@@ -28,6 +33,8 @@ export class BaseInteraction {
 	private _ephemeral = false;
 	private _notifyMessageId: string | null = null;
 	private _pingedUserIds = new Set<string>();
+	/** Reply messages ('@original' or follow-up ids) that currently show buttons. */
+	private _componentMessageIds = new Set<string>();
 	private readonly rest: REST;
 	private _data: IChatInputCommandInteraction | IButtonInteraction;
 	public userId: string;
@@ -162,49 +169,114 @@ export class BaseInteraction {
 		return options.withResponse ? res : undefined;
 	}
 
-	private rememberPingedUsers(allowedMentions: { users?: string[] } | undefined) {
-		for (const id of allowedMentions?.users ?? []) {
-			this._pingedUserIds.add(id);
-		}
+	/**
+	 * Users this message will actually notify: listed in allowed_mentions AND mentioned in the content.
+	 * Ephemeral messages never notify anyone.
+	 */
+	private notifiableUsers(message: APISendableMessage['message']): string[] {
+		if (this._ephemeral || ((message.flags ?? 0) & MessageFlags.Ephemeral) !== 0) return [];
+		const allowed = new Set(message.allowed_mentions?.users ?? []);
+		return userIdsMentionedInContent(message.content).filter(id => allowed.has(id));
+	}
+
+	private rememberPingedUsers(ids: readonly string[]) {
+		for (const id of ids) this._pingedUserIds.add(id);
 	}
 
 	/**
-	 * Discord does not send mention notifications for edited messages. After a
-	 * defer, the first reply edits the original message so earlier replies are
-	 * never deleted. If a later reply needs to ping additional users, a
-	 * follow-up is posted and the previous message is left in place with its
-	 * buttons disabled.
+	 * Discord does not send mention notifications for edited messages. After a defer (or an earlier
+	 * reply), any reply that needs to ping a user who has not been pinged yet is posted as a new
+	 * follow-up message. Nothing is deleted. After a defer the "thinking..." placeholder is first
+	 * resolved to a neutral marker (Discord would otherwise turn the follow-up into that placeholder,
+	 * which is an edit and does not ping); if the follow-up then fails, the placeholder is edited to the
+	 * full reply instead. On later pings the previous message only has its buttons removed. Users only count as
+	 * pinged once a new (notifying) message mentioning them was sent; edits never mark anyone.
+	 * Replies with no new pings edit the latest message as before.
 	 */
+	private trackComponents(messageId: string, hasComponents: boolean) {
+		if (hasComponents) this._componentMessageIds.add(messageId);
+		else this._componentMessageIds.delete(messageId);
+	}
+
+	/** Edit a reply message and remember whether it now shows buttons. */
+	private async editTracked(messageId: string, options: SendableMessage, hasComponents: boolean) {
+		const res = await this.sendWebhookEdit(messageId, options);
+		this.trackComponents(messageId, hasComponents);
+		return res;
+	}
+
+	/** Post a follow-up and remember whether it shows buttons. */
+	private async createTracked(options: SendableMessage, hasComponents: boolean): Promise<APIMessage> {
+		const created = await this.sendWebhookCreate(options);
+		this.trackComponents(created.id, hasComponents);
+		return created;
+	}
+
+	/**
+	 * Only the latest reply message may keep buttons. Strip them from every other reply message this
+	 * interaction posted (placeholder and older follow-ups), so no stale Confirm button stays visible
+	 * after a timeout, cancel, finish or a fallback.
+	 */
+	private async clearOtherComponents(keepMessageId: string) {
+		for (const id of [...this._componentMessageIds]) {
+			if (id === keepMessageId) continue;
+			try {
+				await this.sendWebhookEdit(id, { components: [] });
+			} catch {}
+			this._componentMessageIds.delete(id);
+		}
+	}
+
 	async baseReply(
 		options: SendableMessage
 	): Promise<RESTPostAPIInteractionCallbackWithResponseResult | APIBaseMessageNoChannel | APIMessage | null> {
 		if (this._deferred || this._replied) {
 			const prepared = await this.toBody(options);
-			const users = prepared.message.allowed_mentions?.users ?? [];
-			const newPings = users.filter(id => !this._pingedUserIds.has(id));
+			const notifiable = this.notifiableUsers(prepared.message);
+			const newPings = notifiable.filter(id => !this._pingedUserIds.has(id));
+			// Edits without components clear them (resolveComponents sends []), so this is accurate for edits too.
+			const hasComponents = (prepared.message.components?.length ?? 0) > 0;
 
-			if (newPings.length > 0 && this._replied) {
-				const created = await this.sendWebhookCreate(options);
-				this.rememberPingedUsers(prepared.message.allowed_mentions);
+			if (newPings.length > 0) {
+				if (!this._replied) {
+					// Discord turns the FIRST webhook message after a defer into the deferred reply itself
+					// (an edit, so no ping). Resolve the "thinking..." placeholder first so the follow-up
+					// below is a genuinely new message that notifies.
+					await this.editTracked('@original', { content: DEFERRED_PING_PLACEHOLDER, components: [] }, false);
+					this._replied = true;
+				}
 				const previousId = this._notifyMessageId ?? '@original';
+				let created: APIMessage;
 				try {
-					await this.sendWebhookEdit(previousId, { components: [] });
-				} catch {}
+					created = await this.createTracked(options, hasComponents);
+				} catch (err) {
+					// Never leave the command without its reply: fall back to editing the latest message
+					// (no ping), and make sure that is the only message with buttons.
+					try {
+						const res = await this.editTracked(previousId, options, hasComponents);
+						await this.clearOtherComponents(previousId);
+						return res;
+					} catch {
+						throw err;
+					}
+				}
+				this.rememberPingedUsers(notifiable);
 				this._notifyMessageId = created.id;
+				await this.clearOtherComponents(created.id);
 				return created;
 			}
 
-			this.rememberPingedUsers(prepared.message.allowed_mentions);
 			this._replied = true;
-			if (this._notifyMessageId) {
-				return this.sendWebhookEdit(this._notifyMessageId, options);
-			}
-			return this.baseEditReply(options);
+			const targetId = this._notifyMessageId ?? '@original';
+			const res = await this.editTracked(targetId, options, hasComponents);
+			await this.clearOtherComponents(targetId);
+			return res;
 		}
 		this._replied = true;
 		const res = await this.sendCallback(InteractionResponseType.ChannelMessageWithSource, options);
 		const prepared = await this.toBody(options);
-		this.rememberPingedUsers(prepared.message.allowed_mentions);
+		this.trackComponents('@original', (prepared.message.components?.length ?? 0) > 0);
+		this.rememberPingedUsers(this.notifiableUsers(prepared.message));
 		return res;
 	}
 
