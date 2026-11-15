@@ -37,9 +37,11 @@ export function serverFirstItemText(names: string[], itemName: string): string {
 
 export function serverFirstLogText(names: string[], logName: string): string {
 	const who = joinNames(names);
+	// "complete **The Straw Hat Harvest** collection log", not "the **The ...**".
+	const log = /^the\s/i.test(logName) ? `**${logName}**` : `the **${logName}**`;
 	return names.length > 1
-		? `🏆 **Server first!** ${who} are the first players to complete the **${logName}** collection log!`
-		: `🏆 **Server first!** ${who} is the first player to complete the **${logName}** collection log!`;
+		? `🏆 **Server first!** ${who} are the first players to complete ${log} collection log!`
+		: `🏆 **Server first!** ${who} is the first player to complete ${log} collection log!`;
 }
 
 export interface BadLuckInput {

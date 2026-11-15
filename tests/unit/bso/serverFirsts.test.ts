@@ -26,7 +26,10 @@ describe('server firsts', () => {
 			'🏆 **Server first!** Bob is the first player to get **Bountiful cornucopia**!'
 		);
 		expect(serverFirstLogText(['Bob'], 'The Straw Hat Harvest')).toBe(
-			'🏆 **Server first!** Bob is the first player to complete the **The Straw Hat Harvest** collection log!'
+			'🏆 **Server first!** Bob is the first player to complete **The Straw Hat Harvest** collection log!'
+		);
+		expect(serverFirstLogText(['Bob'], 'Barrows Chests')).toBe(
+			'🏆 **Server first!** Bob is the first player to complete the **Barrows Chests** collection log!'
 		);
 	});
 
