@@ -324,7 +324,7 @@ class CollectionLogTask {
 			color = this.COLORS.PAGE_TITLE.PARTIAL_COMPLETION;
 		}
 
-		if (collectionLog.category === 'Discontinued') {
+		if (collectionLog.category === 'Discontinued' || collectionLog.category === 'Unreleased') {
 			color = this.COLORS.PAGE_TITLE.NOT_STARTED;
 		}
 
@@ -340,11 +340,7 @@ class CollectionLogTask {
 		if (collectionLog.completions && ['collection', 'bank', 'tame'].includes(type)) {
 			// Openables: Completions.Default is openable_scores - show Opened on its own line.
 			const openedCount = collectionLog.completions.Default;
-			if (
-				collectionLog.isOpenable &&
-				!flags.missing &&
-				openedCount !== undefined
-			) {
+			if (collectionLog.isOpenable && !flags.missing && openedCount !== undefined) {
 				const openedLabel = 'Opened: ';
 				canvas.drawText({
 					text: openedLabel,
@@ -359,57 +355,57 @@ class CollectionLogTask {
 					color: this.COLORS.WHITE
 				});
 			} else if (!collectionLog.isOpenable) {
-			const baseText = collectionLog.isActivity ? 'Completions: ' : 'Kills: ';
-			let drawnSoFar = baseText;
-			// Times done/killed
-			canvas.drawText({
-				text: baseText,
-				x: 0,
-				y: 25,
-				color: this.COLORS.ORANGEY
-			});
-			let pixelLevel = 25;
-			for (const [type, value] of objectEntries(collectionLog.completions)) {
-				const xxxx = canvas.measureTextWidth(`${drawnSoFar} / ${type}: ${value.toLocaleString()}`);
-				if (xxxx >= 255) {
-					pixelLevel += 10;
-					drawnSoFar = '';
-				}
-				if (type !== 'Default') {
+				const baseText = collectionLog.isActivity ? 'Completions: ' : 'Kills: ';
+				let drawnSoFar = baseText;
+				// Times done/killed
+				canvas.drawText({
+					text: baseText,
+					x: 0,
+					y: 25,
+					color: this.COLORS.ORANGEY
+				});
+				let pixelLevel = 25;
+				for (const [type, value] of objectEntries(collectionLog.completions)) {
+					const xxxx = canvas.measureTextWidth(`${drawnSoFar} / ${type}: ${value.toLocaleString()}`);
+					if (xxxx >= 255) {
+						pixelLevel += 10;
+						drawnSoFar = '';
+					}
+					if (type !== 'Default') {
+						canvas.drawText({
+							text: ` / ${type}: `,
+							x: canvas.measureTextWidth(drawnSoFar),
+							y: pixelLevel,
+							color: this.COLORS.ORANGEY
+						});
+						drawnSoFar += ` / ${type}: `;
+					}
+
+					const valueStr = value.toLocaleString();
 					canvas.drawText({
-						text: ` / ${type}: `,
+						text: valueStr,
+						x: canvas.measureTextWidth(drawnSoFar),
+						y: pixelLevel,
+						color: this.COLORS.WHITE
+					});
+					drawnSoFar += valueStr;
+				}
+				if (collectionLog.name === 'Guardians of the Rift') {
+					canvas.drawText({
+						text: ' Rifts searches: ',
 						x: canvas.measureTextWidth(drawnSoFar),
 						y: pixelLevel,
 						color: this.COLORS.ORANGEY
 					});
-					drawnSoFar += ` / ${type}: `;
+					drawnSoFar += ' Rifts searches: ';
+
+					canvas.drawText({
+						text: options.stats?.gotrRiftSearches.toLocaleString() ?? '',
+						x: canvas.measureTextWidth(drawnSoFar),
+						y: pixelLevel,
+						color: this.COLORS.WHITE
+					});
 				}
-
-				const valueStr = value.toLocaleString();
-				canvas.drawText({
-					text: valueStr,
-					x: canvas.measureTextWidth(drawnSoFar),
-					y: pixelLevel,
-					color: this.COLORS.WHITE
-				});
-				drawnSoFar += valueStr;
-			}
-			if (collectionLog.name === 'Guardians of the Rift') {
-				canvas.drawText({
-					text: ' Rifts searches: ',
-					x: canvas.measureTextWidth(drawnSoFar),
-					y: pixelLevel,
-					color: this.COLORS.ORANGEY
-				});
-				drawnSoFar += ' Rifts searches: ';
-
-				canvas.drawText({
-					text: options.stats?.gotrRiftSearches.toLocaleString() ?? '',
-					x: canvas.measureTextWidth(drawnSoFar),
-					y: pixelLevel,
-					color: this.COLORS.WHITE
-				});
-			}
 			}
 		}
 

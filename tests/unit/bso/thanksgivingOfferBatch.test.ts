@@ -1,7 +1,7 @@
 import { Bank, Items } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
-import { allCollectionLogs } from '@/lib/data/Collections.js';
+import { discontinuedCollections } from '@/lib/data/Collections.js';
 import { Eatables } from '@/lib/data/eatables.js';
 import { rollThanksgivingOffers, thanksgivingCL, thanksgivingStaticPack } from '@/lib/events/thanksgiving/core.js';
 import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
@@ -57,9 +57,7 @@ describe('Thanksgiving offers without a per-command cap', () => {
 		expect(Eatables.find(e => e.id === turkey.id)).toBeUndefined();
 		expect(turkey.tradeable).toBe(true);
 		expect(thanksgivingCL).not.toContain(turkey.id);
-		const old2021 = Object.values(allCollectionLogs).find(c => c.activities['Thanksgiving 2021'])!.activities[
-			'Thanksgiving 2021'
-		];
+		const old2021 = discontinuedCollections['Thanksgiving 2021'];
 		expect(old2021.items).not.toContain(turkey.id);
 	});
 
