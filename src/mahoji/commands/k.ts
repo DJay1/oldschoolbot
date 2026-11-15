@@ -1,7 +1,7 @@
 import { choicesOf } from '@/discord/index.js';
 import { PVM_METHODS } from '@/lib/constants.js';
 import { autocompleteMonsters } from '@/lib/minions/data/killableMonsters/index.js';
-import { minionKillCommand } from '@/mahoji/lib/abstracted_commands/minionKill/minionKill.js';
+import { minionKillCommand, minionKillInfoCommand } from '@/mahoji/lib/abstracted_commands/minionKill/minionKill.js';
 
 async function fetchUsersRecentlyKilledMonsters(userId: string): Promise<number[]> {
 	const res = await prisma.userStats.findUnique({
@@ -70,6 +70,12 @@ export const minionKCommand = defineCommand({
 		},
 		{
 			type: 'Boolean',
+			name: 'show_info',
+			description: 'Show kill times, boosts and supplies for this monster without starting a trip.',
+			required: false
+		},
+		{
+			type: 'Boolean',
 			name: 'wilderness',
 			description: 'If you want to kill the monster in the wilderness.',
 			required: false
@@ -88,6 +94,9 @@ export const minionKCommand = defineCommand({
 		}
 	],
 	run: async ({ options, user, channelId, interaction, rng }) => {
+		if (options.show_info) {
+			return minionKillInfoCommand(user, options.name, rng, options.method, options.wilderness);
+		}
 		return minionKillCommand(
 			user,
 			interaction,

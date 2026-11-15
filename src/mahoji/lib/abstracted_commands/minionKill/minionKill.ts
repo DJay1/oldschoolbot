@@ -7,19 +7,24 @@ import { vasaCommand } from '@/lib/bso/commands/vasaCommand.js';
 import { handleDTD } from '@/lib/bso/handleDTD.js';
 import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
 
-import { customEmoji, stringMatches, Time } from '@oldschoolgg/toolkit';
+import { customEmoji, formatDuration, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Monsters } from 'oldschooljs';
 
 import { colosseumCommand } from '@/lib/colosseum.js';
 import type { PvMMethod } from '@/lib/constants.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { revenantMonsters } from '@/lib/minions/data/killableMonsters/revs.js';
+import type { KillableMonster } from '@/lib/minions/types.js';
+import type { CurrentSlayerInfo } from '@/lib/slayer/slayerUtil.js';
 import type { MonsterActivityTaskOptions } from '@/lib/types/minions.js';
 import findMonster from '@/lib/util/findMonster.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { generateDailyPeakIntervals } from '@/lib/util/peaks.js';
 import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
-import { newMinionKillCommand } from '@/mahoji/lib/abstracted_commands/minionKill/newMinionKill.js';
+import {
+	type MinionKillReturn,
+	newMinionKillCommand
+} from '@/mahoji/lib/abstracted_commands/minionKill/newMinionKill.js';
 import { nexCommand } from '@/mahoji/lib/abstracted_commands/nexCommand.js';
 import { nightmareCommand } from '@/mahoji/lib/abstracted_commands/nightmareCommand.js';
 import { getPOH } from '@/mahoji/lib/abstracted_commands/pohCommand.js';
@@ -50,7 +55,6 @@ export async function minionKillCommand(
 	if (await user.minionIsBusy()) {
 		return 'Your minion is busy.';
 	}
-	const { minionName } = user;
 
 	if (!name) return invalidMonsterMsg;
 
@@ -77,15 +81,7 @@ export async function minionKillCommand(
 		return vasaCommand(interaction, user, channelId, inputQuantity);
 	}
 
-	let monster = findMonster(name);
-
-	const matchedRevenantMonster = revenantMonsters.find(monster =>
-		monster.aliases.some(alias => stringMatches(alias, name))
-	);
-	if (matchedRevenantMonster) {
-		monster = matchedRevenantMonster;
-	}
-
+	const monster = findKillMonster(name);
 	if (!monster) return invalidMonsterMsg;
 
 	const [hasReqs, reason] = await user.hasMonsterRequirements(monster);
@@ -97,6 +93,41 @@ export async function minionKillCommand(
 
 	if (slayerInfo.assignedTask === null && onTask) return 'You are no longer on a slayer task for this monster!';
 
+	const calculated = await calculateMinionKill({ user, monster, slayerInfo, rng, inputQuantity, method, wilderness });
+	if (typeof calculated === 'string') return calculated;
+	const { result } = calculated;
+
+	if (!user.allItemsOwned.has(result.updateBank.itemCostBank)) {
+		return `You don't have the items needed to kill this monster. You're missing: ${result.updateBank.itemCostBank.clone().remove(user.allItemsOwned)}`;
+	}
+
+	return startMinionKillTrip({ user, channelId, monster, result, slayerInfo, inputQuantity, takeEggs });
+}
+
+function findKillMonster(name: string) {
+	const matchedRevenantMonster = revenantMonsters.find(monster =>
+		monster.aliases.some(alias => stringMatches(alias, name))
+	);
+	return matchedRevenantMonster ?? findMonster(name);
+}
+
+async function calculateMinionKill({
+	user,
+	monster,
+	slayerInfo,
+	rng,
+	inputQuantity,
+	method,
+	wilderness
+}: {
+	user: MUser;
+	monster: KillableMonster;
+	slayerInfo: CurrentSlayerInfo;
+	rng: RNGProvider;
+	inputQuantity: number | undefined;
+	method: PvMMethod | undefined;
+	wilderness: boolean | undefined;
+}): Promise<string | { result: MinionKillReturn; maxTripLength: number }> {
 	const pkEvasionExperience = await user.fetchUserStat('pk_evasion_exp');
 
 	const royalTitansGroupIDs = [Monsters.Branda.id, Monsters.Eldric.id, Monsters.RoyalTitans.id];
@@ -153,11 +184,27 @@ export async function minionKillCommand(
 	if (typeof result === 'string') {
 		return result;
 	}
+	return { result, maxTripLength };
+}
 
-	if (!user.allItemsOwned.has(result.updateBank.itemCostBank)) {
-		return `You don't have the items needed to kill this monster. You're missing: ${result.updateBank.itemCostBank.clone().remove(user.allItemsOwned)}`;
-	}
-
+async function startMinionKillTrip({
+	user,
+	channelId,
+	monster,
+	result,
+	slayerInfo,
+	inputQuantity,
+	takeEggs
+}: {
+	user: MUser;
+	channelId: string;
+	monster: KillableMonster;
+	result: MinionKillReturn;
+	slayerInfo: CurrentSlayerInfo;
+	inputQuantity: number | undefined;
+	takeEggs: boolean | undefined;
+}): CommandResponse {
+	const { minionName } = user;
 	const updateResult = await result.updateBank.transact(user, { isInWilderness: result.isInWilderness });
 	if (typeof updateResult === 'string') {
 		return updateResult;
@@ -219,4 +266,57 @@ export async function minionKillCommand(
 	}
 
 	return response;
+}
+
+export async function minionKillInfoCommand(
+	user: MUser,
+	name: string,
+	rng: RNGProvider,
+	method: PvMMethod | undefined,
+	wilderness: boolean | undefined
+): CommandResponse {
+	const monster = findKillMonster(name);
+	if (!monster) return invalidMonsterMsg;
+
+	const lines = [`**${monster.name}**`];
+	const [hasReqs, reason] = await user.hasMonsterRequirements(monster);
+	if (!hasReqs) {
+		lines.push(`You can't kill this yet: ${typeof reason === 'string' ? reason : 'missing requirements'}`);
+	}
+	lines.push(`**Barrage/Burst:** ${monster.canBarrage ? 'Yes' : 'No'}`);
+	lines.push(
+		`**Cannon:** ${monster.canCannon ? `Yes, ${monster.cannonMulti ? 'multi' : 'single'} combat area` : 'No'}`
+	);
+	if (monster.qpRequired) lines.push(`**Quest points:** ${monster.qpRequired} required, you have ${user.QP}`);
+	if (!hasReqs) return lines.join('\n');
+
+	const slayerInfo = await user.fetchSlayerInfo();
+	const calculated = await calculateMinionKill({
+		user,
+		monster,
+		slayerInfo,
+		rng,
+		inputQuantity: undefined,
+		method,
+		wilderness
+	});
+	if (typeof calculated === 'string') {
+		lines.push('', calculated);
+		return lines.join('\n');
+	}
+	const { result, maxTripLength } = calculated;
+
+	lines.push(
+		'',
+		'**Trip**',
+		`You can kill **${result.quantity}x** in ${formatDuration(result.duration)} (${formatDuration(result.duration / result.quantity)} per kill, max trip ${formatDuration(maxTripLength)}).`,
+		`On task: ${result.isOnTask ? 'Yes' : 'No'}${result.isInWilderness ? ', in the Wilderness' : ''}. Attack styles: ${result.attackStyles.join(', ')}.`
+	);
+	if (result.messages.length > 0) lines.push('', '**Boosts**', result.messages.join(', '));
+	const cost = result.updateBank.itemCostBank;
+	if (cost.length > 0) {
+		lines.push('', `**Supplies for a full trip:** ${cost}`);
+		if (!user.allItemsOwned.has(cost)) lines.push(`You're missing: ${cost.clone().remove(user.allItemsOwned)}`);
+	}
+	return lines.join('\n');
 }
