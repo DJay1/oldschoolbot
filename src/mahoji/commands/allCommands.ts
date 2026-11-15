@@ -86,6 +86,7 @@ import { simulateCommand } from '@/mahoji/commands/simulate.js';
 import { slayerCommand } from '@/mahoji/commands/slayer.js';
 import { smeltingCommand } from '@/mahoji/commands/smelt.js';
 import { smithCommand } from '@/mahoji/commands/smith.js';
+import { staffCommand } from '@/mahoji/commands/staff.js';
 import { stealCommand } from '@/mahoji/commands/steal.js';
 import { testPotatoCommand } from '@/mahoji/commands/testpotato.js';
 import { thanksgivingCommand } from '@/mahoji/commands/thanksgiving.js';
@@ -169,6 +170,7 @@ export const allCommandsDONTIMPORT: AnyCommand[] = [
 	killCommand,
 	geCommand,
 	rpCommand,
+	staffCommand,
 	collectionLogCommand,
 	gearPresetsCommand,
 	bsoMinigamesCommand,

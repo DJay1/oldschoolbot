@@ -23,6 +23,8 @@ import {
 	getBitFieldData,
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
+import { setTestStaffTierOverride, staffTierOf } from '@/lib/bsc/staffAccess.js';
+import { STAFF_TIER_NAMES, type StaffTier } from '@/lib/bsc/staffTiers.js';
 import { isTestPotatoOpenForEveryone, testPotatoAccess } from '@/lib/bsc/testPotatoAccess.js';
 import { sendRecap } from '@/lib/bsc/weeklyRecap.js';
 import { RECAP_WINDOW_MS } from '@/lib/bsc/weeklyRecapFormat.js';
@@ -456,6 +458,26 @@ export const testPotatoCommand = defineCommand({
 					name: 'active',
 					description: 'True to run the event now, false to stop it.',
 					required: true
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'staff_tier',
+			description: 'Test bot only: act as a staff tier to test /staff (resets on restart).',
+			options: [
+				{
+					type: 'String',
+					name: 'tier',
+					description: 'The tier to act as, or real to go back to your real role.',
+					required: true,
+					choices: ['real', 'none', 'moderator', 'developer', 'admin'].map(t => ({ name: t, value: t }))
+				},
+				{
+					type: 'User',
+					name: 'user',
+					description: 'Who to set it for (default you). Only real admins can act as admin.',
+					required: false
 				}
 			]
 		},
@@ -1150,6 +1172,15 @@ export const testPotatoCommand = defineCommand({
 			return active
 				? `The Straw Hat Harvest is now **active** on the test bot (code enabled: ${thanksgivingCodeEnabled()}, active: ${isThanksgivingActive()}).`
 				: 'The Straw Hat Harvest is now **off** on the test bot.';
+		}
+		if (options.staff_tier) {
+			if (globalConfig.isProduction) return 'This only works on the test bot.';
+			const targetId = options.staff_tier.user?.user.id ?? user.id;
+			const choice = options.staff_tier.tier;
+			const tier = choice === 'real' ? null : (choice as StaffTier);
+			if (!setTestStaffTierOverride(targetId, tier)) return 'This only works on the test bot.';
+			const target = await mUserFetch(targetId);
+			return `<@${targetId}> now acts as **${STAFF_TIER_NAMES[staffTierOf(target)]}** for /staff, /admin and /rp on the test bot.`;
 		}
 		if (options.weekly_recap) {
 			if (globalConfig.isProduction) return 'This only works on the test bot.';

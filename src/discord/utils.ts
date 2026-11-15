@@ -42,6 +42,8 @@ type RegisteredCommandBody = RESTPostAPIApplicationGuildCommandsJSONBody & {
 	contexts?: number[];
 };
 
+export const STAFF_ONLY_COMMANDS = ['admin', 'rp', 'staff'];
+
 function convertCommandToAPICommand(
 	cmd: AnyCommand,
 	allowDms: boolean,
@@ -59,6 +61,11 @@ function convertCommandToAPICommand(
 	) {
 		// Hidden from everyone except server administrators; the command itself only runs for the bot admins.
 		// Only the test bot's own Test Server registration (all checks in testPotatoAccess.ts) skips this.
+		(body as { default_member_permissions?: string }).default_member_permissions = '0';
+	}
+	if (STAFF_ONLY_COMMANDS.includes(cmd.name)) {
+		// Hidden from everyone except server administrators. Staff roles are added per command in
+		// Server Settings > Integrations. Every handler still checks the staff tier itself.
 		(body as { default_member_permissions?: string }).default_member_permissions = '0';
 	}
 	if (!allowDms) return body;
