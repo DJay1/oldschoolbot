@@ -8,6 +8,7 @@ import { Bank, type Item, type ItemBank, ItemGroups, Items, resolveItems, ToBUni
 
 import type { Activity } from '@/prisma/main.js';
 import { choicesOf, itemOption, monsterOption, skillOption } from '@/discord/index.js';
+import { dryStreakCooldownLeft } from '@/lib/bsc/dryStreakCooldown.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { allStashUnitsFlat } from '@/lib/clues/stashUnits.js';
 import { allCLItemsFiltered, allDroppedItems } from '@/lib/data/Collections.js';
@@ -1235,7 +1236,9 @@ export const toolsCommand = defineCommand({
 				return xpGains(patron.xp_gains.time, patron.xp_gains.skill, patron.xp_gains.ironman);
 			}
 			if (patron.drystreak) {
-				if ((await user.fetchPerkTier()) < PerkTier.Four) return patronMsg(PerkTier.Four);
+				// Open to everyone. A short per-user cooldown keeps the leaderboard queries cheap.
+				const wait = dryStreakCooldownLeft(user.id, Date.now());
+				if (wait > 0) return `Please wait ${Math.ceil(wait / 1000)}s before checking another drystreak.`;
 				return dryStreakCommand(
 					patron.drystreak.source,
 					patron.drystreak.item,
