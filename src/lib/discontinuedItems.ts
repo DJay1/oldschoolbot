@@ -10,15 +10,19 @@ import { filterableTypes } from '@/lib/data/filterables.js';
 import { launchBoxCL } from '@/lib/events/launch/collectionLog.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
 import { isEventActive } from '@/lib/events/registry.js';
+import type { SeasonalEventId } from '@/lib/events/types.js';
 import { allOpenables } from '@/lib/openables.js';
 
 export const releasedDiscontinuedItemIDs = new Set<number>();
 
-/** BSC limited items that are discontinued but not in any old event log. */
-const limitedItemIDs = [LaunchItem.LAUNCH_BOX, LaunchItem.CORGO_PARTY_HAT];
+const limitedItemIDs = [LaunchItem.CORGO_PARTY_HAT];
 
-export function getDiscontinuedItemStatus(itemID: number, now = Date.now()): string {
-	if (launchBoxCL.includes(itemID) && isEventActive('launch', now)) return 'Released (Launch box)';
+export function getDiscontinuedItemStatus(
+	itemID: number,
+	now = Date.now(),
+	eventActive: (id: SeasonalEventId, now: number) => boolean = isEventActive
+): string {
+	if (launchBoxCL.includes(itemID) && eventActive('launch', now)) return 'Released (Launch box)';
 	if (releasedDiscontinuedItemIDs.has(itemID)) return 'Released';
 	return 'Unreleased';
 }
@@ -103,6 +107,33 @@ export function getUnreleasedItemIDs(): number[] {
 	return [...getDiscontinuedItemIDs()].filter(itemID => getDiscontinuedItemStatus(itemID) === 'Unreleased');
 }
 
+/**
+ * BSC-owned discontinued items: what players see in /bank filter:discontinued and the Discontinued logs.
+ * Same rule as the Launch box: an item from a BSC event becomes discontinued once that event is over and
+ * the item can't be earned anymore. The old inherited lists above (getDiscontinuedItemIDs) are NOT used
+ * here; they only stay for the staff-only Unreleased log and /dclookup.
+ * Items coming back later (Kuro, Flappy, Gregoyle, Spooky graceful) and items still obtainable
+ * (Double XP token, Double loot token) are deliberately left out.
+ */
+export const bscEndedEventItems: readonly { event: SeasonalEventId; items: readonly number[] }[] = [
+	// Launch boxes only dropped from trips during the Launch event. The Corgo party hat only comes from them.
+	{ event: 'launch', items: [LaunchItem.LAUNCH_BOX, LaunchItem.CORGO_PARTY_HAT] }
+];
+
+/** Discontinued items that are not tied to an event. Add BSC items here by hand. */
+export const bscDiscontinuedItemIDs: readonly number[] = [];
+
+export function getBscDiscontinuedItemIDs(
+	eventActive: (id: SeasonalEventId) => boolean = id => isEventActive(id)
+): Set<number> {
+	const ids = new Set<number>(bscDiscontinuedItemIDs);
+	for (const { event, items } of bscEndedEventItems) {
+		if (eventActive(event)) continue;
+		for (const id of items) ids.add(id);
+	}
+	return ids;
+}
+
 export const DISCONTINUED_CL_CATEGORY = 'Discontinued';
 
 export const DiscontinuedCLName = {
@@ -128,15 +159,13 @@ const discontinuedCLAliases: Record<DiscontinuedCLNameType, string[]> = {
 	[DiscontinuedCLName.Other]: ['discontinued other', 'disc other', 'dc other']
 };
 
-let discontinuedCLGroups: Record<DiscontinuedCLNameType, number[]> | null = null;
-
 /**
  * Splits every discontinued item into exactly one log, checked in this order:
  * pets, partyhats, boxes & crates (openables, crate keys), gear (equippable), other.
  */
-export function getDiscontinuedCLGroups(): Record<DiscontinuedCLNameType, number[]> {
-	if (discontinuedCLGroups) return discontinuedCLGroups;
-
+export function getDiscontinuedCLGroups(
+	ids: Set<number> = getBscDiscontinuedItemIDs()
+): Record<DiscontinuedCLNameType, number[]> {
 	const petIDs = new Set<number>([
 		...(allPetIDs.flat(Number.POSITIVE_INFINITY) as number[]),
 		...resolveItems(['Black swan', 'Radiant magnabbit'])
@@ -154,9 +183,7 @@ export function getDiscontinuedCLGroups(): Record<DiscontinuedCLNameType, number
 		[DiscontinuedCLName.Other]: []
 	};
 
-	const sorted = [...getDiscontinuedItemIDs()].sort((a, b) =>
-		Items.getOrThrow(a).name.localeCompare(Items.getOrThrow(b).name)
-	);
+	const sorted = [...ids].sort((a, b) => Items.getOrThrow(a).name.localeCompare(Items.getOrThrow(b).name));
 	for (const itemID of sorted) {
 		const item = Items.getOrThrow(itemID);
 		if (petIDs.has(itemID)) groups[DiscontinuedCLName.Pets].push(itemID);
@@ -166,7 +193,6 @@ export function getDiscontinuedCLGroups(): Record<DiscontinuedCLNameType, number
 		else groups[DiscontinuedCLName.Other].push(itemID);
 	}
 
-	discontinuedCLGroups = groups;
 	return groups;
 }
 
@@ -192,6 +218,6 @@ if (!filterableTypes.some(f => f.name === 'Discontinued')) {
 	filterableTypes.unshift({
 		name: 'Discontinued',
 		aliases: ['discontinued', 'disc', 'discontinued items', 'dc items'],
-		items: () => [...getDiscontinuedItemIDs()]
+		items: () => [...getBscDiscontinuedItemIDs()]
 	});
 }

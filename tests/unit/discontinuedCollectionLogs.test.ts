@@ -6,55 +6,81 @@ import { filterableTypes } from '@/lib/data/filterables.js';
 import {
 	DISCONTINUED_CL_CATEGORY,
 	DiscontinuedCLName,
+	getBscDiscontinuedItemIDs,
 	getDiscontinuedCLGroups,
 	getDiscontinuedItemIDs,
 	registerDiscontinuedCollectionLogs
 } from '@/lib/discontinuedItems.js';
 
-describe('discontinued collection logs and bank filter', () => {
-	registerDiscontinuedCollectionLogs();
-	const all = getDiscontinuedItemIDs();
-	const groups = getDiscontinuedCLGroups();
+const id = (name: string) => Items.getOrThrow(name).id;
+const launchEnded = () => false;
 
-	test('Launch box and Corgo party hat are discontinued', () => {
-		expect(all.has(Items.getOrThrow('Launch box').id)).toBe(true);
-		expect(all.has(Items.getOrThrow('Corgo party hat').id)).toBe(true);
-		expect(groups[DiscontinuedCLName.Boxes]).toContain(Items.getOrThrow('Launch box').id);
-		expect(groups[DiscontinuedCLName.Partyhats]).toContain(Items.getOrThrow('Corgo party hat').id);
+describe('BSC discontinued collection logs and bank filter', () => {
+	const all = getBscDiscontinuedItemIDs(launchEnded);
+	const groups = getDiscontinuedCLGroups(all);
+
+	test('only BSC items: Launch box and Corgo party hat once the Launch event is over', () => {
+		expect([...all].sort()).toEqual([id('Launch box'), id('Corgo party hat')].sort());
+		expect(groups[DiscontinuedCLName.Boxes]).toEqual([id('Launch box')]);
+		expect(groups[DiscontinuedCLName.Partyhats]).toEqual([id('Corgo party hat')]);
+	});
+
+	test('returning and inherited items are left out', () => {
+		for (const name of [
+			'Kuro',
+			'Flappy',
+			'Gregoyle',
+			'Spooky graceful hood',
+			'Double loot token',
+			'Chickaxe',
+			'Golden partyhat',
+			'Halloween cracker'
+		]) {
+			expect(all.has(id(name)), name).toBe(false);
+		}
+		// Inherited items are still tracked internally (staff Unreleased log, /dclookup), just not shown here.
+		expect(getDiscontinuedItemIDs().has(id('Chickaxe'))).toBe(true);
+	});
+
+	test('nothing is discontinued while the Launch event is running', () => {
+		expect(getBscDiscontinuedItemIDs(() => true).size).toBe(0);
 	});
 
 	test('every discontinued item is in exactly one discontinued log', () => {
 		const seen = new Map<number, string>();
 		for (const [name, items] of Object.entries(groups)) {
-			for (const id of items) {
-				expect(seen.get(id), `${Items.getOrThrow(id).name} in ${name} and ${seen.get(id)}`).toBeUndefined();
-				seen.set(id, name);
+			for (const itemID of items) {
+				expect(seen.get(itemID), `${Items.getOrThrow(itemID).name} in ${name}`).toBeUndefined();
+				seen.set(itemID, name);
 			}
 		}
-		for (const id of all) expect(seen.has(id), Items.getOrThrow(id).name).toBe(true);
-		expect(seen.size).toBe(all.size);
+		expect(new Set(seen.keys())).toEqual(all);
 	});
 
-	test('bank filter lists every discontinued item', () => {
+	test('bank filter equals the BSC list', () => {
 		const filter = filterableTypes.find(f => f.aliases.includes('discontinued'));
 		expect(filter?.name).toBe('Discontinued');
-		expect(new Set(filter!.items())).toEqual(all);
+		expect(new Set(filter!.items())).toEqual(getBscDiscontinuedItemIDs());
+		expect(filterableTypes.some(f => f.name === 'Custom Pets (Discontinued)')).toBe(false);
 	});
 
-	test('the Discontinued category is registered once, counts:false and outside overall', () => {
+	test('the Discontinued category only shows logs with items, counts:false, outside overall', () => {
+		registerDiscontinuedCollectionLogs();
 		registerDiscontinuedCollectionLogs();
 		const category = allCollectionLogs[DISCONTINUED_CL_CATEGORY];
+		const live = getDiscontinuedCLGroups();
 		expect(Object.keys(category.activities).sort()).toEqual(
 			Object.values(DiscontinuedCLName)
-				.filter(n => groups[n].length > 0)
+				.filter(n => live[n].length > 0)
 				.sort()
 		);
-		for (const activity of Object.values(category.activities)) expect(activity.counts).toBe(false);
-		const launchBox = Items.getOrThrow('Launch box').id;
-		expect(getCollectionItems('Discontinued Boxes & Crates').has(launchBox)).toBe(true);
-		expect(getCollectionItems('Discontinued Partyhats').has(Items.getOrThrow('Corgo party hat').id)).toBe(true);
-		// Rebuilding overall+ and overall the same way Collections.ts does must give the same sets as before
-		// registering, so Top Collector, CL % and CL leaderboards are untouched.
+		for (const activity of Object.values(category.activities)) {
+			expect(activity.counts).toBe(false);
+			expect(activity.items.length).toBeGreaterThan(0);
+		}
+		if (category.activities[DiscontinuedCLName.Boxes]) {
+			expect(getCollectionItems('Discontinued Boxes & Crates').has(id('Launch box'))).toBe(true);
+		}
 		const rebuiltOverallPlus = new Set(
 			Object.entries(allCollectionLogs)
 				.filter(([name]) => name !== 'Discontinued')
