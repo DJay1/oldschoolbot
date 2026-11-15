@@ -1,7 +1,7 @@
 import { toTitleCase } from '@oldschoolgg/toolkit';
 
 import { CollectionLogFlags, clImageGenerator, collectionLogTypes } from '@/lib/collectionLogTask.js';
-import { allCollectionLogs } from '@/lib/data/Collections.js';
+import { allCollectionLogs, unreleasedCLItems } from '@/lib/data/Collections.js';
 
 export const collectionLogCommand = defineCommand({
 	name: 'cl',
@@ -16,10 +16,14 @@ export const collectionLogCommand = defineCommand({
 			name: 'name',
 			description: 'The log you want to see.',
 			required: true,
-			autocomplete: async ({ value }: StringAutoComplete) => {
+			autocomplete: async ({ value, user }: StringAutoComplete) => {
+				const canSeeUnreleased = user.isAdmin() || user.isDeveloper();
 				return [
 					{ name: 'Overall (Main Collection Log)', value: 'overall' },
 					{ name: 'Overall+', value: 'overall+' },
+					...(canSeeUnreleased
+						? [{ name: `Unreleased (${unreleasedCLItems.length} Items, staff only)`, value: 'unreleased' }]
+						: []),
 					...Object.entries(allCollectionLogs)
 						.map(i => {
 							return [
