@@ -333,7 +333,11 @@ const fishes: Fish[] = [
 		clueScrollChance: 165_000,
 		lostTicks: 0.1,
 		bankingTime: 0,
-		ticksPerRoll: 3
+		ticksPerRoll: 3,
+		// Dropping is faster than keeping (no inventory handling), like other powerfish spots.
+		canPowerfish: true,
+		powerfishTicks: 2,
+		powerfishLostTicks: 0.05
 	},
 	{
 		name: 'Squid',
