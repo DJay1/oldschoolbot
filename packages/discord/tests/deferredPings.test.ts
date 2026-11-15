@@ -1,3 +1,5 @@
+import { ButtonBuilder } from '@discordjs/builders';
+import { ButtonStyle } from 'discord-api-types/v10';
 import { describe, expect, it } from 'vitest';
 
 import { BaseInteraction, DEFERRED_PING_PLACEHOLDER } from '../src/interactions/BaseInteraction.js';
@@ -5,6 +7,11 @@ import { BaseInteraction, DEFERRED_PING_PLACEHOLDER } from '../src/interactions/
 const A = '111111111111111111';
 const B = '222222222222222222';
 const C = '333333333333333333';
+
+const buttons = () => [
+	new ButtonBuilder().setCustomId('CONFIRM').setLabel('Confirm').setStyle(ButtonStyle.Primary),
+	new ButtonBuilder().setCustomId('CANCEL').setLabel('Cancel').setStyle(ButtonStyle.Secondary)
+];
 
 type Call = { method: 'post' | 'patch' | 'delete' | 'get'; route: string; body: any };
 
@@ -134,7 +141,7 @@ describe('deferred replies ping mentioned users', () => {
 	it('a new user later gets a new follow-up; the previous message only loses its buttons', async () => {
 		const { interaction, webhookCreates, edits } = makeInteraction();
 		await interaction.baseDeferReply();
-		await interaction.baseReply({ content: `Hi <@${B}>`, allowedMentions: { users: [B] } });
+		await interaction.baseReply({ content: `Hi <@${B}>`, allowedMentions: { users: [B] }, components: buttons() });
 		await interaction.baseReply({ content: `Hi <@${B}> and <@${C}>`, allowedMentions: { users: [B, C] } });
 		expect(webhookCreates()).toHaveLength(2);
 		const last = edits().at(-1)!;
@@ -148,5 +155,84 @@ describe('deferred replies ping mentioned users', () => {
 		await interaction.baseReply({ content: `Hi <@${B}>`, allowedMentions: { users: [B] } });
 		await interaction.baseReply({ content: `Bye <@${B}>`, allowedMentions: { users: [B] } });
 		expect(webhookCreates()).toHaveLength(0);
+	});
+});
+
+describe('no stale buttons', () => {
+	it('confirmation then timeout: only the live message is edited, placeholder never regains buttons', async () => {
+		const { interaction, edits } = makeInteraction();
+		await interaction.baseDeferReply();
+		await interaction.baseReply({
+			content: `Trade <@${B}>`,
+			allowedMentions: { users: [B, A] },
+			components: buttons()
+		});
+		await interaction.baseReply({ content: 'You ran out of time to confirm.', components: [] });
+		const last = edits().at(-1)!;
+		expect(last.route.endsWith('/created-1')).toBe(true);
+		expect(last.body.components).toEqual([]);
+		// placeholder edit + timeout edit only: nothing else had buttons
+		expect(edits()).toHaveLength(2);
+	});
+
+	it('follow-up fails: buttons land on the original, and the timeout clears them there', async () => {
+		const { interaction, edits } = makeInteraction({ failCreate: true });
+		await interaction.baseDeferReply();
+		await interaction.baseReply({
+			content: `Trade <@${B}>`,
+			allowedMentions: { users: [B] },
+			components: buttons()
+		});
+		expect(edits().at(-1)!.body.components?.length).toBeGreaterThan(0);
+		await interaction.baseReply({ content: 'The confirmation was cancelled.', components: [] });
+		const last = edits().at(-1)!;
+		expect(last.route).toContain('%40original');
+		expect(last.body.components).toEqual([]);
+	});
+
+	it('original with buttons, then a ping follow-up: the original loses its buttons; finish edits the follow-up', async () => {
+		const { interaction, edits, webhookCreates } = makeInteraction();
+		await interaction.baseReply({ content: 'Pick one', components: buttons() });
+		await interaction.baseReply({
+			content: `Confirm <@${B}>`,
+			allowedMentions: { users: [B] },
+			components: buttons()
+		});
+		expect(webhookCreates()).toHaveLength(1);
+		const stripOriginal = edits().find(e => e.route.includes('%40original'));
+		expect(stripOriginal?.body.components).toEqual([]);
+		await interaction.baseReply({ content: `Done <@${B}>`, allowedMentions: { users: [B] } });
+		const last = edits().at(-1)!;
+		expect(last.route.endsWith('/created-1')).toBe(true);
+		expect(last.body.components).toEqual([]);
+		expect(edits().filter(e => e.route.includes('%40original'))).toHaveLength(1);
+	});
+
+	it('later ping follow-up fails: the previous message gets the reply and stays the only one with buttons', async () => {
+		let fail = false;
+		const { interaction, edits, calls } = makeInteraction();
+		const rest = (interaction as any).rest;
+		const post = rest.post;
+		rest.post = async (route: string, opts: any) => {
+			if (fail && route === '/webhooks/app/tok') {
+				calls.push({ method: 'post', route, body: opts?.body });
+				throw new Error('rejected');
+			}
+			return post(route, opts);
+		};
+		await interaction.baseDeferReply();
+		await interaction.baseReply({ content: `Hi <@${B}>`, allowedMentions: { users: [B] }, components: buttons() });
+		fail = true;
+		await interaction.baseReply({
+			content: `Hi <@${B}> <@${C}>`,
+			allowedMentions: { users: [B, C] },
+			components: buttons()
+		});
+		const last = edits().at(-1)!;
+		expect(last.route.endsWith('/created-1')).toBe(true);
+		expect(last.body.components?.length).toBeGreaterThan(0);
+		await interaction.baseReply({ content: 'You ran out of time to confirm.', components: [] });
+		expect(edits().at(-1)!.route.endsWith('/created-1')).toBe(true);
+		expect(edits().at(-1)!.body.components).toEqual([]);
 	});
 });
