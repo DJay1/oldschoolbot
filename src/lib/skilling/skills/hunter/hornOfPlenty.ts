@@ -2,7 +2,7 @@ import { Bank, Items } from 'oldschooljs';
 
 import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 
-export const HORN_OF_PLENTY_MAX_CHARGES = 20_000;
+export const HORN_OF_PLENTY_MAX_CHARGES = 500_000;
 export const HORN_OF_PLENTY_CATCHES_PER_CHARGE = 25;
 
 const ready = { done: false };
@@ -59,7 +59,7 @@ export async function chargeHornOfPlentyCommand(
 ): CommandResponse {
 	const charges = await getHornOfPlentyCharges(user.id);
 	if (!amount) {
-		return `Your Horn of plenty has ${charges.toLocaleString()} charges. Use \`/minion charge item:Horn of plenty amount:[1-${HORN_OF_PLENTY_MAX_CHARGES.toLocaleString()}]\`, each Gryphon feather adds 1 charge.`;
+		return `Your Horn of plenty has ${charges.toLocaleString()}/${HORN_OF_PLENTY_MAX_CHARGES.toLocaleString()} charges. Use \`/minion charge item:Horn of plenty amount:[1-100,000]\`, each Gryphon feather adds 1 charge.`;
 	}
 	if (!user.hasEquippedOrInBank(Slayer2026Item.HORN_OF_PLENTY)) {
 		return "You don't own a Horn of plenty.";
