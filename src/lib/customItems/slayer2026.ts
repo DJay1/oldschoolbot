@@ -81,9 +81,6 @@ setCustomItem(
 			prayer: 0,
 			slot: EquipmentSlot.Shield,
 			requirements: { hunter: 50 }
-		},
-		customItemData: {
-			cantDropFromMysteryBoxes: true
 		}
 	},
 	1_000_000
