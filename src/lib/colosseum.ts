@@ -775,11 +775,11 @@ export async function colosseumCommand(itx: OSInteraction, inputQuantity?: numbe
 			quantity,
 			duration: oneColoTripTime * quantity,
 			boosts,
-			notes: [
+			stats: [
 				`Each wave takes about ${formatDuration(waveDuration)}.`,
-				...(deathBoosts.length > 0 ? [`Death chance: ${deathBoosts.join(', ')}`] : []),
-				...(missedBoosts.length > 0 ? [`Missed boosts: ${missedBoosts.join(', ')}`] : [])
+				...(deathBoosts.length > 0 ? [`Death chance: ${deathBoosts.join(', ')}`] : [])
 			],
+			missedBoosts: [...missedBoosts, ...missedDeathBoosts],
 			cost
 		});
 	}

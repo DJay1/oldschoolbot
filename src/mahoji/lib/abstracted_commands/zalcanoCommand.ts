@@ -83,7 +83,7 @@ export async function zalcanoCommand(
 			quantity,
 			duration,
 			boosts,
-			notes: [`Food needed: ${(healAmountNeeded * quantity).toLocaleString()} HP worth.`]
+			supplies: [`Food worth ${(healAmountNeeded * quantity).toLocaleString()} HP`]
 		});
 	}
 

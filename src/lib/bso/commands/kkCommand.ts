@@ -118,10 +118,12 @@ export async function kkCommand(
 	}
 
 	let debugStr = '';
+	const breakdown: string[] = [];
 	let effectiveTime = KalphiteKingMonster.timeToFinish;
 	if (isWeekend()) {
 		effectiveTime = reduceNumByPercent(effectiveTime, 5);
 		debugStr += '5% Weekend boost\n';
+		breakdown.push('5% Weekend boost');
 	}
 
 	for (const user of users) {
@@ -247,10 +249,12 @@ export async function kkCommand(
 		}
 
 		debugStr += `${msgs.join(', ')}. `;
+		breakdown.push(...msgs);
 	}
 
 	if (users.length === 1) {
 		effectiveTime = reduceNumByPercent(effectiveTime, 20);
+		breakdown.push('20% for fighting solo');
 	}
 
 	let minDuration = 2;
@@ -273,10 +277,8 @@ export async function kkCommand(
 			name: `${KalphiteKingMonster.name} (solo)`,
 			quantity,
 			duration,
-			notes: [
-				`Each kill takes ${formatDuration(perKillTime)} instead of ${formatDuration(KalphiteKingMonster.timeToFinish)}.`,
-				debugStr.trim()
-			],
+			stats: [`Base kill time: ${formatDuration(KalphiteKingMonster.timeToFinish)}`],
+			boosts: breakdown,
 			cost: await calcBossFood(user, KalphiteKingMonster, 1, quantity)
 		});
 	}

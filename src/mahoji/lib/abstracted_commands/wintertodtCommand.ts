@@ -76,7 +76,8 @@ export async function wintertodtCommand(user: MUser, channelId: string, quantity
 			name: 'Wintertodt',
 			quantity,
 			duration,
-			notes: [...messages, `Food needed: ${(healAmountNeeded * quantity).toLocaleString()} HP worth.`]
+			boosts: messages,
+			supplies: [`Food worth ${(healAmountNeeded * quantity).toLocaleString()} HP`]
 		});
 	}
 

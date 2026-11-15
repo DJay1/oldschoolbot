@@ -51,7 +51,15 @@ export async function moktangCommand(
 	cost.add('Moktang totem', quantity);
 
 	if (preview) {
-		return formatTripPreview({ user, name: 'Moktang', quantity, duration, boosts: timeToKill.messages, cost });
+		return formatTripPreview({
+			user,
+			name: 'Moktang',
+			quantity,
+			duration,
+			boosts: timeToKill.messages,
+			missedBoosts: timeToKill.missed,
+			cost
+		});
 	}
 
 	if (!user.owns(cost)) {

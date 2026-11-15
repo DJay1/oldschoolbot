@@ -269,9 +269,9 @@ export async function nightmareCommand(
 			quantity,
 			duration,
 			boosts: soloBoosts,
-			notes: [
-				`Each kill takes ${formatDuration(perKillTime)}.`,
-				`Food needed: ${healing.toLocaleString()} HP worth.`,
+			stats: [`Base kill time: ${formatDuration(NightmareMonster.timeToFinish)}`],
+			supplies: [
+				`Food worth ${healing.toLocaleString()} HP`,
 				...(typeof previewCost === 'string' ? [previewCost] : [])
 			],
 			cost: typeof previewCost === 'string' ? undefined : previewCost

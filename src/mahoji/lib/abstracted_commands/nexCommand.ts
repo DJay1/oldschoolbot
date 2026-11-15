@@ -116,20 +116,24 @@ export async function nexCommand(
 	}
 
 	let debugStr = '';
+	const breakdown: string[] = [];
 	let effectiveTime = NexMonster.timeToFinish;
 	if (isWeekend()) {
 		effectiveTime = reduceNumByPercent(effectiveTime, 5);
 		debugStr += '5% Weekend boost\n';
+		breakdown.push('5% Weekend boost');
 	}
 	const isSolo = users.length === 1;
 
 	const soloKC = await users[0].getKC(NexMonster.id);
 	if (isSolo && soloKC < 200) {
 		effectiveTime = increaseNumByPercent(effectiveTime, 20);
+		breakdown.push('-20% penalty for soloing under 200 KC');
 	}
 
 	if (isSolo && soloKC > 500) {
 		effectiveTime = reduceNumByPercent(effectiveTime, 20);
+		breakdown.push('20% for soloing over 500 KC');
 	}
 
 	for (const user of users) {
@@ -232,6 +236,7 @@ export async function nexCommand(
 		}
 
 		debugStr += `${msgs.join(', ')}. `;
+		breakdown.push(...msgs);
 	}
 
 	let minDuration = 2;
@@ -254,10 +259,8 @@ export async function nexCommand(
 			name: `${NexMonster.name} (solo)`,
 			quantity,
 			duration,
-			notes: [
-				`Each kill takes ${formatDuration(perKillTime)} instead of ${formatDuration(NexMonster.timeToFinish)}.`,
-				debugStr.trim()
-			],
+			stats: [`Base kill time: ${formatDuration(NexMonster.timeToFinish)}`],
+			boosts: breakdown,
 			cost: await calcBossFood(user, NexMonster, 1, quantity)
 		});
 	}
