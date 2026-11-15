@@ -173,8 +173,9 @@ export const cookCommand = defineCommand({
 
 		return `${user.minionName} is now cooking ${quantity}x ${cookable.name}, it'll take around ${formatTripDuration(
 			user,
-			duration
-		)} to finish.${
+			duration,
+			' to finish'
+		)}.${
 			hasRemy
 				? '\n' + customEmoji('remy') + " Remy jumps on your minions' head to help them with their cooking!"
 				: ''

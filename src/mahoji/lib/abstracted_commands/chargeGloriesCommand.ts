@@ -58,8 +58,9 @@ export async function chargeGloriesCommand(user: MUser, channelId: string, quant
 		user.minionName
 	} is now charging ${quantityGlories} Amulets of glory, doing ${gloriesInventorySize} glories in ${quantity} trips, it'll take around ${formatTripDuration(
 		user,
-		duration
-	)} to finish. Removed ${quantityGlories}x Amulet of glory from your bank.${
+		duration,
+		' to finish'
+	)}. Removed ${quantityGlories}x Amulet of glory from your bank.${
 		hasDiary ? ' 3x Boost for Wilderness Elite diary.' : ''
 	}`;
 }

@@ -151,7 +151,7 @@ export const craftCommand = defineCommand({
 		});
 		let str = `${user.minionName} is now crafting ${quantity}${sets} ${
 			craftable.name
-		}, it'll take around ${formatTripDuration(user, duration)} to finish. Removed ${itemsNeeded} from your bank.`;
+		}, it'll take around ${formatTripDuration(user, duration, ' to finish')}. Removed ${itemsNeeded} from your bank.`;
 		if (boosts.length > 0) {
 			str += `**Boosts:** ${boosts.join(', ')}`;
 		}

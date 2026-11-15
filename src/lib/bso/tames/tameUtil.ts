@@ -57,8 +57,10 @@ export function getTameStatus(tameActivity: TameActivity | null, user?: MUser) {
 	if (tameActivity) {
 		const durationRemaining = tameActivity.finish_date.valueOf() - Date.now();
 		const timeRemaining = `${
-			user ? formatTripDuration(user, durationRemaining) : formatDuration(durationRemaining, true)
-		} remaining`;
+			user
+				? formatTripDuration(user, durationRemaining, ' remaining')
+				: `${formatDuration(durationRemaining, true)} remaining`
+		}`;
 		const activityData = tameActivity.data as any as TameTaskOptions;
 		switch (activityData.type) {
 			case TameType.Combat:

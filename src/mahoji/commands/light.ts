@@ -87,7 +87,8 @@ export const lightCommand = defineCommand({
 
 		return `${user.minionName} is now lighting ${quantity}x ${log.name}, it'll take around ${formatTripDuration(
 			user,
-			duration
-		)} to finish.`;
+			duration,
+			' to finish'
+		)}.`;
 	}
 });

@@ -390,8 +390,9 @@ export const runecraftCommand = defineCommand({
 
 		response += `Essence into ${runeObj.name}, it'll take around ${formatTripDuration(
 			user,
-			duration
-		)} to finish, this will take ${numberOfInventories}x trips to the altar. You'll get ${outputQuantity}x runes due to the multiplier.\n\n**Boosts:** ${boosts.join(
+			duration,
+			' to finish'
+		)}, this will take ${numberOfInventories}x trips to the altar. You'll get ${outputQuantity}x runes due to the multiplier.\n\n**Boosts:** ${boosts.join(
 			', '
 		)}`;
 

@@ -414,7 +414,7 @@ ${reqs.unmetRequirements.map(str => `- ${str}`).join('\n')}`;
 		response.setContent(
 			`${user.minionName} is now completing ${quantity}x ${
 				clueTier.name
-			} clues, it'll take around ${formatTripDuration(user, duration)} to finish (${((quantity / duration) * 3600000).toFixed(1)}/hr).${
+			} clues, it'll take around ${formatTripDuration(user, duration, ' to finish')} (${((quantity / duration) * 3600000).toFixed(1)}/hr).${
 				boosts.length > 0 ? `\n\n**Boosts:** ${boosts.join(', ')}.` : ''
 			}${implingLootString}`
 		);

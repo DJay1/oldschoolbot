@@ -196,7 +196,7 @@ export const fishCommand = defineCommand({
 			type: 'Fishing'
 		});
 
-		let response = `${user.minionName} is now fishing ${spot.name}, it'll take around ${formatTripDuration(user, result.duration)} to finish.`;
+		let response = `${user.minionName} is now fishing ${spot.name}, it'll take around ${formatTripDuration(user, result.duration, ' to finish')}.`;
 		if (isEventActive('summer')) {
 			const hasPatricia = user.usingPet('Patricia');
 			if (

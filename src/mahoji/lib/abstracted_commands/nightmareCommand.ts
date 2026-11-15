@@ -29,7 +29,7 @@ async function soloMessage(user: MUser, duration: number, quantity: number, isPh
 		str += ` They are not scared of ${name} anymore, and ready to fight!`;
 	}
 
-	return `${str} The trip will return in about approximately ${formatTripDuration(user, duration)}.`;
+	return `${str} The trip will return in about ${formatTripDuration(user, duration)}.`;
 }
 
 const inquisitorItems = resolveItems(["Inquisitor's great helm", "Inquisitor's hauberk", "Inquisitor's plateskirt"]);

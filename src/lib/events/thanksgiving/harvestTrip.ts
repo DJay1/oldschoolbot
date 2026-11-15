@@ -63,5 +63,5 @@ export async function thanksgivingHarvestCommand({
 		doubleLoot: false,
 		blessing: hasHarvestBlessing(user)
 	});
-	return `🌾 ${user.minionName} is now gathering **${thanksgivingHarvestPartName(chosen)}** for The Straw Hat Harvest, it'll take around ${formatTripDuration(user, duration)} to finish.\nExpected: about **${expected.toFixed(1)}** ${thanksgivingHarvestPartName(chosen)} (random amount; ${Math.round(THANKSGIVING_HARVEST_DISCOUNT * 100)}% of a normal trip's event value, counting 1 Wicker basket as 5 Harvest bundles, all in this part; Double Loot doubles it). Harvest trips don't also roll the normal trip drops of Harvest bundles and Wicker baskets.`;
+	return `🌾 ${user.minionName} is now gathering **${thanksgivingHarvestPartName(chosen)}** for The Straw Hat Harvest, it'll take around ${formatTripDuration(user, duration, ' to finish')}.\nExpected: about **${expected.toFixed(1)}** ${thanksgivingHarvestPartName(chosen)} (random amount; ${Math.round(THANKSGIVING_HARVEST_DISCOUNT * 100)}% of a normal trip's event value, counting 1 Wicker basket as 5 Harvest bundles, all in this part; Double Loot doubles it). Harvest trips don't also roll the normal trip drops of Harvest bundles and Wicker baskets.`;
 }

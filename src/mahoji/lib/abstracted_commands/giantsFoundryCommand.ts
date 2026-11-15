@@ -246,7 +246,7 @@ export async function giantsFoundryStartCommand(
 		metalScore: alloy.metalScore
 	});
 
-	return `${user.minionName} is now doing ${quantity}x Giants' Foundry! It will take ${formatTripDuration(user, duration)} to finish. **Boosts:** ${boosts.join(', ')}\nYour minion used up ${totalCost}`;
+	return `${user.minionName} is now doing ${quantity}x Giants' Foundry! It will take ${formatTripDuration(user, duration, ' to finish')}. **Boosts:** ${boosts.join(', ')}\nYour minion used up ${totalCost}`;
 }
 
 export async function giantsFoundryShopCommand(

@@ -285,7 +285,7 @@ async function startMinionKillTrip({
 		takeEggs: takeEggs && monster.id === Slayer2026MonsterID.MAGGOT_KING ? true : undefined
 	});
 
-	let response = `${minionName} is now killing ${result.quantity}x ${monster.name}, ${dtdResult ? `using a ${customEmoji('deathtouched_dart')} **Deathtouched dart**, it'll take around ${formatTripDuration(user, Time.Second * 5)}` : `It'll take around ${formatTripDuration(user, result.duration)} to finish`}. Attack styles used: ${result.attackStyles.join(', ')}.`;
+	let response = `${minionName} is now killing ${result.quantity}x ${monster.name}, ${dtdResult ? `using a ${customEmoji('deathtouched_dart')} **Deathtouched dart**, it'll take around ${formatTripDuration(user, Time.Second * 5)}` : `It'll take around ${formatTripDuration(user, result.duration, ' to finish')}`}. Attack styles used: ${result.attackStyles.join(', ')}.`;
 
 	if (result.messages.length > 0) {
 		response += `\n\n${result.messages.join(', ')}`;
