@@ -28,7 +28,7 @@ export const thanksgivingCommand = defineCommand({
 					type: 'String',
 					name: 'quantity',
 					description:
-						"How many Bountiful cornucopias: a number or 'all' (default: all you own). Harvest turkeys go one at a time.",
+						"Bountiful cornucopias to offer: a number or 'all' (default all). Harvest turkeys go one at a time.",
 					required: false,
 					autocomplete: async ({ value, userId }: StringAutoComplete) => {
 						const user = await mUserFetch(userId);
