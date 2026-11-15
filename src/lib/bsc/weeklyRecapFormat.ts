@@ -1,3 +1,5 @@
+import { Emoji } from '@oldschoolgg/toolkit';
+
 /**
  * Weekly recap: pure helpers (schedule maths and text). No DB or Discord, so they are easy to test.
  * Data loading and posting live in ./weeklyRecap.ts.
@@ -177,26 +179,30 @@ export function buildRecap(data: RecapData, limit = 5): { content: string; userI
 		return tag(id);
 	};
 
-	sections.push(`**Bark School Corgo — Weekly Recap**\n${formatRecapRange(data.startMs, data.endMs)}`);
+	sections.push(
+		`${Emoji.EsbCorgi} **Bark School Corgo — Weekly Recap**\n${formatRecapRange(data.startMs, data.endMs)}`
+	);
 
 	if (data.trips > 0 || data.trades > 0) {
 		const second = [`${fmtNum(data.trades)} player trades`];
 		if (data.topSkill) second.push(`most XP: ${titleCase(data.topSkill.skill)} (${fmtXP(data.topSkill.xp)})`);
 		sections.push(
-			`📦 **The week in numbers**\n${fmtNum(data.trips)} trips • ${fmtNum(data.hours)} hours • ${fmtNum(data.players)} players\n${second.join(' • ')}`
+			`${Emoji.Bank} **The week in numbers**\n${fmtNum(data.trips)} trips • ${fmtNum(data.hours)} hours • ${fmtNum(data.players)} players\n${second.join(' • ')}`
 		);
 	}
 	if (data.bosses.length > 0) {
-		sections.push(`⚔️ **Most hunted bosses**\n${ranked(data.bosses, b => `${b.name} — ${fmtNum(b.kc)} KC`, limit)}`);
+		sections.push(
+			`${Emoji.CombatSword} **Most hunted bosses**\n${ranked(data.bosses, b => `${b.name} — ${fmtNum(b.kc)} KC`, limit)}`
+		);
 	}
 	if (data.bossHunters.length > 0) {
 		sections.push(
-			`🏆 **Top boss hunters**\n${ranked(data.bossHunters, b => `${t(b.userID)} — ${fmtNum(b.kc)} KC`, limit)}`
+			`${Emoji.DragonTrophy} **Top boss hunters**\n${ranked(data.bossHunters, b => `${t(b.userID)} — ${fmtNum(b.kc)} KC`, limit)}`
 		);
 	}
 	if (data.skillers.length > 0) {
 		sections.push(
-			`📈 **Top skillers**\n${ranked(data.skillers, s => `${t(s.userID)} — ${fmtXP(s.xp)} XP`, limit)}`
+			`${Emoji.XP} **Top skillers**\n${ranked(data.skillers, s => `${t(s.userID)} — ${fmtXP(s.xp)} XP`, limit)}`
 		);
 	}
 
@@ -226,7 +232,7 @@ export function buildRecap(data: RecapData, limit = 5): { content: string; userI
 			.slice(0, 3);
 		if (top.length > 0) levelLines.push(`Most 99s: ${top.map(([id, n]) => `${t(id)} (${n})`).join(', ')}.`);
 	}
-	if (levelLines.length > 0) sections.push(`🎓 **New 99s and 120s**\n${levelLines.join('\n')}`);
+	if (levelLines.length > 0) sections.push(`${Emoji.Skiller} **New 99s and 120s**\n${levelLines.join('\n')}`);
 
 	if (data.clCompletions.length > 0) {
 		const pages = data.clCompletions.map(c => c.page);
@@ -241,7 +247,7 @@ export function buildRecap(data: RecapData, limit = 5): { content: string; userI
 		if (notable.length > 0) {
 			lines.push(`${joinList(notable)} ${notable.length === 1 ? 'was' : 'were'} also finished this week.`);
 		}
-		sections.push(`📜 **Collection logs**\n${lines.join('\n')}`);
+		sections.push(`${Emoji.CollectionLog} **Collection logs**\n${lines.join('\n')}`);
 	}
 
 	const content = sections.join('\n\n');

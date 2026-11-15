@@ -1,3 +1,4 @@
+import { Emoji } from '@oldschoolgg/toolkit';
 import { Bank, EMonster, Items, itemID } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
@@ -17,19 +18,19 @@ import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
 describe('server firsts', () => {
 	test('texts', () => {
 		expect(serverFirstBossText(['Bob'], 'Zulrah')).toBe(
-			'🏆 **Server first!** Bob is the first player to kill **Zulrah**!'
+			`${Emoji.Trophy} **Server first!** Bob is the first player to kill **Zulrah**!`
 		);
 		expect(serverFirstBossText(['Bob', 'Amy'], 'Zulrah')).toBe(
-			'🏆 **Server first!** Bob and Amy are the first players to kill **Zulrah**!'
+			`${Emoji.Trophy} **Server first!** Bob and Amy are the first players to kill **Zulrah**!`
 		);
 		expect(serverFirstItemText(['Bob'], 'Bountiful cornucopia')).toBe(
-			'🏆 **Server first!** Bob is the first player to get **Bountiful cornucopia**!'
+			`${Emoji.Trophy} **Server first!** Bob is the first player to get **Bountiful cornucopia**!`
 		);
 		expect(serverFirstLogText(['Bob'], 'The Straw Hat Harvest')).toBe(
-			'🏆 **Server first!** Bob is the first player to complete **The Straw Hat Harvest** collection log!'
+			`${Emoji.Trophy} **Server first!** Bob is the first player to complete **The Straw Hat Harvest** collection log!`
 		);
 		expect(serverFirstLogText(['Bob'], 'Barrows Chests')).toBe(
-			'🏆 **Server first!** Bob is the first player to complete the **Barrows Chests** collection log!'
+			`${Emoji.Trophy} **Server first!** Bob is the first player to complete the **Barrows Chests** collection log!`
 		);
 	});
 
@@ -89,7 +90,7 @@ describe('bad luck', () => {
 				multiple: 13_402 / 4000
 			})
 		).toBe(
-			'😬 **Bad luck!** Bob got their first **Pet snakeling** at **13,402** Zulrah KC, 3.3x the 1/4,000 drop rate.'
+			`${Emoji.Sad} **Bad luck!** Bob got their first **Pet snakeling** at **13,402** Zulrah KC, 3.3x the 1/4,000 drop rate.`
 		);
 	});
 

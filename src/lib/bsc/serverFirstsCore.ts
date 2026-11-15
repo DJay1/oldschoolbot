@@ -1,3 +1,5 @@
+import { Emoji } from '@oldschoolgg/toolkit';
+
 /**
  * Server firsts and bad luck: pure helpers (text and maths). No DB or Discord here so they are easy to test.
  * The scanning, claiming and sending lives in ./serverFirsts.ts.
@@ -24,15 +26,15 @@ export function joinNames(names: string[]): string {
 export function serverFirstBossText(names: string[], monsterName: string): string {
 	const who = joinNames(names);
 	return names.length > 1
-		? `🏆 **Server first!** ${who} are the first players to kill **${monsterName}**!`
-		: `🏆 **Server first!** ${who} is the first player to kill **${monsterName}**!`;
+		? `${Emoji.Trophy} **Server first!** ${who} are the first players to kill **${monsterName}**!`
+		: `${Emoji.Trophy} **Server first!** ${who} is the first player to kill **${monsterName}**!`;
 }
 
 export function serverFirstItemText(names: string[], itemName: string): string {
 	const who = joinNames(names);
 	return names.length > 1
-		? `🏆 **Server first!** ${who} are the first players to get **${itemName}**!`
-		: `🏆 **Server first!** ${who} is the first player to get **${itemName}**!`;
+		? `${Emoji.Trophy} **Server first!** ${who} are the first players to get **${itemName}**!`
+		: `${Emoji.Trophy} **Server first!** ${who} is the first player to get **${itemName}**!`;
 }
 
 export function serverFirstLogText(names: string[], logName: string): string {
@@ -40,8 +42,8 @@ export function serverFirstLogText(names: string[], logName: string): string {
 	// "complete **The Straw Hat Harvest** collection log", not "the **The ...**".
 	const log = /^the\s/i.test(logName) ? `**${logName}**` : `the **${logName}**`;
 	return names.length > 1
-		? `🏆 **Server first!** ${who} are the first players to complete ${log} collection log!`
-		: `🏆 **Server first!** ${who} is the first player to complete ${log} collection log!`;
+		? `${Emoji.Trophy} **Server first!** ${who} are the first players to complete ${log} collection log!`
+		: `${Emoji.Trophy} **Server first!** ${who} is the first player to complete ${log} collection log!`;
 }
 
 export interface BadLuckInput {
@@ -84,7 +86,7 @@ export function findBadLuckDrops({ added, amountBefore, rates, kcAfter, quantity
 
 export function badLuckText(name: string, itemName: string, monsterName: string, drop: BadLuckDrop): string {
 	const multiple = Math.floor(drop.multiple * 10) / 10;
-	return `😬 **Bad luck!** ${name} got their first **${itemName}** at **${drop.kc.toLocaleString('en-US')}** ${monsterName} KC, ${multiple}x the 1/${drop.rate.toLocaleString('en-US')} drop rate.`;
+	return `${Emoji.Sad} **Bad luck!** ${name} got their first **${itemName}** at **${drop.kc.toLocaleString('en-US')}** ${monsterName} KC, ${multiple}x the 1/${drop.rate.toLocaleString('en-US')} drop rate.`;
 }
 
 export interface ScanRow {

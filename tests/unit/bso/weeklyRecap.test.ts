@@ -1,3 +1,4 @@
+import { Emoji } from '@oldschoolgg/toolkit';
 import { describe, expect, test } from 'vitest';
 
 import { recapBossNames } from '@/lib/bsc/weeklyRecap.js';
@@ -88,29 +89,29 @@ describe('weekly recap text', () => {
 		const { content, userIDs } = buildRecap(data);
 		expect(content).toBe(
 			[
-				'**Bark School Corgo — Weekly Recap**',
+				`${Emoji.EsbCorgi} **Bark School Corgo — Weekly Recap**`,
 				'Sun, Nov 8, 12:00 PM – Sun, Nov 15, 12:00 PM CT, 2026',
 				'',
-				'📦 **The week in numbers**',
+				`${Emoji.Bank} **The week in numbers**`,
 				'6,844 trips • 3,229 hours • 45 players',
 				'203 player trades • most XP: Firemaking (698.3m)',
 				'',
-				'⚔️ **Most hunted bosses**',
+				`${Emoji.CombatSword} **Most hunted bosses**`,
 				'1. Barrows — 11,884 KC',
 				'2. General Graardor — 3,735 KC',
 				'',
-				'🏆 **Top boss hunters**',
+				`${Emoji.DragonTrophy} **Top boss hunters**`,
 				'1. <@1> — 2,269 KC',
 				'',
-				'📈 **Top skillers**',
+				`${Emoji.XP} **Top skillers**`,
 				'1. <@2> — 595.1m XP',
 				'',
-				'🎓 **New 99s and 120s**',
+				`${Emoji.Skiller} **New 99s and 120s**`,
 				'New 120s: <@2> and <@3> (Firemaking), <@4> (Fishing)',
 				'2 players reached a new 99, for 3 new 99s in all.',
 				'Most 99s: <@5> (2).',
 				'',
-				'📜 **Collection logs**',
+				`${Emoji.CollectionLog} **Collection logs**`,
 				'4 players finished 4 pages.',
 				'Most completed: Skilling Pets (2), Obor and The Inferno (1 each).'
 			].join('\n')
@@ -132,7 +133,7 @@ describe('weekly recap text', () => {
 			clCompletions: []
 		});
 		expect(content).toBe(
-			'**Bark School Corgo — Weekly Recap**\nSun, Nov 8, 12:00 PM – Sun, Nov 15, 12:00 PM CT, 2026'
+			`${Emoji.EsbCorgi} **Bark School Corgo — Weekly Recap**\nSun, Nov 8, 12:00 PM – Sun, Nov 15, 12:00 PM CT, 2026`
 		);
 		expect(userIDs).toEqual([]);
 	});
