@@ -43,7 +43,8 @@ export const NON_PRISMA_WIPE_TABLES = [
 	'bsc_mortimer',
 	'bsc_slayer_task_modifier',
 	'bsc_slayer_blocks',
-	'bsc_horn_of_plenty'
+	'bsc_horn_of_plenty',
+	'bsc_auto_roles'
 ] as const;
 
 export const MAIN_MODELS: readonly ClassifiedModel[] = [
