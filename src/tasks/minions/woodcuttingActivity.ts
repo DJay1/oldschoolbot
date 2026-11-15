@@ -146,7 +146,8 @@ async function handleForestry({
 				skillName: key,
 				amount: Math.ceil(val),
 				minimal: true,
-				source: 'ForestryEvents'
+				source: 'ForestryEvents',
+				duration
 			});
 		}
 	}
