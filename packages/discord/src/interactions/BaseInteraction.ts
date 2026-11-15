@@ -183,8 +183,10 @@ export class BaseInteraction {
 	/**
 	 * Discord does not send mention notifications for edited messages. After a defer (or an earlier
 	 * reply), any reply that needs to ping a user who has not been pinged yet is posted as a new
-	 * follow-up message. Nothing is deleted: the previous message has its buttons removed, and an
-	 * unanswered "thinking..." placeholder is replaced with a neutral marker. Users only count as
+	 * follow-up message. Nothing is deleted. After a defer the "thinking..." placeholder is first
+	 * resolved to a neutral marker (Discord would otherwise turn the follow-up into that placeholder,
+	 * which is an edit and does not ping); if the follow-up then fails, the placeholder is edited to the
+	 * full reply instead. On later pings the previous message only has its buttons removed. Users only count as
 	 * pinged once a new (notifying) message mentioning them was sent; edits never mark anyone.
 	 * Replies with no new pings edit the latest message as before.
 	 */
@@ -197,16 +199,41 @@ export class BaseInteraction {
 			const newPings = notifiable.filter(id => !this._pingedUserIds.has(id));
 
 			if (newPings.length > 0) {
-				const placeholderPending = !this._replied;
-				const created = await this.sendWebhookCreate(options);
-				this._replied = true;
-				this.rememberPingedUsers(notifiable);
+				if (!this._replied) {
+					// Discord turns the FIRST webhook message after a defer into the deferred reply itself
+					// (an edit, so no ping). Resolve the "thinking..." placeholder first so the follow-up
+					// below is a genuinely new message that notifies.
+					await this.sendWebhookEdit('@original', { content: DEFERRED_PING_PLACEHOLDER, components: [] });
+					this._replied = true;
+					let created: APIMessage;
+					try {
+						created = await this.sendWebhookCreate(options);
+					} catch (err) {
+						// Never leave the command without its reply: fall back to the old edit (no ping).
+						try {
+							return await this.baseEditReply(options);
+						} catch {
+							throw err;
+						}
+					}
+					this.rememberPingedUsers(notifiable);
+					this._notifyMessageId = created.id;
+					return created;
+				}
 				const previousId = this._notifyMessageId ?? '@original';
+				let created: APIMessage;
 				try {
-					await this.sendWebhookEdit(
-						previousId,
-						placeholderPending ? { content: DEFERRED_PING_PLACEHOLDER, components: [] } : { components: [] }
-					);
+					created = await this.sendWebhookCreate(options);
+				} catch (err) {
+					try {
+						return await this.sendWebhookEdit(previousId, options);
+					} catch {
+						throw err;
+					}
+				}
+				this.rememberPingedUsers(notifiable);
+				try {
+					await this.sendWebhookEdit(previousId, { components: [] });
 				} catch {}
 				this._notifyMessageId = created.id;
 				return created;

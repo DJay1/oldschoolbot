@@ -8,12 +8,13 @@ const C = '333333333333333333';
 
 type Call = { method: 'post' | 'patch' | 'delete' | 'get'; route: string; body: any };
 
-function makeInteraction() {
+function makeInteraction({ failCreate = false }: { failCreate?: boolean } = {}) {
 	const calls: Call[] = [];
 	let n = 0;
 	const rest = {
 		post: async (route: string, opts: any) => {
 			calls.push({ method: 'post', route, body: opts?.body });
+			if (failCreate && route === '/webhooks/app/tok') throw new Error('follow-up rejected');
 			return route === '/webhooks/app/tok' ? { id: `created-${++n}` } : null;
 		},
 		patch: async (route: string, opts: any) => {
@@ -60,6 +61,25 @@ describe('deferred replies ping mentioned users', () => {
 		expect(edits()[0].body.components).toEqual([]);
 		expect(calls.some(c => c.method === 'delete')).toBe(false);
 		expect(interaction.replied).toBe(true);
+		// Order matters: Discord turns the first webhook message after a defer into the deferred reply
+		// (an edit, no ping), so the placeholder must be resolved BEFORE the follow-up is created.
+		const editIdx = calls.findIndex(c => c.method === 'patch');
+		const createIdx = calls.findIndex(c => c.method === 'post' && c.route === '/webhooks/app/tok');
+		expect(editIdx).toBeGreaterThan(-1);
+		expect(editIdx).toBeLessThan(createIdx);
+	});
+
+	it('if the follow-up fails, the original is edited to the full reply so the command still works', async () => {
+		const { interaction, edits } = makeInteraction({ failCreate: true });
+		await interaction.baseDeferReply();
+		await interaction.baseReply({ content: `Trade with <@${B}>`, allowedMentions: { users: [B] } });
+		expect(edits()).toHaveLength(2);
+		expect(edits()[0].body.content).toBe(DEFERRED_PING_PLACEHOLDER);
+		expect(edits()[1].route).toContain('%40original');
+		expect(edits()[1].body.content).toBe(`Trade with <@${B}>`);
+		// Not marked as pinged, so a later reply still tries a notifying follow-up.
+		await interaction.baseReply({ content: `Done <@${B}>`, allowedMentions: { users: [B] } });
+		expect(edits().at(-1)!.body.content).toBe(`Done <@${B}>`);
 	});
 
 	it('later replies to the same users edit the follow-up (no re-ping, no double post)', async () => {
