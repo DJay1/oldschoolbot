@@ -1,3 +1,4 @@
+import { gifs } from '@/lib/bsc/corgoGifs.js';
 import { runStaffBoost, staffBoostsUsed, staffGuildAllowed, staffTierOf } from '@/lib/bsc/staffAccess.js';
 import {
 	STAFF_BOOST_LABELS,
@@ -136,11 +137,11 @@ export const staffCommand = defineCommand({
 		}
 	] as CommandOption[],
 	run: async ctx => {
-		const { user, guildId, interaction } = ctx;
+		const { user, guildId, interaction, rng } = ctx;
 		const options = ctx.options as Record<string, any>;
-		if (!staffGuildAllowed(guildId)) return 'Staff commands only work in the main server.';
+		if (!staffGuildAllowed(guildId)) return rng.pick(gifs);
 		const tier = staffTierOf(user);
-		if (tier === 'none') return 'This command is for staff only.';
+		if (tier === 'none') return rng.pick(gifs);
 
 		if (options.help) return staffHelp(user, tier);
 

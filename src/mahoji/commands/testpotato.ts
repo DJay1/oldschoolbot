@@ -23,6 +23,7 @@ import {
 	getBitFieldData,
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
+import { gifs } from '@/lib/bsc/corgoGifs.js';
 import { setTestStaffTierOverride, staffTierOf } from '@/lib/bsc/staffAccess.js';
 import { STAFF_TIER_NAMES, type StaffTier } from '@/lib/bsc/staffTiers.js';
 import { isTestPotatoOpenForEveryone, testPotatoAccess } from '@/lib/bsc/testPotatoAccess.js';
@@ -812,10 +813,10 @@ export const testPotatoCommand = defineCommand({
 		});
 		if (access === 'denied') {
 			Logging.logError('Test command blocked for non-admin', { userID: user.id });
-			return 'Only the bot owner can use this.';
+			return rng.pick(gifs);
 		}
 		if (access === 'admin_only_subcommand') {
-			return 'Only bot admins can use this part of /testpotato.';
+			return rng.pick(gifs);
 		}
 
 		if (options.party) {

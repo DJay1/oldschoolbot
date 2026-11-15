@@ -48,6 +48,7 @@ import {
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
 import { runAnnouncementBackfill } from '@/lib/bsc/announcementBackfill.js';
+import { gifs } from '@/lib/bsc/corgoGifs.js';
 import { assignBscCustomBackground } from '@/lib/bsc/patronPerks.js';
 import { setBscPatronOverride } from '@/lib/bsc/patronSync.js';
 import { parseBscPatronTierInput } from '@/lib/bsc/patronTiers.js';
@@ -70,11 +71,7 @@ import { parseBank, parseStringBank } from '@/lib/util/parseStringBank.js';
 import { safeMessage } from '@/lib/util/smallUtils.js';
 import { makeGiveawayButtons } from '@/mahoji/commands/giveaway.js';
 
-export const gifs = [
-	'https://media.giphy.com/media/NMZT5hsCgmHDVfGasZ/giphy.gif',
-	'https://media.giphy.com/media/Y4pAQv58ETJgRwoLxj/giphy.gif',
-	'https://media.giphy.com/media/3oEduQAsYcJKQH2XsI/giphy.gif'
-];
+export { gifs } from '@/lib/bsc/corgoGifs.js';
 
 const leaguesTaskNameByID = new Map(allLeagueTasks.map(task => [task.id, task.name] as const));
 const adminGiveItemDestinations = ['Lottery Bank'] as const;
