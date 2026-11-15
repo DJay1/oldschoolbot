@@ -90,10 +90,16 @@ export async function planAutoFarmTrip(
 
 	const contract = user.farmingContract();
 	const hasActiveContract = Boolean(contract.contract?.hasContract);
-	const contractPlant =
+	const assignedContractPlant =
 		hasActiveContract && contract.contract?.plantToGrow
 			? (contract.plant ??
 				(contract.contract?.plantToGrow ? plants.find(pl => pl.name === contract.contract?.plantToGrow) : null))
+			: null;
+	const contractPlant =
+		assignedContractPlant &&
+		assignedContractPlant.level <= farmingLevel &&
+		user.bank.has(assignedContractPlant.inputItems)
+			? assignedContractPlant
 			: null;
 
 	const planRequests = buildPlanRequests({

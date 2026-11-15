@@ -148,13 +148,13 @@ export function resolveSeedForPatch({
 	const patchAlreadyHasContractCrop =
 		patch.patchPlanted && contractPlant !== null && patch.lastPlanted === contractPlant.name;
 
-	if (
-		preferContract &&
+	const contractFitsPatch =
 		hasActiveContract &&
-		contractPlant &&
+		contractPlant !== null &&
 		contractPlant.seedType === patch.patchName &&
-		!patchAlreadyHasContractCrop
-	) {
+		!patchAlreadyHasContractCrop;
+
+	if (preferContract && contractFitsPatch) {
 		return { type: 'plant', plant: contractPlant, reason: 'contract' };
 	}
 
@@ -173,6 +173,10 @@ export function resolveSeedForPatch({
 		if (preference.type === 'highest_available') {
 			return { type: 'highest', reason: 'preference_highest' };
 		}
+	}
+
+	if (contractFitsPatch) {
+		return { type: 'plant', plant: contractPlant, reason: 'contract' };
 	}
 
 	if (fallbackPlant && fallbackPlant.seedType === patch.patchName) {

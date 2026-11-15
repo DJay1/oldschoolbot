@@ -383,6 +383,38 @@ const thingsToWipe = [
 	'giveaways'
 ] as const;
 
+async function forceGrowPatches(user: MUser, patch_name: string) {
+	if (patch_name === 'birdhouses') {
+		const birdhouseData = user.fetchBirdhouseData();
+		await user.updateBirdhouseData({
+			...birdhouseData,
+			birdhouseTime: Date.now() - Time.Month
+		});
+		return 'Your birdhouses have been forced to be fully grown.';
+	}
+	const farmingDetails = await getFarmingInfoFromUser(user);
+	const patchesToGrow =
+		patch_name === 'all'
+			? farmingDetails.patchesDetailed.filter(patch => patch.plant)
+			: farmingDetails.patchesDetailed.filter(patch => patch.patchName === patch_name && patch.plant);
+	if (patchesToGrow.length === 0) {
+		return patch_name === 'all' ? 'You have nothing planted in any patches.' : 'You have nothing planted there.';
+	}
+	const now = Date.now();
+	const updates: SafeUserUpdateInput = Object.fromEntries(
+		patchesToGrow.map(patch => [
+			getFarmingKeyFromName(patch.patchName),
+			{
+				...farmingDetails.patches[patch.patchName],
+				plantTime: now - Time.Month
+			}
+		])
+	);
+
+	await user.update(updates);
+	return userGrowingProgressStr((await getFarmingInfoFromUser(user)).patchesDetailed);
+}
+
 // Live bot: only the bot admins can see or run this; it is registered on the support server only.
 // Test bot in Test Server: open to everyone when every check in testPotatoAccess.ts passes.
 export const testPotatoCommand = defineCommand({
@@ -697,6 +729,11 @@ export const testPotatoCommand = defineCommand({
 			type: 'Subcommand',
 			name: 'irontoggle',
 			description: 'Toggle being an ironman on/off.'
+		},
+		{
+			type: 'Subcommand',
+			name: 'grow_patches',
+			description: 'Instantly finish growing everything planted in your farming patches.'
 		},
 		{
 			type: 'Subcommand',
@@ -1238,40 +1275,8 @@ export const testPotatoCommand = defineCommand({
 			return `Set your ${monster.name} KC to ${options.setmonsterkc.kc ?? 1}.`;
 		}
 
-		if (options.forcegrow) {
-			if (options.forcegrow.patch_name === 'birdhouses') {
-				const birdhouseData = user.fetchBirdhouseData();
-				await user.updateBirdhouseData({
-					...birdhouseData,
-					birdhouseTime: Date.now() - Time.Month
-				});
-				return 'Your birdhouses have been forced to be fully grown.';
-			}
-			const farmingDetails = await getFarmingInfoFromUser(user);
-			const { patch_name } = options.forcegrow;
-			const patchesToGrow =
-				patch_name === 'all'
-					? farmingDetails.patchesDetailed.filter(patch => patch.plant)
-					: farmingDetails.patchesDetailed.filter(patch => patch.patchName === patch_name && patch.plant);
-			if (patchesToGrow.length === 0) {
-				return patch_name === 'all'
-					? 'You have nothing planted in any patches.'
-					: 'You have nothing planted there.';
-			}
-			const now = Date.now();
-			const updates: SafeUserUpdateInput = Object.fromEntries(
-				patchesToGrow.map(patch => [
-					getFarmingKeyFromName(patch.patchName),
-					{
-						...farmingDetails.patches[patch.patchName],
-						plantTime: now - Time.Month
-					}
-				])
-			);
-
-			await user.update(updates);
-			return userGrowingProgressStr((await getFarmingInfoFromUser(user)).patchesDetailed);
-		}
+		if (options.forcegrow) return forceGrowPatches(user, options.forcegrow.patch_name);
+		if (options.grow_patches) return forceGrowPatches(user, 'all');
 
 		if (options.setslayertask) {
 			const usersTask = await user.fetchSlayerInfo();
