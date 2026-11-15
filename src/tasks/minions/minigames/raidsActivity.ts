@@ -49,7 +49,7 @@ const coxUniques = resolveItems([
 	'Twisted bow'
 ]);
 
-async function handleCoxXP(user: MUser, qty: number, isCm: boolean) {
+async function handleCoxXP(user: MUser, qty: number, isCm: boolean, duration: number) {
 	let hitpointsXP = 12_000 * qty;
 	let rangeXP = 10_000 * qty;
 	let magicXP = 1500 * qty;
@@ -68,11 +68,16 @@ async function handleCoxXP(user: MUser, qty: number, isCm: boolean) {
 			skillName: 'hitpoints',
 			amount: hitpointsXP,
 			minimal: true,
-			source: 'ChambersOfXeric'
+			source: 'ChambersOfXeric',
+			duration
 		})
 	);
-	results.push(await user.addXP({ skillName: 'ranged', amount: rangeXP, minimal: true, source: 'ChambersOfXeric' }));
-	results.push(await user.addXP({ skillName: 'magic', amount: magicXP, minimal: true, source: 'ChambersOfXeric' }));
+	results.push(
+		await user.addXP({ skillName: 'ranged', amount: rangeXP, minimal: true, source: 'ChambersOfXeric', duration })
+	);
+	results.push(
+		await user.addXP({ skillName: 'magic', amount: magicXP, minimal: true, source: 'ChambersOfXeric', duration })
+	);
 	let styles = resolveAttackStyles({
 		attackStyles: user.getAttackStyles()
 	});
@@ -82,7 +87,13 @@ async function handleCoxXP(user: MUser, qty: number, isCm: boolean) {
 	const perSkillMeleeXP = meleeXP / styles.length;
 	for (const style of styles) {
 		results.push(
-			await user.addXP({ skillName: style, amount: perSkillMeleeXP, minimal: true, source: 'ChambersOfXeric' })
+			await user.addXP({
+				skillName: style,
+				amount: perSkillMeleeXP,
+				minimal: true,
+				source: 'ChambersOfXeric',
+				duration
+			})
 		);
 	}
 	return results;
@@ -149,7 +160,6 @@ export const raidsTask: MinionTask = {
 
 				// Extra Olmlet roll during launch, before double loot so chance is 2x and qty is not 4x'd.
 				if (
-
 					isEventActive('launch') &&
 					!userLoot.has('Olmlet') &&
 					coxUniques.some(id => userLoot.has(id)) &&
@@ -194,7 +204,7 @@ export const raidsTask: MinionTask = {
 			if (naturalDouble) loot.add(MysteryBoxes.roll());
 
 			const [xpResult, { itemsAdded }] = await Promise.all([
-				handleCoxXP(user, quantity, challengeMode),
+				handleCoxXP(user, quantity, challengeMode, duration),
 				cc
 					? user.statsBankUpdate('chincannon_destroyed_loot_bank', loot).then(() => ({
 							itemsAdded: new Bank()

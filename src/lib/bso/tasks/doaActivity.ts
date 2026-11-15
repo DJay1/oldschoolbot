@@ -13,7 +13,7 @@ import { resolveAttackStyles } from '@/lib/minions/functions/resolveAttackStyles
 import { TeamLoot } from '@/lib/simulation/TeamLoot.js';
 import { launchPetRate } from '@/lib/util.js';
 
-async function handleDOAXP(user: MUser, qty: number, isCm: boolean) {
+async function handleDOAXP(user: MUser, qty: number, isCm: boolean, duration: number) {
 	let rangeXP = 10_000 * qty;
 	let magicXP = 1500 * qty;
 	let meleeXP = 8000 * qty;
@@ -25,8 +25,12 @@ async function handleDOAXP(user: MUser, qty: number, isCm: boolean) {
 	}
 
 	const results = [];
-	results.push(user.addXP({ skillName: 'ranged', amount: rangeXP, minimal: true, source: 'DepthsOfAtlantis' }));
-	results.push(user.addXP({ skillName: 'magic', amount: magicXP, minimal: true, source: 'DepthsOfAtlantis' }));
+	results.push(
+		user.addXP({ skillName: 'ranged', amount: rangeXP, minimal: true, source: 'DepthsOfAtlantis', duration })
+	);
+	results.push(
+		user.addXP({ skillName: 'magic', amount: magicXP, minimal: true, source: 'DepthsOfAtlantis', duration })
+	);
 	let styles = resolveAttackStyles({
 		attackStyles: user.getAttackStyles()
 	});
@@ -36,10 +40,18 @@ async function handleDOAXP(user: MUser, qty: number, isCm: boolean) {
 	const perSkillMeleeXP = meleeXP / styles.length;
 	for (const style of styles) {
 		results.push(
-			user.addXP({ skillName: style, amount: perSkillMeleeXP, minimal: true, source: 'DepthsOfAtlantis' })
+			user.addXP({
+				skillName: style,
+				amount: perSkillMeleeXP,
+				minimal: true,
+				source: 'DepthsOfAtlantis',
+				duration
+			})
 		);
 	}
-	results.push(user.addXP({ skillName: 'hitpoints', amount: meleeXP, minimal: true, source: 'DepthsOfAtlantis' }));
+	results.push(
+		user.addXP({ skillName: 'hitpoints', amount: meleeXP, minimal: true, source: 'DepthsOfAtlantis', duration })
+	);
 
 	return Promise.all(results);
 }
@@ -203,7 +215,7 @@ export const doaTask: MinionTask = {
 					usersResult += `\n${deathStr} **${user}** received: ${str}`;
 				}
 
-				const xpStrings = await handleDOAXP(user, quantity, cm);
+				const xpStrings = await handleDOAXP(user, quantity, cm, duration);
 				usersResult += ` ${xpStrings.join(', ')}`;
 				resultMessage.addContent(usersResult);
 			})

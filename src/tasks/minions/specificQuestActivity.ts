@@ -37,7 +37,7 @@ export const specificQuestTask: MinionTask = {
 
 		if (quest.skillsRewards) {
 			for (const [skillName, amount] of Object.entries(quest.skillsRewards) as [SkillNameType, number][]) {
-				await user.addXP({ skillName: skillName as SkillNameType, amount });
+				await user.addXP({ skillName: skillName as SkillNameType, amount, duration: data.duration });
 			}
 			completionMessage += ` You gained the following skills rewards: ${Object.entries(quest.skillsRewards)
 				.map(([skill, xp]) => `${xp} XP in ${skill}`)
