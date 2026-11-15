@@ -720,7 +720,7 @@ usables.push({
 	items: [Items.getOrThrow('Double loot token')],
 	run: async (user: MUser) => {
 		await user.removeItemsFromBank(new Bank().add('Double loot token'));
-		await addToDoubleLootTimer(Time.Minute * randInt(6, 36), `${user} used a Double Loot token!`);
+		await addToDoubleLootTimer(Time.Minute * randInt(15, 45), `${user} used a Double Loot token!`);
 		return `${itemStatusIcon('double_loot_token')}You used your Double Loot Token!`;
 	}
 });
@@ -728,7 +728,7 @@ usables.push({
 	items: [Items.getOrThrow('Double XP token')],
 	run: async (user: MUser) => {
 		await user.removeItemsFromBank(new Bank().add('Double XP token'));
-		const minutes = randInt(6, 36);
+		const minutes = randInt(15, 45);
 		await addToDoubleXpTimer(Time.Minute * minutes, `${user} used a Double XP token!`);
 		return `${itemStatusIcon('double_xp_token')}You used your Double XP Token! It added ${minutes} minutes of Double XP.`;
 	}
