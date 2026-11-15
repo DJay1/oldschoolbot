@@ -202,6 +202,7 @@ export interface Craftable {
 	wcLvl?: number;
 	otherSkillRequirements?: Partial<Skills>;
 	cantBeDoubled?: boolean;
+	outputTable?: LootTable;
 }
 
 export interface Fletchable {

@@ -151,7 +151,7 @@ export function minionStatus(user: MUser, currentTask: ActivityTaskData | null, 
 			const data = currentTask as CraftingActivityTaskOptions;
 			const craftable = Crafting.Craftables.find(item => item.id === data.craftableID);
 
-			return `${name} is currently crafting ${data.quantity}x ${craftable?.name}. ${formattedDuration} Your ${
+			return `${name} is currently ${craftable?.outputTable ? 'polishing' : 'crafting'} ${data.quantity}x ${craftable?.name}. ${formattedDuration} Your ${
 				Emoji.Crafting
 			} Crafting level is ${user.skillsAsLevels.crafting}`;
 		}

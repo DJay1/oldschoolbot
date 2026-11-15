@@ -1,4 +1,5 @@
 import { elderRequiredClueCLItems, elderSherlockItems } from '@/lib/bso/elderClueRequirements.js';
+import { tarnishedPolishables } from '@/lib/bso/skills/crafting/tarnished.js';
 import { materialTypes } from '@/lib/bso/skills/invention/index.js';
 import { Inventions, transactMaterialsFromUser } from '@/lib/bso/skills/invention/inventions.js';
 import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
@@ -357,6 +358,9 @@ const thanksgivingSpawnPreset = new Bank()
 
 const THANKSGIVING_TOGGLE_OWNER_ID = '290167629966999552';
 
+const tarnishedItemsPreset = new Bank();
+for (const polishable of tarnishedPolishables) tarnishedItemsPreset.add(polishable.id, 50);
+
 const spawnPresets = [
 	['fishing', fishingPreset],
 	['openables', openablesBank],
@@ -368,7 +372,8 @@ const spawnPresets = [
 	['potions', potionsPreset],
 	['food', foodPreset],
 	['runes', runePreset],
-	['thanksgiving', thanksgivingSpawnPreset]
+	['thanksgiving', thanksgivingSpawnPreset],
+	['tarnished-items', tarnishedItemsPreset]
 ] as const;
 
 const thingsToWipe = [

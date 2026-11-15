@@ -149,7 +149,7 @@ export const craftCommand = defineCommand({
 			type: 'Crafting',
 			cantBeDoubled: craftable.cantBeDoubled
 		});
-		let str = `${user.minionName} is now crafting ${quantity}${sets} ${
+		let str = `${user.minionName} is now ${craftable.outputTable ? 'polishing' : 'crafting'} ${quantity}${sets} ${
 			craftable.name
 		}, it'll take around ${formatTripDuration(user, duration, ' to finish')}. Removed ${itemsNeeded} from your bank.`;
 		if (boosts.length > 0) {

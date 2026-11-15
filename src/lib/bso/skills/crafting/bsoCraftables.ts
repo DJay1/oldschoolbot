@@ -1,4 +1,5 @@
 import { carapaceCraftables } from '@/lib/bso/skills/crafting/carapace.js';
+import { tarnishedPolishables } from '@/lib/bso/skills/crafting/tarnished.js';
 
 import { Bank, itemID } from 'oldschooljs';
 
@@ -93,5 +94,6 @@ export const bsoCraftables: Craftable[] = [
 		inputItems: new Bank({ 'Royal dragon leather': 2 }),
 		tickRate: 3.5
 	},
-	...carapaceCraftables
+	...carapaceCraftables,
+	...tarnishedPolishables
 ];
