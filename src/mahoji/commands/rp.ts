@@ -8,8 +8,10 @@ import { Bank, type Item, type ItemBank } from 'oldschooljs';
 
 import { UserEventType, xp_gains_skill_enum } from '@/prisma/main/enums.js';
 import { choicesOf, gearSetupOption } from '@/discord/index.js';
+import { logStaffAction, staffGuildAllowed, staffTierOf } from '@/lib/bsc/staffAccess.js';
+import { rpActionTier, tierAtLeast } from '@/lib/bsc/staffTiers.js';
 import { marketPricemap } from '@/lib/cache.js';
-import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
+import { Channel, globalConfig } from '@/lib/constants.js';
 import { allCollectionLogsFlat } from '@/lib/data/Collections.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { unEquipAllCommand } from '@/lib/minions/functions/unequipAllCommand.js';
@@ -415,14 +417,11 @@ export const rpCommand = defineCommand({
 	run: async ({ options, user: adminUser, interaction, guildId, rng }) => {
 		await interaction.defer();
 		const isAdmin = adminUser.isAdmin();
-		const isMod = isAdmin || adminUser.isMod();
-		if (!testingShortcutsEnabled() && !isAdmin) {
+		// Tier check on every call. Hiding the command in Discord is not relied on.
+		if (!staffGuildAllowed(guildId) || !tierAtLeast(staffTierOf(adminUser), rpActionTier(options))) {
 			return rng.pick(gifs);
 		}
-		if (!guildId || (globalConfig.isProduction && guildId.toString() !== globalConfig.supportServerID)) {
-			return rng.pick(gifs);
-		}
-		if (!isAdmin && !isMod) return rng.pick(gifs);
+		await logStaffAction(adminUser, 'rp', options);
 
 		if (options.user_event) {
 			const messageId =
@@ -475,8 +474,6 @@ Date: ${dateFm(date)}`;
 			});
 			return `Done: ${confirmationStr.replace('Please confirm:', '')}`;
 		}
-
-		if (!isMod) return rng.pick(gifs);
 
 		// if (options.action) {
 		// 	for (const action of actions) {

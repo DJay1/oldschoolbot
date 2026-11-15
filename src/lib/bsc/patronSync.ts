@@ -1,5 +1,5 @@
-import { customEmoji } from '@oldschoolgg/toolkit';
 import { Routes } from '@oldschoolgg/discord';
+import { customEmoji } from '@oldschoolgg/toolkit';
 
 import { creditMonthlyPatronRewards } from '@/lib/bsc/patronPoints.js';
 import { GE_SLOTS_CACHE } from '@/lib/cache.js';
@@ -24,7 +24,7 @@ import {
 	warnBlankBscPatronRoles
 } from './patronTiers.js';
 import { playerRoleEnabled, syncBscPlayerRole } from './playerRole.js';
-import { staffRoleBitsEnabled, syncBscStaffBitsFromRoles } from './staffRoleBits.js';
+import { getAdministratorRoleIds, staffRoleBitsEnabled, syncBscStaffBitsFromRoles } from './staffRoleBits.js';
 
 export async function applyBscPatronTier(user: MUser, level: number): Promise<void> {
 	const wanted = new Set(patronBitsForLevel(level));
@@ -179,6 +179,8 @@ export async function handleBscGuildMemberRemove(member: {
 export async function syncBscPatronGuildMembers(): Promise<void> {
 	const guildId = bscSupportServerId();
 	if (!bscPatronRolesConfigured() && !staffRoleBitsEnabled() && !playerRoleEnabled()) return;
+	// Fresh Administrator role list each scan, so a role losing Administrator removes the Moderator bit.
+	if (staffRoleBitsEnabled()) await getAdministratorRoleIds(true);
 	let after: string | undefined;
 	for (let page = 0; page < 5; page++) {
 		const query = new URLSearchParams({ limit: '1000' });

@@ -48,21 +48,15 @@ import {
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
 import { runAnnouncementBackfill } from '@/lib/bsc/announcementBackfill.js';
+import { gifs } from '@/lib/bsc/corgoGifs.js';
 import { assignBscCustomBackground } from '@/lib/bsc/patronPerks.js';
 import { setBscPatronOverride } from '@/lib/bsc/patronSync.js';
 import { parseBscPatronTierInput } from '@/lib/bsc/patronTiers.js';
+import { logStaffAction, staffGuildAllowed, staffTierOf } from '@/lib/bsc/staffAccess.js';
+import { adminActionTier, tierAtLeast } from '@/lib/bsc/staffTiers.js';
 import { getTesterPoints, giveTesterPoints, removeTesterPoints } from '@/lib/bsc/testerPoints.js';
 import { giveawayCache } from '@/lib/cache.js';
-import {
-	BadgesEnum,
-	BitField,
-	BitFieldData,
-	badges,
-	Channel,
-	globalConfig,
-	META_CONSTANTS,
-	testingShortcutsEnabled
-} from '@/lib/constants.js';
+import { BadgesEnum, BitField, BitFieldData, badges, Channel, globalConfig, META_CONSTANTS } from '@/lib/constants.js';
 import { handleSeasonalEventAdmin } from '@/lib/events/admin.js';
 import { getLydiaQuote } from '@/lib/events/summer/summerDays.js';
 import { seasonalEventIds } from '@/lib/events/types.js';
@@ -77,11 +71,7 @@ import { parseBank, parseStringBank } from '@/lib/util/parseStringBank.js';
 import { safeMessage } from '@/lib/util/smallUtils.js';
 import { makeGiveawayButtons } from '@/mahoji/commands/giveaway.js';
 
-export const gifs = [
-	'https://media.giphy.com/media/NMZT5hsCgmHDVfGasZ/giphy.gif',
-	'https://media.giphy.com/media/Y4pAQv58ETJgRwoLxj/giphy.gif',
-	'https://media.giphy.com/media/3oEduQAsYcJKQH2XsI/giphy.gif'
-];
+export { gifs } from '@/lib/bsc/corgoGifs.js';
 
 const leaguesTaskNameByID = new Map(allLeagueTasks.map(task => [task.id, task.name] as const));
 const adminGiveItemDestinations = ['Lottery Bank'] as const;
@@ -1373,12 +1363,13 @@ export const adminCommand = defineCommand({
 
 		const adminUser = await mUserFetch(userId);
 		const isAdmin = adminUser.isAdmin();
-		const isMod = isAdmin || adminUser.isMod();
+		// Tier check on every call. Hiding the command in Discord is not relied on.
+		const staffTier = staffTierOf(adminUser);
+		if (!staffGuildAllowed(guildId) || !tierAtLeast(staffTier, adminActionTier(options))) {
+			return rng.pick(gifs);
+		}
+		await logStaffAction(adminUser, 'admin', options);
 		if (options.testerpoints) {
-			if (!isAdmin && !adminUser.isDeveloper()) return rng.pick(gifs);
-			if (!guildId || (globalConfig.isProduction && guildId.toString() !== globalConfig.supportServerID)) {
-				return rng.pick(gifs);
-			}
 			const action = options.testerpoints.give ?? options.testerpoints.take;
 			if (!action) return 'Invalid subcommand.';
 			const target = await mUserFetch(action.user.user.id);
@@ -1405,12 +1396,6 @@ export const adminCommand = defineCommand({
 				content: `${adminUser.logName} took ${amount} tester points from ${target.logName} for ${reason} (balance now ${result.balance})`
 			});
 			return `Took ${amount} tester points from ${target.mention}. They now have ${result.balance}.`;
-		}
-		if (!testingShortcutsEnabled() && !isAdmin) {
-			return rng.pick(gifs);
-		}
-		if (!guildId || !isMod || (globalConfig.isProduction && guildId.toString() !== globalConfig.supportServerID)) {
-			return rng.pick(gifs);
 		}
 
 		/**
