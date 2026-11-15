@@ -19,14 +19,23 @@ export async function moktangCommand(
 ) {
 	const timeToKill = new PercentCounter(Time.Minute * 15, 'time');
 	const miningLevel = user.skillLevel('mining');
-	if (miningLevel < 105) return 'You need 105 Mining to fight Moktang.';
+	const warnings: string[] = [];
+	if (miningLevel < 105) {
+		if (!preview) return 'You need 105 Mining to fight Moktang.';
+		warnings.push('You need 105 Mining to fight Moktang.');
+	}
 	if (!user.hasEquipped(requiredPickaxes, false)) {
-		return `You need to have one of these pickaxes equipped to fight Moktang: ${requiredPickaxes
+		const message = `You need to have one of these pickaxes equipped to fight Moktang: ${requiredPickaxes
 			.map(i => Items.itemNameFromId(i))
 			.join(', ')}.`;
+		if (!preview) return message;
+		warnings.push(message);
 	}
 	const totemsOwned = user.bank.amount('Moktang totem');
-	if (totemsOwned === 0) return "You don't have any Moktang totems, you cannot summon the boss!";
+	if (totemsOwned === 0) {
+		if (!preview) return "You don't have any Moktang totems, you cannot summon the boss!";
+		warnings.push("You don't have any Moktang totems, so you can't summon the boss yet.");
+	}
 
 	const miningLevelBoost = miningLevel - 84;
 	timeToKill.add(true, 0 - miningLevelBoost, 'Mining level');
@@ -39,7 +48,8 @@ export async function moktangCommand(
 	timeToKill.add(user.hasEquipped('Mining master cape'), -5, 'Mining mastery');
 
 	const maxCanDo = Math.floor((await user.calcMaxTripLength('Moktang')) / timeToKill.value);
-	const quantity = Math.max(1, Math.min(totemsOwned, maxCanDo, inputQuantity ?? maxCanDo));
+	const totemLimit = preview && totemsOwned === 0 ? maxCanDo : totemsOwned;
+	const quantity = Math.max(1, Math.min(totemLimit, maxCanDo, inputQuantity ?? maxCanDo));
 	const duration = timeToKill.value * quantity;
 
 	let brewsRequiredPerKill = 5;
@@ -58,6 +68,7 @@ export async function moktangCommand(
 			duration,
 			boosts: timeToKill.messages,
 			missedBoosts: timeToKill.missed,
+			warning: warnings.length > 0 ? warnings.join(' ') : undefined,
 			cost
 		});
 	}
