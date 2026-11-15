@@ -12,10 +12,14 @@ import {
 	Routes
 } from 'discord-api-types/v10';
 
+import { userIdsMentionedInContent } from '../client/allowedMentions.js';
 import type { DiscordClient } from '../client/DiscordClient.js';
 import { type APISendableMessage, type SendableMessage, sendableMsgToApiCreate } from '../client/types.js';
 
 type EditMessageOptions = SendableMessage;
+
+/** Shown in place of "thinking..." when the real reply had to be posted as a new message to ping someone. */
+export const DEFERRED_PING_PLACEHOLDER = '⬇️';
 
 export class BaseInteraction {
 	public client: DiscordClient;
@@ -162,39 +166,52 @@ export class BaseInteraction {
 		return options.withResponse ? res : undefined;
 	}
 
-	private rememberPingedUsers(allowedMentions: { users?: string[] } | undefined) {
-		for (const id of allowedMentions?.users ?? []) {
-			this._pingedUserIds.add(id);
-		}
+	/**
+	 * Users this message will actually notify: listed in allowed_mentions AND mentioned in the content.
+	 * Ephemeral messages never notify anyone.
+	 */
+	private notifiableUsers(message: APISendableMessage['message']): string[] {
+		if (this._ephemeral || ((message.flags ?? 0) & MessageFlags.Ephemeral) !== 0) return [];
+		const allowed = new Set(message.allowed_mentions?.users ?? []);
+		return userIdsMentionedInContent(message.content).filter(id => allowed.has(id));
+	}
+
+	private rememberPingedUsers(ids: readonly string[]) {
+		for (const id of ids) this._pingedUserIds.add(id);
 	}
 
 	/**
-	 * Discord does not send mention notifications for edited messages. After a
-	 * defer, the first reply edits the original message so earlier replies are
-	 * never deleted. If a later reply needs to ping additional users, a
-	 * follow-up is posted and the previous message is left in place with its
-	 * buttons disabled.
+	 * Discord does not send mention notifications for edited messages. After a defer (or an earlier
+	 * reply), any reply that needs to ping a user who has not been pinged yet is posted as a new
+	 * follow-up message. Nothing is deleted: the previous message has its buttons removed, and an
+	 * unanswered "thinking..." placeholder is replaced with a neutral marker. Users only count as
+	 * pinged once a new (notifying) message mentioning them was sent; edits never mark anyone.
+	 * Replies with no new pings edit the latest message as before.
 	 */
 	async baseReply(
 		options: SendableMessage
 	): Promise<RESTPostAPIInteractionCallbackWithResponseResult | APIBaseMessageNoChannel | APIMessage | null> {
 		if (this._deferred || this._replied) {
 			const prepared = await this.toBody(options);
-			const users = prepared.message.allowed_mentions?.users ?? [];
-			const newPings = users.filter(id => !this._pingedUserIds.has(id));
+			const notifiable = this.notifiableUsers(prepared.message);
+			const newPings = notifiable.filter(id => !this._pingedUserIds.has(id));
 
-			if (newPings.length > 0 && this._replied) {
+			if (newPings.length > 0) {
+				const placeholderPending = !this._replied;
 				const created = await this.sendWebhookCreate(options);
-				this.rememberPingedUsers(prepared.message.allowed_mentions);
+				this._replied = true;
+				this.rememberPingedUsers(notifiable);
 				const previousId = this._notifyMessageId ?? '@original';
 				try {
-					await this.sendWebhookEdit(previousId, { components: [] });
+					await this.sendWebhookEdit(
+						previousId,
+						placeholderPending ? { content: DEFERRED_PING_PLACEHOLDER, components: [] } : { components: [] }
+					);
 				} catch {}
 				this._notifyMessageId = created.id;
 				return created;
 			}
 
-			this.rememberPingedUsers(prepared.message.allowed_mentions);
 			this._replied = true;
 			if (this._notifyMessageId) {
 				return this.sendWebhookEdit(this._notifyMessageId, options);
@@ -204,7 +221,7 @@ export class BaseInteraction {
 		this._replied = true;
 		const res = await this.sendCallback(InteractionResponseType.ChannelMessageWithSource, options);
 		const prepared = await this.toBody(options);
-		this.rememberPingedUsers(prepared.message.allowed_mentions);
+		this.rememberPingedUsers(this.notifiableUsers(prepared.message));
 		return res;
 	}
 
