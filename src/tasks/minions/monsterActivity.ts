@@ -24,6 +24,7 @@ import {
 } from 'oldschooljs';
 import { clone, isDeepEqual } from 'remeda';
 
+import { announceBadLuckDrops } from '@/lib/bsc/serverFirsts.js';
 import { type BitField, BitField as BitFieldEnum } from '@/lib/constants.js';
 import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import { trackLoot } from '@/lib/lootTrack.js';
@@ -767,6 +768,14 @@ export const monsterTask: MinionTask = {
 				monsterID: monster.id,
 				loot: itemTransactionResult.itemsAdded,
 				notifyDrops: monster.notifyDrops
+			});
+			announceBadLuckDrops({
+				user,
+				monster,
+				itemsAdded: itemTransactionResult.itemsAdded,
+				previousCL: itemTransactionResult.previousCL,
+				kcAfter: newKC,
+				quantity
 			});
 			image = await makeBankImage({
 				bank: itemTransactionResult.itemsAdded,
