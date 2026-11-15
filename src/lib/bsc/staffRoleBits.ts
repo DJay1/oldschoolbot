@@ -5,7 +5,9 @@ import { BitField, globalConfig } from '@/lib/constants.js';
 export const BSC_STAFF_ROLE_BITS: readonly { bit: BitField; roleId: string }[] = [
 	{ bit: BitField.Developer, roleId: '1569683439190286346' },
 	{ bit: BitField.Contributor, roleId: '1569683812621881454' },
-	{ bit: BitField.Moderator, roleId: '1325179339641458749' }
+	{ bit: BitField.Moderator, roleId: '1325179339641458749' },
+	// Head Mod gets the same Moderator tier as Mod.
+	{ bit: BitField.Moderator, roleId: '1353916725086785646' }
 ];
 
 export function staffRoleBitsEnabled(): boolean {
@@ -46,9 +48,11 @@ export function staffBitChanges(
 	const add: BitField[] = [];
 	const remove: BitField[] = [];
 	const hasAdministrator = adminRoleIds !== null && roleIds.some(id => adminRoleIds.includes(id));
-	for (const { bit, roleId } of BSC_STAFF_ROLE_BITS) {
+	// Several roles can grant the same bit (Mod and Head Mod), so a bit is kept if ANY of its roles is held.
+	const bits = [...new Set(BSC_STAFF_ROLE_BITS.map(r => r.bit))];
+	for (const bit of bits) {
 		const viaAdministrator = bit === BitField.Moderator && hasAdministrator;
-		const hasRole = roleIds.includes(roleId) || viaAdministrator;
+		const hasRole = BSC_STAFF_ROLE_BITS.some(r => r.bit === bit && roleIds.includes(r.roleId)) || viaAdministrator;
 		const hasBit = bitfield.includes(bit);
 		if (hasRole && !hasBit) add.push(bit);
 		if (!hasRole && hasBit) {

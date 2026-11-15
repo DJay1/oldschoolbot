@@ -79,3 +79,24 @@ describe('Discord Administrator gives Moderator only', () => {
 		expect(staffBoostWeeklyCap(tier)).toBe(2);
 	});
 });
+
+describe('Head Mod', () => {
+	const headModRole = '1353916725086785646';
+	test('Head Mod is mapped to the Moderator bit', () => {
+		expect(BSC_STAFF_ROLE_BITS.some(r => r.bit === BitField.Moderator && r.roleId === headModRole)).toBe(true);
+		expect(staffBitChanges([], [headModRole])).toEqual({ add: [BitField.Moderator], remove: [] });
+	});
+	test('a bit stays while any role that grants it is held', () => {
+		expect(staffBitChanges([BitField.Moderator], [headModRole])).toEqual({ add: [], remove: [] });
+		expect(staffBitChanges([BitField.Moderator], [modRole])).toEqual({ add: [], remove: [] });
+		expect(staffBitChanges([BitField.Moderator], [modRole, headModRole])).toEqual({ add: [], remove: [] });
+		expect(staffBitChanges([], [modRole, headModRole])).toEqual({ add: [BitField.Moderator], remove: [] });
+		expect(staffBitChanges([BitField.Moderator], [])).toEqual({ add: [], remove: [BitField.Moderator] });
+	});
+	test('Head Mod gives no other staff bits', () => {
+		const { add } = staffBitChanges([], [headModRole]);
+		expect(add).not.toContain(BitField.Developer);
+		expect(add).not.toContain(BitField.Contributor);
+		expect(add).toEqual([BitField.Moderator]);
+	});
+});
