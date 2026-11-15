@@ -14,6 +14,7 @@ import { allStashUnitsFlat } from '@/lib/clues/stashUnits.js';
 import { allCLItemsFiltered, allDroppedItems } from '@/lib/data/Collections.js';
 import { gnomeRestaurantCL, guardiansOfTheRiftCL, shadesOfMorttonCL } from '@/lib/data/CollectionsExport.js';
 import pets from '@/lib/data/pets.js';
+import { doMenuWrapper } from '@/lib/menuWrapper.js';
 import killableMonsters, { effectiveMonsters, NightmareMonster } from '@/lib/minions/data/killableMonsters/index.js';
 import { allOpenables, type UnifiedOpenable } from '@/lib/openables.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
@@ -815,7 +816,7 @@ async function dryStreakCommand(sourceName: string, itemName: string, ironmanOnl
 	).join('\n')}`;
 }
 
-async function mostDrops(user: MUser, itemName: string, filter: string) {
+async function mostDrops(interaction: MInteraction, user: MUser, itemName: string, filter: string) {
 	const item = Items.getItem(itemName);
 	const ironmanPart =
 		filter === 'Irons Only'
@@ -828,7 +829,7 @@ async function mostDrops(user: MUser, itemName: string, filter: string) {
 		return "You can't check this item, because it's not on any collection log.";
 	}
 
-	const query = `SELECT "id", "collectionLogBank"->>'${item.id}' AS "qty" FROM users WHERE "collectionLogBank"->>'${item.id}' IS NOT NULL ${ironmanPart} ORDER BY ("collectionLogBank"->>'${item.id}')::int DESC LIMIT 10;`;
+	const query = `SELECT "id", "collectionLogBank"->>'${item.id}' AS "qty" FROM users WHERE "collectionLogBank"->>'${item.id}' IS NOT NULL ${ironmanPart} ORDER BY ("collectionLogBank"->>'${item.id}')::int DESC LIMIT 30;`;
 
 	const result =
 		await prisma.$queryRawUnsafe<
@@ -840,14 +841,17 @@ async function mostDrops(user: MUser, itemName: string, filter: string) {
 
 	if (result.length === 0) return 'No results found.';
 
-	return `**Most '${item.name}' received:**\n${(
-		await Promise.all(
-			result.map(
-				async ({ id, qty }) =>
-					`${result.length < 10 ? '(Anonymous)' : await Cache.getBadgedUsername(id)}: ${Number.parseInt(qty, 10).toLocaleString()}`
-			)
-		)
-	).join('\n')}`;
+	const filterNote = filter === 'Irons Only' ? ' (Ironmen Only)' : filter === 'Mains Only' ? ' (Mains Only)' : '';
+	return doMenuWrapper({
+		ironmanOnly: false,
+		interaction,
+		title: `Most ${item.name} Received${filterNote}`,
+		users: result.map(({ id, qty }) => ({
+			id,
+			score: Number.parseInt(qty, 10),
+			customName: result.length < 10 ? '(Anonymous)' : undefined
+		}))
+	});
 }
 
 async function checkMassesCommand(guildId: string | null) {
@@ -1246,7 +1250,7 @@ export const toolsCommand = defineCommand({
 				);
 			}
 			if (patron.mostdrops) {
-				return mostDrops(user, patron.mostdrops.item, String(patron.mostdrops.filter));
+				return mostDrops(interaction, user, patron.mostdrops.item, String(patron.mostdrops.filter));
 			}
 			if (patron.sacrificed_bank) {
 				if ((await user.fetchPerkTier()) < PerkTier.Two) return patronMsg(PerkTier.Two);
