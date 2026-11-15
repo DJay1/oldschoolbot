@@ -9,6 +9,7 @@ import { calcWhatPercent, customEmoji, Emoji, sumArr } from '@oldschoolgg/toolki
 import { Bank } from 'oldschooljs';
 
 import {
+	bareMinStats,
 	calcCoxDuration,
 	calcCoxInput,
 	calculateUserGearPercents,
@@ -22,6 +23,7 @@ import { trackLoot } from '@/lib/lootTrack.js';
 import type { MakePartyOptions } from '@/lib/types/index.js';
 import type { RaidsOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
 const uniques = [
@@ -272,4 +274,58 @@ export async function coxCommand(
 	str += ` \n\n${debugStr}`;
 
 	return str;
+}
+
+export async function coxHelpCommand(user: MUser) {
+	const [minigameScores, stats] = await Promise.all([user.fetchMinigames(), user.fetchStats()]);
+	const kc = minigameScores.raids;
+	const cmKC = minigameScores.raids_challenge_mode;
+	let totalUniques = 0;
+	for (const item of uniques) totalUniques += user.cl.amount(item);
+	const totalPoints = stats.total_cox_points;
+	const gear = calculateUserGearPercents(user);
+	const ownsTeamCmWeapon = ['Twisted bow', 'Zaryte bow', 'Bow of faerdhinen (c)', 'Dragon hunter crossbow'].some(i =>
+		user.hasEquippedOrInBank(i)
+	);
+	const req = (ok: boolean, text: string) => `- ${ok ? '✅' : '❌'} ${text}`;
+	const readiness = async (cm: boolean) => {
+		const problem = await checkCoxTeam([user], cm);
+		if (!problem) return 'Ready';
+		if (problem.includes('already doing an activity')) return 'Ready (your minion is busy right now)';
+		return `Not ready, ${problem}`;
+	};
+	const uniqueRate =
+		totalUniques > 0
+			? ` (1 per ${Math.floor(totalPoints / totalUniques).toLocaleString()} pts, 1 every ${Math.floor(
+					(kc + cmKC) / totalUniques
+				)} raids)`
+			: '';
+
+	return `**Chambers of Xeric**
+
+**Normal:** ${kc} KC
+**Challenge Mode:** ${cmKC} KC
+**Total Points:** ${totalPoints.toLocaleString()}
+**Total Uniques:** ${totalUniques}${uniqueRate}
+
+**Requirements**
+${[
+	req(hasMinRaidsRequirements(user), `Stats: ${formatSkillRequirements(bareMinStats)}`),
+	req(user.skillsAsLevels.herblore >= 78, '78 Herblore (at least one player in the team)'),
+	req(user.skillsAsLevels.farming >= 55, '55 Farming (at least one player in the team)'),
+	req(gear.total >= 20, `Gear score of at least 20% (yours is ${gear.total.toFixed(1)}%)`),
+	req(user.owns(minimumCoxSuppliesNeeded), `Supplies: ${minimumCoxSuppliesNeeded}`),
+	req(kc >= 200, `Challenge Mode: 200 KC (you have ${kc})`),
+	req(user.hasEquippedOrInBank('Twisted bow'), 'Solo Challenge Mode: Twisted bow'),
+	req(
+		ownsTeamCmWeapon,
+		'Team Challenge Mode: Twisted bow, Zaryte bow, Bow of faerdhinen (c) or Dragon hunter crossbow'
+	)
+].join('\n')}
+
+**Normal:** ${await readiness(false)}
+**Challenge Mode:** ${await readiness(true)}
+
+**Gear:** Melee ${gear.melee.toFixed(1)}% · Range ${gear.range.toFixed(1)}% · Mage ${gear.mage.toFixed(1)}%
+**Supplies per solo raid:** ${await calcCoxInput(user, true)}`.slice(0, 1900);
 }
