@@ -286,11 +286,46 @@ export function tfaRangePercent(range: Gear): number {
 	return Math.max(actual, Math.min(asBofa, asTbow - TFA_CROSSBOW_BELOW_TBOW));
 }
 
-/** TFA gear score: ToB's score, with the TFA range rule above. */
+/**
+ * Same middle-score idea for the charged Obligator (melee) and Zorya's tome (mage): in the raid score they count as a
+ * strong weapon kept 2 points under the same setup with the best-in-slot pair (Drygore longsword + offhand, Virtus wand +
+ * book). Uses whichever is higher, so equipping them never lowers the score. Only the TFA score; ToB and item stats unchanged.
+ */
+export const TFA_UNIQUE_WEAPON_BELOW_BIS = 2;
+
+function swapMainHand(setup: Gear, weapon: string, shield: string) {
+	const raw = setup.clone().raw();
+	raw['2h'] = null;
+	raw.weapon = { item: Items.getOrThrow(weapon).id, quantity: 1 };
+	raw.shield = { item: Items.getOrThrow(shield).id, quantity: 1 };
+	return new Gear(raw);
+}
+
+function tobStylePercent(style: 'melee' | 'mage', setup: Gear): number {
+	const empty = new Gear();
+	const gear = { melee: empty, range: empty, mage: empty, [style]: setup };
+	return calculateTOBUserGearPercents({ gear } as unknown as MUser)[style];
+}
+
+export function tfaMeleePercent(melee: Gear, actual = tobStylePercent('melee', melee)): number {
+	if (!melee.hasEquipped(TfaItem.OBLIGATOR_CHARGED)) return actual;
+	const asBis = tobStylePercent('melee', swapMainHand(melee, 'Drygore longsword', 'Offhand drygore longsword'));
+	return Math.max(actual, asBis - TFA_UNIQUE_WEAPON_BELOW_BIS);
+}
+
+export function tfaMagePercent(mage: Gear, actual = tobStylePercent('mage', mage)): number {
+	if (!mage.hasEquipped(TfaItem.ZORYAS_TOME_CHARGED)) return actual;
+	const asBis = tobStylePercent('mage', swapMainHand(mage, 'Virtus wand', 'Virtus book'));
+	return Math.max(actual, asBis - TFA_UNIQUE_WEAPON_BELOW_BIS);
+}
+
+/** TFA gear score: ToB's score, with the TFA crossbow, Obligator and Zorya's tome rules above. */
 export function calculateTfaGearPercents(user: MUser) {
 	const base = calculateTOBUserGearPercents(user);
+	const melee = tfaMeleePercent(user.gear.melee, base.melee);
 	const range = tfaRangePercent(user.gear.range);
-	return { ...base, range, total: (base.melee + range + base.mage) / 3 };
+	const mage = tfaMagePercent(user.gear.mage, base.mage);
+	return { melee, range, mage, total: (melee + range + mage) / 3 };
 }
 
 export function tfaTeamMemberFromUser(user: MUser, kc: number): TfaTeamMember {
