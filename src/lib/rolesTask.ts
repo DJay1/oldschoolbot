@@ -5,8 +5,9 @@ import { partition } from 'remeda';
 import * as z from 'zod';
 
 import { Prisma } from '@/prisma/main.js';
+import { bscSupportServerId } from '@/lib/bsc/patronTiers.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
-import { BadgesEnum, globalConfig, MAX_LEVEL, Roles } from '@/lib/constants.js';
+import { BadgesEnum, MAX_LEVEL, Roles } from '@/lib/constants.js';
 import { getCollectionItems, overallPlusItems } from '@/lib/data/Collections.js';
 import { RawSQL } from '@/lib/rawSql.js';
 import { Minigames } from '@/lib/settings/minigames.js';
@@ -308,7 +309,7 @@ async function giveaways() {
 
 	results.push({
 		userID: highestID,
-		roleID: '1104155653745946746',
+		roleID: Roles.BSOTopGiveawayer,
 		reason: `Most Value Given Away (${loot.value()})`,
 		badge: BadgesEnum.TopGiveawayer
 	});
@@ -411,7 +412,7 @@ async function topMysterious(): Promise<RoleResult[]> {
 
 async function monkeyKing(): Promise<RoleResult[]> {
 	const [user] = await RawSQL.monkeysFoughtLeaderboard();
-	return [{ userID: user.id, roleID: '886180040465870918', reason: 'Most Monkeys Fought' }];
+	return [{ userID: user.id, roleID: Roles.BSOMonkeyKing, reason: 'Most Monkeys Fought' }];
 }
 
 async function topInventor(): Promise<RoleResult[]> {
@@ -426,6 +427,64 @@ async function topInventor(): Promise<RoleResult[]> {
 		roleID: Roles.BSOTopInventor,
 		reason: 'Most Uniques/Value Disassembled'
 	}));
+}
+
+const autoRoleStore = { ready: false };
+
+async function ensureAutoRoleStore() {
+	if (autoRoleStore.ready) return;
+	await prisma.$executeRawUnsafe(`
+		CREATE TABLE IF NOT EXISTS bsc_auto_roles (
+			role_id text NOT NULL,
+			user_id text NOT NULL,
+			PRIMARY KEY (role_id, user_id)
+		)
+	`);
+	autoRoleStore.ready = true;
+}
+
+async function syncAutoRoles(
+	guildId: string,
+	results: RoleResult[],
+	roleNames: Map<string, string>,
+	debugMessages: string[]
+) {
+	await ensureAutoRoleStore();
+	const held = await prisma.$queryRaw<{ role_id: string; user_id: string }[]>`
+		SELECT role_id, user_id FROM bsc_auto_roles
+	`;
+	const wanted = new Set(results.filter(r => r.userID).map(r => `${r.roleID}:${r.userID}`));
+	const holding = new Set(held.map(r => `${r.role_id}:${r.user_id}`));
+	const roleName = (roleID: string) => roleNames.get(roleID) ?? roleID;
+
+	for (const { role_id: roleID, user_id: userID } of held) {
+		if (wanted.has(`${roleID}:${userID}`)) continue;
+		await globalClient.takeRole(guildId, userID, roleID).catch(noOp);
+		await prisma.$executeRaw`DELETE FROM bsc_auto_roles WHERE role_id = ${roleID} AND user_id = ${userID}`;
+		debugMessages.push(`Removed the ${roleName(roleID)} role from ${userID}`);
+	}
+
+	for (const key of wanted) {
+		if (holding.has(key)) continue;
+		const [roleID, userID] = key.split(':');
+		if (!roleNames.has(roleID)) {
+			debugMessages.push(`Failed to find role ${roleID}`);
+			continue;
+		}
+		const given = await globalClient
+			.giveRole(guildId, userID, roleID)
+			.then(() => true)
+			.catch(() => false);
+		if (!given) {
+			debugMessages.push(`Could not give the ${roleName(roleID)} role to ${userID}`);
+			continue;
+		}
+		await prisma.$executeRaw`
+			INSERT INTO bsc_auto_roles (role_id, user_id) VALUES (${roleID}, ${userID})
+			ON CONFLICT DO NOTHING
+		`;
+		debugMessages.push(`Gave the ${roleName(roleID)} role to ${userID}`);
+	}
 }
 
 export async function runRolesTask(dryRun: boolean): Promise<CommandResponse> {
@@ -478,11 +537,9 @@ export async function runRolesTask(dryRun: boolean): Promise<CommandResponse> {
 	debugMessages.push(`Finished role functions, ${results.length} results`);
 
 	const allBadgeIDs = uniqueArr(results.map(i => i.badge)).filter(notEmpty);
-	// const allRoleIDs = uniqueArr(results.map(i => i.roleID)).filter(notEmpty);
 
 	if (!dryRun) {
 		const roleNames = new Map<string, string>();
-		// const supportServerGuild = globalClient.guilds.cache.get(globalConfig.supportServerID)!;
 
 		// Remove all top badges from all users (and add back later)
 		const badgeIDs = `ARRAY[${allBadgeIDs.join(',')}]`;
@@ -492,49 +549,13 @@ SET badges = badges - ${badgeIDs}
 WHERE badges && ${badgeIDs}
 `);
 
-		// Remove roles from ineligible users
-		// for (const member of supportServerGuild.members.cache.values()) {
-		// 	const rolesToRemove = member.roles.cache
-		// 		.filter(r => allRoleIDs.includes(r.id))
-		// 		.filter(roleToRemove => {
-		// 			const shouldHaveThisRole = results.some(
-		// 				r => r.userID === member.id && r.roleID === roleToRemove.id
-		// 			);
-		// 			return !shouldHaveThisRole;
-		// 		});
-		// 	if (rolesToRemove.size > 0) {
-		// 		await member.roles.remove(rolesToRemove.map(r => r.id)).catch(console.error);
-		// 		debugMessages.push(
-		// 			`Removing these roles from ${member.user.tag}: ${rolesToRemove.map(r => r.name).join(', ')}`
-		// 		);
-		// 	}
-		// }
+		const guildId = bscSupportServerId();
+		for (const role of await globalClient.fetchRolesOfGuild(guildId)) roleNames.set(role.id, role.name);
+		await syncAutoRoles(guildId, results, roleNames, debugMessages);
 
-		// Add roles to users
-		const mainServerRoles = await globalClient.fetchRolesOfGuild(globalConfig.supportServerID);
-
-		for (const { userID, roleID, badge } of results) {
+		for (const { userID, badge } of results) {
 			if (!userID) continue;
 			const user = await mUserFetch(userID);
-
-			const role = mainServerRoles.find(_r => _r.id === roleID);
-			const member = await globalClient.fetchMainServerMember(userID).catch(noOp);
-			if (!member) {
-				debugMessages.push(`Failed to find member ${userID}`);
-				continue;
-			}
-			if (!role) {
-				debugMessages.push(`Failed to find role ${roleID}`);
-				continue;
-			}
-			roleNames.set(roleID, role.name);
-
-			if (!member.roles.some(_r => _r === roleID)) {
-				// await member.roles.add(roleID).catch(console.error);
-				debugMessages.push(`Adding the ${role.name} role to ${user.username}`);
-			} else {
-				debugMessages.push(`${user.username} already has the ${role.name} role`);
-			}
 
 			if (badge) {
 				if (!user.user.badges.includes(badge)) {

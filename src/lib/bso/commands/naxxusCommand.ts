@@ -16,6 +16,7 @@ import { checkUserCanUseDegradeableItem, degradeablePvmBoostItems, degradeItem }
 import { trackLoot } from '@/lib/lootTrack.js';
 import { Gear } from '@/lib/structures/Gear.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 
 const bisMageGear = new Gear({
 	head: 'Gorajan occult helmet', // 20
@@ -116,7 +117,7 @@ function calcSetupPercent(
 	return totalPercent;
 }
 
-export async function naxxusCommand(user: MUser, channelId: string, quantity: number | undefined) {
+export async function naxxusCommand(user: MUser, channelId: string, quantity: number | undefined, preview = false) {
 	const [hasReqs, rejectReason] = await user.hasMonsterRequirements(Naxxus);
 	if (!hasReqs) {
 		return `${user.usernameOrMention} doesn't have the requirements for this monster: ${rejectReason}`;
@@ -202,6 +203,17 @@ export async function naxxusCommand(user: MUser, channelId: string, quantity: nu
 		.add('Enhanced saradomin brew', brewsNeeded)
 		.add('Enhanced super restore', Math.floor(brewsNeeded / 3) < 1 ? 1 : Math.floor(brewsNeeded / 3))
 		.add('Enhanced divine water', 2);
+
+	if (preview) {
+		return formatTripPreview({
+			user,
+			name: 'Naxxus',
+			quantity,
+			duration: effectiveTime * quantity,
+			boosts,
+			cost: foodBank
+		});
+	}
 
 	if (!user.owns(foodBank)) {
 		return `${user.usernameOrMention} doesn't have the food requirements for this monster: ${foodBank}`;

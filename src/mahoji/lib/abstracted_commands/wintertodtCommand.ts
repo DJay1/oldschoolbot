@@ -8,6 +8,7 @@ import { warmGear } from '@/lib/data/filterables.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import type { MinigameActivityTaskOptionsWithNoChanges } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 
 /**
  * Pyromancer pieces are warm clothing: up to 4 of them make Wintertodt faster and
@@ -24,7 +25,7 @@ export function wintertodtWarmPieceCount(user: MUser): number {
 	return warmGearAmount;
 }
 
-export async function wintertodtCommand(user: MUser, channelId: string, quantity?: number) {
+export async function wintertodtCommand(user: MUser, channelId: string, quantity?: number, preview = false) {
 	const fmLevel = user.skillsAsLevels.firemaking;
 	const wcLevel = user.skillsAsLevels.woodcutting;
 	if (fmLevel < 50) {
@@ -67,6 +68,17 @@ export async function wintertodtCommand(user: MUser, channelId: string, quantity
 		)}, try a lower quantity. The highest amount you can do for Wintertodt is ${Math.floor(
 			maxTripLength / durationPerTodt
 		)}.`;
+	}
+
+	if (preview) {
+		return formatTripPreview({
+			user,
+			name: 'Wintertodt',
+			quantity,
+			duration,
+			boosts: messages,
+			supplies: [`Food worth ${(healAmountNeeded * quantity).toLocaleString()} HP`]
+		});
 	}
 
 	for (const food of Eatables) {

@@ -4,7 +4,7 @@ import { keyCrates } from '@/lib/bso/keyCrates.js';
 import { Items } from 'oldschooljs';
 
 import { isCustomItem } from '@/lib/customItems/util.js';
-import { allCollectionLogs } from '@/lib/data/Collections.js';
+import { allCollectionLogs, discontinuedCollections } from '@/lib/data/Collections.js';
 import { launchBoxCL } from '@/lib/events/launch/collectionLog.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
 import { isEventActive } from '@/lib/events/registry.js';
@@ -75,7 +75,7 @@ export function getDiscontinuedItemIDs(): Set<number> {
 	const crateNames = new Set(keyCrates.map(crate => crate.item.name));
 	const eventItems = new Set<number>();
 	const crateItems = new Set<number>();
-	for (const [name, activity] of Object.entries(allCollectionLogs.Discontinued.activities)) {
+	for (const [name, activity] of Object.entries(discontinuedCollections)) {
 		for (const itemID of activity.items) {
 			if (!isCustomItem(itemID)) continue;
 			(crateNames.has(name) ? crateItems : eventItems).add(itemID);
@@ -94,4 +94,8 @@ export function getDiscontinuedItemIDs(): Set<number> {
 
 export function isDiscontinuedItem(itemID: number): boolean {
 	return getDiscontinuedItemIDs().has(itemID);
+}
+
+export function getUnreleasedItemIDs(): number[] {
+	return [...getDiscontinuedItemIDs()].filter(itemID => getDiscontinuedItemStatus(itemID) === 'Unreleased');
 }

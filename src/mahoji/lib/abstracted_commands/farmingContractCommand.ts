@@ -202,7 +202,7 @@ export async function autoContract(interaction: OSInteraction): Promise<string |
 
 		if (newContract.hasContract && newContract.plantToGrow) {
 			msg.setContent(
-				`${msg.message.content}, your new farming contract is: ${toTitleCase(newContract.plantToGrow)}`
+				`${msg.message.content}\n${formatNewContractContent(newContract.plantToGrow, newContract.difficultyLevel ?? 'easy')}`
 			);
 		}
 

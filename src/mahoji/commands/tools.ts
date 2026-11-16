@@ -2,7 +2,6 @@ import { giveBox, spawnBoxCommand, spawnLampCommand } from '@/lib/bso/commands/s
 import { keyCrates } from '@/lib/bso/keyCrates.js';
 import { repairBrokenItemsFromUser } from '@/lib/bso/util/repairBrokenItems.js';
 
-import { EmbedBuilder } from '@oldschoolgg/discord';
 import { formatDuration, PerkTier, stringMatches, stringSearch } from '@oldschoolgg/toolkit';
 import { Bank, type Item, type ItemBank, ItemGroups, Items, resolveItems, ToBUniqueTable } from 'oldschooljs';
 
@@ -14,6 +13,7 @@ import { allStashUnitsFlat } from '@/lib/clues/stashUnits.js';
 import { allCLItemsFiltered, allDroppedItems } from '@/lib/data/Collections.js';
 import { gnomeRestaurantCL, guardiansOfTheRiftCL, shadesOfMorttonCL } from '@/lib/data/CollectionsExport.js';
 import pets from '@/lib/data/pets.js';
+import { doMenuWrapper } from '@/lib/menuWrapper.js';
 import killableMonsters, { effectiveMonsters, NightmareMonster } from '@/lib/minions/data/killableMonsters/index.js';
 import { allOpenables, type UnifiedOpenable } from '@/lib/openables.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
@@ -104,7 +104,7 @@ ${whereInMassClause(id)};`)
 `;
 }
 
-async function clueGains(interval: string, tier?: string, ironmanOnly?: boolean) {
+async function clueGains(interaction: MInteraction, interval: string, tier?: string, ironmanOnly?: boolean) {
 	if (!parseStaticTimeInterval(interval)) {
 		return 'Invalid time interval.';
 	}
@@ -131,7 +131,7 @@ async function clueGains(interval: string, tier?: string, ironmanOnly?: boolean)
 	  ${tierFilter}
 	  GROUP BY a.user_id
 	  ORDER BY qty DESC, lastDate ASC
-	  LIMIT 10`;
+	  LIMIT 30`;
 
 	const res = await prisma.$queryRawUnsafe<{ user_id: string; qty: number }[]>(query);
 
@@ -139,21 +139,12 @@ async function clueGains(interval: string, tier?: string, ironmanOnly?: boolean)
 		return 'No results found.';
 	}
 
-	let place = 0;
-	const embed = new EmbedBuilder()
-		.setTitle(title)
-		.setDescription(
-			(
-				await Promise.all(
-					res.map(
-						async i =>
-							`${++place}. **${await Cache.getBadgedUsername(i.user_id)}**: ${Number(i.qty).toLocaleString()}`
-					)
-				)
-			).join('\n')
-		);
-
-	return { embeds: [embed] };
+	return doMenuWrapper({
+		ironmanOnly: Boolean(ironmanOnly),
+		interaction,
+		title,
+		users: res.map(i => ({ id: i.user_id, score: Number(i.qty) }))
+	});
 }
 
 interface XPRecord {
@@ -185,14 +176,14 @@ async function executeXPGainsQuery(
         ORDER BY
             total_xp DESC,
             lastDate ASC
-        LIMIT 10;
+        LIMIT 30;
     `;
 
 	const result = await prisma.$queryRawUnsafe<XPRecord[]>(query);
 	return result;
 }
 
-async function xpGains(interval: string, skill?: string, ironmanOnly?: boolean) {
+async function xpGains(interaction: MInteraction, interval: string, skill?: string, ironmanOnly?: boolean) {
 	if (!parseStaticTimeInterval(interval)) {
 		return 'Invalid time interval.';
 	}
@@ -207,24 +198,21 @@ async function xpGains(interval: string, skill?: string, ironmanOnly?: boolean) 
 		return 'No results found.';
 	}
 
-	let place = 0;
-	const embed = new EmbedBuilder()
-		.setTitle(`Highest ${skillObj ? skillObj.name : 'Overall'} XP Gains in the past ${interval}`)
-		.setDescription(
-			(
-				await Promise.all(
-					xpRecords.map(
-						async record =>
-							`${++place}. **${await Cache.getBadgedUsername(record.user)}**: ${Number(record.total_xp).toLocaleString()} XP`
-					)
-				)
-			).join('\n')
-		);
-
-	return { embeds: [embed] };
+	return doMenuWrapper({
+		ironmanOnly: Boolean(ironmanOnly),
+		interaction,
+		title: `Highest ${skillObj ? skillObj.name : 'Overall'} XP Gains in the past ${interval}`,
+		users: xpRecords.map(record => ({ id: record.user, score: Number(record.total_xp) })),
+		formatter: val => `${val.toLocaleString()} XP`
+	});
 }
 
-export async function kcGains(interval: string, monsterName: string, ironmanOnly?: boolean): CommandResponse {
+export async function kcGains(
+	interaction: MInteraction,
+	interval: string,
+	monsterName: string,
+	ironmanOnly?: boolean
+): CommandResponse {
 	if (!parseStaticTimeInterval(interval)) {
 		return 'Invalid time interval.';
 	}
@@ -251,7 +239,7 @@ export async function kcGains(interval: string, monsterName: string, ironmanOnly
     ${ironmanOnly ? ' AND u."minion.ironman" = true' : ''}
     GROUP BY a.user_id
     ORDER BY qty DESC, lastDate ASC
-    LIMIT 10`;
+    LIMIT 30`;
 
 	const res = await prisma.$queryRawUnsafe<{ user_id: string; qty: number }[]>(query);
 
@@ -259,21 +247,12 @@ export async function kcGains(interval: string, monsterName: string, ironmanOnly
 		return 'No results found.';
 	}
 
-	let place = 0;
-	const embed = new EmbedBuilder()
-		.setTitle(`Highest ${monster.name} KC gains in the past ${interval}`)
-		.setDescription(
-			(
-				await Promise.all(
-					res.map(
-						async i =>
-							`${++place}. **${await Cache.getBadgedUsername(i.user_id)}**: ${Number(i.qty).toLocaleString()}`
-					)
-				)
-			).join('\n')
-		);
-
-	return { embeds: [embed] };
+	return doMenuWrapper({
+		ironmanOnly: Boolean(ironmanOnly),
+		interaction,
+		title: `Highest ${monster.name} KC gains in the past ${interval}`,
+		users: res.map(i => ({ id: i.user_id, score: Number(i.qty) }))
+	});
 }
 
 interface DrystreakMinigame {
@@ -364,7 +343,7 @@ WHERE "collectionLogBank"->>'${item.id}' IS NULL
 AND "openable_scores"->>'${openable.id}' IS NOT NULL
 ${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
 ORDER BY ("openable_scores"->>'${openable.id}')::int DESC
-LIMIT 10;`);
+LIMIT 30;`);
 			return result;
 		},
 		format: val => `${val.toLocaleString()} ${openable.name}`
@@ -390,7 +369,7 @@ FROM activity WHERE
 user_id IN (SELECT id::bigint FROM users WHERE "collectionLogBank"->'${item.id}' IS NULL
 ${ironmanOnly ? ' AND "minion.ironman" = TRUE' : ''})
 AND type = 'HalloweenMiniMinigame' GROUP BY user_id
-ORDER BY val DESC LIMIT 10`);
+ORDER BY val DESC LIMIT 30`);
 			return result;
 		},
 		format: num => `${num} Mini-Minigames`
@@ -422,7 +401,7 @@ INNER JOIN "minigames" on "minigames"."user_id" = "user_stats"."user_id"::text
 WHERE "collectionLogBank"->>'${item.id}' IS NULL
 ${ironmanOnly ? ' AND "minion.ironman" = true' : ''}
 ORDER BY "user_stats".total_cox_points DESC
-LIMIT 10;`);
+LIMIT 30;`);
 			return result.map(i => ({
 				id: i.id,
 				val: `${i.points.toLocaleString()} points / ${i.raids_total_kc} KC`
@@ -452,7 +431,7 @@ LIMIT 10;`);
 		   AND "monster_scores"->>'${NightmareMonster.id}' IS NOT NULL
 		   ${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
 		   ORDER BY ("monster_scores"->>'${NightmareMonster.id}')::int DESC
-		   LIMIT 10;`);
+		   LIMIT 30;`);
 			return result;
 		},
 
@@ -469,7 +448,7 @@ LIMIT 10;`);
 				   AND high_gambles > 0
 				   ${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
 				   ORDER BY high_gambles DESC
-				   LIMIT 10;`);
+				   LIMIT 30;`);
 			return result;
 		},
 		format: num => `${num.toLocaleString()} Gambles`
@@ -486,7 +465,7 @@ LIMIT 10;`);
             WHERE "collectionLogBank"->>'${item.id}' IS NULL
             ${ironmanOnly ? ' AND "minion.ironman" = true' : ''}
             ORDER BY gotr_rift_searches DESC
-            LIMIT 10;`);
+            LIMIT 30;`);
 			return result;
 		},
 		format: num => `${num.toLocaleString()} Rift Searches`
@@ -509,7 +488,7 @@ LIMIT 10;`);
             ${ironmanOnly ? ' AND "minion.ironman" = true' : ''}
             GROUP BY users.id
             ORDER BY val DESC
-            LIMIT 10
+            LIMIT 30
 			)
 			AS eggs
 			WHERE eggs.val > 0;`);
@@ -536,7 +515,7 @@ AND openable_scores->>'6199' IS NOT NULL
 AND (openable_scores->>'6199')::int > 3
 ${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
 ORDER BY factor DESC
-LIMIT 10;`);
+LIMIT 30;`);
 			return result.map(i => ({
 				id: i.id,
 				val: `${i.mbox_opens} Mystery box Opens, ${i.baguettes_received} Baguettes`
@@ -556,7 +535,7 @@ INNER JOIN "user_stats" ON "user_stats"."user_id"::text = "users"."id"
 WHERE "collectionLogBank"->>'${item.id}' IS NULL
 ${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
 ORDER BY slayer_superior_count DESC
-LIMIT 10;`);
+LIMIT 30;`);
 			return result.map(i => ({
 				id: i.id,
 				val: `${i.slayer_superior_count} Superiors Slayed`
@@ -579,7 +558,7 @@ INNER JOIN "minigames" "minigame" on "minigame"."user_id" = "users"."id"::text
 WHERE "collectionLogBank"->>'${item.id}' IS NULL
 ${ironmanOnly ? ' AND "minion.ironman" = true' : ''}
 ORDER BY "minigame"."${minigameObj.column}" DESC
-LIMIT 10;`);
+LIMIT 30;`);
 			return result;
 		},
 		format: num => `${num.toLocaleString()} KC`
@@ -606,7 +585,7 @@ WHERE "collectionLogBank"->>'${item.id}' IS NULL
 AND "creature_scores"->>'${creatureId}' IS NOT NULL
 ${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
 ORDER BY ("creature_scores"->>'${creatureId}')::int DESC
-LIMIT 10;`);
+LIMIT 30;`);
 			return result;
 		},
 		format: num => `${num.toLocaleString()} catches`
@@ -638,7 +617,7 @@ AND user_id IN (
 GROUP BY user_id
 HAVING (SUM(duration) / 60000)::int > 0
 ORDER BY val DESC
-LIMIT 10;`);
+LIMIT 30;`);
 			return result;
 		},
 		format: num => `${num.toLocaleString()} ${label}`
@@ -663,7 +642,7 @@ AND user_id IN (
 )
 GROUP BY user_id
 ORDER BY val DESC
-LIMIT 10;`);
+LIMIT 30;`);
 			return result;
 		},
 		format: num => `${num.toLocaleString()} trips`
@@ -684,7 +663,7 @@ WHERE "collectionLogBank"->>'${item.id}' IS NULL
 AND "laps_scores"->>'${courseId}' IS NOT NULL
 ${ironmanOnly ? 'AND "minion.ironman" = true' : ''}
 ORDER BY ("laps_scores"->>'${courseId}')::int DESC
-LIMIT 10;`);
+LIMIT 30;`);
 			return result;
 		},
 		format: num => `${num.toLocaleString()} laps`
@@ -751,7 +730,7 @@ for (const openable of allOpenables) {
 	}
 }
 
-async function dryStreakCommand(sourceName: string, itemName: string, ironmanOnly: boolean) {
+async function dryStreakCommand(interaction: MInteraction, sourceName: string, itemName: string, ironmanOnly: boolean) {
 	const item = Items.getItem(itemName);
 	if (!item) return 'Invalid item.';
 	const entity = dryStreakEntities.find(
@@ -771,11 +750,13 @@ async function dryStreakCommand(sourceName: string, itemName: string, ironmanOnl
 		if (result.length === 0) return 'No results found.';
 		if (typeof result === 'string') return result;
 
-		return `**Dry Streaks for ${item.name} from ${entity.name}:**\n${(
-			await Promise.all(
-				result.map(async ({ id, val }) => `${await Cache.getBadgedUsername(id)}: ${entity.format(val || -1)}`)
-			)
-		).join('\n')}`;
+		return doMenuWrapper({
+			ironmanOnly,
+			interaction,
+			title: `Dry Streaks for ${item.name} from ${entity.name}`,
+			users: result.map(({ id, val }) => ({ id, score: Number(val) })),
+			formatter: val => entity.format(val || -1)
+		});
 	}
 
 	const mon = effectiveMonsters.find(mon => mon.aliases.some(alias => stringMatches(alias, sourceName)));
@@ -793,7 +774,7 @@ async function dryStreakCommand(sourceName: string, itemName: string, ironmanOnl
 						AND "${key}"->>'${id}' IS NOT NULL
 						${ironmanPart}
 				ORDER BY ("${key}"->>'${id}')::int DESC
-				LIMIT 10;`;
+				LIMIT 30;`;
 
 	const result =
 		await prisma.$queryRawUnsafe<
@@ -805,17 +786,15 @@ async function dryStreakCommand(sourceName: string, itemName: string, ironmanOnl
 
 	if (result.length === 0) return 'No results found.';
 
-	return `**Dry Streaks for ${item.name} from ${mon.name}:**\n${(
-		await Promise.all(
-			result.map(
-				async ({ id, KC }) =>
-					`${await Cache.getBadgedUsername(id)}: ${Number.parseInt(KC, 10).toLocaleString()}`
-			)
-		)
-	).join('\n')}`;
+	return doMenuWrapper({
+		ironmanOnly,
+		interaction,
+		title: `Dry Streaks for ${item.name} from ${mon.name}`,
+		users: result.map(({ id, KC }) => ({ id, score: Number.parseInt(KC, 10) }))
+	});
 }
 
-async function mostDrops(user: MUser, itemName: string, filter: string) {
+async function mostDrops(interaction: MInteraction, user: MUser, itemName: string, filter: string) {
 	const item = Items.getItem(itemName);
 	const ironmanPart =
 		filter === 'Irons Only'
@@ -828,7 +807,7 @@ async function mostDrops(user: MUser, itemName: string, filter: string) {
 		return "You can't check this item, because it's not on any collection log.";
 	}
 
-	const query = `SELECT "id", "collectionLogBank"->>'${item.id}' AS "qty" FROM users WHERE "collectionLogBank"->>'${item.id}' IS NOT NULL ${ironmanPart} ORDER BY ("collectionLogBank"->>'${item.id}')::int DESC LIMIT 10;`;
+	const query = `SELECT "id", "collectionLogBank"->>'${item.id}' AS "qty" FROM users WHERE "collectionLogBank"->>'${item.id}' IS NOT NULL ${ironmanPart} ORDER BY ("collectionLogBank"->>'${item.id}')::int DESC LIMIT 30;`;
 
 	const result =
 		await prisma.$queryRawUnsafe<
@@ -840,14 +819,17 @@ async function mostDrops(user: MUser, itemName: string, filter: string) {
 
 	if (result.length === 0) return 'No results found.';
 
-	return `**Most '${item.name}' received:**\n${(
-		await Promise.all(
-			result.map(
-				async ({ id, qty }) =>
-					`${result.length < 10 ? '(Anonymous)' : await Cache.getBadgedUsername(id)}: ${Number.parseInt(qty, 10).toLocaleString()}`
-			)
-		)
-	).join('\n')}`;
+	const filterNote = filter === 'Irons Only' ? ' (Ironmen Only)' : filter === 'Mains Only' ? ' (Mains Only)' : '';
+	return doMenuWrapper({
+		ironmanOnly: false,
+		interaction,
+		title: `Most ${item.name} Received${filterNote}`,
+		users: result.map(({ id, qty }) => ({
+			id,
+			score: Number.parseInt(qty, 10),
+			customName: result.length < 10 ? '(Anonymous)' : undefined
+		}))
+	});
 }
 
 async function checkMassesCommand(guildId: string | null) {
@@ -1225,28 +1207,39 @@ export const toolsCommand = defineCommand({
 
 			if (patron.clue_gains) {
 				if ((await user.fetchPerkTier()) < PerkTier.Four) return patronMsg(PerkTier.Four);
-				return clueGains(patron.clue_gains.time, patron.clue_gains.tier, Boolean(patron.clue_gains.ironman));
+				return clueGains(
+					interaction,
+					patron.clue_gains.time,
+					patron.clue_gains.tier,
+					Boolean(patron.clue_gains.ironman)
+				);
 			}
 			if (patron.kc_gains) {
 				if ((await user.fetchPerkTier()) < PerkTier.Four) return patronMsg(PerkTier.Four);
-				return kcGains(patron.kc_gains.time, patron.kc_gains.monster, Boolean(patron.kc_gains.ironman));
+				return kcGains(
+					interaction,
+					patron.kc_gains.time,
+					patron.kc_gains.monster,
+					Boolean(patron.kc_gains.ironman)
+				);
 			}
 			if (patron.xp_gains) {
 				if ((await user.fetchPerkTier()) < PerkTier.Four) return patronMsg(PerkTier.Four);
-				return xpGains(patron.xp_gains.time, patron.xp_gains.skill, patron.xp_gains.ironman);
+				return xpGains(interaction, patron.xp_gains.time, patron.xp_gains.skill, patron.xp_gains.ironman);
 			}
 			if (patron.drystreak) {
 				// Open to everyone. A short per-user cooldown keeps the leaderboard queries cheap.
 				const wait = dryStreakCooldownLeft(user.id, Date.now());
 				if (wait > 0) return `Please wait ${Math.ceil(wait / 1000)}s before checking another drystreak.`;
 				return dryStreakCommand(
+					interaction,
 					patron.drystreak.source,
 					patron.drystreak.item,
 					Boolean(patron.drystreak.ironman)
 				);
 			}
 			if (patron.mostdrops) {
-				return mostDrops(user, patron.mostdrops.item, String(patron.mostdrops.filter));
+				return mostDrops(interaction, user, patron.mostdrops.item, String(patron.mostdrops.filter));
 			}
 			if (patron.sacrificed_bank) {
 				if ((await user.fetchPerkTier()) < PerkTier.Two) return patronMsg(PerkTier.Two);

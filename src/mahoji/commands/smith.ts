@@ -183,7 +183,7 @@ export const smithCommand = defineCommand({
 
 		let str = `${user.minionName} is now smithing ${quantity * smithedItem.outputMultiple}x ${
 			smithedItem.name
-		}, removed ${cost} from your bank, it'll take around ${formatTripDuration(user, duration)} to finish. ${
+		}, removed ${cost} from your bank, it'll take around ${formatTripDuration(user, duration, ' to finish')}. ${
 			setBonus > 0
 				? `${setBonus}% chance to save 1 tick while smithing each item for using Smiths' Uniform item/items.`
 				: ''

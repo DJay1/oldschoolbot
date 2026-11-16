@@ -969,6 +969,19 @@ describe('resolveSeedForPatch', () => {
 		expect(result).not.toBeNull();
 		expect(result).toMatchObject({ type: 'plant', plant: herbPlant, reason: 'preference_seed' });
 	});
+
+	it('plants the contract crop instead of the fallback when no preference is saved', () => {
+		const result = resolveSeedForPatch({
+			patch: herbPatchReadyDetailed,
+			preferContract: false,
+			hasActiveContract: true,
+			contractPlant: herbPlant,
+			preferences: new Map(),
+			fallbackPlant: ranarrPlant
+		});
+
+		expect(result).toMatchObject({ type: 'plant', plant: herbPlant, reason: 'contract' });
+	});
 });
 
 describe('auto farm planning helpers', () => {

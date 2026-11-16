@@ -15,7 +15,7 @@ import { checkUserCanUseDegradeableItem } from '@/lib/degradeableItems.js';
 import { constructGearSetup } from '@/lib/structures/Gear.js';
 import type { Skills } from '@/lib/types/index.js';
 
-const bareMinStats: Skills = {
+export const bareMinStats: Skills = {
 	attack: 80,
 	strength: 80,
 	defence: 80,

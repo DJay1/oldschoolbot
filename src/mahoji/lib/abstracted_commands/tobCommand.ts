@@ -558,10 +558,46 @@ export function resolveToBUsersForStart(user: MUser, teamSize: ToBTeamSize | und
 	return partyUsers ?? [user];
 }
 
-export async function tobCheckCommand(user: MUser, hardMode: boolean) {
-	const result = await checkTOBUser(user, hardMode, 5);
-	if (result[0]) {
-		return `You aren't able to join a Theatre of Blood raid, address these issues first: ${result[1]}`;
-	}
-	return 'You are ready to do the Theatre of Blood!';
+export async function tobHelpCommand(user: MUser) {
+	const [minigameScores, stats] = await Promise.all([user.fetchMinigames(), user.fetchStats()]);
+	const kc = minigameScores.tob;
+	const hardKC = minigameScores.tob_hard;
+	let totalUniques = 0;
+	for (const item of baseTOBUniques) totalUniques += user.cl.amount(item);
+	const gear = calculateTOBUserGearPercents(user);
+	const blowpipe = user.getBlowpipe();
+	const hasRunePouch = getSimilarItems(itemID('Rune pouch')).some(item => user.owns(item));
+	const req = (ok: boolean, text: string) => `- ${ok ? '✅' : '❌'} ${text}`;
+	const readiness = async (hardMode: boolean) => {
+		const result = await checkTOBUser(user, hardMode, 5);
+		return result[0] ? `Not ready, ${result[1]}` : 'Ready';
+	};
+	const cost = await calcTOBInput(user);
+	cost.add('Coins', 100_000);
+	const uniqueRate = totalUniques > 0 ? ` (1 every ${Math.floor((kc + hardKC) / totalUniques)} raids)` : '';
+
+	return `**Theatre of Blood**
+
+**Normal:** ${kc} KC, ${stats.tob_attempts} attempts
+**Hard Mode:** ${hardKC} KC, ${stats.tob_hard_attempts} attempts
+**Total Uniques:** ${totalUniques}${uniqueRate}
+
+**Requirements**
+${[
+	req(user.hasSkillReqs(minStats), `Stats: ${formatSkillRequirements(minStats)}`),
+	req(hasRunePouch, 'Rune pouch'),
+	req(
+		user.owns('Toxic blowpipe') && Boolean(blowpipe.scales) && Boolean(blowpipe.dartID),
+		'Toxic blowpipe with darts and scales'
+	),
+	req(gear.total >= 20, `Gear score of at least 20% (yours is ${gear.total.toFixed(1)}%)`),
+	req(user.owns(minimumTOBSuppliesNeeded), `Supplies: ${minimumTOBSuppliesNeeded}`),
+	req(kc >= 250, `Hard Mode: 250 KC (you have ${kc})`)
+].join('\n')}
+
+**Normal:** ${await readiness(false)}
+**Hard Mode:** ${await readiness(true)}
+
+**Gear:** Melee ${gear.melee.toFixed(1)}% · Range ${gear.range.toFixed(1)}% · Mage ${gear.mage.toFixed(1)}%
+**Supplies per raid:** ${cost}`.slice(0, 1900);
 }

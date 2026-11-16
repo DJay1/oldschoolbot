@@ -7,19 +7,26 @@ import { vasaCommand } from '@/lib/bso/commands/vasaCommand.js';
 import { handleDTD } from '@/lib/bso/handleDTD.js';
 import { Slayer2026MonsterID } from '@/lib/bso/monsters/slayer2026Ids.js';
 
-import { customEmoji, stringMatches, Time } from '@oldschoolgg/toolkit';
+import { EmbedBuilder } from '@oldschoolgg/discord';
+import { customEmoji, formatDuration, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Monsters } from 'oldschooljs';
 
 import { colosseumCommand } from '@/lib/colosseum.js';
 import type { PvMMethod } from '@/lib/constants.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { revenantMonsters } from '@/lib/minions/data/killableMonsters/revs.js';
+import type { KillableMonster } from '@/lib/minions/types.js';
+import type { CurrentSlayerInfo } from '@/lib/slayer/slayerUtil.js';
 import type { MonsterActivityTaskOptions } from '@/lib/types/minions.js';
 import findMonster from '@/lib/util/findMonster.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { generateDailyPeakIntervals } from '@/lib/util/peaks.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
-import { newMinionKillCommand } from '@/mahoji/lib/abstracted_commands/minionKill/newMinionKill.js';
+import {
+	type MinionKillReturn,
+	newMinionKillCommand
+} from '@/mahoji/lib/abstracted_commands/minionKill/newMinionKill.js';
 import { nexCommand } from '@/mahoji/lib/abstracted_commands/nexCommand.js';
 import { nightmareCommand } from '@/mahoji/lib/abstracted_commands/nightmareCommand.js';
 import { getPOH } from '@/mahoji/lib/abstracted_commands/pohCommand.js';
@@ -50,42 +57,16 @@ export async function minionKillCommand(
 	if (await user.minionIsBusy()) {
 		return 'Your minion is busy.';
 	}
-	const { minionName } = user;
 
 	if (!name) return invalidMonsterMsg;
 
 	if (user.usingPet('Ishi')) {
 		name = 'Ogress Warrior';
 	}
-	if (stringMatches(name, 'colosseum')) return colosseumCommand(interaction, inputQuantity);
-	if (stringMatches(name, 'zalcano')) return zalcanoCommand(rng, user, channelId, inputQuantity);
-	if (stringMatches(name, 'tempoross')) return temporossCommand(user, channelId, inputQuantity);
-	if (name.toLowerCase().includes('nightmare')) return nightmareCommand(user, channelId, name, inputQuantity);
-	if (name.toLowerCase().includes('wintertodt')) return wintertodtCommand(user, channelId);
-	if (['igne ', 'ignecarus'].some(i => name.toLowerCase().includes(i))) {
-		return igneCommand(interaction, user, channelId, name, inputQuantity);
-	}
-	if (['kg', 'king goldemar'].some(i => name.toLowerCase().includes(i))) {
-		return kgCommand(interaction, user, channelId, name, inputQuantity);
-	}
-	if (['kk', 'kalphite king'].some(i => name.toLowerCase().includes(i)))
-		return kkCommand(interaction, user, channelId, name, inputQuantity);
-	if (name.toLowerCase().includes('nex')) return nexCommand(interaction, user, channelId, name, inputQuantity);
-	if (name.toLowerCase().includes('moktang')) return moktangCommand(user, channelId, inputQuantity);
-	if (name.toLowerCase().includes('naxxus')) return naxxusCommand(user, channelId, inputQuantity);
-	if (['vasa', 'vasa magus'].some(i => name.toLowerCase().includes(i))) {
-		return vasaCommand(interaction, user, channelId, inputQuantity);
-	}
+	const special = specialBossCommand({ interaction, user, channelId, name, rng, inputQuantity, preview: false });
+	if (special) return special;
 
-	let monster = findMonster(name);
-
-	const matchedRevenantMonster = revenantMonsters.find(monster =>
-		monster.aliases.some(alias => stringMatches(alias, name))
-	);
-	if (matchedRevenantMonster) {
-		monster = matchedRevenantMonster;
-	}
-
+	const monster = findKillMonster(name);
 	if (!monster) return invalidMonsterMsg;
 
 	const [hasReqs, reason] = await user.hasMonsterRequirements(monster);
@@ -97,6 +78,82 @@ export async function minionKillCommand(
 
 	if (slayerInfo.assignedTask === null && onTask) return 'You are no longer on a slayer task for this monster!';
 
+	const calculated = await calculateMinionKill({ user, monster, slayerInfo, rng, inputQuantity, method, wilderness });
+	if (typeof calculated === 'string') return calculated;
+	const { result } = calculated;
+
+	if (!user.allItemsOwned.has(result.updateBank.itemCostBank)) {
+		return `You don't have the items needed to kill this monster. You're missing: ${result.updateBank.itemCostBank.clone().remove(user.allItemsOwned)}`;
+	}
+
+	return startMinionKillTrip({ user, channelId, monster, result, slayerInfo, inputQuantity, takeEggs });
+}
+
+function specialBossCommand({
+	interaction,
+	user,
+	channelId,
+	name,
+	rng,
+	inputQuantity,
+	preview
+}: {
+	interaction: OSInteraction;
+	user: MUser;
+	channelId: string;
+	name: string;
+	rng: RNGProvider;
+	inputQuantity: number | undefined;
+	preview: boolean;
+}): CommandResponse | null {
+	const lower = name.toLowerCase();
+	if (stringMatches(name, 'colosseum')) return colosseumCommand(interaction, inputQuantity, preview);
+	if (stringMatches(name, 'zalcano')) return zalcanoCommand(rng, user, channelId, inputQuantity, preview);
+	if (stringMatches(name, 'tempoross')) return temporossCommand(user, channelId, inputQuantity, preview);
+	if (lower.includes('nightmare')) return nightmareCommand(user, channelId, name, inputQuantity, preview);
+	if (lower.includes('wintertodt')) return wintertodtCommand(user, channelId, undefined, preview);
+	if (['igne ', 'ignecarus'].some(i => lower.includes(i))) {
+		return igneCommand(interaction, user, channelId, name, inputQuantity, preview);
+	}
+	if (['kg', 'king goldemar'].some(i => lower.includes(i))) {
+		return kgCommand(interaction, user, channelId, name, inputQuantity, preview);
+	}
+	if (['kk', 'kalphite king'].some(i => lower.includes(i))) {
+		return kkCommand(interaction, user, channelId, name, inputQuantity, preview);
+	}
+	if (lower.includes('nex')) return nexCommand(interaction, user, channelId, name, inputQuantity, preview);
+	if (lower.includes('moktang')) return moktangCommand(user, channelId, inputQuantity, preview);
+	if (lower.includes('naxxus')) return naxxusCommand(user, channelId, inputQuantity, preview);
+	if (['vasa', 'vasa magus'].some(i => lower.includes(i))) {
+		return vasaCommand(interaction, user, channelId, inputQuantity, preview);
+	}
+	return null;
+}
+
+function findKillMonster(name: string) {
+	const matchedRevenantMonster = revenantMonsters.find(monster =>
+		monster.aliases.some(alias => stringMatches(alias, name))
+	);
+	return matchedRevenantMonster ?? findMonster(name);
+}
+
+async function calculateMinionKill({
+	user,
+	monster,
+	slayerInfo,
+	rng,
+	inputQuantity,
+	method,
+	wilderness
+}: {
+	user: MUser;
+	monster: KillableMonster;
+	slayerInfo: CurrentSlayerInfo;
+	rng: RNGProvider;
+	inputQuantity: number | undefined;
+	method: PvMMethod | undefined;
+	wilderness: boolean | undefined;
+}): Promise<string | { result: MinionKillReturn; maxTripLength: number }> {
 	const pkEvasionExperience = await user.fetchUserStat('pk_evasion_exp');
 
 	const royalTitansGroupIDs = [Monsters.Branda.id, Monsters.Eldric.id, Monsters.RoyalTitans.id];
@@ -153,11 +210,27 @@ export async function minionKillCommand(
 	if (typeof result === 'string') {
 		return result;
 	}
+	return { result, maxTripLength };
+}
 
-	if (!user.allItemsOwned.has(result.updateBank.itemCostBank)) {
-		return `You don't have the items needed to kill this monster. You're missing: ${result.updateBank.itemCostBank.clone().remove(user.allItemsOwned)}`;
-	}
-
+async function startMinionKillTrip({
+	user,
+	channelId,
+	monster,
+	result,
+	slayerInfo,
+	inputQuantity,
+	takeEggs
+}: {
+	user: MUser;
+	channelId: string;
+	monster: KillableMonster;
+	result: MinionKillReturn;
+	slayerInfo: CurrentSlayerInfo;
+	inputQuantity: number | undefined;
+	takeEggs: boolean | undefined;
+}): CommandResponse {
+	const { minionName } = user;
 	const updateResult = await result.updateBank.transact(user, { isInWilderness: result.isInWilderness });
 	if (typeof updateResult === 'string') {
 		return updateResult;
@@ -212,11 +285,71 @@ export async function minionKillCommand(
 		takeEggs: takeEggs && monster.id === Slayer2026MonsterID.MAGGOT_KING ? true : undefined
 	});
 
-	let response = `${minionName} is now killing ${result.quantity}x ${monster.name}, ${dtdResult ? `using a ${customEmoji('deathtouched_dart')} **Deathtouched dart**, it'll take around ${formatTripDuration(user, Time.Second * 5)}` : `It'll take around ${formatTripDuration(user, result.duration)} to finish`}. Attack styles used: ${result.attackStyles.join(', ')}.`;
+	let response = `${minionName} is now killing ${result.quantity}x ${monster.name}, ${dtdResult ? `using a ${customEmoji('deathtouched_dart')} **Deathtouched dart**, it'll take around ${formatTripDuration(user, Time.Second * 5)}` : `It'll take around ${formatTripDuration(user, result.duration, ' to finish')}`}. Attack styles used: ${result.attackStyles.join(', ')}.`;
 
 	if (result.messages.length > 0) {
 		response += `\n\n${result.messages.join(', ')}`;
 	}
 
 	return response;
+}
+
+export async function minionKillInfoCommand(
+	user: MUser,
+	interaction: OSInteraction,
+	channelId: string,
+	name: string,
+	rng: RNGProvider,
+	method: PvMMethod | undefined,
+	wilderness: boolean | undefined
+): CommandResponse {
+	const special = specialBossCommand({
+		interaction,
+		user,
+		channelId,
+		name,
+		rng,
+		inputQuantity: undefined,
+		preview: true
+	});
+	if (special) return special;
+
+	const monster = findKillMonster(name);
+	if (!monster) return invalidMonsterMsg;
+
+	const facts = [
+		`Barrage/Burst: ${monster.canBarrage ? 'Yes' : 'No'}`,
+		`Cannon: ${monster.canCannon ? (monster.cannonMulti ? 'Yes (multi)' : 'Yes (single)') : 'No'}`
+	];
+	if (monster.qpRequired) facts.push(`QP: ${monster.qpRequired} (you have ${user.QP})`);
+
+	const [hasReqs, reason] = await user.hasMonsterRequirements(monster);
+	const slayerInfo = hasReqs ? await user.fetchSlayerInfo() : null;
+	const calculated = slayerInfo
+		? await calculateMinionKill({ user, monster, slayerInfo, rng, inputQuantity: undefined, method, wilderness })
+		: null;
+
+	if (!calculated || typeof calculated === 'string') {
+		const problem = !hasReqs
+			? `You can't kill this yet: ${typeof reason === 'string' ? reason : 'missing requirements'}`
+			: (calculated as string);
+		return {
+			embeds: [new EmbedBuilder().setTitle(monster.name).setDescription(`⚠️ ${problem}\n\n${facts.join(' · ')}`)]
+		};
+	}
+
+	const { result, maxTripLength } = calculated;
+	return formatTripPreview({
+		user,
+		name: monster.name,
+		quantity: result.quantity,
+		duration: result.duration,
+		stats: [
+			`Max trip: ${formatDuration(maxTripLength)} · On task: ${result.isOnTask ? 'Yes' : 'No'}${result.isInWilderness ? ' · Wilderness' : ''}`,
+			`Attack styles: ${result.attackStyles.join(', ')}`,
+			facts.join(' · ')
+		],
+		boosts: result.messages,
+		cost: result.updateBank.itemCostBank
+	});
 }

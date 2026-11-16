@@ -170,8 +170,9 @@ export const buildCommand = defineCommand({
 
 		let str = `${user.minionName} is now constructing ${quantity}x ${object.name}, it'll take around ${formatTripDuration(
 			user,
-			duration
-		)} to finish. Removed ${cost} from your bank. **${xpHr}**
+			duration,
+			' to finish'
+		)}. Removed ${cost} from your bank. **${xpHr}**
 
 You paid ${gpNeeded.toLocaleString()} GP, because you used ${invsPerTrip} inventories of planks.`;
 		if (boosts.length > 0) {

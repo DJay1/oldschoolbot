@@ -103,8 +103,9 @@ export async function alchCommand(
 
 	const response = `${user.minionName} is now alching ${quantity}x ${osItem.name}, it'll take around ${formatTripDuration(
 		user,
-		duration
-	)} to finish.`;
+		duration,
+		' to finish'
+	)}.`;
 
 	return response;
 }

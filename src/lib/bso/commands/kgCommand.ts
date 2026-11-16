@@ -12,7 +12,8 @@ export async function kgCommand(
 	user: MUser,
 	channelId: string,
 	inputName: string,
-	quantity: number | undefined
+	quantity: number | undefined,
+	preview = false
 ) {
 	if (interaction) await interaction.defer();
 	const type = inputName.toLowerCase().includes('mass') ? 'mass' : 'solo';
@@ -69,6 +70,7 @@ export async function kgCommand(
 		kcLearningCap: 50,
 		quantity
 	});
+	if (preview) return instance.preview('King Goldemar');
 	const { bossUsers } = await instance.start();
 	const embed = new EmbedBuilder()
 		.setDescription(

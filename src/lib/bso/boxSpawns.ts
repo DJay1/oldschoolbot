@@ -4,7 +4,7 @@ import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import type { GatewayMessageCreateDispatchData } from '@oldschoolgg/discord';
 import { EmbedBuilder } from '@oldschoolgg/discord';
 import type { IMessage } from '@oldschoolgg/schemas';
-import { formatOrdinal, isFunction, stringMatches, Time } from '@oldschoolgg/toolkit';
+import { formatOrdinal, isFunction, stringMatches, Time, uniqueArr } from '@oldschoolgg/toolkit';
 import { MathRNG, randArrItem, roll } from 'node-rng';
 import { Bank, Items, LootTable, Monsters } from 'oldschooljs';
 
@@ -125,10 +125,26 @@ const monsters = [...Object.values(BSOMonsters), ...killableMonsters]
 	})
 	.filter(m => m.allItems.length >= 3);
 
+const MAX_MONSTERS_SHARING_ITEM = 5;
+const monstersDroppingItem = new Map<number, number>();
+for (const monster of monsters) {
+	for (const itemID of uniqueArr(monster.allItems)) {
+		monstersDroppingItem.set(itemID, (monstersDroppingItem.get(itemID) ?? 0) + 1);
+	}
+}
+const dropChallengeMonsters = monsters
+	.map(monster => ({
+		name: monster.name,
+		distinctItems: uniqueArr(monster.allItems).filter(
+			itemID => (monstersDroppingItem.get(itemID) ?? 0) <= MAX_MONSTERS_SHARING_ITEM
+		)
+	}))
+	.filter(monster => monster.distinctItems.length >= 3);
+
 const monsterDropChallenge: Challenge = async (msg: IMessage): Promise<MUser | null> => {
-	const monster = randArrItem(monsters);
+	const monster = randArrItem(dropChallengeMonsters);
 	if (!monster) return null;
-	const items = MathRNG.shuffle(monster.allItems).slice(0, 3);
+	const items = MathRNG.shuffle([...monster.distinctItems]).slice(0, 3);
 	const validMonsters = monsters.filter(mon => items.every(t => mon.allItems.includes(t)));
 
 	return runChallenge({

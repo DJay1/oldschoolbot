@@ -2,7 +2,7 @@ import { Bank, Items } from 'oldschooljs';
 
 import { Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 
-export const HORN_OF_PLENTY_MAX_CHARGES = 20_000;
+const HORN_OF_PLENTY_STORAGE_LIMIT = 2_000_000_000;
 export const HORN_OF_PLENTY_CATCHES_PER_CHARGE = 25;
 
 const ready = { done: false };
@@ -41,7 +41,7 @@ async function addHornOfPlentyCharges(userId: string, amount: number): Promise<n
 	const rows = await prisma.$queryRaw<{ charges: number }[]>`
 		INSERT INTO bsc_horn_of_plenty (user_id, charges) VALUES (${userId}, ${amount})
 		ON CONFLICT (user_id) DO UPDATE SET charges = bsc_horn_of_plenty.charges + ${amount}
-		WHERE bsc_horn_of_plenty.charges + ${amount} <= ${HORN_OF_PLENTY_MAX_CHARGES}
+		WHERE bsc_horn_of_plenty.charges + ${amount} <= ${HORN_OF_PLENTY_STORAGE_LIMIT}
 		RETURNING charges
 	`;
 	return rows[0]?.charges ?? null;
@@ -59,15 +59,12 @@ export async function chargeHornOfPlentyCommand(
 ): CommandResponse {
 	const charges = await getHornOfPlentyCharges(user.id);
 	if (!amount) {
-		return `Your Horn of plenty has ${charges.toLocaleString()} charges. Use \`/minion charge item:Horn of plenty amount:[1-${HORN_OF_PLENTY_MAX_CHARGES.toLocaleString()}]\`, each Gryphon feather adds 1 charge.`;
+		return `Your Horn of plenty has ${charges.toLocaleString()} charges. Use \`/minion charge item:Horn of plenty amount:[1-100,000]\`, each Gryphon feather adds 1 charge.`;
 	}
 	if (!user.hasEquippedOrInBank(Slayer2026Item.HORN_OF_PLENTY)) {
 		return "You don't own a Horn of plenty.";
 	}
-	const space = HORN_OF_PLENTY_MAX_CHARGES - charges;
-	if (space <= 0)
-		return `Your Horn of plenty is already full (${HORN_OF_PLENTY_MAX_CHARGES.toLocaleString()} charges).`;
-	const toAdd = Math.min(amount, space);
+	const toAdd = amount;
 	const cost = new Bank().add('Gryphon feather', toAdd);
 	if (!user.owns(cost)) return `You don't own ${cost}.`;
 
@@ -78,7 +75,7 @@ export async function chargeHornOfPlentyCommand(
 	);
 	const newCharges = await addHornOfPlentyCharges(user.id, toAdd);
 	if (newCharges === null) {
-		return `That would take your Horn of plenty over ${HORN_OF_PLENTY_MAX_CHARGES.toLocaleString()} charges.`;
+		return "Your Horn of plenty can't hold that many charges.";
 	}
 	try {
 		await user.transactItems({ itemsToRemove: cost });

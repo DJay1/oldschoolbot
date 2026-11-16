@@ -16,7 +16,7 @@ export const herbloreCL = removeDiscontinuedItems(
 	Herblore.Mixables.filter(i => !coralMixableIDs.has(i.item.id)).map(i => i.item.id)
 );
 export const cookingCL = removeDiscontinuedItems(Cookables.map(i => i.id));
-export const craftingCL = removeDiscontinuedItems(Crafting.Craftables.map(i => i.id));
+export const craftingCL = removeDiscontinuedItems(Crafting.Craftables.filter(i => !i.outputTable).map(i => i.id));
 export const smithingCL = removeDiscontinuedItems(Smithing.SmithableItems.map(i => i.id));
 
 export const creatablesCL = uniqueArr(

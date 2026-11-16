@@ -69,6 +69,7 @@ export async function enchantCommand(user: MUser, channelId: string, name: strin
 
 	return `${user.minionName} is now enchanting ${quantity}x ${enchantable.name}, it'll take around ${formatTripDuration(
 		user,
-		duration
-	)} to finish. Removed ${cost} from your bank. ${xpHr}`;
+		duration,
+		' to finish'
+	)}. Removed ${cost} from your bank. ${xpHr}`;
 }

@@ -32,5 +32,5 @@ export async function aerialFishingCommand({
 	});
 
 	const boosts = harvest.lines.length > 0 ? `\n\n**Boosts:** ${harvest.lines.join(', ')}.` : '';
-	return `${user.minionName} is now doing Aerial fishing, it will take around ${formatTripDuration(user, duration)} to finish.${boosts}`;
+	return `${user.minionName} is now doing Aerial fishing, it will take around ${formatTripDuration(user, duration, ' to finish')}.${boosts}`;
 }

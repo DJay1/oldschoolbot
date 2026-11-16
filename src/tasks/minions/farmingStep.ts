@@ -1077,8 +1077,6 @@ export async function executeFarmingStep({
 		[getFarmingKeyFromName(plant.seedType)]: newPatch
 	});
 
-	const contractCompletion = await completeFarmingContractIfEligible({ user, loot, plantToHarvest, alivePlants });
-
 	const lootBoosts: string[] = [];
 	await applyFarmingLootBoosts({
 		user,
@@ -1089,6 +1087,8 @@ export async function executeFarmingStep({
 		boosts: lootBoosts
 	});
 	boosts.push(...lootBoosts);
+
+	const contractCompletion = await completeFarmingContractIfEligible({ user, loot, plantToHarvest, alivePlants });
 
 	await applyBSOPostHarvestLoot({
 		user,

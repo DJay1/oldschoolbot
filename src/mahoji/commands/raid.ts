@@ -4,8 +4,8 @@ import { doaStartCommand } from '@/lib/bso/doa/doaStartCommand.js';
 import { choicesOf } from '@/discord/index.js';
 import { toaHelpCommand, toaStartCommand } from '@/lib/simulation/toa.js';
 import { mileStoneBaseDeathChances } from '@/lib/simulation/toaUtils.js';
-import { coxCommand, coxStatsCommand } from '@/mahoji/lib/abstracted_commands/coxCommand.js';
-import { tobCheckCommand, tobStartCommand, tobStatsCommand } from '@/mahoji/lib/abstracted_commands/tobCommand.js';
+import { coxCommand, coxHelpCommand, coxStatsCommand } from '@/mahoji/lib/abstracted_commands/coxCommand.js';
+import { tobHelpCommand, tobStartCommand, tobStatsCommand } from '@/mahoji/lib/abstracted_commands/tobCommand.js';
 
 export const raidCommand = defineCommand({
 	name: 'raid',
@@ -59,6 +59,11 @@ export const raidCommand = defineCommand({
 					type: 'Subcommand',
 					name: 'stats',
 					description: 'Check your CoX stats.'
+				},
+				{
+					type: 'Subcommand',
+					name: 'help',
+					description: 'Shows helpful information and stats about CoX.'
 				}
 			]
 		},
@@ -109,16 +114,8 @@ export const raidCommand = defineCommand({
 				},
 				{
 					type: 'Subcommand',
-					name: 'check',
-					description: "Check if you're ready for ToB.",
-					options: [
-						{
-							type: 'Boolean',
-							name: 'hard_mode',
-							description: 'Choose whether you want to check Hard Mode.',
-							required: false
-						}
-					]
+					name: 'help',
+					description: 'Shows helpful information and stats about ToB.'
 				}
 			]
 		},
@@ -226,8 +223,9 @@ export const raidCommand = defineCommand({
 
 		const { cox, tob } = options;
 		if (cox?.stats) return coxStatsCommand(user);
+		if (cox?.help) return coxHelpCommand(user);
 		if (tob?.stats) return tobStatsCommand(interaction);
-		if (tob?.check) return tobCheckCommand(user, Boolean(tob.check.hard_mode));
+		if (tob?.help) return tobHelpCommand(user);
 		if (options.toa?.help) return toaHelpCommand(user, channelId);
 		if (options.doa?.help) {
 			return doaHelpCommand(user);

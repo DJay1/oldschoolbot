@@ -2,9 +2,10 @@ import { calcWhatPercent, formatDuration, reduceNumByPercent, Time } from '@olds
 
 import type { TemporossActivityTaskOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
 
-export async function temporossCommand(user: MUser, channelId: string, quantity: number | undefined) {
+export async function temporossCommand(user: MUser, channelId: string, quantity: number | undefined, preview = false) {
 	const fLevel = user.skillLevel('fishing');
 	if (fLevel < 35) {
 		return 'You need 35 Fishing to have a chance at defeating Tempoross.';
@@ -61,6 +62,10 @@ export async function temporossCommand(user: MUser, channelId: string, quantity:
 		)}, try a lower quantity. The highest amount of Tempoross that you can kill is ${Math.floor(
 			maxTripLength / durationPerRoss
 		)}.`;
+	}
+
+	if (preview) {
+		return formatTripPreview({ user, name: 'Tempoross', quantity, duration, boosts: messages });
 	}
 
 	await ActivityManager.startTrip<TemporossActivityTaskOptions>({

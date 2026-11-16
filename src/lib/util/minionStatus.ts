@@ -120,7 +120,7 @@ export function minionStatus(user: MUser, currentTask: ActivityTaskData | null, 
 
 	const durationRemaining = currentTask.finishDate - Date.now();
 	const loneFormattedDuration = `${formatTripDuration(user, durationRemaining)}`;
-	const formattedDuration = `${loneFormattedDuration} remaining.`;
+	const formattedDuration = `${formatTripDuration(user, durationRemaining, ' remaining')}.`;
 
 	switch (currentTask.type) {
 		case 'MonsterKilling': {
@@ -151,7 +151,7 @@ export function minionStatus(user: MUser, currentTask: ActivityTaskData | null, 
 			const data = currentTask as CraftingActivityTaskOptions;
 			const craftable = Crafting.Craftables.find(item => item.id === data.craftableID);
 
-			return `${name} is currently crafting ${data.quantity}x ${craftable?.name}. ${formattedDuration} Your ${
+			return `${name} is currently ${craftable?.outputTable ? 'polishing' : 'crafting'} ${data.quantity}x ${craftable?.name}. ${formattedDuration} Your ${
 				Emoji.Crafting
 			} Crafting level is ${user.skillsAsLevels.crafting}`;
 		}
@@ -389,7 +389,7 @@ export function minionStatus(user: MUser, currentTask: ActivityTaskData | null, 
 
 			if (isCombinedAutoFarm) {
 				const totalRemaining = Math.max(0, durationRemaining);
-				const formattedCombinedDuration = `${formatTripDuration(user, totalRemaining)} remaining.`;
+				const formattedCombinedDuration = `${formatTripDuration(user, totalRemaining, ' remaining')}.`;
 				const currentStep = plants?.name ? ` Current step: ${plants.name} (${data.quantity}x).` : '';
 				return `${name} is currently auto-farming multiple patches. Estimated time remaining: ${formattedCombinedDuration}${currentStep} Your ${Emoji.Farming} Farming level is ${user.skillsAsLevels.farming}.`;
 			}

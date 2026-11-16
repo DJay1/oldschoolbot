@@ -33,6 +33,7 @@ export async function myNotesCommand(user: MUser, channelId: string) {
 		user.minionName
 	} is now rummaging ${quantity} skeletons for Ancient pages, it'll take around ${formatTripDuration(
 		user,
-		duration
-	)} to finish. Removed ${foodRemoved}.`;
+		duration,
+		' to finish'
+	)}. Removed ${foodRemoved}.`;
 }

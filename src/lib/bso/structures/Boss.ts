@@ -22,6 +22,7 @@ import type { Gear } from '@/lib/structures/Gear.js';
 import type { Skills } from '@/lib/types/index.js';
 import type { ClientBankKey } from '@/lib/util/clientSettings.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 
 export const gpCostPerKill = (user: MUser) =>
 	user.gear.melee.hasEquipped(['Ring of charos', 'Ring of charos(a)'], false) ? 5_000_000 : 10_000_000;
@@ -508,6 +509,36 @@ export class BossInstance {
 		return {
 			bossUsers: this.bossUsers
 		};
+	}
+
+	async preview(name: string) {
+		if (!this.leader) return 'No user to preview.';
+		this.solo = true;
+		const [denied, reason] = await this.checkUser(this.leader);
+		const blocked = denied && reason !== 'minion is busy';
+		await this.init();
+		const bossUser = this.bossUsers[0];
+		const gear = this.leader.gear[this.gearSetup];
+		const hasItem = ([item]: [string, number]) => gear.hasEquipped(item, false, true);
+		const stat = (key: string) =>
+			bossUser.debugStr.match(new RegExp(`\\*\\*${key}\\*\\*\\[([\\d.]+)%\\]`))?.[1] ?? '0';
+		const stats = [`Gear: ${stat('Gear')}% of best in slot`, `KC: ${stat('KC')}% learned`];
+		if (this.itemBoosts.length > 0) stats.push(`Item boosts: ${stat('Boosts')}% of max`);
+		stats.push(`Death chance: ${stat('Death')}%`);
+		return formatTripPreview({
+			user: this.leader,
+			name: `${name} (solo)`,
+			quantity: this.quantity!,
+			duration: this.duration,
+			warning: blocked ? `You can't do this yet: you ${reason}.` : undefined,
+			stats: [stats.join(' · ')],
+			boosts: [
+				...this.itemBoosts.filter(hasItem).map(([item, amount]) => `${item} (+${amount})`),
+				...this.boosts
+			],
+			missedBoosts: this.itemBoosts.filter(i => !hasItem(i)).map(([item, amount]) => `${item} (+${amount})`),
+			cost: bossUser.itemsToRemove
+		});
 	}
 
 	async simulate() {

@@ -12,6 +12,7 @@ import type { KillableMonster } from '@/lib/minions/types.js';
 import type { MakePartyOptions } from '@/lib/types/index.js';
 import type { BossActivityTaskOptions } from '@/lib/types/minions.js';
 import calcDurQty from '@/lib/util/calcMassDurationQuantity.js';
+import { formatTripPreview } from '@/lib/util/tripPreview.js';
 
 async function checkReqs(users: MUser[], monster: KillableMonster, quantity: number): Promise<string | undefined> {
 	// Check if every user has the requirements for this monster.
@@ -49,17 +50,23 @@ export async function nexCommand(
 	user: MUser,
 	channelId: string,
 	inputName: string,
-	inputQuantity: number | undefined
+	inputQuantity: number | undefined,
+	preview = false
 ) {
 	await interaction.defer();
 	const userBank = user.bank;
 	if (!userBank.has('Frozen key')) {
 		return `${user.minionName} attempts to enter the Ancient Prison to fight Nex, but finds a giant frozen, metal door blocking their way.`;
 	}
-	const type = inputName.toLowerCase().includes('mass') ? 'mass' : 'solo';
+	const type = !preview && inputName.toLowerCase().includes('mass') ? 'mass' : 'solo';
 
-	const failureReason = await checkReqs([user], NexMonster, 2);
-	if (failureReason) return failureReason;
+	if (preview) {
+		const [hasReqs, reason] = await user.hasMonsterRequirements(NexMonster);
+		if (!hasReqs) return `You don't have the requirements for this monster: ${reason}`;
+	} else {
+		const failureReason = await checkReqs([user], NexMonster, 2);
+		if (failureReason) return failureReason;
+	}
 
 	const partyOptions: MakePartyOptions = {
 		interaction,
@@ -104,25 +111,29 @@ export async function nexCommand(
 	};
 
 	const users: MUser[] = type === 'mass' ? await globalClient.makeParty(partyOptions) : [user];
-	if (await ActivityManager.anyMinionIsBusy(users)) {
+	if (!preview && (await ActivityManager.anyMinionIsBusy(users))) {
 		return `One of the minions in the party is already busy.`;
 	}
 
 	let debugStr = '';
+	const breakdown: string[] = [];
 	let effectiveTime = NexMonster.timeToFinish;
 	if (isWeekend()) {
 		effectiveTime = reduceNumByPercent(effectiveTime, 5);
 		debugStr += '5% Weekend boost\n';
+		breakdown.push('5% Weekend boost');
 	}
 	const isSolo = users.length === 1;
 
 	const soloKC = await users[0].getKC(NexMonster.id);
 	if (isSolo && soloKC < 200) {
 		effectiveTime = increaseNumByPercent(effectiveTime, 20);
+		breakdown.push('-20% penalty for soloing under 200 KC');
 	}
 
 	if (isSolo && soloKC > 500) {
 		effectiveTime = reduceNumByPercent(effectiveTime, 20);
+		breakdown.push('20% for soloing over 500 KC');
 	}
 
 	for (const user of users) {
@@ -225,6 +236,7 @@ export async function nexCommand(
 		}
 
 		debugStr += `${msgs.join(', ')}. `;
+		breakdown.push(...msgs);
 	}
 
 	let minDuration = 2;
@@ -241,6 +253,17 @@ export async function nexCommand(
 	);
 	if (typeof durQtyRes === 'string') return durQtyRes;
 	const [quantity, duration, perKillTime] = durQtyRes;
+	if (preview) {
+		return formatTripPreview({
+			user,
+			name: `${NexMonster.name} (solo)`,
+			quantity,
+			duration,
+			stats: [`Base kill time: ${formatDuration(NexMonster.timeToFinish)}`],
+			boosts: breakdown,
+			cost: await calcBossFood(user, NexMonster, 1, quantity)
+		});
+	}
 	const secondCheck = await checkReqs(users, NexMonster, quantity);
 	if (secondCheck) return secondCheck;
 

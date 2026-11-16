@@ -32,8 +32,14 @@ export const craftingTask: MinionTask = {
 			loot.add('crushed gem', crushed);
 		}
 
-		const hasScroll = user.owns('Scroll of dexterity');
-		if (hasScroll) {
+		const hasScroll = !item.outputTable && user.owns('Scroll of dexterity');
+		if (item.outputTable) {
+			xpReceived = 0;
+			for (let i = 0; i < quantity; i++) {
+				loot.add(item.outputTable.roll());
+				xpReceived += rng.randInt(200, 250);
+			}
+		} else if (hasScroll) {
 			let _qty = quantityToGive - crushed;
 			_qty = Math.floor(increaseNumByPercent(_qty, 15));
 			loot.add(item.id, _qty);
@@ -47,7 +53,7 @@ export const craftingTask: MinionTask = {
 			duration
 		});
 
-		let str = `${user}, ${user.minionName} finished crafting ${quantity}${sets} ${item.name}, and received ${loot}. ${xpRes}`;
+		let str = `${user}, ${user.minionName} finished ${item.outputTable ? 'polishing' : 'crafting'} ${quantity}${sets} ${item.name}, and received ${loot}. ${xpRes}`;
 
 		if (hasScroll) {
 			str += '\n\nYour Scroll of dexterity allows you to receive 15% extra items.';

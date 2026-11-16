@@ -201,7 +201,7 @@ export const farmingCommand = defineCommand({
 				{
 					type: 'Boolean',
 					name: 'prefer_contract',
-					description: 'Prioritize farming contracts when available.',
+					description: 'Plant your contract crop even over saved seed preferences.',
 					required: false
 				},
 				{

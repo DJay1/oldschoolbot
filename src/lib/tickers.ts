@@ -19,6 +19,7 @@ import { cacheGEPrices } from '@/lib/marketPrices.js';
 import { collectMetrics } from '@/lib/metrics.js';
 import { qualityCheckConfig } from '@/lib/qualityChecks/config.js';
 import { remindQualityChecksIfNeeded } from '@/lib/qualityChecks/service.js';
+import { runRolesTask } from '@/lib/rolesTask.js';
 import { runCommand } from '@/lib/settings/settings.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
 import type { FarmingPatchName, FarmingPatchSettingsKey } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
@@ -369,6 +370,17 @@ tickers.push({
 	timer: null,
 	cb: async () => {
 		await syncBscPatrons();
+	}
+});
+
+tickers.push({
+	name: 'bsc_auto_roles',
+	startupWait: Time.Minute * 10,
+	interval: Time.Hour * 6,
+	timer: null,
+	productionOnly: true,
+	cb: async () => {
+		await runRolesTask(false);
 	}
 });
 
