@@ -88,7 +88,7 @@ const chestLootTypes: {
 	{
 		title: 'The Fractured Archive',
 		chestImage: loadImage('./src/lib/resources/images/tfa.png'),
-		// Opened chest glowing purple, like the OSRS raid purple.
+		// OSRS wiki art: normal loot = the opened standard chest (Rift, mine); purple = the opened unique chest.
 		chestImagePurple: loadImage('./src/lib/resources/images/tfaPurple.png'),
 		width: 260,
 		height: 180,
