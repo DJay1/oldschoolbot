@@ -22,7 +22,7 @@ import { tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
 import { tfaTeamUniqueOdds } from '@/lib/bsc/tfa/tfaLoot.js';
 import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
 import { BitField } from '@/lib/constants.js';
-import { calculateTOBUserGearPercents } from '@/lib/data/tob.js';
+import { calculateTfaGearPercents } from '@/lib/bsc/tfa/tfa.js';
 import { degradeableItems, degradeItem } from '@/lib/degradeableItems.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import type { MakePartyOptions } from '@/lib/types/index.js';
@@ -147,7 +147,7 @@ ${details}Each player used: ${supplies}`;
 }
 
 export async function tfaHelpCommand(user: MUser): Promise<string> {
-	const gear = calculateTOBUserGearPercents(user);
+	const gear = calculateTfaGearPercents(user);
 	const kc = await user.fetchMinigameScore('fractured_archive');
 	const stats = await user.fetchStats();
 	const uniques = tfaUniqueItems.reduce((acc, id) => acc + user.cl.amount(id), 0);

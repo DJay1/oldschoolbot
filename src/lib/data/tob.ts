@@ -223,6 +223,17 @@ export const TOBMaxMeleeGear = constructGearSetup({
 	ring: 'Ignis ring (i)'
 });
 
+/** ToB's range gear score for a set of stats (also used by The Fractured Archive). */
+export function calcTOBRangePercent(stats: GearStats) {
+	return calcSetupPercent(
+		TOBMaxRangeGear.stats,
+		stats,
+		'ranged_strength',
+		['attack_stab', 'attack_slash', 'attack_crush', 'attack_magic'],
+		false
+	);
+}
+
 export function calculateTOBUserGearPercents(user: MUser) {
 	const melee = calcSetupPercent(
 		TOBMaxMeleeGear.stats,
@@ -231,13 +242,7 @@ export function calculateTOBUserGearPercents(user: MUser) {
 		['attack_stab', 'attack_slash', 'attack_crush', 'attack_ranged', 'attack_magic'],
 		true
 	);
-	const range = calcSetupPercent(
-		TOBMaxRangeGear.stats,
-		user.gear.range.stats,
-		'ranged_strength',
-		['attack_stab', 'attack_slash', 'attack_crush', 'attack_magic'],
-		false
-	);
+	const range = calcTOBRangePercent(user.gear.range.stats);
 	const mage = calcSetupPercent(
 		TOBMaxMageGear.stats,
 		user.gear.mage.stats,

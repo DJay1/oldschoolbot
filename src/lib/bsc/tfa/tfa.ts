@@ -1,11 +1,12 @@
 import { calcWhatPercent, formatDuration, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, type RNGProvider } from 'node-rng';
-import { Bank } from 'oldschooljs';
+import { Bank, Items } from 'oldschooljs';
 
 import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
-import { TfaItem } from '@/lib/bsc/tfa/tfaItems.js';
+import { TfaItem, tfaAscensionBoltIDs } from '@/lib/bsc/tfa/tfaItems.js';
 import { BitField } from '@/lib/constants.js';
-import { calculateTOBUserGearPercents } from '@/lib/data/tob.js';
+import { calcTOBRangePercent, calculateTOBUserGearPercents } from '@/lib/data/tob.js';
+import { Gear } from '@/lib/structures/Gear.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 import type { Skills } from '@/lib/types/index.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
@@ -259,12 +260,45 @@ export function tfaItemBoosts(user: MUser): { boosts: TfaBoost[]; deathReduction
 	return { boosts, deathReduction, messages };
 }
 
+/**
+ * The raid's range score counts Ascension crossbows as a Bow of faerdhinen (c): a mid-tier bow, kept 2 points under a Twisted bow.
+ * Uses whichever is higher, so equipping them never lowers the score. Only the TFA score; ToB and item stats are unchanged.
+ */
+const TFA_CROSSBOW_EQUIVALENT = 'Bow of faerdhinen (c)';
+const TFA_CROSSBOW_BELOW_TBOW = 2;
+
+export function tfaRangePercent(range: Gear): number {
+	const actual = calcTOBRangePercent(range.stats);
+	if (!range.hasEquipped(TfaItem.ASCENSION_CROSSBOWS)) return actual;
+	const swapped = (weapon: string, ammo: string | null) => {
+		const setup = range.clone().raw();
+		setup['2h'] = { item: Items.getOrThrow(weapon).id, quantity: 1 };
+		setup.weapon = null;
+		setup.shield = null;
+		if (setup.ammo && tfaAscensionBoltIDs.includes(setup.ammo.item)) setup.ammo = null;
+		if (ammo) setup.ammo = { item: Items.getOrThrow(ammo).id, quantity: 1 };
+		return calcTOBRangePercent(new Gear(setup).stats);
+	};
+	// The Bow of faerdhinen needs no ammo, so Ascension bolts don't add to it.
+	const asBofa = swapped(TFA_CROSSBOW_EQUIVALENT, null);
+	// ToB's stat math rates a Bofa (c) above a Twisted bow, so cap it just under the same setup with a Twisted bow.
+	const asTbow = swapped('Twisted bow', 'Dragon arrow');
+	return Math.max(actual, Math.min(asBofa, asTbow - TFA_CROSSBOW_BELOW_TBOW));
+}
+
+/** TFA gear score: ToB's score, with the TFA range rule above. */
+export function calculateTfaGearPercents(user: MUser) {
+	const base = calculateTOBUserGearPercents(user);
+	const range = tfaRangePercent(user.gear.range);
+	return { ...base, range, total: (base.melee + range + base.mage) / 3 };
+}
+
 export function tfaTeamMemberFromUser(user: MUser, kc: number): TfaTeamMember {
 	const { boosts, deathReduction } = tfaItemBoosts(user);
 	return {
 		id: user.id,
 		kc,
-		gear: calculateTOBUserGearPercents(user),
+		gear: calculateTfaGearPercents(user),
 		boosts,
 		deathReduction
 	};
@@ -277,7 +311,7 @@ export function checkTfaUser(user: MUser, quantity = 1): string | null {
 	if (!user.hasSkillReqs(minTfaStats)) {
 		return `${user.usernameOrMention} needs these stats: ${formatSkillRequirements(minTfaStats)}.`;
 	}
-	const gear = calculateTOBUserGearPercents(user);
+	const gear = calculateTfaGearPercents(user);
 	for (const style of ['melee', 'range', 'mage'] as const) {
 		if (gear[style] < TFA_MIN_GEAR_PERCENT) {
 			return `${user.usernameOrMention}'s ${style} gear is too weak (${gear[style].toFixed(1)}%, needs ${TFA_MIN_GEAR_PERCENT}%).`;
