@@ -1,4 +1,4 @@
-import { bold } from '@oldschoolgg/discord';
+import { bold, EmbedBuilder } from '@oldschoolgg/discord';
 import { formatDuration, Time } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank } from 'oldschooljs';
 import { clamp } from 'remeda';
@@ -19,7 +19,7 @@ import {
 	tfaUserSpeedReduction
 } from '@/lib/bsc/tfa/tfa.js';
 import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
-import { TFA_ROOM_BOOST_CAP, tfaRoomBoostsFor, tfaRoomBoostsText, tfaRoomItemsHelpLines } from '@/lib/bsc/tfa/tfaRooms.js';
+import { TFA_ROOM_BOOST_CAP, tfaRoomBoostsFor, tfaRoomPercent, tfaRoomBoostsText, tfaRoomItemsHelpLines } from '@/lib/bsc/tfa/tfaRooms.js';
 import { tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
 import { tfaTeamUniqueOdds } from '@/lib/bsc/tfa/tfaLoot.js';
 import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
@@ -119,7 +119,13 @@ export async function tfaStartCommand(
 		details += `**- ${u.usernameOrMention}** Gear: ${member.gear.total.toFixed(1)}% | Speed: ${tfaUserSpeedReduction(member).toFixed(1)}%${
 			boostNames.length > 0 ? ` | Boosts: ${boostNames.join(', ')}` : ''
 		}${member.deathReduction > 0 ? ' | Rondache' : ''}\n`;
-		const rooms = tfaRoomBoostsText(member.roomBoosts, rolledBosses, bossName);
+		// Item names for small teams; big masses get per-room totals so the message stays under Discord's limit.
+		const rooms =
+			users.length <= 2
+				? tfaRoomBoostsText(member.roomBoosts, rolledBosses, bossName)
+				: rolledBosses
+						.filter(id => tfaRoomPercent(member.roomBoosts, id) > 0)
+						.map(id => `${bossName(id)} ${tfaRoomPercent(member.roomBoosts, id)}%`);
 		if (rooms.length > 0) details += `  Rooms: ${rooms.join(' | ')}\n`;
 	}
 
@@ -208,18 +214,19 @@ export async function tfaStatsCommand(user: MUser): Promise<string> {
 **Supplies used:** ${cost.length > 0 ? cost.toString() : 'None'}`;
 }
 
-export function tfaRoomsCommand(user: MUser): string {
+export async function tfaRoomsCommand(user: MUser): CommandResponse {
 	const bossName = (id: number) => tfaBossByID(id).name;
 	const mine = tfaRoomBoostsText(
 		tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id)),
 		[1, 2, 3, 4, 5, 6, 7, 8],
 		bossName
 	);
-	return `**${RAID_NAME} room items**
-These only speed up that boss's room, and only in raids where that boss is rolled. Each group counts its best item, up to ${TFA_ROOM_BOOST_CAP}% per room. "bank" items count from your bank or any setup.
+	// The full list is longer than a 2,000 character message, so it goes in an embed (4,096 limit).
+	const description = `These only speed up that boss's room, and only in raids where that boss is rolled. Each group counts its best item, up to ${TFA_ROOM_BOOST_CAP}% per room. "bank" items count from your bank or any setup; "Full" sets need all 5 pieces worn.
 ${tfaRoomItemsHelpLines(bossName)
 	.map(l => `- ${l}`)
 	.join('\n')}
 
 **Yours:** ${mine.length > 0 ? mine.join(' | ') : 'None'}`;
+	return { embeds: [new EmbedBuilder().setTitle(`${RAID_NAME} room items`).setDescription(description.slice(0, 4096))] };
 }

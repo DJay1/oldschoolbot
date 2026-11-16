@@ -7,6 +7,7 @@ import { createTfaRaids, tfaBossByID, type TfaTeamMember } from '@/lib/bsc/tfa/t
 import {
 	TFA_ROOM_BOOST_CAP,
 	TFA_ROOM_ITEMS,
+	TFA_ROOM_SETS,
 	tfaRoomBoostsFor,
 	tfaRoomItemsHelpLines,
 	tfaRoomPercent,
@@ -37,13 +38,58 @@ const member = (roomBoosts?: TfaTeamMember['roomBoosts']): TfaTeamMember => ({
 
 const empty = { melee: new Gear(), range: new Gear(), mage: new Gear() };
 
+const bsoTop = ['Axe of the high sungod', 'Drygore longsword', 'Drygore mace', 'Drygore rapier', 'Dwarven warhammer', 'Hellfire bow', 'Zaryte bow', 'Virtus wand', 'Full Gorajan warrior', 'Full Gorajan archer', 'Full Gorajan occult'];
+
 describe('TFA room boosts', () => {
+	test('top BSO gear is at or above the best OSRS item in every group it is in', () => {
+		for (const groups of Object.values(TFA_ROOM_ITEMS)) {
+			for (const g of groups) {
+				const bso = g.items.filter(i => bsoTop.includes(i[0]));
+				if (bso.length === 0) continue;
+				const bestOther = Math.max(0, ...g.items.filter(i => !bsoTop.includes(i[0])).map(i => i[1]));
+				for (const i of bso) expect(i[1], `${g.label} ${i[0]}`).toBeGreaterThanOrEqual(bestOther);
+			}
+		}
+		// Drygore beats Scythe, Zaryte/Hellfire bow beat Twisted bow.
+		const ez = TFA_ROOM_ITEMS[2][0].items;
+		expect(ez.find(i => i[0] === 'Drygore longsword')![1]).toBeGreaterThan(ez.find(i => i[0] === 'Scythe of vitur')![1]);
+		const ag = TFA_ROOM_ITEMS[1][0].items;
+		expect(ag.find(i => i[0] === 'Zaryte bow')![1]).toBeGreaterThan(ag.find(i => i[0] === 'Twisted bow')![1]);
+	});
+
+	test('a Gorajan set only counts when every piece is worn in the matching setup', () => {
+		const full = constructGearSetup({
+			head: 'Gorajan warrior helmet',
+			body: 'Gorajan warrior top',
+			legs: 'Gorajan warrior legs',
+			hands: 'Gorajan warrior gloves',
+			feet: 'Gorajan warrior boots',
+			weapon: 'Drygore longsword',
+			ring: 'Ignis ring (i)'
+		});
+		const boosts = tfaRoomBoostsFor({ ...empty, melee: full }, () => false);
+		expect(boosts[2]).toEqual([
+			{ name: 'Drygore longsword', percent: 5 },
+			{ name: 'Full Gorajan warrior', percent: 2 },
+			{ name: 'Ignis ring (i)', percent: 1 }
+		]);
+		expect(tfaRoomPercent(boosts, 2)).toBe(8);
+		const missing = full.clone();
+		missing.set('feet', null);
+		expect(tfaRoomBoostsFor({ ...empty, melee: missing }, () => false)[2]!.map(b => b.name)).not.toContain('Full Gorajan warrior');
+		// Same set in the range setup doesn't count for melee armour, and Ocellus picks the matching style.
+		expect(tfaRoomBoostsFor({ ...empty, range: full }, () => false)[2]).toBeUndefined();
+		expect(tfaRoomBoostsFor({ ...empty, melee: full }, () => false)[8]!.map(b => b.name)).toContain('Full Gorajan warrior');
+		// Owning the set in the bank gives nothing.
+		expect(tfaRoomBoostsFor(empty, () => true)[2]!.map(b => b.name)).toEqual(['Elder maul']);
+	});
+
 	test('every room item is a real item', () => {
 		for (const groups of Object.values(TFA_ROOM_ITEMS)) {
 			for (const g of groups) for (const [name, pct] of g.items) {
-				expect(Items.getItem(name), name).toBeTruthy();
+				for (const n of TFA_ROOM_SETS[name] ?? [name]) expect(Items.getItem(n), n).toBeTruthy();
 				expect(pct).toBeGreaterThan(0);
-				expect(pct).toBeLessThanOrEqual(4);
+				expect(pct).toBeLessThanOrEqual(5);
 			}
 		}
 		expect(tfaRoomItemsHelpLines(id => tfaBossByID(id).name).length).toBe(8);

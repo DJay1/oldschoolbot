@@ -1,11 +1,19 @@
 import { Items } from 'oldschooljs';
 
+import {
+	gorajanArcherOutfit,
+	gorajanOccultOutfit,
+	gorajanWarriorOutfit,
+	pernixOutfit,
+	torvaOutfit,
+	virtusOutfit
+} from '@/lib/bso/collection-log/main.js';
 import type { Gear } from '@/lib/structures/Gear.js';
 
 /**
  * Room boosts that follow the boss rotation, from the OSRS wiki strategy page. A boost only speeds up that boss's room,
  * and only in raids where that boss was rolled. Each group counts its best item once. Room total is capped at
- * TFA_ROOM_BOOST_CAP. TFA uniques (Obligator, Zorya's tome, Ascension crossbows) are left out because they already give a
+ * TFA_ROOM_BOOST_CAP. Top BSO gear (Drygore, Hellfire/Zaryte bow, Virtus, Gorajan) is one tier above the best OSRS pick. TFA uniques (Obligator, Zorya's tome, Ascension crossbows) are left out because they already give a
  * raid-wide boost.
  *
  * "equipped" items must be worn in that style's setup. "owned" items are switches (spec weapons, AoE weapons, tomes,
@@ -15,17 +23,36 @@ export const TFA_ROOM_BOOST_CAP = 8;
 
 export type TfaRoomSetup = 'melee' | 'range' | 'mage';
 
+/** [name, percent, setup override]. A name in TFA_ROOM_SETS means the whole set must be worn. */
+export type TfaRoomItem = [string, number, TfaRoomSetup?];
+
 export interface TfaRoomGroup {
 	label: string;
 	/** Setup the item must be equipped in, or 'owned' for bank/any setup. */
 	where: TfaRoomSetup | 'owned';
-	items: [string, number][];
+	items: TfaRoomItem[];
 }
 
+/** Full armour sets (all 5 pieces worn in the matching setup). */
+export const TFA_ROOM_SETS: Record<string, string[]> = {
+	'Full Gorajan warrior': gorajanWarriorOutfit.map(id => Items.getOrThrow(id).name),
+	'Full Gorajan archer': gorajanArcherOutfit.map(id => Items.getOrThrow(id).name),
+	'Full Gorajan occult': gorajanOccultOutfit.map(id => Items.getOrThrow(id).name),
+	'Full Torva': torvaOutfit.map(id => Items.getOrThrow(id).name),
+	'Full Pernix': pernixOutfit.map(id => Items.getOrThrow(id).name),
+	'Full Virtus': virtusOutfit.map(id => Items.getOrThrow(id).name)
+};
+
+// Top BSO gear sits one tier above the best OSRS pick in the same group.
 const meleeWeapons = (top: number): TfaRoomGroup => ({
 	label: 'melee weapon',
 	where: 'melee',
 	items: [
+		['Axe of the high sungod', top + 1],
+		['Drygore longsword', top + 1],
+		['Drygore mace', top + 1],
+		['Drygore rapier', top + 1],
+		['Dwarven warhammer', top + 1],
 		['Scythe of vitur', top],
 		['Soulreaper axe', top - 1],
 		["Inquisitor's mace", top - 1],
@@ -33,18 +60,47 @@ const meleeWeapons = (top: number): TfaRoomGroup => ({
 	]
 });
 
+const rangeWeapons = (top: number, extra: TfaRoomItem[] = []): TfaRoomGroup => ({
+	label: 'ranged weapon',
+	where: 'range',
+	items: [['Hellfire bow', top + 1], ['Zaryte bow', top + 1], ['Twisted bow', top], ...extra]
+});
+
+const mageWeapons: TfaRoomGroup = {
+	label: 'magic weapon',
+	where: 'mage',
+	items: [
+		['Virtus wand', 4],
+		["Tumeken's shadow", 3],
+		['Harmonised nightmare staff', 2]
+	]
+};
+
+const armour = (style: TfaRoomSetup): TfaRoomGroup => {
+	const sets = { melee: ['Gorajan warrior', 'Torva'], range: ['Gorajan archer', 'Pernix'], mage: ['Gorajan occult', 'Virtus'] }[
+		style
+	];
+	return { label: `${style} armour`, where: style, items: [[`Full ${sets[0]}`, 2], [`Full ${sets[1]}`, 1]] };
+};
+
+const meleeJewellery: TfaRoomGroup = {
+	label: 'melee jewellery',
+	where: 'melee',
+	items: [
+		['Ignis ring (i)', 1],
+		['Ignis ring', 1]
+	]
+};
+const mageJewellery: TfaRoomGroup = { label: 'magic jewellery', where: 'mage', items: [['Arcane blast necklace', 1]] };
+
 export const TFA_ROOM_ITEMS: Record<number, TfaRoomGroup[]> = {
 	// Archive Guardian: flying, weak to heavy ranged; Defence can be drained; 80% fire weakness.
 	1: [
-		{
-			label: 'ranged weapon',
-			where: 'range',
-			items: [
-				['Twisted bow', 4],
-				['Zaryte crossbow', 3],
-				['Toxic blowpipe', 2]
-			]
-		},
+		rangeWeapons(4, [
+			['Zaryte crossbow', 3],
+			['Toxic blowpipe', 2]
+		]),
+		armour('range'),
 		{
 			label: 'Defence drain',
 			where: 'owned',
@@ -59,6 +115,8 @@ export const TFA_ROOM_ITEMS: Record<number, TfaRoomGroup[]> = {
 	// Ezekiel: very weak to crush, Defence drained by Elder maul / Dragon warhammer specs.
 	2: [
 		meleeWeapons(4),
+		armour('melee'),
+		meleeJewellery,
 		{
 			label: 'Defence drain',
 			where: 'owned',
@@ -69,7 +127,12 @@ export const TFA_ROOM_ITEMS: Record<number, TfaRoomGroup[]> = {
 		}
 	],
 	// Bork and the Smorks: weak to crush; the Smorks are weakest to heavy ranged.
-	3: [meleeWeapons(4), { label: 'heavy ranged', where: 'owned', items: [['Zaryte crossbow', 2]] }],
+	3: [
+		meleeWeapons(4),
+		armour('melee'),
+		meleeJewellery,
+		{ label: 'heavy ranged', where: 'owned', items: [['Zaryte crossbow', 2]] }
+	],
 	// Moia: Venator bow for the undead binders; Serpentine helm stops the cough poison.
 	4: [
 		{ label: 'binders', where: 'owned', items: [['Venator bow', 4]] },
@@ -81,18 +144,15 @@ export const TFA_ROOM_ITEMS: Record<number, TfaRoomGroup[]> = {
 				['Tanzanite helm', 3],
 				['Magma helm', 3]
 			]
-		}
+		},
+		mageWeapons,
+		armour('mage'),
+		mageJewellery
 	],
 	// Dreadnoth the Jellied: range him from afar, AoE for the jellies, Scorching bow spec roots him, 85% fire weakness.
 	5: [
-		{
-			label: 'ranged weapon',
-			where: 'range',
-			items: [
-				['Twisted bow', 3],
-				['Toxic blowpipe', 2]
-			]
-		},
+		rangeWeapons(3, [['Toxic blowpipe', 2]]),
+		armour('range'),
 		{
 			label: 'jellies',
 			where: 'owned',
@@ -108,31 +168,38 @@ export const TFA_ROOM_ITEMS: Record<number, TfaRoomGroup[]> = {
 	// The Dagon'hai: Venator bow on the grouped trio; Twisted bow is the top pick.
 	6: [
 		{ label: 'grouped trio', where: 'owned', items: [['Venator bow', 4]] },
-		{ label: 'ranged weapon', where: 'range', items: [['Twisted bow', 3]] }
+		rangeWeapons(3),
+		mageWeapons,
+		armour('mage'),
+		mageJewellery
 	],
 	// Xarth: weak to crush, 85% water weakness.
 	7: [
-		{
-			label: 'melee weapon',
-			where: 'melee',
-			items: [
-				['Scythe of vitur', 4],
-				['Soulreaper axe', 3],
-				["Inquisitor's mace", 3],
-				['Emberlight', 2],
-				['Abyssal bludgeon', 2]
-			]
-		},
+		{ ...meleeWeapons(4), items: [...meleeWeapons(4).items, ['Emberlight', 2]] },
+		armour('melee'),
+		meleeJewellery,
 		{ label: 'water weakness', where: 'owned', items: [['Tome of water', 2]] }
 	],
 	// Ocellus: crush in phases 1/3/4, Twisted bow for the ranged phases, earth spells for the Void Augmenters.
 	8: [
 		meleeWeapons(3),
-		{ label: 'ranged weapon', where: 'range', items: [['Twisted bow', 3]] },
+		rangeWeapons(3),
+		mageWeapons,
+		{
+			label: 'armour',
+			where: 'melee',
+			items: [
+				['Full Gorajan warrior', 2, 'melee'],
+				['Full Gorajan archer', 2, 'range'],
+				['Full Gorajan occult', 2, 'mage'],
+				['Full Torva', 1, 'melee'],
+				['Full Pernix', 1, 'range'],
+				['Full Virtus', 1, 'mage']
+			]
+		},
 		{ label: 'Void Augmenters', where: 'owned', items: [['Tome of earth', 2]] }
 	]
 };
-
 export interface TfaRoomBoost {
 	name: string;
 	percent: number;
@@ -147,9 +214,11 @@ export function tfaRoomBoostsFor(gear: Record<TfaRoomSetup, Gear>, owns: (itemID
 		const boosts: TfaRoomBoost[] = [];
 		for (const group of groups) {
 			const hit = group.items
-				.filter(([name]) => {
-					const id = Items.getOrThrow(name).id;
-					return group.where === 'owned' ? owns(id) : gear[group.where].hasEquipped(id);
+				.filter(([name, , setupOverride]) => {
+					const ids = (TFA_ROOM_SETS[name] ?? [name]).map(n => Items.getOrThrow(n).id);
+					if (group.where === 'owned' && !setupOverride) return ids.every(id => owns(id));
+					const setup = gear[setupOverride ?? (group.where as TfaRoomSetup)];
+					return ids.every(id => setup.hasEquipped(id));
 				})
 				.sort((a, b) => b[1] - a[1])[0];
 			if (hit) boosts.push({ name: hit[0], percent: hit[1] });
@@ -180,11 +249,21 @@ export function tfaRoomBoostsText(boosts: TfaRoomBoosts | undefined, bossIDs: nu
 		.map(id => `${bossName(id)}: ${boosts![id]!.map(b => `${b.name} ${b.percent}%`).join(', ')}`);
 }
 
+/** "Drygore longsword/mace/rapier 5%" style grouping by percent to keep the list short. */
+function compactItems(items: TfaRoomItem[]): string {
+	const byPct = new Map<number, string[]>();
+	for (const [n, p] of items) byPct.set(p, [...(byPct.get(p) ?? []), n]);
+	return [...byPct.entries()]
+		.sort((a, b) => b[0] - a[0])
+		.map(([p, names]) => `${names.join(', ')} ${p}%`)
+		.join(' / ');
+}
+
 export function tfaRoomItemsHelpLines(bossName: (id: number) => string): string[] {
 	return Object.entries(TFA_ROOM_ITEMS).map(([id, groups]) => {
 		const parts = groups.map(g => {
-			const where = g.where === 'owned' ? 'bank' : `${g.where} setup`;
-			return `${g.items.map(([n, p]) => `${n} ${p}%`).join(' / ')} (${where})`;
+			const where = g.where === 'owned' ? 'bank' : g.items.some(i => i[2]) ? 'matching setup' : `${g.where} setup`;
+			return `${compactItems(g.items)} (${where})`;
 		});
 		return `${bossName(Number(id))}: ${parts.join('; ')}`;
 	});
