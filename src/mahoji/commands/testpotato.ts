@@ -28,6 +28,8 @@ import { gifs } from '@/lib/bsc/corgoGifs.js';
 import { setTestStaffTierOverride, staffTierOf } from '@/lib/bsc/staffAccess.js';
 import { STAFF_TIER_NAMES, type StaffTier } from '@/lib/bsc/staffTiers.js';
 import { isTestPotatoOpenForEveryone, testPotatoAccess } from '@/lib/bsc/testPotatoAccess.js';
+import { checkTfaUser } from '@/lib/bsc/tfa/tfa.js';
+import { tfaMinReqsPlan } from '@/lib/bsc/tfa/tfaMinReqs.js';
 import { sendRecap } from '@/lib/bsc/weeklyRecap.js';
 import { RECAP_WINDOW_MS } from '@/lib/bsc/weeklyRecapFormat.js';
 import { allStashUnitsFlat, allStashUnitTiers } from '@/lib/clues/stashUnits.js';
@@ -41,7 +43,7 @@ import { isThanksgivingActive, thanksgivingCodeEnabled } from '@/lib/events/than
 import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 import potions from '@/lib/minions/data/potions.js';
-import { MAX_QP, quests } from '@/lib/minions/data/quests.js';
+import { MAX_QP, QuestID, quests } from '@/lib/minions/data/quests.js';
 import { allOpenables } from '@/lib/openables.js';
 import { Minigames } from '@/lib/settings/minigames.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
@@ -671,6 +673,11 @@ export const testPotatoCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'tfa_min_reqs',
+			description: 'Test bot only: set stats, quest, gear and supplies to the bare minimum for The Fractured Archive.'
+		},
+		{
+			type: 'Subcommand',
 			name: 'bitfield',
 			description: 'Manage your bitfields',
 			options: [
@@ -1175,6 +1182,31 @@ export const testPotatoCommand = defineCommand({
 		}
 		if (options.inventions) {
 			return giveAllInventions(user);
+		}
+		if (options.tfa_min_reqs) {
+			if (globalConfig.isProduction) return 'This only works on the test bot.';
+			const plan = tfaMinReqsPlan(user.bank);
+			const skillUpdates: SafeUserUpdateInput = {};
+			for (const [skill, level] of Object.entries(plan.stats)) {
+				(skillUpdates as Record<string, number>)[`skills_${skill}`] = convertLVLtoXP(level!);
+			}
+			await user.update({
+				...skillUpdates,
+				finished_quest_ids: uniqueArr([...user.user.finished_quest_ids, QuestID.WhileGuthixSleeps])
+			});
+			await user.updateGear([
+				{ setup: 'melee', gear: plan.gear.melee.gear.raw() },
+				{ setup: 'range', gear: plan.gear.range.gear.raw() },
+				{ setup: 'mage', gear: plan.gear.mage.gear.raw() }
+			]);
+			if (plan.missingSupplies.length > 0) await user.addItemsToBank({ items: plan.missingSupplies });
+			const check = checkTfaUser(user, 1);
+			return `Set you to the bare minimum for The Fractured Archive:
+- Stats: Attack, Strength, Defence, Ranged, Magic, Hitpoints 90, Prayer 77 (other skills unchanged)
+- While Guthix Sleeps: done
+- Gear score: melee ${plan.gear.melee.percent.toFixed(1)}%, range ${plan.gear.range.percent.toFixed(1)}%, mage ${plan.gear.mage.percent.toFixed(1)}% (needs 30%)
+- Supplies: topped up to one raid's worth${plan.missingSupplies.length > 0 ? ` (added ${plan.missingSupplies})` : ' (you already had enough)'}
+Start check: ${check ?? 'passes'}`;
 		}
 		if (options.gear) {
 			const gear = gearPresets.find(i => stringMatches(i.name, options.gear?.thing))!;
