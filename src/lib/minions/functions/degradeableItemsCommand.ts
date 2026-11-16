@@ -4,6 +4,7 @@ import { Bank } from 'oldschooljs';
 import { degradeableItems } from '@/lib/degradeableItems.js';
 import { chargeHornOfPlentyCommand, getHornOfPlentyCharges } from '@/lib/skilling/skills/hunter/hornOfPlenty.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
+import type { DegradeableItem } from '@/lib/degradeableItems.js';
 
 export async function degradeableItemsCommand(
 	interaction: MInteraction,
@@ -27,17 +28,13 @@ ${degradeableItems
 		return `${i.item.name}: ${charges.toLocaleString()} charges`;
 	})
 	.join('\n')}
-Horn of plenty: ${hornCharges.toLocaleString()} charges`;
+Horn of plenty: ${hornCharges.toLocaleString()} charges
+For Obligator, Zorya's tome and Archivist's folio, the amount is the number of charges to add.`;
 	}
 
-	const cost = item.chargeInput.cost.clone().multiply(number);
-	const amountOfCharges = item.chargeInput.charges * number;
-
-	if (item.maxCharges !== undefined && user.user[item.settingsKey] + amountOfCharges > item.maxCharges) {
-		return `Your ${item.item.name} can hold at most ${item.maxCharges.toLocaleString()} charges (it has ${user.user[
-			item.settingsKey
-		].toLocaleString()}).`;
-	}
+	const plan = planDegradeableCharge(item, user.user[item.settingsKey], number);
+	if (typeof plan === 'string') return plan;
+	const { cost, amountOfCharges } = plan;
 
 	if (!user.owns(cost)) {
 		return `You don't own ${cost}.`;
@@ -75,4 +72,27 @@ Horn of plenty: ${hornCharges.toLocaleString()} charges`;
 	await ClientSettings.updateBankSetting('degraded_items_cost', cost);
 
 	return `You added **${cost}** to your ${item.item.name}, it now has ${newCharges} charges.`;
+}
+
+/**
+ * Works out the cost and charges for /minion charge. For items with `amountIsCharges` the amount is the number of
+ * charges wanted, rounded up to whole cost units (and down again if that would pass the item's max). For every other
+ * item the amount is the number of cost units, as before.
+ */
+export function planDegradeableCharge(
+	item: DegradeableItem,
+	currentCharges: number,
+	amount: number
+): { cost: Bank; amountOfCharges: number; units: number } | string {
+	const per = item.chargeInput.charges;
+	let units = item.amountIsCharges ? Math.ceil(amount / per) : amount;
+	if (item.maxCharges !== undefined) {
+		const room = Math.max(0, item.maxCharges - currentCharges);
+		if (item.amountIsCharges && units * per > room) units = Math.floor(room / per);
+		if (units < 1 || units * per > room) {
+			const canAdd = Math.floor(room / per) * per;
+			return `Your ${item.item.name} can hold at most ${item.maxCharges.toLocaleString()} charges. It has ${currentCharges.toLocaleString()}, so you can add up to ${canAdd.toLocaleString()} more.`;
+		}
+	}
+	return { cost: item.chargeInput.cost.clone().multiply(units), amountOfCharges: units * per, units };
 }

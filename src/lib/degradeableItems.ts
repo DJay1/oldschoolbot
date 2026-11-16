@@ -29,6 +29,8 @@ export interface DegradeableItem {
 	emoji?: string;
 	/** Most charges the item can hold (no cap if unset). */
 	maxCharges?: number;
+	/** /minion charge amount is the number of charges to add (rounded up to whole cost units), not cost units. */
+	amountIsCharges?: boolean;
 }
 
 interface DegradeableItemPVMBoost {
@@ -262,7 +264,8 @@ export const degradeableItems: DegradeableItem[] = [
 		unchargedItem: Items.getOrThrow(TfaItem.OBLIGATOR),
 		convertOnCharge: true,
 		emoji: '',
-		maxCharges: 20_000
+		maxCharges: 20_000,
+		amountIsCharges: true
 	},
 	{
 		item: Items.getOrThrow(TfaItem.ZORYAS_TOME_CHARGED),
@@ -278,7 +281,8 @@ export const degradeableItems: DegradeableItem[] = [
 		unchargedItem: Items.getOrThrow(TfaItem.ZORYAS_TOME),
 		convertOnCharge: true,
 		emoji: '',
-		maxCharges: 20_000
+		maxCharges: 20_000,
+		amountIsCharges: true
 	},
 	{
 		item: Items.getOrThrow(TfaItem.ARCHIVISTS_FOLIO_CHARGED),
@@ -294,7 +298,8 @@ export const degradeableItems: DegradeableItem[] = [
 		unchargedItem: Items.getOrThrow(TfaItem.ARCHIVISTS_FOLIO),
 		convertOnCharge: true,
 		emoji: '',
-		maxCharges: 20_000
+		maxCharges: 20_000,
+		amountIsCharges: true
 	}
 ];
 
