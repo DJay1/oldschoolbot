@@ -43,7 +43,17 @@ export async function runWithBuyDailyLimit<T>(
 	quantity: number,
 	fn: (ctx: { commit: () => void }) => Promise<T>
 ): Promise<T | string> {
-	const dailyLimit = buyDailyLimitFor(buyableName);
+	return runWithDailyLimit(userId, buyableName, quantity, buyDailyLimitFor(buyableName), fn);
+}
+
+/** Same as runWithBuyDailyLimit, with the cap given directly (used by /tokkulshop). */
+export async function runWithDailyLimit<T>(
+	userId: string,
+	buyableName: string,
+	quantity: number,
+	dailyLimit: number | undefined,
+	fn: (ctx: { commit: () => void }) => Promise<T>
+): Promise<T | string> {
 	if (dailyLimit === undefined) return fn({ commit() {} });
 
 	const reserved = await Cache.tryReserveBuyDailyLimit(

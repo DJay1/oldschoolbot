@@ -129,13 +129,33 @@ describe('skilling supply /buy prices and daily limits', () => {
 	test('daily limits match the agreed list, and unlimited items have no cap', () => {
 		expect(buyDailyLimitFor('Arrow shaft')).toBe(5_000);
 		expect(buyDailyLimitFor('Feather')).toBeUndefined();
-		expect(buyDailyLimitFor('Air rune')).toBe(5_000);
-		expect(buyDailyLimitFor('Chaos rune')).toBe(1_000);
-		expect(buyDailyLimitFor('Chaos rune (pack)')).toBe(10);
-		expect(buyDailyLimitFor('Eye of newt')).toBe(500);
-		expect(buyDailyLimitFor('Compost')).toBe(250);
+		for (const name of [
+			'Air rune',
+			'Earth rune',
+			'Water rune',
+			'Fire rune',
+			'Mind rune',
+			'Body rune',
+			'Eye of newt'
+		]) {
+			expect(buyDailyLimitFor(name), name).toBeUndefined();
+		}
+		expect(buyDailyLimitFor('Astral rune')).toBe(10_000);
+		expect(buyDailyLimitFor('Chaos rune')).toBe(10_000);
+		expect(buyDailyLimitFor('Chaos rune (pack)')).toBe(100);
+		for (const name of ['Nature rune', 'Death rune', 'Law rune', 'Soul rune', 'Blood rune']) {
+			expect(buyDailyLimitFor(name), name).toBe(3_000);
+		}
+		for (const name of ['Copper ore', 'Tin ore', 'Iron ore', 'Coal', 'Silver ore', 'Gold ore', 'Mithril ore']) {
+			expect(buyDailyLimitFor(name), name).toBe(3_000);
+		}
+		expect(buyDailyLimitFor('Bucket of sand')).toBe(5_000);
+		expect(buyDailyLimitFor('Soda ash')).toBe(5_000);
+		expect(buyDailyLimitFor('Pineapple')).toBe(5_000);
+		expect(buyDailyLimitFor('Compost')).toBe(1_000);
+		expect(buyDailyLimitFor('Banana')).toBe(1_000);
 		expect(buyDailyLimitFor('Olive oil pack')).toBe(10);
-		expect(Object.keys(SKILLING_SUPPLY_DAILY_LIMITS)).toHaveLength(32);
+		expect(Object.keys(SKILLING_SUPPLY_DAILY_LIMITS)).toHaveLength(25);
 		for (const name of UNLIMITED) {
 			expect(buyDailyLimitFor(name), name).toBeUndefined();
 		}

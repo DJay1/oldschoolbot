@@ -2,40 +2,60 @@ import { Time } from '@oldschoolgg/toolkit';
 
 /** Per-player daily purchase caps for selected /buy skilling supplies. Unlisted items have no cap. */
 export const SKILLING_SUPPLY_DAILY_LIMITS: Record<string, number> = {
+	// Elemental, Mind and Body runes and Eye of newt have no cap (Nov 16).
 	'Arrow shaft': 5_000,
-	'Air rune': 5_000,
-	'Earth rune': 5_000,
-	'Water rune': 5_000,
-	'Fire rune': 5_000,
-	'Mind rune': 5_000,
-	'Body rune': 5_000,
-	'Astral rune': 1_000,
-	'Chaos rune': 1_000,
-	'Chaos rune (pack)': 10,
-	'Nature rune': 1_000,
-	'Death rune': 1_000,
-	'Law rune': 1_000,
-	'Soul rune': 1_000,
-	'Blood rune': 1_000,
-	'Copper ore': 1_000,
-	'Tin ore': 1_000,
-	'Iron ore': 1_000,
-	Coal: 1_000,
-	'Silver ore': 1_000,
-	'Gold ore': 1_000,
-	'Mithril ore': 1_000,
-	'Bucket of sand': 1_000,
-	'Soda ash': 1_000,
-	Pineapple: 1_000,
+	'Astral rune': 10_000,
+	'Chaos rune': 10_000,
+	// 100 packs = 10,000 Chaos runes. Kept separate from loose Chaos runes on purpose (20,000/day total).
+	'Chaos rune (pack)': 100,
+	'Nature rune': 3_000,
+	'Death rune': 3_000,
+	'Law rune': 3_000,
+	'Soul rune': 3_000,
+	'Blood rune': 3_000,
+	'Copper ore': 3_000,
+	'Tin ore': 3_000,
+	'Iron ore': 3_000,
+	Coal: 3_000,
+	'Silver ore': 3_000,
+	'Gold ore': 3_000,
+	'Mithril ore': 3_000,
+	'Bucket of sand': 5_000,
+	'Soda ash': 5_000,
+	Pineapple: 5_000,
 	Banana: 1_000,
 	Orange: 1_000,
-	'Eye of newt': 500,
-	Compost: 250,
+	Compost: 1_000,
 	'Olive oil(4)': 250,
 	'Limestone brick': 250,
 	'Olive oil pack': 10
 };
 
+/** Per-player daily caps for /tokkulshop buy, per ore. Separate allowance from /buy. */
+export const TOKKUL_SHOP_DAILY_LIMITS: Record<string, number> = {
+	'Tin ore': 3_000,
+	'Copper ore': 3_000,
+	'Iron ore': 3_000,
+	'Silver ore': 3_000,
+	Coal: 3_000,
+	'Gold ore': 3_000,
+	'Mithril ore': 3_000,
+	'Adamantite ore': 3_000,
+	'Runite ore': 3_000
+};
+
+/** Name used for the Tokkul shop allowance, so it never shares a counter with /buy. */
+export function tokkulShopLimitName(itemName: string): string {
+	return `Tokkul shop ${itemName}`;
+}
+
+const tokkulLimitsByLowerName = new Map(
+	Object.entries(TOKKUL_SHOP_DAILY_LIMITS).map(([name, cap]) => [name.toLowerCase(), cap] as const)
+);
+
+export function tokkulShopDailyLimitFor(itemName: string): number | undefined {
+	return tokkulLimitsByLowerName.get(itemName.toLowerCase());
+}
 export const BUY_DAILY_LIMIT_WINDOW_SECONDS = Time.Day / Time.Second;
 
 const limitsByLowerName = new Map(
