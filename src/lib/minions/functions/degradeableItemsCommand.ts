@@ -33,6 +33,12 @@ Horn of plenty: ${hornCharges.toLocaleString()} charges`;
 	const cost = item.chargeInput.cost.clone().multiply(number);
 	const amountOfCharges = item.chargeInput.charges * number;
 
+	if (item.maxCharges !== undefined && user.user[item.settingsKey] + amountOfCharges > item.maxCharges) {
+		return `Your ${item.item.name} can hold at most ${item.maxCharges.toLocaleString()} charges (it has ${user.user[
+			item.settingsKey
+		].toLocaleString()}).`;
+	}
+
 	if (!user.owns(cost)) {
 		return `You don't own ${cost}.`;
 	}

@@ -33,10 +33,15 @@ export const projectiles = {
 			'Dragon hunter crossbow',
 			'Dragon crossbow',
 			'Zaryte crossbow',
-			'Rune crossbow',
-			// Ascension crossbows (BSC TFA item); uses normal bolts since Ascension bolts aren't in BSC.
-			74603
+			'Rune crossbow'
 		])
+	},
+	// The Fractured Archive: only the Ascension crossbows (74603) can fire these, and they fire nothing else.
+	// 74620-74624: Ascension bolts, Diamond/Onyx ascension bolts and their (e) versions.
+	ascensionBolt: {
+		items: resolveItems([74_620, 74_621, 74_622, 74_623, 74_624]),
+		savedByAvas: true,
+		weapons: resolveItems([74_603])
 	},
 	javelin: {
 		items: resolveItems(['Amethyst javelin', 'Rune javelin', 'Dragon javelin', 'Obsidian javelin']),

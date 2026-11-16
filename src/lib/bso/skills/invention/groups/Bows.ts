@@ -30,6 +30,7 @@ export const Bows: DisassemblySourceGroup = {
 			lvl: 70
 		},
 		{ item: i('Twisted bow'), lvl: 99 },
+		{ item: i('Ascension crossbows'), lvl: 90 },
 		{
 			item: [
 				'Twisted bownana',

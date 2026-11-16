@@ -236,11 +236,15 @@ export function tfaSingleRaidDuration(team: TfaTeamMember[]) {
  */
 export function tfaItemBoosts(user: MUser): { boosts: TfaBoost[]; deathReduction: number; messages: string[] } {
 	const boosts: TfaBoost[] = [];
-	if (user.gear.melee.hasEquipped(TfaItem.OBLIGATOR)) boosts.push({ name: 'Obligator', percent: 4 });
-	if (user.gear.mage.hasEquipped(TfaItem.ZORYAS_TOME)) boosts.push({ name: "Zorya's tome", percent: 3 });
+	// Charged weapons only. Charges are checked in checkTfaUser and used when the trip starts.
+	if (user.gear.melee.hasEquipped(TfaItem.OBLIGATOR_CHARGED)) boosts.push({ name: 'Obligator', percent: 4 });
+	if (user.gear.mage.hasEquipped(TfaItem.ZORYAS_TOME_CHARGED)) boosts.push({ name: "Zorya's tome", percent: 3 });
 	if (user.gear.range.hasEquipped(TfaItem.ASCENSION_CROSSBOWS))
 		boosts.push({ name: 'Ascension crossbows', percent: 3 });
-	if (user.allItemsOwned.has(TfaItem.ARCHIVISTS_FOLIO)) boosts.push({ name: "Archivist's folio", percent: 2 });
+	// Owning either version of the folio counts (the charges only power a teleport in OSRS).
+	if (user.allItemsOwned.has(TfaItem.ARCHIVISTS_FOLIO) || user.allItemsOwned.has(TfaItem.ARCHIVISTS_FOLIO_CHARGED)) {
+		boosts.push({ name: "Archivist's folio", percent: 2 });
+	}
 	if (user.bitfield.includes(BitField.HasZeal) && user.skillsAsLevels.prayer >= 84) {
 		boosts.push({ name: 'Zeal', percent: 2 });
 	}
@@ -283,15 +287,56 @@ export function checkTfaUser(user: MUser, quantity = 1): string | null {
 	if (!user.bank.has(supplies)) {
 		return `${user.usernameOrMention} needs ${supplies} for ${quantity}x raid${quantity === 1 ? '' : 's'}.`;
 	}
+	for (const charge of tfaChargesNeeded(user, quantity)) {
+		const current = user.user[charge.settingsKey];
+		if (current < charge.charges) {
+			return `${user.usernameOrMention}'s ${charge.name} has ${current.toLocaleString()} charges but needs ${charge.charges.toLocaleString()} for ${quantity}x raid${quantity === 1 ? '' : 's'}. Charge it with /minion charge or unequip it.`;
+		}
+	}
 	return null;
+}
+
+/** Charges used per raid by equipped charged TFA weapons (adapted, OSRS uses one per attack). */
+export const TFA_CHARGES_PER_RAID = {
+	obligator: 50,
+	zoryasTome: 100
+} as const;
+
+export function tfaChargesNeeded(
+	user: MUser,
+	quantity: number
+): { itemID: number; name: string; settingsKey: 'obligator_charges' | 'zorya_tome_charges'; charges: number }[] {
+	const needed: {
+		itemID: number;
+		name: string;
+		settingsKey: 'obligator_charges' | 'zorya_tome_charges';
+		charges: number;
+	}[] = [];
+	if (user.gear.melee.hasEquipped(TfaItem.OBLIGATOR_CHARGED)) {
+		needed.push({
+			itemID: TfaItem.OBLIGATOR_CHARGED,
+			name: 'Obligator',
+			settingsKey: 'obligator_charges',
+			charges: TFA_CHARGES_PER_RAID.obligator * quantity
+		});
+	}
+	if (user.gear.mage.hasEquipped(TfaItem.ZORYAS_TOME_CHARGED)) {
+		needed.push({
+			itemID: TfaItem.ZORYAS_TOME_CHARGED,
+			name: "Zorya's tome",
+			settingsKey: 'zorya_tome_charges',
+			charges: TFA_CHARGES_PER_RAID.zoryasTome * quantity
+		});
+	}
+	return needed;
 }
 
 export function tfaHelpBoostsText() {
 	return [
-		'Obligator (uncharged) in melee setup: 4% faster',
-		"Zorya's tome (uncharged) in mage setup: 3% faster",
+		`Obligator (charged) in melee setup: 4% faster, uses ${TFA_CHARGES_PER_RAID.obligator} charges per raid`,
+		`Zorya's tome (charged) in mage setup: 3% faster, uses ${TFA_CHARGES_PER_RAID.zoryasTome} charges per raid`,
 		'Ascension crossbows in range setup: 3% faster',
-		"Owning an Archivist's folio (inert): 2% faster",
+		"Owning an Archivist's folio (either version): 2% faster",
 		'Zeal prayer unlocked (use Horn of Bran) and 84 Prayer: 2% faster',
 		'Rondache in melee setup: 20% lower death chance'
 	];

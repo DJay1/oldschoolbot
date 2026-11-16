@@ -5,7 +5,7 @@ import { setCustomItem, UN_EQUIPPABLE } from '@/lib/customItems/util.js';
 
 /**
  * The Fractured Archive (OSRS raid 4, released 20 Oct 2026).
- * These use BSC's own item IDs (74600-74616), not the real OSRS IDs (34xxx),
+ * These use BSC's own item IDs (74600-74624), not the real OSRS IDs (34xxx),
  * so they never clash when the OSRS item data is updated later.
  */
 export const TfaItem = {
@@ -25,7 +25,16 @@ export const TfaItem = {
 	LIVING_RECORD_T2: 74_613,
 	LIVING_RECORD_T3: 74_614,
 	LIVING_RECORD_T4: 74_615,
-	LIVING_RECORD_T5: 74_616
+	LIVING_RECORD_T5: 74_616,
+	// Made from TFA rewards
+	ZORYAS_TOME_CHARGED: 74_617,
+	OBLIGATOR_CHARGED: 74_618,
+	ARCHIVISTS_FOLIO_CHARGED: 74_619,
+	ASCENSION_BOLTS: 74_620,
+	DIAMOND_ASCENSION_BOLTS: 74_621,
+	ONYX_ASCENSION_BOLTS: 74_622,
+	DIAMOND_ASCENSION_BOLTS_E: 74_623,
+	ONYX_ASCENSION_BOLTS_E: 74_624
 } as const;
 
 function equipment(
@@ -74,6 +83,8 @@ const untradeable = { tradeable: false, tradeable_on_ge: false };
 const noBoxes = { cantDropFromMysteryBoxes: true };
 
 // Uniques. Stats are the OSRS wiki stats (uncharged items work as if charged in BSC).
+// Values are the OSRS GE price (16 Nov 2026), the same way CoX/ToB/ToA uniques are valued. Obligator trades for
+// ~2.46B, so it is capped at the same 2,147,483,647 ceiling as the priciest 3rd age items.
 setCustomItem(
 	TfaItem.RONDACHE,
 	'Rondache',
@@ -84,7 +95,7 @@ setCustomItem(
 		equipment: equipment([0, 0, 0, -5, -8, 35, 41, 38, -6, 55, 8, 0, 0, 0], EquipmentSlot.Shield, { defence: 80 }),
 		customItemData: { ...noBoxes, examine: 'A finely crafted rondache shield.' }
 	},
-	11_000_000
+	13_000_000
 );
 setCustomItem(
 	TfaItem.ZORYAS_TOME,
@@ -96,7 +107,7 @@ setCustomItem(
 		equipment: equipment([0, 0, 0, 45, 0, 1, 5, 5, 10, 0, 0, 0, 15, 2], EquipmentSlot.TwoHanded, { magic: 85 }),
 		customItemData: { ...noBoxes, examine: 'The book is weighed down by all the knowledge it contains.' }
 	},
-	26_000_000
+	28_000_000
 );
 setCustomItem(
 	TfaItem.HORN_OF_BRAN,
@@ -110,7 +121,7 @@ setCustomItem(
 			examine: 'Based on text inscribed upon it, it presumably belonged to someone called Bran.'
 		}
 	},
-	225_000_000
+	247_000_000
 );
 setCustomItem(
 	TfaItem.ASCENSION_CROSSBOWS,
@@ -122,7 +133,7 @@ setCustomItem(
 		equipment: equipment([0, 0, 0, 3, 34, -7, -5, 0, 10, 0, 0, 0, 0, 0], EquipmentSlot.TwoHanded, { ranged: 80 }),
 		customItemData: { ...noBoxes, examine: 'Ancient crossbows formed of powerful crystal.' }
 	},
-	200_000_000
+	233_000_000
 );
 setCustomItem(
 	TfaItem.OBLIGATOR,
@@ -134,7 +145,7 @@ setCustomItem(
 		equipment: equipment([22, -8, 120, 0, 0, 0, 16, 0, 3, 8, 40, 0, 0, 3], EquipmentSlot.TwoHanded, { attack: 85 }),
 		customItemData: { ...noBoxes, examine: 'A huge mace on a writhing vine.' }
 	},
-	350_000_000
+	2_147_483_647
 );
 
 // Standard/tertiary rewards
@@ -222,6 +233,97 @@ for (const [id, name] of TFA_LIVING_RECORDS) {
 		10
 	);
 }
+
+// Charged versions (untradeable, same stats as uncharged). Charged with /minion charge.
+setCustomItem(
+	TfaItem.ZORYAS_TOME_CHARGED,
+	"Zorya's tome",
+	"Tumeken's shadow (uncharged)",
+	{
+		...untradeable,
+		equipable: true,
+		equipment: equipment([0, 0, 0, 45, 0, 1, 5, 5, 10, 0, 0, 0, 15, 2], EquipmentSlot.TwoHanded, { magic: 85 }),
+		customItemData: { ...noBoxes, examine: 'The book is weighed down by all the knowledge it contains.' }
+	},
+	28_000_000
+);
+setCustomItem(
+	TfaItem.OBLIGATOR_CHARGED,
+	'Obligator',
+	'Elder maul',
+	{
+		...untradeable,
+		equipable: true,
+		equipment: equipment([22, -8, 120, 0, 0, 0, 16, 0, 3, 8, 40, 0, 0, 3], EquipmentSlot.TwoHanded, { attack: 85 }),
+		customItemData: { ...noBoxes, examine: 'A huge mace on a writhing vine.' }
+	},
+	2_147_483_647
+);
+setCustomItem(
+	TfaItem.ARCHIVISTS_FOLIO_CHARGED,
+	"Archivist's folio",
+	'Coal',
+	{
+		...untradeable,
+		...UN_EQUIPPABLE,
+		customItemData: {
+			...noBoxes,
+			examine: 'A collection of manuscripts used by Guthixian archivists for convenient travel.'
+		}
+	},
+	500
+);
+
+// Ascension bolts. Only the Ascension crossbows can fire them.
+export const TFA_ASCENSION_BOLTS = [
+	[TfaItem.ASCENSION_BOLTS, 'Ascension bolts', 53, 50, 'Bolts chiseled from powerful crystals.'],
+	[
+		TfaItem.DIAMOND_ASCENSION_BOLTS,
+		'Diamond ascension bolts',
+		58,
+		215,
+		'Bolts chiselled from powerful crystals, tipped with diamond.'
+	],
+	[
+		TfaItem.ONYX_ASCENSION_BOLTS,
+		'Onyx ascension bolts',
+		58,
+		8_300,
+		'Bolts chiselled from powerful crystals, tipped with onyx.'
+	],
+	[
+		TfaItem.DIAMOND_ASCENSION_BOLTS_E,
+		'Diamond ascension bolts (e)',
+		58,
+		255,
+		'Enchanted bolts chiselled from powerful crystals, tipped with diamond.'
+	],
+	[
+		TfaItem.ONYX_ASCENSION_BOLTS_E,
+		'Onyx ascension bolts (e)',
+		58,
+		8_330,
+		'Enchanted bolts chiselled from powerful crystals, tipped with onyx.'
+	]
+] as const;
+
+for (const [id, name, rangedStrength, price, examine] of TFA_ASCENSION_BOLTS) {
+	setCustomItem(
+		id,
+		name,
+		'Dragon bolts',
+		{
+			...tradeable,
+			equipable: true,
+			stackable: true,
+			equipment: equipment([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, rangedStrength, 0, 0], EquipmentSlot.Ammo, null),
+			customItemData: { ...noBoxes, examine }
+		},
+		price
+	);
+}
+
+export const tfaAscensionBoltIDs: number[] = TFA_ASCENSION_BOLTS.map(b => b[0]);
 
 export const tfaUniqueItems = [
 	TfaItem.RONDACHE,

@@ -3,6 +3,7 @@ import { customEmoji, Time } from '@oldschoolgg/toolkit';
 import { MathRNG } from 'node-rng';
 import { Bank, type Item, Items, itemID, type Monster } from 'oldschooljs';
 
+import { TfaItem } from '@/lib/bsc/tfa/tfaItems.js';
 import type { KillableMonster } from '@/lib/minions/types.js';
 import type { ChargeBank } from '@/lib/structures/Bank.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
@@ -26,6 +27,8 @@ export interface DegradeableItem {
 	unchargedItem?: Item;
 	convertOnCharge?: boolean;
 	emoji?: string;
+	/** Most charges the item can hold (no cap if unset). */
+	maxCharges?: number;
 }
 
 interface DegradeableItemPVMBoost {
@@ -243,6 +246,55 @@ export const degradeableItems: DegradeableItem[] = [
 		unchargedItem: Items.getOrThrow('Venator bow (uncharged)'),
 		convertOnCharge: true,
 		emoji: ''
+	},
+	// The Fractured Archive (OSRS charge costs and caps)
+	{
+		item: Items.getOrThrow(TfaItem.OBLIGATOR_CHARGED),
+		settingsKey: 'obligator_charges',
+		itemsToRefundOnBreak: new Bank().add(TfaItem.OBLIGATOR).freeze(),
+		refundVariants: [],
+		setup: 'melee',
+		aliases: ['obligator'],
+		chargeInput: {
+			cost: new Bank().add(TfaItem.ASCENSION_SHARDS).add('Nature rune', 60).add('Death rune', 60).freeze(),
+			charges: 30
+		},
+		unchargedItem: Items.getOrThrow(TfaItem.OBLIGATOR),
+		convertOnCharge: true,
+		emoji: '',
+		maxCharges: 20_000
+	},
+	{
+		item: Items.getOrThrow(TfaItem.ZORYAS_TOME_CHARGED),
+		settingsKey: 'zorya_tome_charges',
+		itemsToRefundOnBreak: new Bank().add(TfaItem.ZORYAS_TOME).freeze(),
+		refundVariants: [],
+		setup: 'mage',
+		aliases: ['zorya', 'zoryas tome', 'tome'],
+		chargeInput: {
+			cost: new Bank().add('Astral rune', 3).add('Nature rune', 2).freeze(),
+			charges: 1
+		},
+		unchargedItem: Items.getOrThrow(TfaItem.ZORYAS_TOME),
+		convertOnCharge: true,
+		emoji: '',
+		maxCharges: 20_000
+	},
+	{
+		item: Items.getOrThrow(TfaItem.ARCHIVISTS_FOLIO_CHARGED),
+		settingsKey: 'archivist_folio_charges',
+		itemsToRefundOnBreak: new Bank().add(TfaItem.ARCHIVISTS_FOLIO).freeze(),
+		refundVariants: [],
+		setup: 'skilling',
+		aliases: ['folio', 'archivists folio'],
+		chargeInput: {
+			cost: new Bank().add(TfaItem.ASCENSION_SHARDS).freeze(),
+			charges: 5
+		},
+		unchargedItem: Items.getOrThrow(TfaItem.ARCHIVISTS_FOLIO),
+		convertOnCharge: true,
+		emoji: '',
+		maxCharges: 20_000
 	}
 ];
 

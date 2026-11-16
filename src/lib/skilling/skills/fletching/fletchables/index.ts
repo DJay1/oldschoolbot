@@ -1,5 +1,6 @@
 import type { Fletchable } from '@/lib/skilling/types.js';
 import Arrows from './arrows.js';
+import { AscensionFletchables, TippedAscensionBolts } from './ascension.js';
 import Atlatl from './atlatl.js';
 import Bolts from './bolts.js';
 import Bows from './bows.js';
@@ -28,10 +29,12 @@ export const Fletchables: Fletchable[] = [
 	...Crossbows,
 	...Slayer,
 	...Atlatl,
-	...SeekingFletchables
+	...SeekingFletchables,
+	...AscensionFletchables
 ];
 
-const seekingIDs = new Set(SeekingFletchables.map(i => i.id));
+// Seeking arrows and Ascension bolts aren't in the Fletching collection log.
+const seekingIDs = new Set([...SeekingFletchables, ...AscensionFletchables].map(i => i.id));
 export const fletchingCL = Fletchables.filter(i => !seekingIDs.has(i.id)).map(i => i.id);
 export const zeroTimeFletchables: Fletchable[] = [
 	BroadArrows,
@@ -42,5 +45,6 @@ export const zeroTimeFletchables: Fletchable[] = [
 	AmethystBroadBolts,
 	...TippedBolts,
 	...TippedDragonBolts,
-	...Javelins
+	...Javelins,
+	...TippedAscensionBolts
 ];

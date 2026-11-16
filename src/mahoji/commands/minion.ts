@@ -8,6 +8,7 @@ import { convertLVLtoXP, Items } from 'oldschooljs';
 import { ownedItemOption, skillOption } from '@/discord/index.js';
 import { sortBankBgsForAutocomplete } from '@/lib/bsc/bankBgAutocomplete.js';
 import { BSC_PATRON_TIERS, bscPatronNameForPerkTier } from '@/lib/bsc/patronTiers.js';
+import { tfaUnchargeCommand } from '@/lib/bsc/tfa/tfaCharges.js';
 import { bscTierDisplay } from '@/lib/bsc/tierDisplay.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { BitFieldData, MAX_LEVEL, PerkTier } from '@/lib/constants.js';
@@ -356,6 +357,23 @@ export const minionCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'uncharge',
+			description: 'Uncharge an item and get its charging items back.',
+			options: [
+				{
+					type: 'String',
+					name: 'item',
+					description: 'The item you want to uncharge',
+					required: true,
+					choices: [
+						{ name: 'Obligator', value: 'Obligator' },
+						{ name: "Zorya's tome", value: "Zorya's tome" }
+					]
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
 			name: 'charge',
 			description: 'Charge an item.',
 			options: [
@@ -593,6 +611,9 @@ export const minionCommand = defineCommand({
 
 		if (options.charge) {
 			return degradeableItemsCommand(interaction, user, options.charge.item, options.charge.amount);
+		}
+		if (options.uncharge) {
+			return tfaUnchargeCommand(interaction, user, options.uncharge.item);
 		}
 		if (options.daily) {
 			return dailyCommand(rng, interaction, user);

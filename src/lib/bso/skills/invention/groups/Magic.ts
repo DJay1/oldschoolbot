@@ -36,7 +36,8 @@ export const Magic: DisassemblySourceGroup = {
 				'Eternal crystal'
 			].map(i),
 			lvl: 99
-		}
+		},
+		{ item: i("Zorya's tome (uncharged)"), lvl: 90 }
 	],
 	parts: { magic: 30, powerful: 3, protective: 2 }
 };

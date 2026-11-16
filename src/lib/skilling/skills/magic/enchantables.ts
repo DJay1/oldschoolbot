@@ -1,5 +1,7 @@
 import { Bank, itemID } from 'oldschooljs';
 
+import { TfaItem } from '@/lib/bsc/tfa/tfaItems.js';
+
 export interface Enchantable {
 	name: string;
 	alias?: string[];
@@ -419,6 +421,31 @@ const bolts = [
 		id: itemID('Onyx bolts'),
 		input: new Bank().add('Onyx bolts', 10).add('Fire rune', 20).add('Cosmic rune', 1).add('Death rune', 1),
 		output: new Bank().add('Onyx bolts (e)', 10),
+		xp: 97,
+		level: 87
+	},
+	// Ascension (The Fractured Archive)
+	{
+		name: '10x Diamond ascension bolts',
+		id: TfaItem.DIAMOND_ASCENSION_BOLTS,
+		input: new Bank()
+			.add(TfaItem.DIAMOND_ASCENSION_BOLTS, 10)
+			.add('Law rune', 2)
+			.add('Cosmic rune', 1)
+			.add('Earth rune', 10),
+		output: new Bank().add(TfaItem.DIAMOND_ASCENSION_BOLTS_E, 10),
+		xp: 67,
+		level: 57
+	},
+	{
+		name: '10x Onyx ascension bolts',
+		id: TfaItem.ONYX_ASCENSION_BOLTS,
+		input: new Bank()
+			.add(TfaItem.ONYX_ASCENSION_BOLTS, 10)
+			.add('Fire rune', 20)
+			.add('Cosmic rune', 1)
+			.add('Death rune', 1),
+		output: new Bank().add(TfaItem.ONYX_ASCENSION_BOLTS_E, 10),
 		xp: 97,
 		level: 87
 	},

@@ -3,6 +3,7 @@ import { bsoOres } from '@/lib/bso/skills/mining/ores.js';
 import { Emoji } from '@oldschoolgg/toolkit';
 import { type ItemBank, itemID, LootTable } from 'oldschooljs';
 
+import { TfaItem } from '@/lib/bsc/tfa/tfaItems.js';
 import { defineSkill, type Ore } from '@/lib/skilling/types.js';
 
 export const GemRockTable = new LootTable()
@@ -270,7 +271,21 @@ const ores: Ore[] = [
 		clueScrollChance: 46_350,
 		aliases: ['amy', 'ame']
 	},
-	...bsoOres
+	...bsoOres,
+	// The Fractured Archive: Ascension rocks give Ascension shards (OSRS: 80 Mining, 15 XP, about 130 shards/hr
+	// at 99 with a dragon pickaxe; the rocks deplete and move every 295 ticks). Rates are tuned to match.
+	{
+		level: 80,
+		xp: 15,
+		id: TfaItem.ASCENSION_SHARDS,
+		name: 'Ascension rocks',
+		respawnTime: 40,
+		bankingTime: 0,
+		slope: 0.5,
+		intercept: -10,
+		petChance: 68_120,
+		aliases: ['ascension', 'ascension shards', 'ascension rock']
+	}
 ];
 
 // Uses determineMiningTime function, therefore Ore object and id -1

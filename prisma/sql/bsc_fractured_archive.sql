@@ -13,3 +13,7 @@ ALTER TABLE "user_stats" ADD COLUMN IF NOT EXISTS "tfa_attempts" INTEGER NOT NUL
 ALTER TABLE "user_stats" ADD COLUMN IF NOT EXISTS "tfa_total_minutes" INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE "user_stats" ADD COLUMN IF NOT EXISTS "tfa_cost" JSON NOT NULL DEFAULT '{}';
 ALTER TABLE "user_stats" ADD COLUMN IF NOT EXISTS "tfa_loot" JSON NOT NULL DEFAULT '{}';
+-- Charges for the charged Obligator, Zorya's tome and Archivist's folio (added Nov 16).
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "obligator_charges" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "zorya_tome_charges" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "archivist_folio_charges" INTEGER NOT NULL DEFAULT 0;

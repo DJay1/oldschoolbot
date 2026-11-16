@@ -321,8 +321,27 @@ export const mainBoostEffects: (Boost | Boost[])[] = [
 	[dragonHunterBoost, revWildyGearBoost],
 	{
 		description: 'Fractured Archive rewards',
-		run: ({ gearBank, primaryStyle, osjsMon, bitfield, isInWilderness }) =>
-			tfaPvmBoosts({ gearBank, primaryStyle, osjsMon, bitfield, isInWilderness })
+		run: ({ gearBank, primaryStyle, osjsMon, bitfield, isInWilderness, addPostBoostEffect }) => {
+			const { boosts, charged } = tfaPvmBoosts({ gearBank, primaryStyle, osjsMon, bitfield, isInWilderness });
+			if (charged.length > 0) {
+				addPostBoostEffect({
+					description: 'Fractured Archive charged weapons',
+					run: ({ quantity }) => {
+						const charges = new ChargeBank();
+						for (const boost of charged) {
+							const totalHP = (osjsMon?.data.hitpoints ?? 100) * quantity;
+							charges.add(boost.settingsKey, Math.ceil(totalHP / boost.hpPerCharge));
+						}
+						return {
+							charges,
+							message: charged.map(b => b.message).join(', '),
+							percentageReduction: sumArr(charged.map(b => b.percentageReduction))
+						};
+					}
+				});
+			}
+			return boosts;
+		}
 	},
 	[salveBoost, blackMaskBoost],
 	{

@@ -9,6 +9,7 @@ import {
 	minTfaStats,
 	TFA_MAX_QUANTITY,
 	TFA_MIN_GEAR_PERCENT,
+	tfaChargesNeeded,
 	tfaHelpBoostsText,
 	tfaItemBoosts,
 	tfaSingleRaidDuration,
@@ -22,6 +23,7 @@ import { tfaTeamUniqueOdds } from '@/lib/bsc/tfa/tfaLoot.js';
 import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
 import { BitField } from '@/lib/constants.js';
 import { calculateTOBUserGearPercents } from '@/lib/data/tob.js';
+import { degradeableItems, degradeItem } from '@/lib/degradeableItems.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import type { MakePartyOptions } from '@/lib/types/index.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
@@ -102,6 +104,10 @@ export async function tfaStartCommand(
 		const u = users[i];
 		await u.transactItems({ itemsToRemove: supplies.clone() });
 		await u.statsBankUpdate('tfa_cost', supplies);
+		for (const charge of tfaChargesNeeded(u, quantity)) {
+			const degItem = degradeableItems.find(d => d.item.id === charge.itemID)!;
+			await degradeItem({ item: degItem.item, chargesToDegrade: charge.charges, user: u });
+		}
 		totalCost.add(supplies);
 		costs.push({ id: u.id, cost: supplies.clone() });
 		const member = team[i];
@@ -173,7 +179,7 @@ ${tfaHelpBoostsText()
 **Your boosts:** ${boosts.length > 0 ? boosts.map(b => `${b.name} (${b.percent}%)`).join(', ') : 'None'}${deathReduction > 0 ? ', Rondache' : ''}
 **Zeal:** ${user.bitfield.includes(BitField.HasZeal) ? 'Unlocked' : 'Locked'}
 
-${check ? `?? ${bold('Not ready:')} ${check}` : '? You are ready to start a raid.'}`;
+${check ? `\u26A0\uFE0F ${bold('Not ready:')} ${check}` : '\u2705 You are ready to start a raid.'}`;
 }
 
 export async function tfaStatsCommand(user: MUser): Promise<string> {
