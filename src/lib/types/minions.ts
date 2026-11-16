@@ -583,6 +583,8 @@ export interface RaidsOptions extends ActivityTaskOptionsWithUsers {
 	leader: string;
 	challengeMode: boolean;
 	maxSizeInput?: number;
+	/** Max team size the leader picked for a mass, reused when the trip is repeated. */
+	repeatMaxSize?: number;
 	quantity?: number;
 	// id of user that used chincannon
 	cc?: string;
@@ -591,6 +593,8 @@ export interface RaidsOptions extends ActivityTaskOptionsWithUsers {
 export interface TheatreOfBloodTaskOptions extends ActivityTaskOptionsWithUsers {
 	type: 'TheatreOfBlood';
 	leader: string;
+	/** Max team size the leader picked for a mass, reused when the trip is repeated. */
+	repeatMaxSize?: number;
 	hardMode: boolean;
 	fakeDuration: number;
 	wipedRooms: (null | number)[];
@@ -622,6 +626,8 @@ type TOAUser = [UserID, Points[], RoomIDsDiedAt[]];
 export interface TOAOptions extends ActivityTaskOptionsWithUsers {
 	type: 'TombsOfAmascut';
 	leader: string;
+	/** Max team size the leader picked for a mass, reused when the trip is repeated. */
+	repeatMaxSize?: number;
 	detailedUsers: TOAUser[] | [UserID, Points, RoomIDsDiedAt][][];
 	raidLevel: number;
 	fakeDuration: number;

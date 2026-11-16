@@ -174,7 +174,8 @@ export async function doaStartCommand(
 		fakeDuration: createdDOATeam.fakeDuration,
 		quantity,
 		cm: challengeMode,
-		raids: createdDOATeam.raids
+		raids: createdDOATeam.raids,
+		repeatMaxSize: solo ? undefined : maxSize
 	});
 
 	let str = `${partyOptions.leader.usernameOrMention}'s party (${users

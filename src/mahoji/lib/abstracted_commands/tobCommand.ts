@@ -530,7 +530,8 @@ export async function tobStartCommand(
 		quantity: qty,
 		deaths,
 		solo: teamSize,
-		cc: chinCannonUser?.id
+		cc: chinCannonUser?.id,
+		repeatMaxSize: teamSize ? undefined : maxSize
 	});
 
 	let str = `${partyOptions.leader.usernameOrMention}'s party (${users

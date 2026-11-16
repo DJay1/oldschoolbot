@@ -646,8 +646,9 @@ const tripHandlers: {
 			return {
 				cox: {
 					start: {
-						challenge_mode: data.challengeMode,
+								challenge_mode: data.challengeMode,
 						type: data.users.length === 1 ? 'solo' : 'mass',
+						max_team_size: data.users.length === 1 ? undefined : data.repeatMaxSize,
 						quantity: data.quantity
 					}
 				}
@@ -696,6 +697,7 @@ const tripHandlers: {
 			tob: {
 				start: {
 					hard_mode: data.hardMode,
+					max_team_size: data.solo ? undefined : data.repeatMaxSize,
 					solo: data.solo,
 					quantity: data.quantity
 				}
@@ -918,7 +920,7 @@ const tripHandlers: {
 			toa: {
 				start: {
 					raid_level: data.raidLevel,
-					max_team_size: data.users.length,
+					max_team_size: data.users.length === 1 ? undefined : (data.repeatMaxSize ?? data.users.length),
 					solo: data.users.length === 1,
 					quantity: data.quantity
 				}
@@ -961,6 +963,7 @@ const tripHandlers: {
 			doa: {
 				start: {
 					challenge_mode: data.cm,
+					max_team_size: data.users.length === 1 ? undefined : data.repeatMaxSize,
 					solo: data.users.length === 1 ? true : undefined,
 					quantity: data.quantity
 				}
@@ -1148,4 +1151,9 @@ export async function startRepeatTripFromActivity(
 		Logging.logError(err as Error);
 		return { ok: false, message: 'Something went wrong starting the queued trip.' };
 	}
+}
+
+/** The command options the Repeat button would use for a stored trip (exported for tests). */
+export function buildRepeatTripArgs(type: activity_type_enum, data: unknown) {
+	return tripHandlers[type]?.args(data as any);
 }
