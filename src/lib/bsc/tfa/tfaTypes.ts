@@ -8,4 +8,6 @@ export interface TFAOptions extends ActivityTaskOptions {
 	quantity: number;
 	fakeDuration: number;
 	raids: TfaStoredRaid[];
+	/** Max team size the leader picked for a mass, reused when the trip is repeated. */
+	repeatMaxSize?: number;
 }

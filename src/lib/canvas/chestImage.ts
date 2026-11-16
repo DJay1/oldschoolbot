@@ -15,6 +15,8 @@ const chestLootTypes: {
 	purpleItems: (number | string)[];
 	position: (canvas: OSRSCanvas, image: CanvasImage) => [number, number];
 	itemRect: [number, number, number, number];
+	/** Draw a purple frame around a panel that got a purple. */
+	purpleBorder?: boolean;
 }[] = [
 	{
 		title: 'Tombs of Amascut',
@@ -86,15 +88,24 @@ const chestLootTypes: {
 	{
 		title: 'The Fractured Archive',
 		chestImage: loadImage('./src/lib/resources/images/tfa.png'),
-		chestImagePurple: loadImage('./src/lib/resources/images/tfa.png'),
+		// Opened chest glowing purple, like the OSRS raid purple.
+		chestImagePurple: loadImage('./src/lib/resources/images/tfaPurple.png'),
 		width: 260,
 		height: 180,
+		purpleBorder: true,
 		// Rondache, Zorya's tome, Horn of Bran, Ascension crossbows, Obligator, Orion
 		purpleItems: [74600, 74601, 74602, 74603, 74604, 74611],
 		position: () => [12, 44],
 		itemRect: [135, 45, 120, 120]
 	}
 ] as const;
+
+/** True when the loot has any of the raid's purple-tier items. */
+export function chestLootIsPurple(loot: Bank, purpleItems: readonly (number | string)[]): boolean {
+	return loot.items().some(([item]) => purpleItems.includes(item.id));
+}
+
+export const chestPurpleItemsFor = (title: string) => chestLootTypes.find(t => t.title === title)?.purpleItems ?? [];
 
 interface CustomText {
 	x: number;
@@ -130,7 +141,7 @@ async function drawSingleChestCanvas(
 	canvas.ctx.fillStyle = canvas.ctx.createPattern(sprite.repeatableBg, 'repeat')!;
 	canvas.ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-	const isPurple = loot.items().some(([item]) => type.purpleItems.includes(item.id));
+	const isPurple = chestLootIsPurple(loot, type.purpleItems);
 	const chestImage = isPurple ? await type.chestImagePurple : await type.chestImage;
 	const [x, y] = type.position(canvas, chestImage);
 
@@ -144,6 +155,16 @@ async function drawSingleChestCanvas(
 	});
 
 	canvas.drawBorder(sprite, true);
+
+	if (isPurple && 'purpleBorder' in type && type.purpleBorder) {
+		canvas.ctx.save();
+		canvas.ctx.strokeStyle = 'rgba(190, 80, 255, 0.85)';
+		canvas.ctx.lineWidth = 2;
+		canvas.ctx.shadowColor = '#c050ff';
+		canvas.ctx.shadowBlur = 6;
+		canvas.ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
+		canvas.ctx.restore();
+	}
 
 	await drawChestItems(canvas, loot, previousCL, user, type);
 

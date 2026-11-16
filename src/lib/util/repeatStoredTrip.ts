@@ -976,6 +976,7 @@ const tripHandlers: {
 		args: (data: TFAOptions) => ({
 			tfa: {
 				start: {
+					max_team_size: data.users.length === 1 ? undefined : data.repeatMaxSize,
 					solo: data.users.length === 1 ? true : undefined,
 					quantity: data.quantity
 				}

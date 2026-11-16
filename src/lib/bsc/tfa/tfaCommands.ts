@@ -135,7 +135,8 @@ export async function tfaStartCommand(
 		users: users.map(u => u.id),
 		fakeDuration,
 		quantity,
-		raids
+		raids,
+		repeatMaxSize: solo || !interaction ? undefined : maxSize
 	});
 
 	return `${user.usernameOrMention}'s party (${users.map(u => u.usernameOrMention).join(', ')}) is now off to do ${
