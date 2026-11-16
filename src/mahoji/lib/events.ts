@@ -11,11 +11,13 @@ import { buildStartupRestartMessage } from '@/lib/bsc/startupRestartMessage.js';
 import { ensureTripQueueStore } from '@/lib/bsc/tripQueue.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
+import { registerDiscontinuedCollectionLogs } from '@/lib/discontinuedItems.js';
 import { loadSeasonalEventOverrides } from '@/lib/events/store.js';
 import { syncHarvestFeasts } from '@/lib/events/thanksgiving/feast.js';
 import { initTickers } from '@/lib/tickers.js';
 
 export const onStartup = async () => {
+	registerDiscontinuedCollectionLogs();
 	warnBlankBscPatronRoles();
 	await syncDoubleLoot();
 	await syncDoubleXp();

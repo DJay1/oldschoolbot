@@ -1,21 +1,28 @@
 import { discontinuedDyes } from '@/lib/bso/dyedItems.js';
 import { keyCrates } from '@/lib/bso/keyCrates.js';
 
-import { Items } from 'oldschooljs';
+import { Items, resolveItems } from 'oldschooljs';
 
 import { isCustomItem } from '@/lib/customItems/util.js';
-import { allCollectionLogs, discontinuedCollections } from '@/lib/data/Collections.js';
+import { allClNames, allCollectionLogs, discontinuedCollections } from '@/lib/data/Collections.js';
+import { allPetIDs } from '@/lib/data/CollectionsExport.js';
+import { filterableTypes } from '@/lib/data/filterables.js';
 import { launchBoxCL } from '@/lib/events/launch/collectionLog.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
 import { isEventActive } from '@/lib/events/registry.js';
+import type { SeasonalEventId } from '@/lib/events/types.js';
 import { allOpenables } from '@/lib/openables.js';
 
 export const releasedDiscontinuedItemIDs = new Set<number>();
 
 const limitedItemIDs = [LaunchItem.CORGO_PARTY_HAT];
 
-export function getDiscontinuedItemStatus(itemID: number, now = Date.now()): string {
-	if (launchBoxCL.includes(itemID) && isEventActive('launch', now)) return 'Released (Launch box)';
+export function getDiscontinuedItemStatus(
+	itemID: number,
+	now = Date.now(),
+	eventActive: (id: SeasonalEventId, now: number) => boolean = isEventActive
+): string {
+	if (launchBoxCL.includes(itemID) && eventActive('launch', now)) return 'Released (Launch box)';
 	if (releasedDiscontinuedItemIDs.has(itemID)) return 'Released';
 	return 'Unreleased';
 }
@@ -98,4 +105,119 @@ export function isDiscontinuedItem(itemID: number): boolean {
 
 export function getUnreleasedItemIDs(): number[] {
 	return [...getDiscontinuedItemIDs()].filter(itemID => getDiscontinuedItemStatus(itemID) === 'Unreleased');
+}
+
+/**
+ * BSC-owned discontinued items: what players see in /bank filter:discontinued and the Discontinued logs.
+ * Same rule as the Launch box: an item from a BSC event becomes discontinued once that event is over and
+ * the item can't be earned anymore. The old inherited lists above (getDiscontinuedItemIDs) are NOT used
+ * here; they only stay for the staff-only Unreleased log and /dclookup.
+ * Items coming back later (Kuro, Flappy, Gregoyle, Spooky graceful) and items still obtainable
+ * (Double XP token, Double loot token) are deliberately left out.
+ */
+export const bscEndedEventItems: readonly { event: SeasonalEventId; items: readonly number[] }[] = [
+	// Launch boxes only dropped from trips during the Launch event. The Corgo party hat only comes from them.
+	{ event: 'launch', items: [LaunchItem.LAUNCH_BOX, LaunchItem.CORGO_PARTY_HAT] }
+];
+
+/** Discontinued items that are not tied to an event. Add BSC items here by hand. */
+export const bscDiscontinuedItemIDs: readonly number[] = [];
+
+export function getBscDiscontinuedItemIDs(
+	eventActive: (id: SeasonalEventId) => boolean = id => isEventActive(id)
+): Set<number> {
+	const ids = new Set<number>(bscDiscontinuedItemIDs);
+	for (const { event, items } of bscEndedEventItems) {
+		if (eventActive(event)) continue;
+		for (const id of items) ids.add(id);
+	}
+	return ids;
+}
+
+export const DISCONTINUED_CL_CATEGORY = 'Discontinued';
+
+export const DiscontinuedCLName = {
+	Pets: 'Discontinued Pets',
+	Partyhats: 'Discontinued Partyhats',
+	Gear: 'Discontinued Gear',
+	Boxes: 'Discontinued Boxes & Crates',
+	Other: 'Discontinued Other'
+} as const;
+export type DiscontinuedCLNameType = (typeof DiscontinuedCLName)[keyof typeof DiscontinuedCLName];
+
+const discontinuedCLAliases: Record<DiscontinuedCLNameType, string[]> = {
+	[DiscontinuedCLName.Pets]: ['discontinued pets', 'dc pets log', 'disc pets'],
+	[DiscontinuedCLName.Partyhats]: ['discontinued partyhats', 'discontinued party hats', 'disc partyhats', 'dc phats'],
+	[DiscontinuedCLName.Gear]: ['discontinued gear', 'disc gear', 'dc gear'],
+	[DiscontinuedCLName.Boxes]: [
+		'discontinued boxes',
+		'discontinued crates',
+		'discontinued boxes and crates',
+		'disc boxes',
+		'dc boxes'
+	],
+	[DiscontinuedCLName.Other]: ['discontinued other', 'disc other', 'dc other']
+};
+
+/**
+ * Splits every discontinued item into exactly one log, checked in this order:
+ * pets, partyhats, boxes & crates (openables, crate keys), gear (equippable), other.
+ */
+export function getDiscontinuedCLGroups(
+	ids: Set<number> = getBscDiscontinuedItemIDs()
+): Record<DiscontinuedCLNameType, number[]> {
+	const petIDs = new Set<number>([
+		...(allPetIDs.flat(Number.POSITIVE_INFINITY) as number[]),
+		...resolveItems(['Black swan', 'Radiant magnabbit'])
+	]);
+	const boxIDs = new Set<number>([
+		...allOpenables.map(openable => openable.openedItem.id),
+		...keyCrates.flatMap(crate => [crate.item.id, crate.key.id])
+	]);
+
+	const groups: Record<DiscontinuedCLNameType, number[]> = {
+		[DiscontinuedCLName.Pets]: [],
+		[DiscontinuedCLName.Partyhats]: [],
+		[DiscontinuedCLName.Gear]: [],
+		[DiscontinuedCLName.Boxes]: [],
+		[DiscontinuedCLName.Other]: []
+	};
+
+	const sorted = [...ids].sort((a, b) => Items.getOrThrow(a).name.localeCompare(Items.getOrThrow(b).name));
+	for (const itemID of sorted) {
+		const item = Items.getOrThrow(itemID);
+		if (petIDs.has(itemID)) groups[DiscontinuedCLName.Pets].push(itemID);
+		else if (/party ?hat/i.test(item.name)) groups[DiscontinuedCLName.Partyhats].push(itemID);
+		else if (boxIDs.has(itemID)) groups[DiscontinuedCLName.Boxes].push(itemID);
+		else if (item.equipable || item.equipment) groups[DiscontinuedCLName.Gear].push(itemID);
+		else groups[DiscontinuedCLName.Other].push(itemID);
+	}
+
+	return groups;
+}
+
+/**
+ * Adds the public "Discontinued" CL category. It is registered after Collections.ts loads because the
+ * discontinued list needs every other log and openable first. The category name must stay exactly
+ * "Discontinued": overall+ (Top Collector role) and the obtainable check above both skip it by that name.
+ * Every page is counts:false, so it never affects overall CL %, CL leaderboards counts or new-CL messages.
+ */
+export function registerDiscontinuedCollectionLogs() {
+	if (allCollectionLogs[DISCONTINUED_CL_CATEGORY]) return;
+	const groups = getDiscontinuedCLGroups();
+	const activities: (typeof allCollectionLogs)[string]['activities'] = {};
+	for (const [name, items] of Object.entries(groups) as [DiscontinuedCLNameType, number[]][]) {
+		if (items.length === 0) continue;
+		activities[name] = { alias: discontinuedCLAliases[name], items, counts: false };
+	}
+	allCollectionLogs[DISCONTINUED_CL_CATEGORY] = { activities };
+	allClNames.push(DISCONTINUED_CL_CATEGORY, ...Object.keys(activities));
+}
+// /bank filter:discontinued. Added here (not in filterables.ts) so filterables.ts doesn't import this module.
+if (!filterableTypes.some(f => f.name === 'Discontinued')) {
+	filterableTypes.unshift({
+		name: 'Discontinued',
+		aliases: ['discontinued', 'disc', 'discontinued items', 'dc items'],
+		items: () => [...getBscDiscontinuedItemIDs()]
+	});
 }

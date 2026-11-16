@@ -2,7 +2,7 @@ import { stringMatches, toTitleCase } from '@oldschoolgg/toolkit';
 
 import { CollectionLogFlags, clImageGenerator, collectionLogTypes } from '@/lib/collectionLogTask.js';
 import { allCollectionLogs, buildItemCollection } from '@/lib/data/Collections.js';
-import { getUnreleasedItemIDs } from '@/lib/discontinuedItems.js';
+import { getUnreleasedItemIDs, registerDiscontinuedCollectionLogs } from '@/lib/discontinuedItems.js';
 
 export const collectionLogCommand = defineCommand({
 	name: 'cl',
@@ -18,6 +18,7 @@ export const collectionLogCommand = defineCommand({
 			description: 'The log you want to see.',
 			required: true,
 			autocomplete: async ({ value, user }: StringAutoComplete) => {
+				registerDiscontinuedCollectionLogs();
 				const canSeeUnreleased = user.isAdmin() || user.isDeveloper();
 				return [
 					{ name: 'Overall (Main Collection Log)', value: 'overall' },
@@ -86,6 +87,7 @@ export const collectionLogCommand = defineCommand({
 		if (options.flag) flags[options.flag] = options.flag;
 		if (options.flag_extra) flags[options.flag_extra] = options.flag_extra;
 		if (options.all) flags.all = 'all';
+		registerDiscontinuedCollectionLogs();
 		await interaction.defer();
 		const type = options.type ?? 'collection';
 		const showUnreleased = stringMatches(options.name, 'unreleased') && (user.isAdmin() || user.isDeveloper());

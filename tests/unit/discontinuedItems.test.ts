@@ -19,6 +19,9 @@ vi.mock('@/lib/events/registry.js', async importOriginal => {
 	};
 });
 
+// Passed in directly: with isolate:false the module mock above may not reach an already loaded module.
+const launchCheck = (id: string) => (id === 'launch' ? launchActive.value : false);
+
 describe('discontinued items', () => {
 	test('includes discontinued event items and pets', () => {
 		for (const name of ['Kuro', 'Chickaxe', 'Gregoyle', 'Maledict codex', 'Archon headdress', 'Christmas dye']) {
@@ -55,15 +58,21 @@ describe('discontinued items', () => {
 		const chickaxe = Items.getOrThrow('Chickaxe').id;
 
 		launchActive.value = true;
-		expect(getDiscontinuedItemStatus(kuro)).toBe('Released (Launch box)');
-		expect(getDiscontinuedItemStatus(Items.getOrThrow('Flappy').id)).toBe('Released (Launch box)');
-		expect(getDiscontinuedItemStatus(Items.getOrThrow('Gregoyle').id)).toBe('Released (Launch box)');
+		expect(getDiscontinuedItemStatus(kuro, Date.now(), launchCheck)).toBe('Released (Launch box)');
+		expect(getDiscontinuedItemStatus(Items.getOrThrow('Flappy').id, Date.now(), launchCheck)).toBe(
+			'Released (Launch box)'
+		);
+		expect(getDiscontinuedItemStatus(Items.getOrThrow('Gregoyle').id, Date.now(), launchCheck)).toBe(
+			'Released (Launch box)'
+		);
 		expect(isDiscontinuedItem(Items.getOrThrow('Corgo party hat').id)).toBe(true);
-		expect(getDiscontinuedItemStatus(Items.getOrThrow('Corgo party hat').id)).toBe('Released (Launch box)');
-		expect(getDiscontinuedItemStatus(chickaxe)).toBe('Unreleased');
+		expect(getDiscontinuedItemStatus(Items.getOrThrow('Corgo party hat').id, Date.now(), launchCheck)).toBe(
+			'Released (Launch box)'
+		);
+		expect(getDiscontinuedItemStatus(chickaxe, Date.now(), launchCheck)).toBe('Unreleased');
 
 		launchActive.value = false;
-		expect(getDiscontinuedItemStatus(kuro)).toBe('Unreleased');
+		expect(getDiscontinuedItemStatus(kuro, Date.now(), launchCheck)).toBe('Unreleased');
 	});
 
 	test('the list is a reasonable size', () => {
