@@ -7,6 +7,7 @@ import { calcWhatPercent, sumArr, Time } from '@oldschoolgg/toolkit';
 import { Bank, type Item, Items, type Monster, MonsterAttribute, Monsters } from 'oldschooljs';
 import { omit } from 'remeda';
 
+import { tfaPvmBoosts } from '@/lib/bsc/tfa/tfaPvmBoosts.js';
 import type { PvMMethod } from '@/lib/constants.js';
 import { degradeableItems, degradeablePvmBoostItems } from '@/lib/degradeableItems.js';
 import {
@@ -318,6 +319,11 @@ export const mainBoostEffects: (Boost | Boost[])[] = [
 		}
 	},
 	[dragonHunterBoost, revWildyGearBoost],
+	{
+		description: 'Fractured Archive rewards',
+		run: ({ gearBank, primaryStyle, osjsMon, bitfield, isInWilderness }) =>
+			tfaPvmBoosts({ gearBank, primaryStyle, osjsMon, bitfield, isInWilderness })
+	},
 	[salveBoost, blackMaskBoost],
 	{
 		description: 'Revs',

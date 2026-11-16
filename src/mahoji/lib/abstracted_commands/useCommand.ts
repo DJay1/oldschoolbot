@@ -11,6 +11,7 @@ import { randArrItem, randInt } from 'node-rng';
 import { Bank, type Item, Items, resolveItems } from 'oldschooljs';
 
 import { announceThanksgivingPets } from '@/lib/bsc/rareAnnouncements.js';
+import { TfaItem } from '@/lib/bsc/tfa/tfaItems.js';
 import { gearImages } from '@/lib/canvas/gearImageData.js';
 import { BitField } from '@/lib/constants.js';
 import { easterUseTrollResponse } from '@/lib/events/easter/use.js';
@@ -159,6 +160,31 @@ export const usableUnlocks: UsableUnlock[] = [
 		item: Items.getOrThrow('Mystic vigour prayer scroll'),
 		bitfield: BitField.HasMysticVigourScroll,
 		resultMessage: 'You used your Mystic vigour prayer scroll, and unlocked the Mystic vigour prayer.'
+	},
+	{
+		item: Items.getOrThrow(TfaItem.HORN_OF_BRAN),
+		bitfield: BitField.HasZeal,
+		resultMessage: 'You blew the Horn of Bran, and unlocked the Zeal prayer (needs 84 Prayer).'
+	},
+	{
+		item: Items.getOrThrow(TfaItem.FRAGMENT_WIND),
+		bitfield: BitField.UsedFragmentOfWhisperingWind,
+		resultMessage: 'You broke your Fragment of whispering wind, and empowered your wind spells.'
+	},
+	{
+		item: Items.getOrThrow(TfaItem.FRAGMENT_WATER),
+		bitfield: BitField.UsedFragmentOfDeepWater,
+		resultMessage: 'You broke your Fragment of deep water, and empowered your water spells.'
+	},
+	{
+		item: Items.getOrThrow(TfaItem.FRAGMENT_EARTH),
+		bitfield: BitField.UsedFragmentOfLivingEarth,
+		resultMessage: 'You broke your Fragment of living earth, and empowered your earth spells.'
+	},
+	{
+		item: Items.getOrThrow(TfaItem.FRAGMENT_FIRE),
+		bitfield: BitField.UsedFragmentOfBurningFire,
+		resultMessage: 'You broke your Fragment of burning fire, and empowered your fire spells.'
 	}
 ];
 for (const usableUnlock of usableUnlocks) {

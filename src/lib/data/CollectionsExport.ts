@@ -6,6 +6,7 @@ import { LampTable } from '@/lib/bso/xpLamps.js';
 import { Bank, ItemGroups } from 'oldschooljs';
 
 import type { Minigame } from '@/prisma/main.js';
+import { TfaItem } from '@/lib/bsc/tfa/tfaItems.js';
 import { MaggotKingItem } from '@/lib/customItems/bloodMoon.js';
 import { ShellbaneItem, Slayer2026Item } from '@/lib/customItems/slayer2026.js';
 import {
@@ -1577,6 +1578,7 @@ export const allPetsCL = resolveItems([
 	'Moxi',
 	'Bran',
 	ShellbaneItem.GULL,
+	TfaItem.ORION,
 	MaggotKingItem.MAGGOT_MARQUESS
 	// 'Yami', // Currently unobtainable.
 	// 'Dom' // Currently unobtainable.

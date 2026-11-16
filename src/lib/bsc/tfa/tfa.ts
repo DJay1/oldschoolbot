@@ -1,0 +1,302 @@
+import { calcWhatPercent, formatDuration, Time } from '@oldschoolgg/toolkit';
+import { MathRNG, type RNGProvider } from 'node-rng';
+import { Bank } from 'oldschooljs';
+
+import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
+import { TfaItem } from '@/lib/bsc/tfa/tfaItems.js';
+import { BitField } from '@/lib/constants.js';
+import { calculateTOBUserGearPercents } from '@/lib/data/tob.js';
+import { QuestID } from '@/lib/minions/data/quests.js';
+import type { Skills } from '@/lib/types/index.js';
+import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
+
+export type TfaStyle = 'melee' | 'range' | 'mage' | 'hybrid';
+
+export interface TfaBoss {
+	id: number;
+	name: string;
+	style: TfaStyle;
+	baseTime: number;
+	points: number;
+	deathMultiplier: number;
+}
+
+export const TFA_BOSSES: TfaBoss[] = [
+	{ id: 1, name: 'Archive Guardian', style: 'range', baseTime: Time.Minute * 7, points: 100, deathMultiplier: 1 },
+	{ id: 2, name: 'Ezekiel', style: 'melee', baseTime: Time.Minute * 6, points: 100, deathMultiplier: 1 },
+	{ id: 3, name: 'Bork and the Smorks', style: 'melee', baseTime: Time.Minute * 6, points: 100, deathMultiplier: 1 },
+	{ id: 4, name: 'Moia', style: 'mage', baseTime: Time.Minute * 6, points: 100, deathMultiplier: 1 },
+	{
+		id: 5,
+		name: 'Dreadnoth the Jellied',
+		style: 'range',
+		baseTime: Time.Minute * 6,
+		points: 100,
+		deathMultiplier: 1
+	},
+	{ id: 6, name: "The Dagon'hai", style: 'mage', baseTime: Time.Minute * 7, points: 100, deathMultiplier: 1.1 },
+	{ id: 7, name: 'Xarth', style: 'melee', baseTime: Time.Minute * 7, points: 100, deathMultiplier: 1.1 },
+	{ id: 8, name: 'Ocellus', style: 'hybrid', baseTime: Time.Minute * 12, points: 300, deathMultiplier: 1.5 }
+];
+
+export const TFA_TOTAL_POINTS = 700;
+const LOBBY_TIME = Time.Minute * 3;
+
+export function tfaBossByID(id: number): TfaBoss {
+	const boss = TFA_BOSSES.find(b => b.id === id);
+	if (!boss) throw new Error(`Invalid Fractured Archive boss ${id}`);
+	return boss;
+}
+
+/** Archive Guardian first, one boss from each pair, Ocellus last (5 bosses). */
+export function pickTfaBosses(rng: RNGProvider = MathRNG): number[] {
+	return [1, rng.roll(2) ? 2 : 3, rng.roll(2) ? 4 : 5, rng.roll(2) ? 6 : 7, 8];
+}
+
+export const minTfaStats: Skills = {
+	attack: 90,
+	strength: 90,
+	defence: 90,
+	ranged: 90,
+	magic: 90,
+	hitpoints: 90,
+	prayer: 77
+};
+
+/** Supplies used per raid (lost even if the team wipes). */
+export const tfaSuppliesPerRaid = new Bank({
+	'Saradomin brew(4)': 8,
+	'Super restore(4)': 6,
+	'Super combat potion(4)': 1,
+	'Ranging potion(4)': 1
+});
+
+export const TFA_MIN_GEAR_PERCENT = 30;
+export const TFA_MAX_QUANTITY = 10;
+
+/** Time reduction caps (percent). */
+const GEAR_REDUCTION = 20;
+const KC_REDUCTION = 25;
+const ITEM_REDUCTION_CAP = 12;
+const KC_FOR_MAX_SPEED = 200;
+
+const TEAM_SIZE_TIME_FACTOR: Record<number, number> = {
+	1: 1.15,
+	2: 1,
+	3: 0.92,
+	4: 0.86,
+	5: 0.82,
+	6: 0.79,
+	7: 0.77,
+	8: 0.75
+};
+
+export interface TfaGearPercents {
+	melee: number;
+	range: number;
+	mage: number;
+	total: number;
+}
+
+export interface TfaBoost {
+	name: string;
+	percent: number;
+}
+
+export interface TfaTeamMember {
+	id: string;
+	kc: number;
+	gear: TfaGearPercents;
+	boosts: TfaBoost[];
+	/** Relative reduction to death chance from items (0-100). */
+	deathReduction: number;
+}
+
+function stylePercent(gear: TfaGearPercents, style: TfaStyle) {
+	if (style === 'hybrid') return gear.total;
+	return gear[style];
+}
+
+export function tfaKcEffectiveness(kc: number) {
+	return Math.min(100, calcWhatPercent(kc, KC_FOR_MAX_SPEED));
+}
+
+export function tfaUserSpeedReduction(member: TfaTeamMember) {
+	const gear = (member.gear.total / 100) * GEAR_REDUCTION;
+	const kc = (tfaKcEffectiveness(member.kc) / 100) * KC_REDUCTION;
+	const items = Math.min(
+		ITEM_REDUCTION_CAP,
+		member.boosts.reduce((acc, b) => acc + b.percent, 0)
+	);
+	return gear + kc + items;
+}
+
+/** Death chance (percent) for one player at one boss. */
+export function tfaDeathChance(member: TfaTeamMember, boss: TfaBoss) {
+	const base = Math.max(1.5, 8 - member.kc * 0.035);
+	const gearPenalty = (100 - stylePercent(member.gear, boss.style)) * 0.08;
+	let chance = (base + gearPenalty) * boss.deathMultiplier;
+	chance *= 1 - member.deathReduction / 100;
+	return Math.min(60, Math.max(1, chance));
+}
+
+export interface TfaStoredRaid {
+	/** Bosses fought this raid, in order. */
+	b: number[];
+	/** Boss ID the team wiped at, or null if the raid was completed. */
+	w: number | null;
+	/** Per user (same order as the trip's users): boss IDs died at, and contribution points. */
+	u: { d: number[]; p: number }[];
+}
+
+export function createTfaRaids({
+	team,
+	quantity,
+	rng = MathRNG
+}: {
+	team: TfaTeamMember[];
+	quantity: number;
+	rng?: RNGProvider;
+}) {
+	const size = team.length;
+	if (size < 1 || size > 8) throw new Error('Team must be 1-8 players');
+	const sizeFactor = TEAM_SIZE_TIME_FACTOR[size];
+	const avgReduction = team.reduce((acc, m) => acc + tfaUserSpeedReduction(m), 0) / size;
+	const speedFactor = (1 - avgReduction / 100) * sizeFactor;
+	const expectedPerPlayer = TFA_TOTAL_POINTS / size;
+
+	const raids: TfaStoredRaid[] = [];
+	let realDuration = 0;
+	let fakeDuration = 0;
+
+	for (let q = 0; q < quantity; q++) {
+		const bosses = pickTfaBosses(rng);
+		const deaths: number[][] = team.map(() => []);
+		const points: number[] = team.map(() => 0);
+		let wipedAt: number | null = null;
+
+		const raidFullTime = LOBBY_TIME + bosses.reduce((acc, id) => acc + tfaBossByID(id).baseTime * speedFactor, 0);
+		fakeDuration += raidFullTime;
+		let raidTime = LOBBY_TIME;
+
+		for (const bossID of bosses) {
+			const boss = tfaBossByID(bossID);
+			const bossTime = boss.baseTime * speedFactor;
+			let diedHere = 0;
+			const weights: number[] = [];
+			for (let i = 0; i < size; i++) {
+				const member = team[i];
+				const died = rng.percentChance(tfaDeathChance(member, boss));
+				if (died) {
+					deaths[i].push(boss.id);
+					diedHere++;
+				}
+				const kcFactor = 1 + Math.min(member.kc, KC_FOR_MAX_SPEED) / 400;
+				let weight = (stylePercent(member.gear, boss.style) + 20) * kcFactor * rng.randFloat(0.8, 1.2);
+				if (died) weight *= 0.5;
+				weights.push(weight);
+			}
+			if (diedHere >= size) {
+				wipedAt = boss.id;
+				raidTime += rng.randInt(Math.floor(bossTime * 0.2), Math.floor(bossTime));
+				break;
+			}
+			const totalWeight = weights.reduce((a, b) => a + b, 0);
+			for (let i = 0; i < size; i++) {
+				points[i] += (boss.points * weights[i]) / totalWeight;
+			}
+			raidTime += bossTime;
+		}
+
+		realDuration += Math.floor(raidTime);
+		raids.push({
+			b: bosses,
+			w: wipedAt,
+			u: team.map((_, i) => ({
+				d: deaths[i],
+				p: Math.max(0, Math.round(points[i] - deaths[i].length * expectedPerPlayer * 0.1))
+			}))
+		});
+	}
+
+	return { raids, realDuration: Math.floor(realDuration), fakeDuration: Math.floor(fakeDuration) };
+}
+
+/** Per-raid duration estimate for this team, used to work out max quantity. */
+export function tfaSingleRaidDuration(team: TfaTeamMember[]) {
+	const size = team.length;
+	const avgReduction = team.reduce((acc, m) => acc + tfaUserSpeedReduction(m), 0) / size;
+	const speedFactor = (1 - avgReduction / 100) * TEAM_SIZE_TIME_FACTOR[size];
+	// Worst case boss picks
+	return Math.floor(LOBBY_TIME + (7 + 6 + 6 + 7 + 12) * Time.Minute * speedFactor);
+}
+
+/**
+ * BSC raid boosts from TFA items and unlocks. These are adapted from the OSRS effects.
+ */
+export function tfaItemBoosts(user: MUser): { boosts: TfaBoost[]; deathReduction: number; messages: string[] } {
+	const boosts: TfaBoost[] = [];
+	if (user.gear.melee.hasEquipped(TfaItem.OBLIGATOR)) boosts.push({ name: 'Obligator', percent: 4 });
+	if (user.gear.mage.hasEquipped(TfaItem.ZORYAS_TOME)) boosts.push({ name: "Zorya's tome", percent: 3 });
+	if (user.gear.range.hasEquipped(TfaItem.ASCENSION_CROSSBOWS))
+		boosts.push({ name: 'Ascension crossbows', percent: 3 });
+	if (user.allItemsOwned.has(TfaItem.ARCHIVISTS_FOLIO)) boosts.push({ name: "Archivist's folio", percent: 2 });
+	if (user.bitfield.includes(BitField.HasZeal) && user.skillsAsLevels.prayer >= 84) {
+		boosts.push({ name: 'Zeal', percent: 2 });
+	}
+	const fragments = tfaFragmentsUsed(user);
+	if (fragments > 0) boosts.push({ name: `${fragments}/4 elemental fragments`, percent: fragments * 0.5 });
+	let deathReduction = 0;
+	const messages: string[] = [];
+	if (user.gear.melee.hasEquipped(TfaItem.RONDACHE)) {
+		deathReduction = 20;
+		messages.push('Rondache: 20% lower death chance');
+	}
+	return { boosts, deathReduction, messages };
+}
+
+export function tfaTeamMemberFromUser(user: MUser, kc: number): TfaTeamMember {
+	const { boosts, deathReduction } = tfaItemBoosts(user);
+	return {
+		id: user.id,
+		kc,
+		gear: calculateTOBUserGearPercents(user),
+		boosts,
+		deathReduction
+	};
+}
+
+export function checkTfaUser(user: MUser, quantity = 1): string | null {
+	if (!user.user.finished_quest_ids.includes(QuestID.WhileGuthixSleeps)) {
+		return `${user.usernameOrMention} needs to complete While Guthix Sleeps.`;
+	}
+	if (!user.hasSkillReqs(minTfaStats)) {
+		return `${user.usernameOrMention} needs these stats: ${formatSkillRequirements(minTfaStats)}.`;
+	}
+	const gear = calculateTOBUserGearPercents(user);
+	for (const style of ['melee', 'range', 'mage'] as const) {
+		if (gear[style] < TFA_MIN_GEAR_PERCENT) {
+			return `${user.usernameOrMention}'s ${style} gear is too weak (${gear[style].toFixed(1)}%, needs ${TFA_MIN_GEAR_PERCENT}%).`;
+		}
+	}
+	const supplies = tfaSuppliesPerRaid.clone().multiply(quantity);
+	if (!user.bank.has(supplies)) {
+		return `${user.usernameOrMention} needs ${supplies} for ${quantity}x raid${quantity === 1 ? '' : 's'}.`;
+	}
+	return null;
+}
+
+export function tfaHelpBoostsText() {
+	return [
+		'Obligator (uncharged) in melee setup: 4% faster',
+		"Zorya's tome (uncharged) in mage setup: 3% faster",
+		'Ascension crossbows in range setup: 3% faster',
+		"Owning an Archivist's folio (inert): 2% faster",
+		'Zeal prayer unlocked (use Horn of Bran) and 84 Prayer: 2% faster',
+		'Rondache in melee setup: 20% lower death chance'
+	];
+}
+
+export function formatTfaDuration(ms: number) {
+	return formatDuration(ms);
+}

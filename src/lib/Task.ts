@@ -23,6 +23,7 @@ import { turaelsTrialsTask } from '@/lib/bso/tasks/turaelsTrialsActivity.js';
 import { vasaTask } from '@/lib/bso/tasks/vasaMagusActivity.js';
 
 import { activity_type_enum } from '@/prisma/main/enums.js';
+import { tfaTask } from '@/lib/bsc/tfa/tfaActivity.js';
 import { DEPRECATED_ACTIVITY_TYPES } from '@/lib/constants.js';
 import type { handleTripFinish } from '@/lib/util/handleTripFinish.js';
 import { agilityTask } from '@/tasks/minions/agilityActivity.js';
@@ -262,6 +263,7 @@ export const allTasks: MinionTask[] = [
 	twTask,
 	bonanzaTask,
 	doaTask,
+	tfaTask,
 	memoryHarvestTask,
 	guthixianCacheTask,
 	turaelsTrialsTask

@@ -85,6 +85,8 @@ type BSOClientBankKey =
 	| 'moktang_loot'
 	| 'doa_cost'
 	| 'doa_loot'
+	| 'tfa_cost'
+	| 'tfa_loot'
 	| 'xmas_ironman_food_bank'
 	| 'turaels_trials_cost_bank'
 	| 'portable_tanner_loot'

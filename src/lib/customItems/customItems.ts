@@ -31,6 +31,7 @@ import './bscPriceOverrides.js';
 import './patronDyes.js';
 import './coralPotions.js';
 import './slayer2026.js';
+import '../bsc/tfa/tfaItems.js';
 
 import { EquipmentSlot } from '@oldschoolgg/gear';
 import { type ItemRequirements, Items, resolveItems } from 'oldschooljs';

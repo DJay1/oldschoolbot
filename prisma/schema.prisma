@@ -180,6 +180,8 @@ model ClientStorage {
   moktang_loot            Json   @default("{}") @db.Json
   doa_cost                Json   @default("{}") @db.Json
   doa_loot                Json   @default("{}") @db.Json
+  tfa_cost                Json   @default("{}") @db.Json
+  tfa_loot                Json   @default("{}") @db.Json
 
   lottery_is_active Boolean @default(false)
 
@@ -575,6 +577,7 @@ enum XpGainSource {
   ChambersOfXeric
   TheatreOfBlood
   DepthsOfAtlantis
+  FracturedArchive
   NightmareZone
   AshSanctifier
   OfferingBones
@@ -691,6 +694,7 @@ model Minigame {
   balthazars_big_bonanza   Int  @default(0)
   depths_of_atlantis       Int  @default(0)
   depths_of_atlantis_cm    Int  @default(0)
+  fractured_archive        Int  @default(0)
   guthixian_cache          Int  @default(0)
   turaels_trials           Int  @default(0)
   user                     User @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: Cascade, map: "FK_minigames_user_id_users_id")
@@ -1020,6 +1024,10 @@ model UserStats {
   doa_loot                 Json @default("{}")
   doa_room_attempts_bank   Json @default("{}") @db.Json
   doa_total_minutes_raided Int  @default(0)
+  tfa_attempts             Int  @default(0)
+  tfa_total_minutes        Int  @default(0)
+  tfa_cost                 Json @default("{}") @db.Json
+  tfa_loot                 Json @default("{}") @db.Json
 
   chincannon_destroyed_loot_bank Json     @default("{}") @db.Json
   comp_cape_percent              Decimal?
@@ -1253,6 +1261,7 @@ enum activity_type_enum {
   BalthazarsBigBonanza
   UnderwaterAgilityThieving
   DepthsOfAtlantis
+  FracturedArchive
   StrongholdOfSecurity
   BirthdayCollectIngredients
   CombatRing

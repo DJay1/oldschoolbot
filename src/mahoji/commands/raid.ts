@@ -2,6 +2,7 @@ import { doaHelpCommand } from '@/lib/bso/depthsOfAtlantis.js';
 import { doaStartCommand } from '@/lib/bso/doa/doaStartCommand.js';
 
 import { choicesOf } from '@/discord/index.js';
+import { tfaHelpCommand, tfaStartCommand, tfaStatsCommand } from '@/lib/bsc/tfa/tfaCommands.js';
 import { toaHelpCommand, toaStartCommand } from '@/lib/simulation/toa.js';
 import { mileStoneBaseDeathChances } from '@/lib/simulation/toaUtils.js';
 import { coxCommand, coxHelpCommand, coxStatsCommand } from '@/mahoji/lib/abstracted_commands/coxCommand.js';
@@ -9,7 +10,7 @@ import { tobHelpCommand, tobStartCommand, tobStatsCommand } from '@/mahoji/lib/a
 
 export const raidCommand = defineCommand({
 	name: 'raid',
-	description: 'Send your minion to do raids - CoX or ToB.',
+	description: 'Send your minion to do raids - CoX, ToB, ToA, DoA or TFA.',
 	attributes: {
 		requiresMinion: true
 	},
@@ -216,6 +217,52 @@ export const raidCommand = defineCommand({
 					description: 'Shows helpful information and stats about DOA.'
 				}
 			]
+		},
+		{
+			type: 'SubcommandGroup',
+			name: 'tfa',
+			description: 'The Fractured Archive.',
+			options: [
+				{
+					type: 'Subcommand',
+					name: 'start',
+					description: 'Start a Fractured Archive trip',
+					options: [
+						{
+							type: 'Boolean',
+							name: 'solo',
+							description: 'Do you want to solo?',
+							required: false
+						},
+						{
+							type: 'Integer',
+							name: 'max_team_size',
+							description: 'Choose a max size for your team.',
+							required: false,
+							min_value: 1,
+							max_value: 8
+						},
+						{
+							type: 'Integer',
+							name: 'quantity',
+							description: 'The quantity to do.',
+							required: false,
+							min_value: 1,
+							max_value: 10
+						}
+					]
+				},
+				{
+					type: 'Subcommand',
+					name: 'stats',
+					description: 'Shows your Fractured Archive stats.'
+				},
+				{
+					type: 'Subcommand',
+					name: 'help',
+					description: 'Shows helpful information about The Fractured Archive.'
+				}
+			]
 		}
 	],
 	run: async ({ interaction, options, user, channelId, rng }) => {
@@ -230,6 +277,8 @@ export const raidCommand = defineCommand({
 		if (options.doa?.help) {
 			return doaHelpCommand(user);
 		}
+		if (options.tfa?.help) return tfaHelpCommand(user);
+		if (options.tfa?.stats) return tfaStatsCommand(user);
 
 		if (await user.minionIsBusy()) return "Your minion is busy, you can't do this.";
 
@@ -278,6 +327,17 @@ export const raidCommand = defineCommand({
 				channelId,
 				options.doa.start.max_team_size,
 				options.doa.start.quantity
+			);
+		}
+
+		if (options.tfa?.start) {
+			return tfaStartCommand(
+				interaction,
+				user,
+				Boolean(options.tfa.start.solo),
+				channelId,
+				options.tfa.start.max_team_size,
+				options.tfa.start.quantity
 			);
 		}
 

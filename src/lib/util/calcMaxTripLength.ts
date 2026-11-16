@@ -72,6 +72,7 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 		case 'KingGoldemar':
 		case 'Moktang':
 		case 'DepthsOfAtlantis':
+		case 'FracturedArchive':
 		case 'Naxxus':
 		case 'TuraelsTrials':
 		case 'Dungeoneering': {

@@ -7,6 +7,7 @@ import type { BossUser } from '@/lib/bso/structures/Boss.js';
 
 import type { ItemBank } from 'oldschooljs';
 
+import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
 import type { MinigameName } from '@/lib/settings/minigames.js';
 import type { ActivityTaskOptions, MinigameActivityTaskOptions, NexTaskOptions } from '@/lib/types/minions.js';
 
@@ -133,6 +134,7 @@ export type BSOActivityTaskData =
 	| MemoryHarvestOptions
 	| SnoozeSpellActiveCastOptions
 	| DOAOptions
+	| TFAOptions
 	| KibbleOptions
 	| TuraelsTrialsOptions
 	| MonkeyRumbleOptions

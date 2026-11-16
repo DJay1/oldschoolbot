@@ -33,7 +33,9 @@ export const projectiles = {
 			'Dragon hunter crossbow',
 			'Dragon crossbow',
 			'Zaryte crossbow',
-			'Rune crossbow'
+			'Rune crossbow',
+			// Ascension crossbows (BSC TFA item); uses normal bolts since Ascension bolts aren't in BSC.
+			74603
 		])
 	},
 	javelin: {

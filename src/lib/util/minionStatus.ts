@@ -24,6 +24,7 @@ import {
 import { MathRNG } from 'node-rng';
 import { Items } from 'oldschooljs';
 
+import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { findTripBuyable } from '@/lib/data/buyables/tripBuyables.js';
 import killableMonsters from '@/lib/minions/data/killableMonsters/index.js';
@@ -887,6 +888,14 @@ export function minionStatus(user: MUser, currentTask: ActivityTaskData | null, 
 			const durationRemainingNum = data.finishDate - data.duration + data.fakeDuration - Date.now();
 
 			return `${name} is currently attempting the Depths of Atlantis, if your team is successful and doesn't die, the trip should take ${formatDuration(
+				durationRemainingNum
+			)}.`;
+		}
+		case 'FracturedArchive': {
+			const data = currentTask as TFAOptions;
+			const durationRemainingNum = data.finishDate - data.duration + data.fakeDuration - Date.now();
+
+			return `${name} is currently attempting The Fractured Archive, if your team is successful and doesn't die, the trip should take ${formatDuration(
 				durationRemainingNum
 			)}.`;
 		}

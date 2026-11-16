@@ -268,7 +268,13 @@ export enum BitField {
 	/** Cosmetic mark from the monthly Good Boy box. Not a tradeable item. */
 	BSCPatronCosmetic = 239,
 	ReceivedGuaranteedVorkathHead = 240,
-	Developer = 241
+	Developer = 241,
+	/** The Fractured Archive: used a Horn of Bran to unlock Zeal. */
+	HasZeal = 242,
+	UsedFragmentOfWhisperingWind = 243,
+	UsedFragmentOfDeepWater = 244,
+	UsedFragmentOfLivingEarth = 245,
+	UsedFragmentOfBurningFire = 246
 }
 
 export interface IBitFieldData {
@@ -582,6 +588,11 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 		userConfigurable: false
 	},
 	[BitField.Developer]: { name: 'Developer', protected: true, userConfigurable: false },
+	[BitField.HasZeal]: { name: 'Zeal unlocked', protected: false, userConfigurable: false },
+	[BitField.UsedFragmentOfWhisperingWind]: { name: 'Used Fragment of whispering wind', protected: false, userConfigurable: false },
+	[BitField.UsedFragmentOfDeepWater]: { name: 'Used Fragment of deep water', protected: false, userConfigurable: false },
+	[BitField.UsedFragmentOfLivingEarth]: { name: 'Used Fragment of living earth', protected: false, userConfigurable: false },
+	[BitField.UsedFragmentOfBurningFire]: { name: 'Used Fragment of burning fire', protected: false, userConfigurable: false },
 	[BitField.DisableGlowEffects]: {
 		name: 'Disable Glow Effects',
 		protected: false,

@@ -82,6 +82,17 @@ const chestLootTypes: {
 		purpleItems: [70420, 70441, 70425, 70426, 70428, 70437, 70438, 70439, 70440],
 		position: () => [12, 44],
 		itemRect: [135, 45, 120, 120]
+	},
+	{
+		title: 'The Fractured Archive',
+		chestImage: loadImage('./src/lib/resources/images/tfa.png'),
+		chestImagePurple: loadImage('./src/lib/resources/images/tfa.png'),
+		width: 260,
+		height: 180,
+		// Rondache, Zorya's tome, Horn of Bran, Ascension crossbows, Obligator, Orion
+		purpleItems: [74600, 74601, 74602, 74603, 74604, 74611],
+		position: () => [12, 44],
+		itemRect: [135, 45, 120, 120]
 	}
 ] as const;
 

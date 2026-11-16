@@ -84,6 +84,7 @@ import {
 	resolveItems
 } from 'oldschooljs';
 
+import { tfaCL } from '@/lib/bsc/tfa/tfaItems.js';
 import type { ClueTier } from '@/lib/clues/clueTiers.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import type { CollectionLogType } from '@/lib/collectionLogTask.js';
@@ -882,6 +883,18 @@ export const allCollectionLogs: ICollection = {
 				isActivity: true,
 				fmtProg: ({ minigames }) => {
 					return [`${minigames.depths_of_atlantis} KC`, `${minigames.depths_of_atlantis_cm} CM KC`];
+				}
+			},
+			'The Fractured Archive': {
+				alias: ['tfa', 'fractured archive', 'raids 4'],
+				kcActivity: {
+					Default: async (_, minigameScores) =>
+						minigameScores.find(i => i.minigame.column === 'fractured_archive')!.score
+				},
+				items: tfaCL,
+				isActivity: true,
+				fmtProg: ({ minigames }) => {
+					return `${minigames.fractured_archive} KC`;
 				}
 			},
 			'Superior Tormented Demons': {

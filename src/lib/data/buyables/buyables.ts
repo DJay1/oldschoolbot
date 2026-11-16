@@ -149,6 +149,14 @@ const tobCapes: Buyable[] = [
 	}
 ];
 
+const tfaCapes: Buyable[] = [
+	{ name: 'Living record (tier 1)', gpCost: 100_000, minigameScoreReq: ['fractured_archive', 100] },
+	{ name: 'Living record (tier 2)', gpCost: 500_000, minigameScoreReq: ['fractured_archive', 500] },
+	{ name: 'Living record (tier 3)', gpCost: 500_000, minigameScoreReq: ['fractured_archive', 1000] },
+	{ name: 'Living record (tier 4)', gpCost: 500_000, minigameScoreReq: ['fractured_archive', 1500] },
+	{ name: 'Living record (tier 5)', gpCost: 500_000, minigameScoreReq: ['fractured_archive', 2000] }
+];
+
 const cmCapes: Buyable[] = [
 	{
 		name: "Xeric's guard",
@@ -1187,6 +1195,7 @@ const Buyables: Buyable[] = [
 	...runeBuyables,
 	...randomEventBuyables,
 	...tobCapes,
+	...tfaCapes,
 	...perduBuyables,
 	...prayerBooks,
 	...godCapes,

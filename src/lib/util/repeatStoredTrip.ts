@@ -20,6 +20,7 @@ import { Items } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main/enums.js';
 import type { Activity } from '@/prisma/main.js';
+import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
 import type { PvMMethod } from '@/lib/constants.js';
 import { findTripBuyable } from '@/lib/data/buyables/tripBuyables.js';
 import { InteractionID } from '@/lib/InteractionID.js';
@@ -961,6 +962,17 @@ const tripHandlers: {
 			doa: {
 				start: {
 					challenge_mode: data.cm,
+					solo: data.users.length === 1 ? true : undefined,
+					quantity: data.quantity
+				}
+			}
+		})
+	},
+	[activity_type_enum.FracturedArchive]: {
+		commandName: 'raid',
+		args: (data: TFAOptions) => ({
+			tfa: {
+				start: {
 					solo: data.users.length === 1 ? true : undefined,
 					quantity: data.quantity
 				}

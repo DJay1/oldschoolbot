@@ -246,6 +246,11 @@ export const Minigames: readonly BotMinigame[] = [
 		column: 'depths_of_atlantis'
 	},
 	{
+		name: 'The Fractured Archive',
+		aliases: ['tfa', 'fractured archive', 'raids 4'],
+		column: 'fractured_archive'
+	},
+	{
 		name: 'Depths of Atlantis - Challenge Mode',
 		aliases: ['doa cm'],
 		column: 'depths_of_atlantis_cm'
