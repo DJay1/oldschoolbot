@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { LAUNCH_GRACEFUL_PIECES, LaunchItem } from '@/lib/events/launch/items.js';
 import {
 	backfillLaunchGracefulRows,
+	buildLaunchGracefulAnnouncement,
 	claimLaunchGracefulSets,
 	grantLaunchGracefulSets,
 	type LaunchGracefulStore,
@@ -23,6 +24,9 @@ function memoryStore(): LaunchGracefulStore & { granted: Map<string, number> } {
 			if (old >= earned) return null;
 			granted.set(userID, earned);
 			return old;
+		},
+		async countRecipients() {
+			return [...granted.values()].filter(n => n > 0).length;
 		}
 	};
 }
@@ -31,6 +35,7 @@ function fakeUser(id: string) {
 	const bank = new Bank();
 	return {
 		id,
+		notificationName: `Player ${id}`,
 		bank,
 		transactItems: async ({ itemsToAdd }: { itemsToAdd?: Bank }) => {
 			if (itemsToAdd) bank.add(itemsToAdd);
@@ -74,12 +79,12 @@ describe('Launch graceful', () => {
 	test('replaying the same opened count never pays twice', async () => {
 		const store = memoryStore();
 		const user = fakeUser('b');
-		const first = await grantLaunchGracefulSets(user, 120, store);
-		expect(first?.amount(LaunchItem.LAUNCH_GRACEFUL_HOOD)).toBe(2);
-		expect(await grantLaunchGracefulSets(user, 120, store)).toBeNull();
+		const first = await grantLaunchGracefulSets(user, 120, { source: 'open', store, send: async () => {} });
+		expect(first?.items.amount(LaunchItem.LAUNCH_GRACEFUL_HOOD)).toBe(2);
+		expect(await grantLaunchGracefulSets(user, 120, { source: 'open', store, send: async () => {} })).toBeNull();
 		// Trading the sets away doesn't matter: only the opened count is checked.
 		user.bank.remove(launchGracefulBank(2));
-		expect(await grantLaunchGracefulSets(user, 120, store)).toBeNull();
+		expect(await grantLaunchGracefulSets(user, 120, { source: 'open', store, send: async () => {} })).toBeNull();
 		expect(store.granted.get('b')).toBe(2);
 	});
 
@@ -136,5 +141,58 @@ describe('Launch graceful', () => {
 			cape: 'Launch graceful cape'
 		});
 		expect(noHood.hasEquipped(set, true)).toBe(false);
+	});
+
+	test('live /open awards post one announcement per award, the backfill never posts', async () => {
+		const store = memoryStore();
+		const posted: string[] = [];
+		const send = async (content: string) => {
+			posted.push(content);
+		};
+		const users = new Map(['p', 'q'].map(id => [id, fakeUser(id)]));
+		const fetch = async (id: string) => users.get(id)!;
+
+		// Backfill (startup on prod): silent even if a sender is wired in.
+		const result = await backfillLaunchGracefulRows(
+			[
+				{ user_id: 'p', opened: 150 },
+				{ user_id: 'q', opened: 60 }
+			],
+			fetch,
+			store,
+			send
+		);
+		expect(result).toEqual({ users: 2, sets: 4 });
+		expect(posted).toEqual([]);
+
+		// Live open crossing 200: one message for the award, not six (one per piece).
+		const award = await grantLaunchGracefulSets(users.get('p')!, 200, { source: 'open', store, send });
+		expect(award?.sets).toBe(1);
+		expect(posted).toEqual([
+			'Player p just received their 4th **Launch graceful** set for opening 200 Launch boxes!'
+		]);
+
+		// A new player's first set from a live open.
+		const r = fakeUser('r');
+		await grantLaunchGracefulSets(r, 50, { source: 'open', store, send });
+		expect(posted[1]).toBe(
+			'Player r just received their first **Launch graceful** set for opening 50 Launch boxes! They are the 3rd person to receive one.'
+		);
+
+		// No award, no message.
+		await grantLaunchGracefulSets(r, 51, { source: 'open', store, send });
+		expect(posted.length).toBe(2);
+	});
+
+	test('announcement text for several sets in one open', () => {
+		expect(
+			buildLaunchGracefulAnnouncement({
+				notificationName: 'DJ',
+				sets: 3,
+				totalSets: 4,
+				opened: 200,
+				recipients: 9
+			})
+		).toBe('DJ just received 3 **Launch graceful** sets (4 total) for opening 200 Launch boxes!');
 	});
 });

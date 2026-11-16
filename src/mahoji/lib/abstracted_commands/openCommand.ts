@@ -262,10 +262,10 @@ async function finalizeOpening({
 	// Launch graceful: earned from the real opened count, only after the boxes were actually removed above.
 	if (openables.some(o => o.id === LaunchItem.LAUNCH_BOX)) {
 		const opened = newOpenableScores.amount(LaunchItem.LAUNCH_BOX);
-		const graceful = await grantLaunchGracefulSets(user, opened);
+		const graceful = await grantLaunchGracefulSets(user, opened, { source: 'open' });
 		if (graceful) {
-			loot.add(graceful);
-			messages.push(launchGracefulMessage(graceful.amount(LaunchItem.LAUNCH_GRACEFUL_HOOD), opened));
+			loot.add(graceful.items);
+			messages.push(launchGracefulMessage(graceful.sets, opened));
 		}
 	}
 

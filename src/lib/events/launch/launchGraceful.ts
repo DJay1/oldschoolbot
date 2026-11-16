@@ -1,5 +1,7 @@
+import { formatOrdinal } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
+import { announceToRareChannel } from '@/lib/bsc/rareAnnouncements.js';
 import { LAUNCH_GRACEFUL_PIECES, LaunchItem } from './items.js';
 
 /** One full Launch graceful set for every this many Launch boxes opened. */
@@ -41,6 +43,8 @@ async function ensureStore() {
 /** Raises a player's granted count to `earned` if it is lower and returns the old count, or null if it was already there. */
 export interface LaunchGracefulStore {
 	raise(userID: string, earned: number): Promise<number | null>;
+	/** Players given at least one set so far. */
+	countRecipients(): Promise<number>;
 }
 
 /**
@@ -62,6 +66,13 @@ export const dbLaunchGracefulStore: LaunchGracefulStore = {
 			RETURNING o.old AS old
 		`;
 		return rows.length === 0 ? null : Number(rows[0].old);
+	},
+	async countRecipients() {
+		await ensureStore();
+		const rows = await prisma.$queryRaw<
+			{ n: number }[]
+		>`SELECT count(*)::int AS n FROM bsc_launch_graceful WHERE sets_granted > 0`;
+		return Number(rows[0]?.n ?? 0);
 	}
 };
 
@@ -81,37 +92,103 @@ export async function claimLaunchGracefulSets(
 	return launchGracefulSetsOwed(opened, old);
 }
 
-/** Gives any newly earned sets. Returns the items given (also shown in the /open loot image), or null. */
+/** Where a set came from. Only live /open awards are announced; the startup backfill is always silent. */
+export type LaunchGracefulSource = 'open' | 'backfill';
+
+type GraceUser = Pick<MUser, 'id' | 'transactItems' | 'notificationName'>;
+
+export interface LaunchGracefulAward {
+	items: Bank;
+	/** Sets given now. */
+	sets: number;
+	/** Sets this player has been given in total, including now. */
+	totalSets: number;
+}
+
+/** Same style as the rare item announcements (e.g. Corgo party hat). One message per award, not per piece. */
+export function buildLaunchGracefulAnnouncement(input: {
+	notificationName: string;
+	sets: number;
+	totalSets: number;
+	opened: number;
+	recipients: number;
+}): string {
+	const opened = `for opening ${input.opened.toLocaleString()} Launch boxes`;
+	if (input.totalSets === input.sets && input.sets === 1) {
+		return `${input.notificationName} just received their first **Launch graceful** set ${opened}! They are the ${formatOrdinal(input.recipients)} person to receive one.`;
+	}
+	if (input.sets === 1) {
+		return `${input.notificationName} just received their ${formatOrdinal(input.totalSets)} **Launch graceful** set ${opened}!`;
+	}
+	return `${input.notificationName} just received ${input.sets} **Launch graceful** sets (${input.totalSets} total) ${opened}!`;
+}
+
+export function launchGracefulAnnouncementFor(
+	source: LaunchGracefulSource,
+	input: Parameters<typeof buildLaunchGracefulAnnouncement>[0]
+): string | null {
+	if (source !== 'open') return null;
+	return buildLaunchGracefulAnnouncement(input);
+}
+
+/**
+ * Gives any newly earned sets. Returns what was given (also shown in the /open loot image), or null.
+ * `send` posts to the rare drop channel and is only used for source 'open'.
+ */
 export async function grantLaunchGracefulSets(
-	user: Pick<MUser, 'id' | 'transactItems'>,
+	user: GraceUser,
 	opened: number,
-	store: LaunchGracefulStore = dbLaunchGracefulStore
-): Promise<Bank | null> {
+	{
+		source,
+		store = dbLaunchGracefulStore,
+		send = announceToRareChannel
+	}: { source: LaunchGracefulSource; store?: LaunchGracefulStore; send?: (content: string) => Promise<void> }
+): Promise<LaunchGracefulAward | null> {
 	const sets = await claimLaunchGracefulSets(user.id, opened, store);
 	if (sets <= 0) return null;
 	const items = launchGracefulBank(sets);
 	await user.transactItems({ itemsToAdd: items, collectionLog: true });
-	return items;
+	const totalSets = launchGracefulSetsEarned(opened);
+	if (source === 'open') {
+		try {
+			const content = launchGracefulAnnouncementFor(source, {
+				notificationName: user.notificationName,
+				sets,
+				totalSets,
+				opened,
+				recipients: await store.countRecipients()
+			});
+			if (content) await send(content);
+		} catch (err) {
+			Logging.logError(err as Error);
+		}
+	}
+	return { items, sets, totalSets };
 }
 
 export function launchGracefulMessage(sets: number, opened: number): string {
 	return `🎉 You received ${sets}x Launch graceful set${sets === 1 ? '' : 's'} for opening ${opened.toLocaleString()} Launch boxes (1 set every ${LAUNCH_GRACEFUL_OPENS_PER_SET})!`;
 }
 
-/** Runs the same claim as /open for every listed player. Safe to rerun: players already paid get nothing. */
+/** Runs the same claim as /open for every listed player, silently. Safe to rerun: players already paid get nothing. */
 export async function backfillLaunchGracefulRows(
 	rows: { user_id: string; opened: number }[],
-	fetchUser: (id: string) => Promise<Pick<MUser, 'id' | 'transactItems'>>,
-	store: LaunchGracefulStore = dbLaunchGracefulStore
+	fetchUser: (id: string) => Promise<GraceUser>,
+	store: LaunchGracefulStore = dbLaunchGracefulStore,
+	send?: (content: string) => Promise<void>
 ): Promise<{ users: number; sets: number }> {
 	let users = 0;
 	let sets = 0;
 	for (const row of rows) {
 		try {
-			const given = await grantLaunchGracefulSets(await fetchUser(row.user_id), Number(row.opened), store);
+			const given = await grantLaunchGracefulSets(await fetchUser(row.user_id), Number(row.opened), {
+				source: 'backfill',
+				store,
+				send
+			});
 			if (given) {
 				users++;
-				sets += given.amount(LaunchItem.LAUNCH_GRACEFUL_HOOD);
+				sets += given.sets;
 			}
 		} catch (err) {
 			Logging.logError(err as Error);
