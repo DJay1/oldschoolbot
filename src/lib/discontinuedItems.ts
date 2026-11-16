@@ -121,7 +121,15 @@ export const bscEndedEventItems: readonly { event: SeasonalEventId; items: reado
 ];
 
 /** Discontinued items that are not tied to an event. Add BSC items here by hand. */
-export const bscDiscontinuedItemIDs: readonly number[] = [];
+export const bscDiscontinuedItemIDs: readonly number[] = [
+	// Launch graceful: only ever given for Launch boxes opened, never sold or dropped anywhere.
+	LaunchItem.LAUNCH_GRACEFUL_HOOD,
+	LaunchItem.LAUNCH_GRACEFUL_TOP,
+	LaunchItem.LAUNCH_GRACEFUL_LEGS,
+	LaunchItem.LAUNCH_GRACEFUL_CAPE,
+	LaunchItem.LAUNCH_GRACEFUL_GLOVES,
+	LaunchItem.LAUNCH_GRACEFUL_BOOTS
+];
 
 export function getBscDiscontinuedItemIDs(
 	eventActive: (id: SeasonalEventId) => boolean = id => isEventActive(id)
@@ -183,7 +191,14 @@ export function getDiscontinuedCLGroups(
 		[DiscontinuedCLName.Other]: []
 	};
 
-	const sorted = [...ids].sort((a, b) => Items.getOrThrow(a).name.localeCompare(Items.getOrThrow(b).name));
+	// Hand-listed items keep their listed order (Launch graceful: hood, top, legs, cape, gloves, boots), the rest go by name after them.
+	const listed = (id: number) => {
+		const i = bscDiscontinuedItemIDs.indexOf(id);
+		return i === -1 ? Number.POSITIVE_INFINITY : i;
+	};
+	const sorted = [...ids].sort(
+		(a, b) => listed(a) - listed(b) || Items.getOrThrow(a).name.localeCompare(Items.getOrThrow(b).name)
+	);
 	for (const itemID of sorted) {
 		const item = Items.getOrThrow(itemID);
 		if (petIDs.has(itemID)) groups[DiscontinuedCLName.Pets].push(itemID);

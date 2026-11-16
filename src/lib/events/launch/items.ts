@@ -12,7 +12,14 @@ export const LaunchItem = {
 	 * existing place to store an expiry without a schema change.
 	 * TODO: use this for a personal XP boost once that can be stored.
 	 */
-	DOUBLE_XP_TOKEN: 74_202
+	DOUBLE_XP_TOKEN: 74_202,
+	/** Launch graceful: 1 set per 50 Launch boxes opened, never from the box itself. Discontinued. */
+	LAUNCH_GRACEFUL_HOOD: 74_203,
+	LAUNCH_GRACEFUL_TOP: 74_204,
+	LAUNCH_GRACEFUL_LEGS: 74_205,
+	LAUNCH_GRACEFUL_GLOVES: 74_206,
+	LAUNCH_GRACEFUL_BOOTS: 74_207,
+	LAUNCH_GRACEFUL_CAPE: 74_208
 } as const;
 
 export const CORGO_PARTY_HAT_EXAMINE =
@@ -62,3 +69,30 @@ setCustomItem(
 	},
 	100_000_000
 );
+
+/** [id, name, base Graceful piece]. Same stats and set effect as Graceful / Spooky graceful. Tradeable. */
+export const LAUNCH_GRACEFUL_PIECES = [
+	[LaunchItem.LAUNCH_GRACEFUL_HOOD, 'Launch graceful hood', 'Graceful hood'],
+	[LaunchItem.LAUNCH_GRACEFUL_TOP, 'Launch graceful top', 'Graceful top'],
+	[LaunchItem.LAUNCH_GRACEFUL_LEGS, 'Launch graceful legs', 'Graceful legs'],
+	[LaunchItem.LAUNCH_GRACEFUL_GLOVES, 'Launch graceful gloves', 'Graceful gloves'],
+	[LaunchItem.LAUNCH_GRACEFUL_BOOTS, 'Launch graceful boots', 'Graceful boots'],
+	[LaunchItem.LAUNCH_GRACEFUL_CAPE, 'Launch graceful cape', 'Graceful cape']
+] as const;
+
+for (const [id, name, base] of LAUNCH_GRACEFUL_PIECES) {
+	setCustomItem(
+		id,
+		name,
+		base,
+		{
+			tradeable: true,
+			tradeable_on_ge: true,
+			customItemData: {
+				cantDropFromMysteryBoxes: true,
+				examine: 'Awarded for opening Launch boxes during the Bark School Corgo launch.'
+			}
+		},
+		100_000
+	);
+}

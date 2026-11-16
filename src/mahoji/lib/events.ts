@@ -12,6 +12,7 @@ import { ensureTripQueueStore } from '@/lib/bsc/tripQueue.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { registerDiscontinuedCollectionLogs } from '@/lib/discontinuedItems.js';
+import { backfillLaunchGraceful } from '@/lib/events/launch/launchGraceful.js';
 import { loadSeasonalEventOverrides } from '@/lib/events/store.js';
 import { syncHarvestFeasts } from '@/lib/events/thanksgiving/feast.js';
 import { initTickers } from '@/lib/tickers.js';
@@ -24,6 +25,8 @@ export const onStartup = async () => {
 	await loadSeasonalEventOverrides().catch(err => Logging.logError(err));
 	await ensureTripQueueStore().catch(err => Logging.logError(err));
 	await syncHarvestFeasts().catch(err => Logging.logError(err));
+	// Gives Launch graceful sets already earned (1 per 50 Launch boxes opened). Safe to rerun: tracked per player.
+	backfillLaunchGraceful().catch(err => Logging.logError(err));
 	syncSlayerMaskLeaderboardCache();
 	// Load bank backgrounds up front so /minion bankbg works right after a restart.
 	if (!bankImageTask.ready) {

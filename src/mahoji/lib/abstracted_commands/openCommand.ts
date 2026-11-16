@@ -10,6 +10,8 @@ import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { buildClueButtons } from '@/lib/clues/clueUtils.js';
 import { BitField } from '@/lib/constants.js';
+import { LaunchItem } from '@/lib/events/launch/items.js';
+import { grantLaunchGracefulSets, launchGracefulMessage } from '@/lib/events/launch/launchGraceful.js';
 import type { UnifiedOpenable } from '@/lib/openables.js';
 import { allOpenables, getOpenableLoot } from '@/lib/openables.js';
 import { assert } from '@/lib/util/logError.js';
@@ -255,6 +257,16 @@ async function finalizeOpening({
 
 	if (loot.has('Coins')) {
 		await ClientSettings.updateClientGPTrackSetting('gp_open', loot.amount('Coins'));
+	}
+
+	// Launch graceful: earned from the real opened count, only after the boxes were actually removed above.
+	if (openables.some(o => o.id === LaunchItem.LAUNCH_BOX)) {
+		const opened = newOpenableScores.amount(LaunchItem.LAUNCH_BOX);
+		const graceful = await grantLaunchGracefulSets(user, opened);
+		if (graceful) {
+			loot.add(graceful);
+			messages.push(launchGracefulMessage(graceful.amount(LaunchItem.LAUNCH_GRACEFUL_HOOD), opened));
+		}
 	}
 
 	const openedStr = openables
