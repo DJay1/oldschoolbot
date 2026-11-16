@@ -5,6 +5,7 @@ import { TfaItem, tfaAnnouncedItems, tfaCL, tfaUniqueItems } from '@/lib/bsc/tfa
 import { allItemsThatCanBeDisassembledIDs } from '@/lib/bso/skills/invention/index.js';
 import { mysteryBoxBlacklist } from '@/lib/bso/openables/mysteryBoxBlacklist.js';
 import { allPetsCL } from '@/lib/data/CollectionsExport.js';
+import { compCapeCategories } from '@/lib/bso/compCape.js';
 
 describe('The Fractured Archive rewards match the other raids', () => {
 	test('no TFA item can come out of a mystery box (like CoX/ToB/ToA/DoA)', () => {
@@ -31,5 +32,11 @@ describe('The Fractured Archive rewards match the other raids', () => {
 		for (const id of [TfaItem.RONDACHE, TfaItem.ZORYAS_TOME, TfaItem.ASCENSION_CROSSBOWS, TfaItem.OBLIGATOR]) {
 			expect(allItemsThatCanBeDisassembledIDs.has(id), Items.itemNameFromId(id)).toBe(true);
 		}
+	});
+	test('comp cape has the TFA CL (trimmed) and Orion pet (PvM) tasks, like the other raids', () => {
+		const names = (cat: string) =>
+			compCapeCategories.find(c => c.name === cat)!.requirements.requirements.map(r => r.name);
+		expect(names('Trimmed')).toContain('Complete The Fractured Archive CL');
+		expect(names('PvM')).toContain('Receive the Fractured Archive pet (Orion)');
 	});
 });

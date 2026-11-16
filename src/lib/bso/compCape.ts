@@ -1,3 +1,4 @@
+import { TfaItem, tfaCL } from '@/lib/bsc/tfa/tfaItems.js';
 import {
 	abyssalDragonCL,
 	allDOAPets,
@@ -301,6 +302,10 @@ const pvmRequirements = new Requirements()
 	.add({
 		name: 'Receive all DoA pet metamorphosis',
 		clRequirement: allDOAPets
+	})
+	.add({
+		name: 'Receive the Fractured Archive pet (Orion)',
+		clRequirement: [TfaItem.ORION]
 	});
 
 const skillingRequirements = new Requirements()
@@ -793,6 +798,7 @@ export const compCapeTrimmedRequirements = new Requirements()
 	.add({ name: 'Complete Holiday Mystery box CL', clRequirement: holidayCL })
 	.add({ name: "Complete Chamber's of Xeric CL", clRequirement: chambersOfXericCL })
 	.add({ name: 'Complete Depths of Atlantis CL', clRequirement: doaCL })
+	.add({ name: 'Complete The Fractured Archive CL', clRequirement: tfaCL })
 	.add({ name: 'Complete Theatre of Blood CL', clRequirement: theatreOfBLoodCL })
 	.add({ name: 'Complete Tombs of Amascut CL', clRequirement: ItemGroups.toaCL });
 
