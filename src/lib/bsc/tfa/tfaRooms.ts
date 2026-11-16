@@ -200,6 +200,21 @@ export const TFA_ROOM_ITEMS: Record<number, TfaRoomGroup[]> = {
 		{ label: 'Void Augmenters', where: 'owned', items: [['Tome of earth', 2]] }
 	]
 };
+/**
+ * Dyed, ornament and upgraded versions come from BSC's similar-items map (it already includes every dyedItems entry),
+ * which Gear.hasEquipped and hasEquippedOrInBank check for us. These are the cosmetic versions that map is missing.
+ * Broken, uncharged and empty versions are left out on purpose: they don't work in-game.
+ */
+const TFA_EXTRA_VARIANTS: Record<string, string[]> = {
+	'Elder maul': ['Elder maul (or)'],
+	'Dragon warhammer': ['Dragon warhammer (cr)']
+};
+
+export function tfaRoomVariants(itemID: number): number[] {
+	const extra = TFA_EXTRA_VARIANTS[Items.getOrThrow(itemID).name] ?? [];
+	return [itemID, ...extra.map(n => Items.getOrThrow(n).id)];
+}
+
 export interface TfaRoomBoost {
 	name: string;
 	percent: number;
@@ -215,10 +230,11 @@ export function tfaRoomBoostsFor(gear: Record<TfaRoomSetup, Gear>, owns: (itemID
 		for (const group of groups) {
 			const hit = group.items
 				.filter(([name, , setupOverride]) => {
-					const ids = (TFA_ROOM_SETS[name] ?? [name]).map(n => Items.getOrThrow(n).id);
-					if (group.where === 'owned' && !setupOverride) return ids.every(id => owns(id));
+					// Every piece (each one on its own, so mixed dyed/undyed sets count) may be any variant.
+					const pieces = (TFA_ROOM_SETS[name] ?? [name]).map(n => tfaRoomVariants(Items.getOrThrow(n).id));
+					if (group.where === 'owned' && !setupOverride) return pieces.every(ids => ids.some(id => owns(id)));
 					const setup = gear[setupOverride ?? (group.where as TfaRoomSetup)];
-					return ids.every(id => setup.hasEquipped(id));
+					return pieces.every(ids => setup.hasEquipped(ids));
 				})
 				.sort((a, b) => b[1] - a[1])[0];
 			if (hit) boosts.push({ name: hit[0], percent: hit[1] });

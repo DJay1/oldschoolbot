@@ -57,6 +57,32 @@ describe('TFA room boosts', () => {
 		expect(ag.find(i => i[0] === 'Zaryte bow')![1]).toBeGreaterThan(ag.find(i => i[0] === 'Twisted bow')![1]);
 	});
 
+	test('dyed and ornament versions count the same as the base item', () => {
+		const melee = constructGearSetup({ weapon: 'Drygore longsword (blood)' });
+		expect(tfaRoomBoostsFor({ ...empty, melee }, () => false)[2]![0]).toEqual({ name: 'Drygore longsword', percent: 5 });
+		const range = constructGearSetup({ '2h': 'Twisted bow (shadow)' });
+		expect(tfaRoomBoostsFor({ ...empty, range }, () => false)[1]![0]).toEqual({ name: 'Twisted bow', percent: 4 });
+		const holy = constructGearSetup({ '2h': 'Holy scythe of vitur' });
+		expect(tfaRoomBoostsFor({ ...empty, melee: holy }, () => false)[7]![0]).toEqual({ name: 'Scythe of vitur', percent: 4 });
+		// Bank switches use hasEquippedOrInBank in the bot, which checks similar items; the extra ornament map is checked here.
+		const ornament = new Set(Items.resolveItems(['Elder maul (or)']));
+		expect(tfaRoomBoostsFor(empty, id => ornament.has(id))[2]).toEqual([{ name: 'Elder maul', percent: 3 }]);
+		// Broken pieces don't count.
+		const broken = constructGearSetup({ body: 'Torva platebody' });
+		expect(broken.hasEquipped(Items.getOrThrow('Torva platebody (broken)').id)).toBe(false);
+	});
+
+	test('a mixed dyed/undyed Gorajan set counts as a full set', () => {
+		const mixed = constructGearSetup({
+			head: 'Gorajan warrior helmet',
+			body: 'Gorajan warrior top (Primal)',
+			legs: 'Gorajan warrior legs (Oceanic)',
+			hands: 'Gorajan warrior gloves',
+			feet: 'Gorajan warrior boots'
+		});
+		expect(tfaRoomBoostsFor({ ...empty, melee: mixed }, () => false)[2]).toEqual([{ name: 'Full Gorajan warrior', percent: 2 }]);
+	});
+
 	test('a Gorajan set only counts when every piece is worn in the matching setup', () => {
 		const full = constructGearSetup({
 			head: 'Gorajan warrior helmet',
