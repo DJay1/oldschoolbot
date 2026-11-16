@@ -121,7 +121,15 @@ export const bscEndedEventItems: readonly { event: SeasonalEventId; items: reado
 ];
 
 /** Discontinued items that are not tied to an event. Add BSC items here by hand. */
-export const bscDiscontinuedItemIDs: readonly number[] = [];
+export const bscDiscontinuedItemIDs: readonly number[] = [
+	// Launch graceful: only ever given for Launch boxes opened, never sold or dropped anywhere.
+	LaunchItem.LAUNCH_GRACEFUL_HOOD,
+	LaunchItem.LAUNCH_GRACEFUL_TOP,
+	LaunchItem.LAUNCH_GRACEFUL_LEGS,
+	LaunchItem.LAUNCH_GRACEFUL_GLOVES,
+	LaunchItem.LAUNCH_GRACEFUL_BOOTS,
+	LaunchItem.LAUNCH_GRACEFUL_CAPE
+];
 
 export function getBscDiscontinuedItemIDs(
 	eventActive: (id: SeasonalEventId) => boolean = id => isEventActive(id)

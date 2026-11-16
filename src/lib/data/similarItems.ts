@@ -10,6 +10,7 @@ import {
 	gracefulLegs,
 	gracefulTops
 } from '@/lib/data/gracefulVariants.js';
+import { LaunchItem } from '@/lib/events/launch/items.js';
 import skillcapes from '@/lib/skilling/skillcapes.js';
 
 const scytheChargedSimilar = ['Holy scythe of vitur', 'Sanguine scythe of vitur'];
@@ -192,12 +193,13 @@ const source: [string, (string | number)[]][] = [
 			'Amulet of eternal glory'
 		]
 	],
-	['Graceful hood', gracefulHoods],
-	['Graceful top', gracefulTops],
-	['Graceful legs', gracefulLegs],
-	['Graceful gloves', gracefulHands],
-	['Graceful boots', gracefulFeet],
-	['Graceful cape', gracefulCapes],
+	// Launch graceful counts as Graceful. The Corgo party hat can stand in for the hood.
+	['Graceful hood', [...gracefulHoods, LaunchItem.LAUNCH_GRACEFUL_HOOD, LaunchItem.CORGO_PARTY_HAT]],
+	['Graceful top', [...gracefulTops, LaunchItem.LAUNCH_GRACEFUL_TOP]],
+	['Graceful legs', [...gracefulLegs, LaunchItem.LAUNCH_GRACEFUL_LEGS]],
+	['Graceful gloves', [...gracefulHands, LaunchItem.LAUNCH_GRACEFUL_GLOVES]],
+	['Graceful boots', [...gracefulFeet, LaunchItem.LAUNCH_GRACEFUL_BOOTS]],
+	['Graceful cape', [...gracefulCapes, LaunchItem.LAUNCH_GRACEFUL_CAPE]],
 	['Fire cape', ['Fire max cape', 'Fire max cape (l)']],
 	['Infernal cape', ['Infernal max cape', 'Infernal max cape (l)', 'TzKal cape']],
 	['Ardougne cloak 4', ['Ardougne max cape']],

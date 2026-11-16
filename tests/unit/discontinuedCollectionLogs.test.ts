@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { allCLItemsFiltered, allCollectionLogs, getCollectionItems, overallPlusItems } from '@/lib/data/Collections.js';
 import { filterableTypes } from '@/lib/data/filterables.js';
 import {
+	bscDiscontinuedItemIDs,
 	DISCONTINUED_CL_CATEGORY,
 	DiscontinuedCLName,
 	getBscDiscontinuedItemIDs,
@@ -19,8 +20,22 @@ describe('BSC discontinued collection logs and bank filter', () => {
 	const all = getBscDiscontinuedItemIDs(launchEnded);
 	const groups = getDiscontinuedCLGroups(all);
 
-	test('only BSC items: Launch box and Corgo party hat once the Launch event is over', () => {
-		expect([...all].sort()).toEqual([id('Launch box'), id('Corgo party hat')].sort());
+	test('only BSC items: Launch box, Corgo party hat and Launch graceful once the Launch event is over', () => {
+		expect([...all].sort()).toEqual(
+			[
+				'Launch box',
+				'Corgo party hat',
+				'Launch graceful hood',
+				'Launch graceful top',
+				'Launch graceful legs',
+				'Launch graceful gloves',
+				'Launch graceful boots',
+				'Launch graceful cape'
+			]
+				.map(id)
+				.sort()
+		);
+		expect(groups[DiscontinuedCLName.Gear].length).toBe(6);
 		expect(groups[DiscontinuedCLName.Boxes]).toEqual([id('Launch box')]);
 		expect(groups[DiscontinuedCLName.Partyhats]).toEqual([id('Corgo party hat')]);
 	});
@@ -42,8 +57,9 @@ describe('BSC discontinued collection logs and bank filter', () => {
 		expect(getDiscontinuedItemIDs().has(id('Chickaxe'))).toBe(true);
 	});
 
-	test('nothing is discontinued while the Launch event is running', () => {
-		expect(getBscDiscontinuedItemIDs(() => true).size).toBe(0);
+	test('while the Launch event runs, only the hand-listed items (Launch graceful) count', () => {
+		expect(getBscDiscontinuedItemIDs(() => true)).toEqual(new Set(bscDiscontinuedItemIDs));
+		expect(bscDiscontinuedItemIDs.length).toBe(6);
 	});
 
 	test('every discontinued item is in exactly one discontinued log', () => {
