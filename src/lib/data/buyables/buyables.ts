@@ -17,6 +17,7 @@ import { runeBuyables } from '@/lib/data/buyables/runes.js';
 import { shootingStarsBuyables } from '@/lib/data/buyables/shootingStarsBuyables.js';
 import { skillCapeBuyables } from '@/lib/data/buyables/skillCapeBuyables.js';
 import { slayerBuyables } from '@/lib/data/buyables/slayerBuyables.js';
+import { temporossBuyables } from '@/lib/data/buyables/temporossBuyables.js';
 import { troubleBrewingBuyables } from '@/lib/data/buyables/troubleBrewingShop.js';
 import { chompyHats } from '@/lib/data/CollectionsExport.js';
 import { CombatCannonItemBank } from '@/lib/minions/data/combatConstants.js';
@@ -1198,6 +1199,7 @@ const Buyables: Buyable[] = [
 	...toaCapes,
 	...mairinsMarketBuyables,
 	...forestryBuyables,
+	...temporossBuyables,
 	...colossalWyrmAgilityBuyables,
 	...bsoBuyables
 ];

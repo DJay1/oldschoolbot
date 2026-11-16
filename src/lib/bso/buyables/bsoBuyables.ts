@@ -151,7 +151,7 @@ export const bsoBuyables: Buyable[] = [
 		gpCost: 500,
 		outputItems: new Bank().add('Pumpkin seed'),
 		ironmanPrice: 500,
-		maxQuantity: 500
+		maxQuantity: 1000
 	},
 	{
 		name: 'Festive present',

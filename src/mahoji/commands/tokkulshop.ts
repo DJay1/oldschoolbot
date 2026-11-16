@@ -2,9 +2,11 @@ import { formatDuration, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank, Monsters } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main/enums.js';
+import { tokkulShopDailyLimitFor, tokkulShopLimitName } from '@/lib/data/buyables/skillingSupplyLimits.js';
 import { TokkulShopItems } from '@/lib/data/buyables/tokkulBuyables.js';
 import type { TokkulShopOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { runWithDailyLimit } from '@/lib/util/runWithBuyDailyLimit.js';
 
 const { TzTokJad } = Monsters;
 
@@ -154,30 +156,35 @@ export const tksCommand = defineCommand({
 			}`;
 		}
 
-		// Confirmation the user has to accept before trip is sent
-		await interaction.confirmation(
-			`Are you sure you want to spend ${cost} to get ${loot}? The trip to ${action} them will take ${formatDuration(
-				duration
-			)}.`
-		);
+		// Ores have a per-player daily cap (reserved before any Tokkul is taken, released if this fails or is cancelled).
+		const dailyLimit = options.buy ? tokkulShopDailyLimitFor(item.name) : undefined;
+		return runWithDailyLimit(user.id, tokkulShopLimitName(item.name), quantity, dailyLimit, async ({ commit }) => {
+			// Confirmation the user has to accept before trip is sent
+			await interaction.confirmation(
+				`Are you sure you want to spend ${cost} to get ${loot}? The trip to ${action} them will take ${formatDuration(
+					duration
+				)}.`
+			);
 
-		// Remove the cost, and update bank settings
-		await user.transactItems({ itemsToRemove: cost });
-		await ClientSettings.updateBankSetting('tks_cost', cost);
+			// Remove the cost, and update bank settings
+			await user.transactItems({ itemsToRemove: cost });
+			await ClientSettings.updateBankSetting('tks_cost', cost);
 
-		// Tokkul shop activity
-		await ActivityManager.startTrip<TokkulShopOptions>({
-			userID: user.id,
-			channelId,
-			quantity: loot.items()[0][1],
-			type: 'TokkulShop',
-			duration,
-			itemID: loot.items()[0][0].id
+			// Tokkul shop activity
+			await ActivityManager.startTrip<TokkulShopOptions>({
+				userID: user.id,
+				channelId,
+				quantity: loot.items()[0][1],
+				type: 'TokkulShop',
+				duration,
+				itemID: loot.items()[0][0].id
+			});
+			commit();
+
+			// Trip start message
+			return `${user.minionName} is now ${action}ing ${action === 'buy' ? loot : cost} ${
+				action === 'buy' ? 'from' : 'to'
+			} the Tzhaar Shops, in return for ${action === 'buy' ? cost : loot}. The trip will return in about ${formatTripDuration(user, duration)}.`;
 		});
-
-		// Trip start message
-		return `${user.minionName} is now ${action}ing ${action === 'buy' ? loot : cost} ${
-			action === 'buy' ? 'from' : 'to'
-		} the Tzhaar Shops, in return for ${action === 'buy' ? cost : loot}. The trip will return in about ${formatTripDuration(user, duration)}.`;
 	}
 });
