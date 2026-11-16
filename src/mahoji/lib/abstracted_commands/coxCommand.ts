@@ -258,7 +258,8 @@ export async function coxCommand(
 		users: users.map(u => u.id),
 		challengeMode: isChallengeMode,
 		quantity,
-		cc: chinCannonUser?.id
+		cc: chinCannonUser?.id,
+		repeatMaxSize: isSolo ? undefined : maxSize
 	});
 
 	let str = isSolo

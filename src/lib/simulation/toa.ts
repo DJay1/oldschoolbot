@@ -1311,7 +1311,8 @@ export async function toaStartCommand(
 		wipedRoom: toaSimResults.map(i => i.wipedRoom),
 		fakeDuration,
 		raidLevel,
-		quantity
+		quantity,
+		repeatMaxSize: solo ? undefined : maxSize
 	});
 
 	let str = `${partyOptions.leader.usernameOrMention}'s party (${formatList(

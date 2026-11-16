@@ -72,6 +72,8 @@ export interface DOAStoredRaid {
 export interface DOAOptions extends ActivityTaskOptions {
 	users: string[];
 	maxSizeInput?: number;
+	/** Max team size the leader picked for a mass, reused when the trip is repeated. */
+	repeatMaxSize?: number;
 	type: 'DepthsOfAtlantis';
 	leader: string;
 	cm: boolean;
