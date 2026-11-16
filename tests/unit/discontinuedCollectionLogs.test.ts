@@ -1,4 +1,4 @@
-import { Items } from 'oldschooljs';
+import { Items, resolveItems } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import { allCLItemsFiltered, allCollectionLogs, getCollectionItems, overallPlusItems } from '@/lib/data/Collections.js';
@@ -35,7 +35,16 @@ describe('BSC discontinued collection logs and bank filter', () => {
 				.map(id)
 				.sort()
 		);
-		expect(groups[DiscontinuedCLName.Gear].length).toBe(6);
+		expect(groups[DiscontinuedCLName.Gear]).toEqual(
+			resolveItems([
+				'Launch graceful hood',
+				'Launch graceful top',
+				'Launch graceful legs',
+				'Launch graceful cape',
+				'Launch graceful gloves',
+				'Launch graceful boots'
+			])
+		);
 		expect(groups[DiscontinuedCLName.Boxes]).toEqual([id('Launch box')]);
 		expect(groups[DiscontinuedCLName.Partyhats]).toEqual([id('Corgo party hat')]);
 	});
