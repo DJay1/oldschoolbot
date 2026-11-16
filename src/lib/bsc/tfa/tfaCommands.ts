@@ -14,10 +14,12 @@ import {
 	tfaItemBoosts,
 	tfaSingleRaidDuration,
 	tfaSuppliesPerRaid,
+	tfaBossByID,
 	tfaTeamMemberFromUser,
 	tfaUserSpeedReduction
 } from '@/lib/bsc/tfa/tfa.js';
 import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
+import { TFA_ROOM_BOOST_CAP, tfaRoomBoostsFor, tfaRoomBoostsText, tfaRoomItemsHelpLines } from '@/lib/bsc/tfa/tfaRooms.js';
 import { tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
 import { tfaTeamUniqueOdds } from '@/lib/bsc/tfa/tfaLoot.js';
 import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
@@ -97,6 +99,8 @@ export async function tfaStartCommand(
 	const { raids, realDuration, fakeDuration } = createTfaRaids({ team, quantity });
 
 	const supplies = tfaSuppliesPerRaid.clone().multiply(quantity);
+	const rolledBosses = [...new Set(raids.flatMap(r => r.b))].sort((a, b) => a - b);
+	const bossName = (id: number) => tfaBossByID(id).name;
 	const totalCost = new Bank();
 	const costs: { id: string; cost: Bank }[] = [];
 	let details = '';
@@ -115,6 +119,8 @@ export async function tfaStartCommand(
 		details += `**- ${u.usernameOrMention}** Gear: ${member.gear.total.toFixed(1)}% | Speed: ${tfaUserSpeedReduction(member).toFixed(1)}%${
 			boostNames.length > 0 ? ` | Boosts: ${boostNames.join(', ')}` : ''
 		}${member.deathReduction > 0 ? ' | Rondache' : ''}\n`;
+		const rooms = tfaRoomBoostsText(member.roomBoosts, rolledBosses, bossName);
+		if (rooms.length > 0) details += `  Rooms: ${rooms.join(' | ')}\n`;
 	}
 
 	await ClientSettings.updateBankSetting('tfa_cost', totalCost);
@@ -154,6 +160,11 @@ export async function tfaHelpCommand(user: MUser): Promise<string> {
 	const { boosts, deathReduction } = tfaItemBoosts(user);
 	const check = checkTfaUser(user, 1);
 	const minutes = stats.tfa_total_minutes ?? 0;
+	const roomLines = tfaRoomBoostsText(
+		tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id)),
+		[1, 2, 3, 4, 5, 6, 7, 8],
+		id => tfaBossByID(id).name
+	);
 
 	return `**${RAID_NAME}**
 
@@ -176,6 +187,7 @@ ${tfaHelpBoostsText()
 	.map(b => `- ${b}`)
 	.join('\n')}
 - Each used elemental fragment: 0.5% faster (you've used ${tfaFragmentsUsed(user)}/4)
+- Room items: some items speed up a boss's room when it's rolled. See \`/raid tfa rooms\` (you have ${roomLines.length} room${roomLines.length === 1 ? '' : 's'} boosted).
 
 **Your boosts:** ${boosts.length > 0 ? boosts.map(b => `${b.name} (${b.percent}%)`).join(', ') : 'None'}${deathReduction > 0 ? ', Rondache' : ''}
 **Zeal:** ${user.bitfield.includes(BitField.HasZeal) ? 'Unlocked' : 'Locked'}
@@ -194,4 +206,20 @@ export async function tfaStatsCommand(user: MUser): Promise<string> {
 **Time raided:** ${formatDuration((stats.tfa_total_minutes ?? 0) * Time.Minute)}
 **Loot value:** ${loot.value().toLocaleString()} GP
 **Supplies used:** ${cost.length > 0 ? cost.toString() : 'None'}`;
+}
+
+export function tfaRoomsCommand(user: MUser): string {
+	const bossName = (id: number) => tfaBossByID(id).name;
+	const mine = tfaRoomBoostsText(
+		tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id)),
+		[1, 2, 3, 4, 5, 6, 7, 8],
+		bossName
+	);
+	return `**${RAID_NAME} room items**
+These only speed up that boss's room, and only in raids where that boss is rolled. Each group counts its best item, up to ${TFA_ROOM_BOOST_CAP}% per room. "bank" items count from your bank or any setup.
+${tfaRoomItemsHelpLines(bossName)
+	.map(l => `- ${l}`)
+	.join('\n')}
+
+**Yours:** ${mine.length > 0 ? mine.join(' | ') : 'None'}`;
 }

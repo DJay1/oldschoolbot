@@ -4,6 +4,7 @@ import { Bank, Items } from 'oldschooljs';
 
 import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
 import { TfaItem, tfaAscensionBoltIDs } from '@/lib/bsc/tfa/tfaItems.js';
+import { type TfaRoomBoosts, tfaRoomBoostsFor, tfaTeamRoomPercent } from '@/lib/bsc/tfa/tfaRooms.js';
 import { BitField } from '@/lib/constants.js';
 import { calcTOBRangePercent, calculateTOBUserGearPercents } from '@/lib/data/tob.js';
 import { Gear } from '@/lib/structures/Gear.js';
@@ -111,6 +112,8 @@ export interface TfaTeamMember {
 	boosts: TfaBoost[];
 	/** Relative reduction to death chance from items (0-100). */
 	deathReduction: number;
+	/** Room-only speed boosts, applied only to that boss's room when it's rolled. */
+	roomBoosts?: TfaRoomBoosts;
 }
 
 function stylePercent(gear: TfaGearPercents, style: TfaStyle) {
@@ -176,13 +179,14 @@ export function createTfaRaids({
 		const points: number[] = team.map(() => 0);
 		let wipedAt: number | null = null;
 
-		const raidFullTime = LOBBY_TIME + bosses.reduce((acc, id) => acc + tfaBossByID(id).baseTime * speedFactor, 0);
+		const roomTime = (id: number) => tfaBossByID(id).baseTime * speedFactor * (1 - tfaTeamRoomPercent(team, id) / 100);
+		const raidFullTime = LOBBY_TIME + bosses.reduce((acc, id) => acc + roomTime(id), 0);
 		fakeDuration += raidFullTime;
 		let raidTime = LOBBY_TIME;
 
 		for (const bossID of bosses) {
 			const boss = tfaBossByID(bossID);
-			const bossTime = boss.baseTime * speedFactor;
+			const bossTime = roomTime(boss.id);
 			let diedHere = 0;
 			const weights: number[] = [];
 			for (let i = 0; i < size; i++) {
@@ -335,7 +339,8 @@ export function tfaTeamMemberFromUser(user: MUser, kc: number): TfaTeamMember {
 		kc,
 		gear: calculateTfaGearPercents(user),
 		boosts,
-		deathReduction
+		deathReduction,
+		roomBoosts: tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id))
 	};
 }
 

@@ -2,7 +2,7 @@ import { doaHelpCommand } from '@/lib/bso/depthsOfAtlantis.js';
 import { doaStartCommand } from '@/lib/bso/doa/doaStartCommand.js';
 
 import { choicesOf } from '@/discord/index.js';
-import { tfaHelpCommand, tfaStartCommand, tfaStatsCommand } from '@/lib/bsc/tfa/tfaCommands.js';
+import { tfaHelpCommand, tfaRoomsCommand, tfaStartCommand, tfaStatsCommand } from '@/lib/bsc/tfa/tfaCommands.js';
 import { toaHelpCommand, toaStartCommand } from '@/lib/simulation/toa.js';
 import { mileStoneBaseDeathChances } from '@/lib/simulation/toaUtils.js';
 import { coxCommand, coxHelpCommand, coxStatsCommand } from '@/mahoji/lib/abstracted_commands/coxCommand.js';
@@ -261,6 +261,11 @@ export const raidCommand = defineCommand({
 					type: 'Subcommand',
 					name: 'help',
 					description: 'Shows helpful information about The Fractured Archive.'
+				},
+				{
+					type: 'Subcommand',
+					name: 'rooms',
+					description: 'Shows the room items that speed up each Fractured Archive boss.'
 				}
 			]
 		}
@@ -279,6 +284,7 @@ export const raidCommand = defineCommand({
 		}
 		if (options.tfa?.help) return tfaHelpCommand(user);
 		if (options.tfa?.stats) return tfaStatsCommand(user);
+		if (options.tfa?.rooms) return tfaRoomsCommand(user);
 
 		if (await user.minionIsBusy()) return "Your minion is busy, you can't do this.";
 
