@@ -3,12 +3,13 @@ import { Bank, Monsters } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main/enums.js';
 import { tokkulShopDailyLimitFor, tokkulShopLimitName } from '@/lib/data/buyables/skillingSupplyLimits.js';
+import { TokkulShopItems, tokkulShopBuyDuration, tokkulShopMaxBuyable } from '@/lib/data/buyables/tokkulBuyables.js';
 import {
-	TokkulShopItems,
-	tokkulShopBuyDuration,
-	tokkulShopMaxBuyable,
-	tokkulShopStockFor
-} from '@/lib/data/buyables/tokkulBuyables.js';
+	tokkulShopBlockedMessage,
+	tokkulShopDiaryNote,
+	tokkulShopJadNote,
+	tokkulShopTooLongMessage
+} from '@/lib/data/buyables/tokkulShopMessages.js';
 import type { TokkulShopOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { runWithDailyLimit } from '@/lib/util/runWithBuyDailyLimit.js';
@@ -95,7 +96,11 @@ export const tksCommand = defineCommand({
 		if (!item) return "That's not a valid item.";
 
 		if (item.requireFireCape && !hasKilledJad) {
-			return `You are not worthy JalYt. Before you can buy/sell ${item.name}, you need to have defeated the mighty TzTok-Jad!`;
+			return (
+				`You are not worthy JalYt. Before you can buy/sell ${item.name}, you need to have defeated the mighty TzTok-Jad! Kill TzTok-Jad once with ` /
+				activities
+			);
+			fight_caves`.`;
 		}
 
 		// User bank, maxTripLength, quantity given
@@ -110,13 +115,11 @@ export const tksCommand = defineCommand({
 
 		// Calculate tokkul cost for buying or selling
 		if (options.buy) {
-			if (!item.diaryTokkulCost || !item.tokkulCost) return "You can't buy this item.";
 			// Uses the stock that applies to this player (TzHaar-Hur-Rin's after a TzTok-Jad kill), and flat gem times.
+			const blocked = tokkulShopBlockedMessage(item, buyer);
 			const buyDuration = tokkulShopBuyDuration(item, buyer, quantity);
-			if (buyDuration === null) {
-				return tokkulShopStockFor(item, { hasKilledJad: true, isIronman })
-					? `This item isn't stocked for you yet. Defeat TzTok-Jad to buy ${item.name}.`
-					: "This item isn't stocked.";
+			if (blocked || buyDuration === null || !item.diaryTokkulCost || !item.tokkulCost) {
+				return blocked ?? "You can't buy this item.";
 			}
 			duration = buyDuration;
 			const tokkulCost = (hasKaramjaDiary ? item.diaryTokkulCost : item.tokkulCost) * quantity;
@@ -140,46 +143,52 @@ export const tksCommand = defineCommand({
 
 		// If the duration of the trip is longer than the users max allowed trip, give the reason why and the max they can buy or sell
 		if (duration > maxTripLength) {
-			return `This trip is too long. You need to ${action} less at a time, to fit your max trip length of ${formatDuration(
-				maxTripLength
-			)}. ${
-				maxCanTransact
-					? `The max ${item.name.toLowerCase()}s you can ${
-							action === 'buy' ? 'buy' : 'sell'
-						} is ${maxCanTransact}`
-					: ''
-			}`;
+			return tokkulShopTooLongMessage({ item, buyer, action, quantity, duration, maxTripLength, maxCanTransact });
 		}
+
+		// Extra info for the player: slower without a TzTok-Jad kill, and the Karamja diary price.
+		const notes = [
+			options.buy ? tokkulShopJadNote(item, buyer, quantity) : null,
+			tokkulShopDiaryNote(item, action, hasKaramjaDiary)
+		].filter(Boolean);
+		const notesText = notes.length > 0 ? `\n\n${notes.join('\n')}` : '';
 
 		// Ores have a per-player daily cap (reserved before any Tokkul is taken, released if this fails or is cancelled).
 		const dailyLimit = options.buy ? tokkulShopDailyLimitFor(item.name) : undefined;
-		return runWithDailyLimit(user.id, tokkulShopLimitName(item.name), quantity, dailyLimit, async ({ commit }) => {
-			// Confirmation the user has to accept before trip is sent
-			await interaction.confirmation(
-				`Are you sure you want to spend ${cost} to get ${loot}? The trip to ${action} them will take ${formatDuration(
-					duration
-				)}.`
-			);
+		return runWithDailyLimit(
+			user.id,
+			tokkulShopLimitName(item.name),
+			quantity,
+			dailyLimit,
+			async ({ commit }) => {
+				// Confirmation the user has to accept before trip is sent
+				await interaction.confirmation(
+					`Are you sure you want to spend ${cost} to get ${loot}? The trip to ${action} them will take ${formatDuration(
+						duration
+					)}.${notesText}`
+				);
 
-			// Remove the cost, and update bank settings
-			await user.transactItems({ itemsToRemove: cost });
-			await ClientSettings.updateBankSetting('tks_cost', cost);
+				// Remove the cost, and update bank settings
+				await user.transactItems({ itemsToRemove: cost });
+				await ClientSettings.updateBankSetting('tks_cost', cost);
 
-			// Tokkul shop activity
-			await ActivityManager.startTrip<TokkulShopOptions>({
-				userID: user.id,
-				channelId,
-				quantity: loot.items()[0][1],
-				type: 'TokkulShop',
-				duration,
-				itemID: loot.items()[0][0].id
-			});
-			commit();
+				// Tokkul shop activity
+				await ActivityManager.startTrip<TokkulShopOptions>({
+					userID: user.id,
+					channelId,
+					quantity: loot.items()[0][1],
+					type: 'TokkulShop',
+					duration,
+					itemID: loot.items()[0][0].id
+				});
+				commit();
 
-			// Trip start message
-			return `${user.minionName} is now ${action}ing ${action === 'buy' ? loot : cost} ${
-				action === 'buy' ? 'from' : 'to'
-			} the Tzhaar Shops, in return for ${action === 'buy' ? cost : loot}. The trip will return in about ${formatTripDuration(user, duration)}.`;
-		});
+				// Trip start message
+				return `${user.minionName} is now ${action}ing ${action === 'buy' ? loot : cost} ${
+					action === 'buy' ? 'from' : 'to'
+				} the Tzhaar Shops, in return for ${action === 'buy' ? cost : loot}. The trip will return in about ${formatTripDuration(user, duration)}.${notesText}`;
+			},
+			item.name
+		);
 	}
 });
