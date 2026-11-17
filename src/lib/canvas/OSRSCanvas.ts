@@ -30,6 +30,7 @@ import {
 	type IBgSprite
 } from '@/lib/canvas/canvasUtil.js';
 import { type IconPackID, ItemIconPacks } from '@/lib/canvas/iconPacks.js';
+import { BoundedImageCache, imageSourceId } from '@/lib/canvas/imageCaches.js';
 import { BitField, BOT_TYPE } from '@/lib/constants.js';
 
 const Fonts = {
@@ -54,6 +55,10 @@ for (const [fontFamily, fontPath] of Object.entries(fonts)) {
 
 export class OSRSCanvas {
 	public static LOCAL_ICON_CACHE = new Map<number, CanvasImage>();
+	/** Spritesheet icons cut out once and reused (about 4.6 KB each). */
+	public static SPRITE_ICON_CACHE = new BoundedImageCache<Canvas>(6000);
+	/** Patron-dye recoloured sprites, keyed by source sprite + colour + size. */
+	public static TINTED_ICON_CACHE = new BoundedImageCache<Canvas>(3000);
 	public static ITEM_ICON_CACHE_DIR = path.resolve(process.env.ICON_CACHE_DIR ?? 'icon_cache');
 	public static ITEM_BSO_ICON_DIR = path.resolve('src/lib/resources/images/bso_icons');
 	public static Fonts = Fonts;
@@ -445,8 +450,10 @@ export class OSRSCanvas {
 		// Spritesheet icons
 		const itemSpriteData = OSRSCanvas.getItemSpriteData(itemID);
 		if (itemSpriteData) {
-			const { x, y, width, height } = itemSpriteData.getData(itemID) as SpriteData;
-			return getClippedRegion(itemSpriteData.getImage(), x, y, width, height);
+			return OSRSCanvas.SPRITE_ICON_CACHE.getOrCreate(String(itemID), () => {
+				const { x, y, width, height } = itemSpriteData.getData(itemID) as SpriteData;
+				return getClippedRegion(itemSpriteData.getImage(), x, y, width, height);
+			});
 		}
 
 		return OSRSCanvas.loadLocalIcon(itemID, networkTimeoutMs);
@@ -635,6 +642,11 @@ export class OSRSCanvas {
 	}
 
 	private tintImage(image: Image | Canvas, color: string, width: number, height: number): Canvas {
+		const key = `${imageSourceId(image)}:${color.toLowerCase()}:${width}x${height}`;
+		return OSRSCanvas.TINTED_ICON_CACHE.getOrCreate(key, () => OSRSCanvas.renderTint(image, color, width, height));
+	}
+
+	private static renderTint(image: Image | Canvas, color: string, width: number, height: number): Canvas {
 		const canvas = new SkiaCanvas(width, height);
 		canvas.gpu = false;
 		const ctx = canvas.getContext('2d');
