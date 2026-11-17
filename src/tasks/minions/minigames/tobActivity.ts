@@ -43,6 +43,33 @@ function handleTobXP(user: MUser, isHm: boolean, xpCounter: XPCounter): void {
 	}
 }
 
+/** Trip result header. Says the raid failed when every raid wiped (not "has finished"), and counts failures on mixed trips. */
+export function tobResultHeader({
+	allTag,
+	hardMode,
+	isSolo,
+	quantity,
+	wipes
+}: {
+	allTag: string;
+	hardMode: boolean;
+	isSolo: boolean;
+	quantity: number;
+	wipes: number;
+}): string {
+	const raidName = `${hardMode ? 'Hard Mode ' : ''}Theatre of Blood`;
+	const who = isSolo ? 'Your minion' : 'Your team';
+	if (wipes >= quantity) {
+		return quantity === 1
+			? `**${allTag} ${who} failed the ${raidName} raid!**`
+			: `**${allTag} ${who} failed all ${quantity} raids in the ${raidName}!**`;
+	}
+	if (wipes > 0) {
+		return `**${allTag} Your ${raidName} has finished (${wipes}/${quantity} raids failed)**`;
+	}
+	return `**${allTag} Your ${raidName} has finished**`;
+}
+
 export const tobTask: MinionTask = {
 	type: 'TheatreOfBlood',
 	async run(data: TheatreOfBloodTaskOptions, { handleTripFinish, rng: taskRng }) {
@@ -74,7 +101,14 @@ export const tobTask: MinionTask = {
 		let raidId = 0;
 		let wipeCount = 0;
 		let earnedAttempts = 0;
-		let resultMessage = `**${allTag} Your ${hardMode ? 'Hard Mode ' : ''}Theatre of Blood has finished**\n`;
+		let resultMessage = `${tobResultHeader({
+			allTag,
+			hardMode,
+			isSolo,
+			quantity,
+			// Same rule as the raid loop below: any non-null room means that raid wiped.
+			wipes: Array.from({ length: quantity }, (_, i) => wipedRooms[i]).filter(r => r !== null).length
+		})}\n`;
 
 		const totalXPCounts: Record<string, XPCounter> = {};
 		for (const user of uniqueUsers) {
