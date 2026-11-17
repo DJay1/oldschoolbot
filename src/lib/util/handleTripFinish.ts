@@ -31,7 +31,7 @@ import { combatAchievementTripEffect } from '@/lib/combat_achievements/combatAch
 import { BitField, CONSTANTS, PerkTier } from '@/lib/constants.js';
 import { LAUNCH_XP_BONUS_SENTENCE } from '@/lib/events/launch/constants.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
-import { rollLaunchBoxFromTrip } from '@/lib/events/launch/launchBox.js';
+import { launchBoxExtraMemberIDs, rollLaunchBoxFromTrip } from '@/lib/events/launch/launchBox.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
 import {
@@ -125,11 +125,32 @@ const tripFinishEffects: TripFinishEffect[] = [
 	},
 	{
 		name: 'Launch box',
-		fn: async ({ data, messages, rng }) => {
+		fn: async ({ data, messages, rng, user }) => {
+			// Tied to the Launch event's enabled flag and end date, so mass rolls stop on their own when it ends.
 			if (!isEventActive('launch')) return;
+			const doubleLoot = isDoubleLootActive(data.duration);
+			// Every other member of a mass/raid rolls their own box, same odds as the leader.
+			const memberFinds: string[] = [];
+			for (const id of launchBoxExtraMemberIDs(data, user.id)) {
+				const memberResult = rollLaunchBoxFromTrip({ durationMs: data.duration, doubleLoot, rng });
+				if (memberResult.amount <= 0) continue;
+				try {
+					const member = await mUserFetch(id);
+					await member.transactItems({
+						itemsToAdd: new Bank().add(LaunchItem.LAUNCH_BOX, memberResult.amount),
+						collectionLog: true
+					});
+					memberFinds.push(
+						`${member.usernameOrMention} found ${memberResult.amount === 1 ? 'a Launch box' : `${memberResult.amount} Launch boxes`}`
+					);
+				} catch (err) {
+					Logging.logError(err as Error, { user_id: id, source: 'launchBoxMassMember' });
+				}
+			}
+			if (memberFinds.length > 0) messages.push(`${customEmoji('launchbox')} ${memberFinds.join(', ')}!`);
 			const result = rollLaunchBoxFromTrip({
 				durationMs: data.duration,
-				doubleLoot: isDoubleLootActive(data.duration),
+				doubleLoot,
 				rng
 			});
 			if (result.amount <= 0) return;
