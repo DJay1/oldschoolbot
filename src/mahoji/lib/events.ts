@@ -12,6 +12,7 @@ import { ensureTripQueueStore } from '@/lib/bsc/tripQueue.js';
 import { bankImageTask } from '@/lib/canvas/bankImage.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
 import { registerDiscontinuedCollectionLogs } from '@/lib/discontinuedItems.js';
+import { startEventLoopMonitor } from '@/lib/eventLoopMonitor.js';
 import { backfillLaunchGraceful } from '@/lib/events/launch/launchGraceful.js';
 import { loadSeasonalEventOverrides } from '@/lib/events/store.js';
 import { syncHarvestFeasts } from '@/lib/events/thanksgiving/feast.js';
@@ -37,6 +38,14 @@ export const onStartup = async () => {
 			})
 			.catch(err => Logging.logError(err));
 	}
+
+	startEventLoopMonitor({
+		writePerf: line => Logging.logPerfLine(line),
+		warn: (message, ctx) => {
+			console.warn(`[lag] ${message}`);
+			Logging.logPerfLine({ text: 'event_loop_spike', message, ...ctx });
+		}
+	});
 
 	// Wait 10 seconds before starting tickers to reduce lag on startup
 	TimerManager.setTimeout(

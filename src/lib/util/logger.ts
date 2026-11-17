@@ -43,6 +43,11 @@ function logPerf({ duration, text, interaction, ...rest }: PerformanceLogContext
 	);
 }
 
+/** Always written (no minimum duration), for periodic summaries like event loop lag. */
+function logPerfLine(line: Record<string, unknown>) {
+	perfSonicBoom.write(`${JSON.stringify({ ...line, t: new Date().toISOString() })}\n`);
+}
+
 export const sonicBoom = new SonicBoom({
 	fd: path.join(LOG_FOLDER, `${BOT_TYPE_LOWERCASE}.debug.log`),
 	...baseSonicBoomOptions
@@ -175,7 +180,8 @@ function logError(args: string | Error | RichErrorLogArgs, ctx?: LogContext): vo
 const LoggingGlobal = {
 	logError,
 	logDebug,
-	logPerf
+	logPerf,
+	logPerfLine
 };
 
 declare global {
