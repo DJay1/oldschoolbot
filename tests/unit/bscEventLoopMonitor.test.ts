@@ -11,7 +11,14 @@ describe('event loop lag monitor', () => {
 			max: 1_234_000_000,
 			mean: 20_000_000
 		};
-		expect(readLagWindow(h as any)).toEqual({ p50: 10.5, p99: 250, max: 1234, mean: 20 });
+		expect(readLagWindow(h as any, 0)).toEqual({ p50: 10.5, p99: 250, max: 1234, mean: 20 });
+		// Default subtracts the 20ms sample interval and never goes below 0.
+		expect(readLagWindow({ percentile: () => 15_000_000, max: 1_020_000_000, mean: 25_000_000 } as any)).toEqual({
+			p50: 0,
+			p99: 0,
+			max: 1000,
+			mean: 5
+		});
 	});
 
 	test('warns on a spike, then stays quiet during the cooldown and counts what it skipped', () => {

@@ -17,8 +17,14 @@ export interface LagWindow {
 	mean: number;
 }
 
-export function readLagWindow(h: Pick<IntervalHistogram, 'percentile' | 'max' | 'mean'>): LagWindow {
-	const ms = (ns: number) => Math.round((Number.isFinite(ns) ? ns : 0) / 1e5) / 10;
+/** Sample timer interval. Node records the full interval between samples, so this is subtracted to get lag. */
+export const EVENT_LOOP_RESOLUTION_MS = 20;
+
+export function readLagWindow(
+	h: Pick<IntervalHistogram, 'percentile' | 'max' | 'mean'>,
+	resolutionMs = EVENT_LOOP_RESOLUTION_MS
+): LagWindow {
+	const ms = (ns: number) => Math.max(0, Math.round(((Number.isFinite(ns) ? ns : 0) / 1e6 - resolutionMs) * 10) / 10);
 	return { p50: ms(h.percentile(50)), p99: ms(h.percentile(99)), max: ms(h.max), mean: ms(h.mean) };
 }
 
@@ -54,8 +60,8 @@ let started: { stop: () => void } | null = null;
 
 export function startEventLoopMonitor(deps: EventLoopMonitorDeps) {
 	if (started) return started;
-	const minute = monitorEventLoopDelay({ resolution: 20 });
-	const sample = monitorEventLoopDelay({ resolution: 20 });
+	const minute = monitorEventLoopDelay({ resolution: EVENT_LOOP_RESOLUTION_MS });
+	const sample = monitorEventLoopDelay({ resolution: EVENT_LOOP_RESOLUTION_MS });
 	minute.enable();
 	sample.enable();
 	const warner = new LagSpikeWarner();
