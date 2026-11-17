@@ -44,6 +44,19 @@ export function tfaXPForBosses(bossesKilled: number, meleeStyles: ('attack' | 's
 	return counter;
 }
 
+/** Teams up to this size get the chest loot image (one panel per player). */
+export const TFA_IMAGE_MAX_TEAM = 3;
+
+/**
+ * Whether the trip result gets the chest loot image. The panel grows with the item count, so there's no item limit
+ * (multi-raid trips roll 3 standard drops per raid, which used to go over the old 6-item limit and drop the image).
+ */
+export function tfaShouldShowLootImage({ completed, lootPerUser }: { completed: number; lootPerUser: Bank[] }): boolean {
+	if (completed <= 0) return false;
+	if (lootPerUser.length < 1 || lootPerUser.length > TFA_IMAGE_MAX_TEAM) return false;
+	return lootPerUser.some(l => l.length > 0);
+}
+
 /** Bosses the team killed in a raid (all 5 if completed, otherwise those before the wipe). */
 export function tfaBossesKilled(raid: TFAOptions['raids'][number]): number {
 	if (raid.w === null) return raid.b.length;
@@ -184,8 +197,10 @@ export const tfaTask: MinionTask = {
 			);
 		}
 
-		const shouldShowImage =
-			completed > 0 && allUsers.length <= 3 && totalLoot.entries().every(i => i[1].length <= 6);
+		const shouldShowImage = tfaShouldShowLootImage({
+			completed,
+			lootPerUser: allUsers.map(u => totalLoot.get(u.id))
+		});
 
 		for (let idx = 0; idx < allUsers.length; idx++) {
 			const user = allUsers[idx];

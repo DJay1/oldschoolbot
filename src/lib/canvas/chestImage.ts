@@ -6,7 +6,7 @@ import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
 import { TOBUniques } from '@/lib/data/tob.js';
 import { getNewClGlowColour } from '@/lib/util/newClGlowColour.js';
 
-const chestLootTypes: {
+export const chestLootTypes: {
 	title: string;
 	chestImage: Promise<CanvasImage>;
 	chestImagePurple: Promise<CanvasImage>;
@@ -17,6 +17,7 @@ const chestLootTypes: {
 	itemRect: [number, number, number, number];
 	/** Draw a purple frame around a panel that got a purple. */
 	purpleBorder?: boolean;
+	growWithItems?: boolean;
 }[] = [
 	{
 		title: 'Tombs of Amascut',
@@ -93,6 +94,8 @@ const chestLootTypes: {
 		width: 260,
 		height: 180,
 		purpleBorder: true,
+		// Multi-raid trips roll lots of items, so the panel grows taller instead of skipping the image.
+		growWithItems: true,
 		// Rondache, Zorya's tome, Horn of Bran, Ascension crossbows, Obligator, Orion
 		purpleItems: [74600, 74601, 74602, 74603, 74604, 74611],
 		position: () => [12, 44],
@@ -103,6 +106,17 @@ const chestLootTypes: {
 /** True when the loot has any of the raid's purple-tier items. */
 export function chestLootIsPurple(loot: Bank, purpleItems: readonly (number | string)[]): boolean {
 	return loot.items().some(([item]) => purpleItems.includes(item.id));
+}
+
+/** Item rows drawn 2 per row; each extra row past the base 3 adds this many pixels. */
+const CHEST_ROW_HEIGHT = 42;
+const CHEST_BASE_ROWS = 3;
+
+/** Panel height for this loot. Fixed for most raids; grows with the item count for raids flagged growWithItems. */
+export function chestCanvasHeight(type: (typeof chestLootTypes)[number], itemCount: number): number {
+	if (!type.growWithItems) return type.height;
+	const rows = Math.ceil(itemCount / 2);
+	return type.height + Math.max(0, rows - CHEST_BASE_ROWS) * CHEST_ROW_HEIGHT;
 }
 
 export const chestPurpleItemsFor = (title: string) => chestLootTypes.find(t => t.title === title)?.purpleItems ?? [];
@@ -133,7 +147,7 @@ async function drawSingleChestCanvas(
 
 	const canvas = new OSRSCanvas({
 		width: type.width,
-		height: type.height,
+		height: chestCanvasHeight(type, loot.length),
 		sprite,
 		iconPackId: user.iconPackId
 	});
@@ -156,7 +170,7 @@ async function drawSingleChestCanvas(
 
 	canvas.drawBorder(sprite, true);
 
-	if (isPurple && 'purpleBorder' in type && type.purpleBorder) {
+	if (isPurple && type.purpleBorder) {
 		canvas.ctx.save();
 		canvas.ctx.strokeStyle = 'rgba(190, 80, 255, 0.85)';
 		canvas.ctx.lineWidth = 2;
@@ -191,7 +205,8 @@ async function drawChestItems(
 	const yOffset = 45;
 	const [iX, iY, iW, iH] = type.itemRect;
 
-	const itemCanvas = new OSRSCanvas({ width: iW + xOffset, height: iH + yOffset });
+	const extraHeight = chestCanvasHeight(type, loot.length) - type.height;
+	const itemCanvas = new OSRSCanvas({ width: iW + xOffset, height: iH + yOffset + extraHeight });
 
 	await bankImageTask.drawItems(
 		itemCanvas,
@@ -216,7 +231,7 @@ async function drawChestItems(
 function combineCanvases(canvases: OSRSCanvas[]): OSRSCanvas {
 	const spaceBetweenImages = 15;
 	const totalWidth = canvases[0].width * canvases.length + spaceBetweenImages * canvases.length;
-	const totalHeight = canvases[0].height;
+	const totalHeight = Math.max(...canvases.map(c => c.height));
 
 	const combinedCanvas = new OSRSCanvas({
 		width: totalWidth,
