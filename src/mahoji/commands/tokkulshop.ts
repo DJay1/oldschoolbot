@@ -96,11 +96,7 @@ export const tksCommand = defineCommand({
 		if (!item) return "That's not a valid item.";
 
 		if (item.requireFireCape && !hasKilledJad) {
-			return (
-				`You are not worthy JalYt. Before you can buy/sell ${item.name}, you need to have defeated the mighty TzTok-Jad! Kill TzTok-Jad once with ` /
-				activities
-			);
-			fight_caves`.`;
+			return `You are not worthy JalYt. Before you can buy/sell ${item.name}, you need to have defeated the mighty TzTok-Jad! Kill TzTok-Jad once with \`/activities fight_caves\`.`;
 		}
 
 		// User bank, maxTripLength, quantity given
@@ -153,7 +149,7 @@ export const tksCommand = defineCommand({
 		].filter(Boolean);
 		const notesText = notes.length > 0 ? `\n\n${notes.join('\n')}` : '';
 
-		// Ores have a per-player daily cap (reserved before any Tokkul is taken, released if this fails or is cancelled).
+		// Ores and gems have a per-player daily cap (reserved before any Tokkul is taken, released if this fails or is cancelled).
 		const dailyLimit = options.buy ? tokkulShopDailyLimitFor(item.name) : undefined;
 		return runWithDailyLimit(
 			user.id,
