@@ -4,18 +4,13 @@ import { Bank } from 'oldschooljs';
 import { filterOption } from '@/discord/index.js';
 import itemIsTradeable from '@/lib/util/itemIsTradeable.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
+import {
+	buildTradeCompletionContent,
+	formatBankForDisplay,
+	TRADE_BANK_DISPLAY_MAX
+} from '@/lib/util/tradeCompletion.js';
 import { tradePlayerItems } from '@/lib/util/tradePlayerItems.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
-
-const MAX_CHARACTER_LENGTH = 950;
-
-function formatBankForDisplay(bank: Bank): string {
-	const fullStr = bank.toStringFull();
-	if (fullStr.length > MAX_CHARACTER_LENGTH) {
-		return bank.toString(); // abbreviated with toKMB formatting
-	}
-	return fullStr;
-}
 
 export const tradeCommand = defineCommand({
 	name: 'trade',
@@ -94,8 +89,10 @@ export const tradeCommand = defineCommand({
 			}
 		}
 
-		if (itemsSent.items().some(i => !itemIsTradeable(i[0].id, true, senderUser.id)) ||
-			itemsReceived.items().some(i => !itemIsTradeable(i[0].id, true, recipientUser.id))) {
+		if (
+			itemsSent.items().some(i => !itemIsTradeable(i[0].id, true, senderUser.id)) ||
+			itemsReceived.items().some(i => !itemIsTradeable(i[0].id, true, recipientUser.id))
+		) {
 			return "You're trying to trade untradeable items.";
 		}
 
@@ -145,16 +142,19 @@ Both parties must click confirm to make the trade.`,
 		const sentFull = itemsSent.toStringFull();
 		const receivedFull = itemsReceived.toStringFull();
 		const files: { buffer: Buffer; name: string }[] = [];
-		if (sentFull.length > MAX_CHARACTER_LENGTH) {
+		if (sentFull.length > TRADE_BANK_DISPLAY_MAX) {
 			files.push({ buffer: Buffer.from(sentFull), name: 'items_sent.txt' });
 		}
-		if (receivedFull.length > MAX_CHARACTER_LENGTH) {
+		if (receivedFull.length > TRADE_BANK_DISPLAY_MAX) {
 			files.push({ buffer: Buffer.from(receivedFull), name: 'items_received.txt' });
 		}
 
-		const content = `${senderUser.mention} sold ${formatBankForDisplay(itemsSent)} to ${recipientUser.mention} in return for ${formatBankForDisplay(itemsReceived)}.
-
-You can now buy/sell items in the Grand Exchange: ${globalClient.mentionCommand('ge')}`;
+		const content = buildTradeCompletionContent(
+			senderUser.mention,
+			formatBankForDisplay(itemsSent),
+			recipientUser.mention,
+			formatBankForDisplay(itemsReceived)
+		);
 
 		const response = { content, allowedMentions: { users: [senderUser.id, recipientUser.id] } };
 
