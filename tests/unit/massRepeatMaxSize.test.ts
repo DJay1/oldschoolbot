@@ -1,8 +1,9 @@
 import '../../src/lib/util/clientSettings.js';
-import { activity_type_enum } from '../../src/prisma/main/enums.js';
+
 import { describe, expect, test } from 'vitest';
 
 import { buildRepeatTripArgs } from '@/lib/util/repeatStoredTrip.js';
+import { activity_type_enum } from '../../src/prisma/main/enums.js';
 
 const mass = ['1', '2', '3'];
 
@@ -61,7 +62,11 @@ describe('Repeating a mass keeps the max team size the leader picked', () => {
 			repeatMaxSize: 6
 		}) as any;
 		expect(solo.cox.start.max_team_size).toBeUndefined();
-		const old = buildRepeatTripArgs(activity_type_enum.DepthsOfAtlantis, { users: mass, cm: false, quantity: 1 }) as any;
+		const old = buildRepeatTripArgs(activity_type_enum.DepthsOfAtlantis, {
+			users: mass,
+			cm: false,
+			quantity: 1
+		}) as any;
 		expect(old.doa.start.max_team_size).toBeUndefined();
 	});
 });
