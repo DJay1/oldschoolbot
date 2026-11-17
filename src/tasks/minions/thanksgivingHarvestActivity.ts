@@ -41,9 +41,7 @@ export const thanksgivingHarvestTask: MinionTask = {
 			blessing: hasHarvestBlessing(user),
 			rng
 		});
-		if (parts.length > 0) {
-			await user.transactItems({ itemsToAdd: parts, collectionLog: true });
-		}
+		const result = parts.length > 0 ? await user.transactItems({ itemsToAdd: parts, collectionLog: true }) : null;
 		const got = parts.length > 0 ? `${parts}` : `no ${partName} this time`;
 		const extras = [
 			doubleLoot ? '2x from Double Loot' : null,
@@ -52,10 +50,21 @@ export const thanksgivingHarvestTask: MinionTask = {
 			.filter(Boolean)
 			.join(', ');
 		// loot: null, so Mystery box loot doubling and the Harvest feast never copy event parts (same as normal trips).
+		const message = new MessageBuilder().setContent(
+			`${user}, ${user.minionName} finished gathering ${partName} for The Straw Hat Harvest and found ${got}.${extras ? ` (${extras})` : ''}`
+		);
+		if (result && result.itemsAdded.length > 0) {
+			message.addBankImage({
+				bank: result.itemsAdded,
+				title: 'The Straw Hat Harvest',
+				user,
+				previousCL: result.previousCL
+			});
+		}
 		return handleTripFinish({
 			user,
 			channelId,
-			message: `${user}, ${user.minionName} finished gathering ${partName} for The Straw Hat Harvest and found ${got}.${extras ? ` (${extras})` : ''}`,
+			message,
 			data,
 			loot: null
 		});

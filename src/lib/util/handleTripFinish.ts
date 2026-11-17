@@ -102,6 +102,8 @@ type TripEffectReturn = {
 	itemsToAddWithCL?: Bank;
 	itemsToRemove?: Bank;
 	contentAppendix?: string;
+	/** Items (already in itemsToAddWithCL) to also show in the trip's loot image. Display only. */
+	lootImageItems?: Bank;
 };
 
 export interface TripFinishEffect {
@@ -176,7 +178,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 			});
 			if (parts.length === 0) return;
 			messages.push(`🌽 You gathered ${parts} for The Straw Hat Harvest.`);
-			return { itemsToAddWithCL: parts };
+			return { itemsToAddWithCL: parts, lootImageItems: parts };
 		}
 	},
 	{
@@ -253,7 +255,8 @@ const tripFinishEffects: TripFinishEffect[] = [
 			messages.push(
 				`🌽 While harvesting your patches you found ${cornucopias > 1 ? `${cornucopias}x ` : 'a '}**Bountiful cornucopia** for The Straw Hat Harvest!`
 			);
-			return { itemsToAddWithCL: new Bank().add(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA, cornucopias) };
+			const found = new Bank().add(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA, cornucopias);
+			return { itemsToAddWithCL: found, lootImageItems: found };
 		}
 	},
 	{
@@ -777,6 +780,21 @@ const tripFinishEffects: TripFinishEffect[] = [
 	}
 ];
 
+/** Redraws the trip's bank loot image with event items, or adds a small image of them if it has none. */
+export async function showEventItemsInLootImage(
+	message: MessageBuilderClass,
+	items: Bank,
+	user: MUser,
+	render: typeof makeBankImage = makeBankImage
+): Promise<void> {
+	try {
+		if (await message.addItemsToBankImage(items, render)) return;
+		message.addFile(await render({ bank: items, title: 'The Straw Hat Harvest', user }));
+	} catch (err) {
+		Logging.logError(err as Error, { user_id: user.id, source: 'tripFinishEventLootImage' });
+	}
+}
+
 type OSBSendableMessage = string | MessageBuilderClass | BaseSendableMessage;
 
 export async function handleTripFinish(
@@ -875,6 +893,7 @@ export async function handleTripFinish(
 	const itemsToAddWithCL = new Bank();
 	const itemsToRemove = new Bank();
 	const contentAppendices: string[] = [];
+	const lootImageItems = new Bank();
 	for (const effect of tripFinishEffects) {
 		if (effect.requiredPerkTier && perkTier < effect.requiredPerkTier) continue;
 		const start = performance.now();
@@ -893,6 +912,7 @@ export async function handleTripFinish(
 		if (res?.itemsToAddWithCL) itemsToAddWithCL.add(res.itemsToAddWithCL);
 		if (res?.itemsToRemove) itemsToRemove.add(res.itemsToRemove);
 		if (res?.contentAppendix) contentAppendices.push(res.contentAppendix);
+		if (res?.lootImageItems) lootImageItems.add(res.lootImageItems);
 		const end = performance.now();
 		const duration = end - start;
 		Logging.logPerf({
@@ -901,9 +921,11 @@ export async function handleTripFinish(
 		});
 	}
 
+	let extrasAdded = false;
 	if (itemsToAddWithCL.length > 0 || itemsToRemove.length > 0) {
 		try {
 			await user.transactItems({ itemsToAdd: itemsToAddWithCL, collectionLog: true, itemsToRemove });
+			extrasAdded = true;
 		} catch (err) {
 			Logging.logError(err as Error, { user_id: user.id, source: 'tripFinishTransactExtras' });
 		}
@@ -957,6 +979,12 @@ export async function handleTripFinish(
 				Logging.logError(err as Error);
 			}
 		}
+	}
+
+	// Event drops rolled here (Straw Hat Harvest) go into the trip's loot image. Clue finishes
+	// already drew every extra above. Display only, the items were added once in the transaction.
+	if (extrasAdded && lootImageItems.length > 0 && data.type !== 'ClueCompletion') {
+		await showEventItemsInLootImage(message, lootImageItems, user);
 	}
 
 	try {

@@ -1,8 +1,9 @@
 import type { ButtonBuilder, EmbedBuilder } from '@oldschoolgg/discord';
+import type { Bank } from 'oldschooljs';
 
 import chatHeadImage, { type HeadKey } from '@/lib/canvas/chatHeadImage.js';
 import { type DrawChestLootImageOptions, drawChestLootImage } from '@/lib/canvas/chestImage.js';
-import { type MakeBankImageOptions, makeBankImage } from '@/lib/util/makeBankImage.js';
+import { bankImageSource, type MakeBankImageOptions, makeBankImage } from '@/lib/util/makeBankImage.js';
 
 export class MessageBuilderClass {
 	private _message: BaseSendableMessage;
@@ -51,6 +52,33 @@ export class MessageBuilderClass {
 	addBankImage(opts: MakeBankImageOptions): this {
 		this.bankImagePromise = makeBankImage(opts);
 		return this;
+	}
+
+	/**
+	 * Redraws this message's bank loot image with `extras` added, for items rolled after the
+	 * image was made. Display only: it never touches anyone's bank. Returns false when the
+	 * message has no bank image to redraw.
+	 */
+	async addItemsToBankImage(
+		extras: Bank,
+		render: (opts: MakeBankImageOptions) => Promise<SendableFile> = makeBankImage
+	): Promise<boolean> {
+		if (extras.length === 0) return false;
+		if (this.bankImagePromise) {
+			const file = await this.bankImagePromise;
+			const source = bankImageSource(file);
+			if (!source) return false;
+			this.bankImagePromise = render({ ...source, bank: source.bank.clone().add(extras) });
+			return true;
+		}
+		const files = this._message.files ?? [];
+		for (let i = files.length - 1; i >= 0; i--) {
+			const source = bankImageSource(files[i]);
+			if (!source) continue;
+			files[i] = await render({ ...source, bank: source.bank.clone().add(extras) });
+			return true;
+		}
+		return false;
 	}
 
 	addChestLootImage(opts: DrawChestLootImageOptions): this {

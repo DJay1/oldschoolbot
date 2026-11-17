@@ -18,6 +18,20 @@ export interface MakeBankImageOptions {
 	iconPackId?: IconPackID;
 }
 
+/**
+ * What each bank image was drawn from, so a trip finish can redraw it with extra items
+ * (for example event drops rolled after the task built its loot image).
+ */
+const bankImageSources = new WeakMap<SendableFile, MakeBankImageOptions>();
+
+export function rememberBankImageSource(file: SendableFile, opts: MakeBankImageOptions) {
+	bankImageSources.set(file, { ...opts, bank: opts.bank.clone() });
+}
+
+export function bankImageSource(file: SendableFile | undefined): MakeBankImageOptions | undefined {
+	return file ? bankImageSources.get(file) : undefined;
+}
+
 export async function makeBankImage({
 	bank,
 	title,
@@ -44,8 +58,21 @@ export async function makeBankImage({
 		iconPackId
 	});
 
-	return {
+	const file: SendableFile = {
 		name: `${spoiler ? 'SPOILER_' : ''}bank.png`,
 		buffer: image
 	};
+	rememberBankImageSource(file, {
+		bank,
+		title,
+		background,
+		user,
+		previousCL,
+		spoiler,
+		showNewCL,
+		flags,
+		mahojiFlags,
+		iconPackId
+	});
+	return file;
 }
