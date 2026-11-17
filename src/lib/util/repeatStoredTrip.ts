@@ -646,7 +646,7 @@ const tripHandlers: {
 			return {
 				cox: {
 					start: {
-								challenge_mode: data.challengeMode,
+						challenge_mode: data.challengeMode,
 						type: data.users.length === 1 ? 'solo' : 'mass',
 						max_team_size: data.users.length === 1 ? undefined : data.repeatMaxSize,
 						quantity: data.quantity
