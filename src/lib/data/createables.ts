@@ -11,7 +11,7 @@ import { chambersOfXericMetamorphPets, tobMetamorphPets } from '@/lib/data/Colle
 import { amrodCreatables } from '@/lib/data/creatables/amrod.js';
 import { armorAndItemPacks } from '@/lib/data/creatables/armorPacks.js';
 import { caCreatables } from '@/lib/data/creatables/caCreatables.js';
-import { capeCreatables } from '@/lib/data/creatables/capes.js';
+import { capeCreatables, makeMaxCapeRevert } from '@/lib/data/creatables/capes.js';
 import { dragonFireShieldCreatables } from '@/lib/data/creatables/dragonfireShields.js';
 import { dtCreatables } from '@/lib/data/creatables/dt.js';
 import { forestryCreatables } from '@/lib/data/creatables/forestryCreatables.js';
@@ -2560,6 +2560,11 @@ const Createables: Createable[] = [
 		inputItems: new Bank().add("Blessed dizana's quiver").add('Max cape').add('Max hood').freeze(),
 		outputItems: new Bank().add("Dizana's max cape").add("Dizana's max hood").freeze()
 	},
+	makeMaxCapeRevert({
+		name: "Dizana's max cape",
+		inputItems: new Bank().add("Blessed dizana's quiver").add('Max cape').add('Max hood').freeze(),
+		outputItems: new Bank().add("Dizana's max cape").add("Dizana's max hood").freeze()
+	}),
 	{
 		name: 'Noxious halberd',
 		inputItems: new Bank().add('Noxious point').add('Noxious blade').add('Noxious pommel').freeze(),

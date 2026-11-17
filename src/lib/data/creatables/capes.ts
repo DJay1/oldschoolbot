@@ -2,7 +2,7 @@ import { Bank } from 'oldschooljs';
 
 import type { Createable } from '@/lib/data/createables.js';
 
-export const capeCreatables: Createable[] = [
+const maxCapeCreatables: Createable[] = [
 	{
 		name: 'Ardougne max cape',
 		inputItems: new Bank({
@@ -106,3 +106,25 @@ export const capeCreatables: Createable[] = [
 		})
 	}
 ];
+
+/** Total level needed to buy a Max cape, also needed to revert a max cape. */
+export const MAX_CAPE_TOTAL_LEVEL = 2277;
+
+/**
+ * Revert a max cape variant back into exactly what creating it used (the max cape and hood, plus the Fire cape,
+ * Mythical cape, etc. where creating it took one). Needs the same total level as buying a Max cape.
+ */
+export function makeMaxCapeRevert(create: Createable): Createable {
+	return {
+		name: `Revert ${create.name}`,
+		inputItems: create.outputItems,
+		outputItems: create.inputItems,
+		noCl: true,
+		customReq: async user =>
+			user.totalLevel < MAX_CAPE_TOTAL_LEVEL
+				? `You need to be maxed (${MAX_CAPE_TOTAL_LEVEL} total level) to revert a max cape.`
+				: null
+	};
+}
+
+export const capeCreatables: Createable[] = [...maxCapeCreatables, ...maxCapeCreatables.map(makeMaxCapeRevert)];
