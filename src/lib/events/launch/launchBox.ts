@@ -130,6 +130,17 @@ export function rollLaunchBoxFromTrip({
 	return { amount: guaranteed + (roll <= Math.round(remainder * RARE_SCALE) ? 1 : 0) };
 }
 
+/**
+ * Other members of a group trip (mass, raid) who roll their own Launch box. The user the trip finish runs for
+ * (the leader) already rolls, so they're left out, and nobody rolls twice. Only used while the Launch event is active.
+ */
+export function launchBoxExtraMemberIDs(data: object, rollerID: string): string[] {
+	const users = 'users' in data ? data.users : undefined;
+	if (!Array.isArray(users)) return [];
+	const ids = users.filter((id): id is string => typeof id === 'string' && id !== rollerID);
+	return [...new Set(ids)];
+}
+
 export function buildFounderLaunchExtras(rng: LaunchBoxRng): Bank {
 	const loot = new Bank();
 	for (const box of LAUNCH_BOX_MYSTERY_BOXES) {

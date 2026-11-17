@@ -9,6 +9,7 @@ import {
 	LAUNCH_BOX_MYSTERY_BOXES,
 	LAUNCH_BOX_POTIONS,
 	type LaunchBoxRng,
+	launchBoxExtraMemberIDs,
 	launchBoxTripChance,
 	openLaunchBoxes,
 	rareRoll,
@@ -159,4 +160,12 @@ test('Corgo party hat is a tradeable head item', () => {
 	expect(hat.customItemData?.examine).toBe(CORGO_PARTY_HAT_EXAMINE);
 	expect(Items.getOrThrow('Launch box').id).toBe(74_200);
 	expect(Items.getOrThrow('Double XP token').id).toBe(74_202);
+});
+
+test('mass members: everyone but the roller, once each', () => {
+	expect(launchBoxExtraMemberIDs({ users: ['1', '2', '3'] }, '1')).toEqual(['2', '3']);
+	expect(launchBoxExtraMemberIDs({ users: ['1', '2', '2', '1', '3'] }, '1')).toEqual(['2', '3']);
+	expect(launchBoxExtraMemberIDs({ users: ['1'] }, '1')).toEqual([]);
+	expect(launchBoxExtraMemberIDs({}, '1')).toEqual([]);
+	expect(launchBoxExtraMemberIDs({ users: 'nope' }, '1')).toEqual([]);
 });
