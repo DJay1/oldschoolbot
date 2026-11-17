@@ -178,11 +178,13 @@ export function rollThanksgivingHarvestParts({
 	blessing: boolean;
 	rng: ThanksgivingRng;
 }): Bank {
-	const expected = thanksgivingHarvestExpectedParts(durationMs, focus, { doubleLoot, blessing });
+	// Double Loot is a real 2x of the rolled amount (same average as doubling the expectation),
+	// so the "2x from Double Loot" message is literally true. Harvest Blessing stays in the expectation.
+	const expected = thanksgivingHarvestExpectedParts(durationMs, focus, { doubleLoot: false, blessing });
 	if (expected <= 0) return new Bank();
 	// Random amount: a uniform 50%-150% spread (mean 1), then the fraction rolled as a chance. Never negative.
 	const spread = rng.randInt(HARVEST_FOCUS_SPREAD_MIN_PERCENT, HARVEST_FOCUS_SPREAD_MAX_PERCENT) / 100;
-	const amount = Math.max(0, rollExpected(rng, expected * spread));
+	const amount = Math.max(0, rollExpected(rng, expected * spread)) * (doubleLoot ? 2 : 1);
 	const loot = new Bank();
 	if (amount > 0) {
 		loot.add(focus === 'bundles' ? ThanksgivingItem.HARVEST_BUNDLE : ThanksgivingItem.WICKER_BASKET, amount);

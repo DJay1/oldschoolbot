@@ -84,6 +84,48 @@ describe('/thanksgiving harvest focused trip', () => {
 		}
 	});
 
+	test('Double Loot is exactly 2x the same roll, Blessing applied once, only the chosen part', () => {
+		const seeded = (seed: number) => ({
+			randInt: (min: number, max: number) => {
+				seed = (seed * 1103515245 + 12345) % 2147483648;
+				return min + (seed % (max - min + 1));
+			}
+		});
+		for (const focus of ['bundles', 'baskets'] as const) {
+			for (const minutes of [10, 20, 30, 45, 60, 120]) {
+				for (const blessing of [false, true]) {
+					for (let s = 1; s <= 50; s++) {
+						const opts = { durationMs: minutes * Time.Minute, focus, blessing };
+						const single = rollThanksgivingHarvestParts({ ...opts, doubleLoot: false, rng: seeded(s) });
+						const double = rollThanksgivingHarvestParts({ ...opts, doubleLoot: true, rng: seeded(s) });
+						const item =
+							focus === 'bundles' ? ThanksgivingItem.HARVEST_BUNDLE : ThanksgivingItem.WICKER_BASKET;
+						expect(double.amount(item)).toBe(single.amount(item) * 2);
+						// Nothing else is added or doubled.
+						expect(double.length).toBe(single.length);
+						expect(double.items().every(([i]) => i.id === item)).toBe(true);
+					}
+				}
+			}
+		}
+	});
+
+	test('Blessing is applied once (x1.15 on the expectation), with or without Double Loot', () => {
+		const d = 60 * Time.Minute;
+		const plainExp = thanksgivingHarvestExpectedParts(d, 'baskets', plain);
+		const blessed = thanksgivingHarvestExpectedParts(d, 'baskets', { doubleLoot: false, blessing: true });
+		expect(blessed / plainExp).toBeCloseTo(1.15);
+		// Fixed rng (no spread, no extra roll): blessed DL = 2 x ceil(blessed expectation x 0.5).
+		const dl = rollThanksgivingHarvestParts({
+			durationMs: d,
+			focus: 'baskets',
+			doubleLoot: true,
+			blessing: true,
+			rng: alwaysRng
+		});
+		expect(dl.amount(ThanksgivingItem.WICKER_BASKET)).toBe(2 * Math.ceil(blessed * 0.5));
+	});
+
 	test('reuses the retired TrickOrTreat activity type (no schema change)', () => {
 		expect(THANKSGIVING_HARVEST_ACTIVITY).toBe('TrickOrTreat');
 	});
