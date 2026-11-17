@@ -214,6 +214,7 @@ test('decant all conserves doses and does not overlap potion IDs', () => {
 		expect(removed).toBeGreaterThan(0);
 		// leftover can add back a lower-dose item that was also removed; net must not go negative on owns()
 		expect(userBank.amount(item.id)).toBeGreaterThanOrEqual(removed);
+		expect(afterBank.amount(item.id)).toBe(userBank.amount(item.id) - removed + added);
 	}
 	expect(userBank.clone().remove(res.potionsToRemove).toString().includes('-')).toBe(false);
 });
