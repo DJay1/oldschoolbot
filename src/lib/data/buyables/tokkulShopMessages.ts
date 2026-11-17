@@ -44,11 +44,13 @@ export function tokkulShopJadNote(item: TokkulShopItem, buyer: TokkulShopBuyer, 
 	const now = tokkulShopBuyDuration(item, buyer, quantity);
 	const withJad = tokkulShopBuyDuration(item, JAD_BUYER(buyer), quantity);
 	if (now === null || withJad === null || withJad >= now) return null;
-	const rateNow = rateText(item, buyer);
 	const rateJad = rateText(item, JAD_BUYER(buyer));
+	const gem = tokkulGemBuyTime(item, buyer);
 	const what =
-		tokkulGemBuyTime(item, buyer) !== null ? `each ${item.name} takes` : `the shop restocks ${item.name} at`;
-	return `No TzTok-Jad kill yet, so ${what} ${rateNow}. After a Jad kill it's ${rateJad}, so this trip would take ${formatDuration(withJad)} instead of ${formatDuration(now)}.`;
+		gem !== null
+			? `each ${item.name} takes ${secs(gem)}`
+			: `the shop restocks ${item.name} at ${rateText(item, buyer)}`;
+	return `No TzTok-Jad kill yet, so ${what}. After a Jad kill it's ${rateJad}, so this trip would take ${formatDuration(withJad)} instead of ${formatDuration(now)}.`;
 }
 
 /** Karamja diary price note for a buy or sell, or null if there's no difference. */
