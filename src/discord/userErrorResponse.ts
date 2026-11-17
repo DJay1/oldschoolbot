@@ -20,7 +20,12 @@ export async function userErrorResponse(
 	try {
 		await interaction.followUp({ content });
 	} catch (followUpErr) {
-		Logging.logError(followUpErr as Error, { source: 'userErrorFollowUp' });
+		// Logging must never turn a failed follow-up back into a thrown error.
+		try {
+			Logging.logError(followUpErr as Error, { source: 'userErrorFollowUp' });
+		} catch {
+			console.error(followUpErr);
+		}
 	}
 	return SpecialResponse.RespondedManually;
 }
