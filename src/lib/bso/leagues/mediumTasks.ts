@@ -1074,7 +1074,7 @@ export const mediumTasks: Task[] = [
 	},
 	{
 		id: 1153,
-		name: 'Have 3 unique items destroyed by the Chincannon',
+		name: 'Have 5 unique items destroyed by the Chincannon',
 		has: async ({ userStats }) => {
 			const bank = new Bank(userStats.chincannon_destroyed_loot_bank as ItemBank);
 			return chincannonDestroyedUniqueCount(bank) >= 5;

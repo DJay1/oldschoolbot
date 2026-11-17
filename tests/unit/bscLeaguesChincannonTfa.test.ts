@@ -25,6 +25,17 @@ describe('Leagues: uniques destroyed by the Chincannon', () => {
 		expect(chincannonDestroyedUniqueCount(bank)).toBe(3);
 	});
 
+	test('task name matches its requirement (5 different uniques)', async () => {
+		const { mediumTasks } = await import('@/lib/bso/leagues/mediumTasks.js');
+		const task = mediumTasks.find(t => t.id === 1153)!;
+		expect(task.name).toBe('Have 5 unique items destroyed by the Chincannon');
+		const uniques = [TfaItem.RONDACHE, TfaItem.ZORYAS_TOME, TfaItem.HORN_OF_BRAN, TfaItem.OBLIGATOR, TfaItem.ORION];
+		const has = (ids: number[]) =>
+			task.has({ userStats: { chincannon_destroyed_loot_bank: ids.reduce((b, id) => b.add(id), new Bank()).toJSON() } } as any);
+		expect(await has(uniques.slice(0, 4))).toBe(false);
+		expect(await has(uniques)).toBe(true);
+	});
+
 	test('mixed raids add up', () => {
 		const bank = new Bank().add(TfaItem.RONDACHE).add(chambersOfXericCL[0]).add(theatreOfBLoodCL[0]);
 		expect(chincannonDestroyedUniqueCount(bank)).toBe(3);
