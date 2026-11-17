@@ -1,4 +1,5 @@
 import '../../src/lib/util/clientSettings.js';
+
 import { Bank } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 

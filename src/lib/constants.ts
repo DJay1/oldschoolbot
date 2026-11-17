@@ -589,10 +589,26 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 	},
 	[BitField.Developer]: { name: 'Developer', protected: true, userConfigurable: false },
 	[BitField.HasZeal]: { name: 'Zeal unlocked', protected: false, userConfigurable: false },
-	[BitField.UsedFragmentOfWhisperingWind]: { name: 'Used Fragment of whispering wind', protected: false, userConfigurable: false },
-	[BitField.UsedFragmentOfDeepWater]: { name: 'Used Fragment of deep water', protected: false, userConfigurable: false },
-	[BitField.UsedFragmentOfLivingEarth]: { name: 'Used Fragment of living earth', protected: false, userConfigurable: false },
-	[BitField.UsedFragmentOfBurningFire]: { name: 'Used Fragment of burning fire', protected: false, userConfigurable: false },
+	[BitField.UsedFragmentOfWhisperingWind]: {
+		name: 'Used Fragment of whispering wind',
+		protected: false,
+		userConfigurable: false
+	},
+	[BitField.UsedFragmentOfDeepWater]: {
+		name: 'Used Fragment of deep water',
+		protected: false,
+		userConfigurable: false
+	},
+	[BitField.UsedFragmentOfLivingEarth]: {
+		name: 'Used Fragment of living earth',
+		protected: false,
+		userConfigurable: false
+	},
+	[BitField.UsedFragmentOfBurningFire]: {
+		name: 'Used Fragment of burning fire',
+		protected: false,
+		userConfigurable: false
+	},
 	[BitField.DisableGlowEffects]: {
 		name: 'Disable Glow Effects',
 		protected: false,

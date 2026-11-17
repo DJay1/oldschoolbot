@@ -13,7 +13,8 @@ describe('Hitpoints master cape trip length', () => {
 		for (const a of ['Nex', 'KalphiteKing', 'DepthsOfAtlantis', 'Dungeoneering', 'TuraelsTrials'] as const) {
 			expect(masterHPCapeTripBoostPercent(a)).toBe(10);
 		}
-		for (const a of ['MonsterKilling', 'Nightmare', 'Cyclops'] as const) expect(masterHPCapeTripBoostPercent(a)).toBe(20);
+		for (const a of ['MonsterKilling', 'Nightmare', 'Cyclops'] as const)
+			expect(masterHPCapeTripBoostPercent(a)).toBe(20);
 		expect(masterHPCapeTripBoostPercent('Fishing')).toBe(0);
 		expect(masterHPCapeTripBoostPercent(undefined)).toBe(0);
 	});

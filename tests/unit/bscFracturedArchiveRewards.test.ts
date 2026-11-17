@@ -1,11 +1,12 @@
+import { compCapeCategories } from '@/lib/bso/compCape.js';
+import { mysteryBoxBlacklist } from '@/lib/bso/openables/mysteryBoxBlacklist.js';
+import { allItemsThatCanBeDisassembledIDs } from '@/lib/bso/skills/invention/index.js';
+
 import { Items } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import { TfaItem, tfaAnnouncedItems, tfaCL, tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
-import { allItemsThatCanBeDisassembledIDs } from '@/lib/bso/skills/invention/index.js';
-import { mysteryBoxBlacklist } from '@/lib/bso/openables/mysteryBoxBlacklist.js';
 import { allPetsCL } from '@/lib/data/CollectionsExport.js';
-import { compCapeCategories } from '@/lib/bso/compCape.js';
 
 describe('The Fractured Archive rewards match the other raids', () => {
 	test('no TFA item can come out of a mystery box (like CoX/ToB/ToA/DoA)', () => {

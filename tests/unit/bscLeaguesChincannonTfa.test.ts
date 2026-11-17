@@ -1,10 +1,11 @@
 import '../../src/lib/util/clientSettings.js';
 
+import { chincannonDestroyedUniqueCount, chincannonLeaguesUniques } from '@/lib/bso/leagues/chincannonUniques.js';
+
 import { Bank, ItemGroups } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import { TfaItem, tfaPurpleItems } from '@/lib/bsc/tfa/tfaItems.js';
-import { chincannonDestroyedUniqueCount, chincannonLeaguesUniques } from '@/lib/bso/leagues/chincannonUniques.js';
 import { chambersOfXericCL, theatreOfBLoodCL } from '@/lib/data/CollectionsExport.js';
 
 describe('Leagues: uniques destroyed by the Chincannon', () => {
@@ -31,7 +32,9 @@ describe('Leagues: uniques destroyed by the Chincannon', () => {
 		expect(task.name).toBe('Have 5 unique items destroyed by the Chincannon');
 		const uniques = [TfaItem.RONDACHE, TfaItem.ZORYAS_TOME, TfaItem.HORN_OF_BRAN, TfaItem.OBLIGATOR, TfaItem.ORION];
 		const has = (ids: number[]) =>
-			task.has({ userStats: { chincannon_destroyed_loot_bank: ids.reduce((b, id) => b.add(id), new Bank()).toJSON() } } as any);
+			task.has({
+				userStats: { chincannon_destroyed_loot_bank: ids.reduce((b, id) => b.add(id), new Bank()).toJSON() }
+			} as any);
 		expect(await has(uniques.slice(0, 4))).toBe(false);
 		expect(await has(uniques)).toBe(true);
 	});

@@ -674,7 +674,8 @@ export const testPotatoCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'tfa_min_reqs',
-			description: 'Test bot only: set stats, quest, gear and supplies to the bare minimum for The Fractured Archive.'
+			description:
+				'Test bot only: set stats, quest, gear and supplies to the bare minimum for The Fractured Archive.'
 		},
 		{
 			type: 'Subcommand',

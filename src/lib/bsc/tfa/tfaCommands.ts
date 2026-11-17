@@ -1,40 +1,47 @@
-import { bold, EmbedBuilder } from '@oldschoolgg/discord';
-import { formatDuration, Time } from '@oldschoolgg/toolkit';
-import { Bank, type ItemBank } from 'oldschooljs';
-import { clamp } from 'remeda';
-
-import {
-	checkTfaUser,
-	createTfaRaids,
-	minTfaStats,
-	TFA_MAX_QUANTITY,
-	TFA_MIN_GEAR_PERCENT,
-	tfaChargesNeeded,
-	tfaHelpBoostsText,
-	tfaItemBoosts,
-	tfaSingleRaidDuration,
-	tfaSuppliesForKc,
-	TFA_SUPPLY_KC_STEP,
-	tfaBossByID,
-	tfaTeamMemberFromUser,
-	tfaUserSpeedReduction
-} from '@/lib/bsc/tfa/tfa.js';
-import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
-import { TFA_ROOM_BOOST_CAP, tfaRoomBoostsFor, tfaRoomPercent, tfaRoomBoostsText, tfaRoomItemsHelpLines } from '@/lib/bsc/tfa/tfaRooms.js';
-import { tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
-import { tfaTeamUniqueOdds } from '@/lib/bsc/tfa/tfaLoot.js';
-import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
-import { BitField } from '@/lib/constants.js';
-import { calculateTfaGearPercents } from '@/lib/bsc/tfa/tfa.js';
-import { degradeableItems, degradeItem } from '@/lib/degradeableItems.js';
-import { trackLoot } from '@/lib/lootTrack.js';
-import type { MakePartyOptions } from '@/lib/types/index.js';
 import {
 	canAffordInventionBoost,
 	InventionID,
 	inventionBoosts,
 	inventionItemBoost
 } from '@/lib/bso/skills/invention/inventions.js';
+
+import { bold, EmbedBuilder } from '@oldschoolgg/discord';
+import { formatDuration, Time } from '@oldschoolgg/toolkit';
+import { Bank, type ItemBank } from 'oldschooljs';
+import { clamp } from 'remeda';
+
+import {
+	calculateTfaGearPercents,
+	checkTfaUser,
+	createTfaRaids,
+	minTfaStats,
+	TFA_MAX_QUANTITY,
+	TFA_MIN_GEAR_PERCENT,
+	TFA_SUPPLY_KC_STEP,
+	tfaBossByID,
+	tfaChargesNeeded,
+	tfaHelpBoostsText,
+	tfaItemBoosts,
+	tfaSingleRaidDuration,
+	tfaSuppliesForKc,
+	tfaTeamMemberFromUser,
+	tfaUserSpeedReduction
+} from '@/lib/bsc/tfa/tfa.js';
+import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
+import { tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
+import { tfaTeamUniqueOdds } from '@/lib/bsc/tfa/tfaLoot.js';
+import {
+	TFA_ROOM_BOOST_CAP,
+	tfaRoomBoostsFor,
+	tfaRoomBoostsText,
+	tfaRoomItemsHelpLines,
+	tfaRoomPercent
+} from '@/lib/bsc/tfa/tfaRooms.js';
+import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
+import { BitField } from '@/lib/constants.js';
+import { degradeableItems, degradeItem } from '@/lib/degradeableItems.js';
+import { trackLoot } from '@/lib/lootTrack.js';
+import type { MakePartyOptions } from '@/lib/types/index.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
@@ -116,7 +123,11 @@ export async function tfaStartCommand(
 			return `${chinCannonUser.usernameOrMention} doesn't have enough materials to use the Chincannon for this trip.`;
 		}
 		// Charged before any supplies are removed, so a failed charge costs nothing.
-		const res = await inventionItemBoost({ user: chinCannonUser, inventionID: InventionID.ChinCannon, duration: realDuration });
+		const res = await inventionItemBoost({
+			user: chinCannonUser,
+			inventionID: InventionID.ChinCannon,
+			duration: realDuration
+		});
 		if (!res.success) {
 			return `${chinCannonUser.usernameOrMention} couldn't use the Chincannon for this trip.`;
 		}
@@ -186,11 +197,11 @@ export async function tfaStartCommand(
 	} ${RAID_NAME} raid${quantity === 1 ? '' : 's'} - the total trip will take ${formatDuration(fakeDuration)}. Team unique chance: 1 in ${tfaTeamUniqueOdds(users.length)} per raid.
 
 ${
-		// Same supplies for everyone: one line at the end instead of a line per player (keeps big masses short).
-		usedSupplies.every(s => s.equals(usedSupplies[0]))
-			? `${details.replaceAll(`  Used: ${usedSupplies[0]}\n`, '')}Each player used: ${usedSupplies[0]}`
-			: details
-	}${chincannonStr}`;
+	// Same supplies for everyone: one line at the end instead of a line per player (keeps big masses short).
+	usedSupplies.every(s => s.equals(usedSupplies[0]))
+		? `${details.replaceAll(`  Used: ${usedSupplies[0]}\n`, '')}Each player used: ${usedSupplies[0]}`
+		: details
+}${chincannonStr}`;
 }
 
 export async function tfaHelpCommand(user: MUser): Promise<string> {
@@ -263,5 +274,7 @@ ${tfaRoomItemsHelpLines(bossName)
 	.join('\n')}
 
 **Yours:** ${mine.length > 0 ? mine.join(' | ') : 'None'}`;
-	return { embeds: [new EmbedBuilder().setTitle(`${RAID_NAME} room items`).setDescription(description.slice(0, 4096))] };
+	return {
+		embeds: [new EmbedBuilder().setTitle(`${RAID_NAME} room items`).setDescription(description.slice(0, 4096))]
+	};
 }

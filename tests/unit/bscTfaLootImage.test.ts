@@ -1,7 +1,7 @@
 import '../../src/lib/util/clientSettings.js';
 
-import { Bank } from 'oldschooljs';
 import { SeedableRNG } from 'node-rng';
+import { Bank } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import { rollTfaTripLoot, tfaShouldShowLootImage } from '@/lib/bsc/tfa/tfaActivity.js';

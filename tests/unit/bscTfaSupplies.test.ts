@@ -12,7 +12,12 @@ describe('TFA supplies scale with KC', () => {
 	test('0 KC is unchanged from before', () => {
 		expect(
 			tfaSuppliesPerRaid.equals(
-				new Bank({ 'Saradomin brew(4)': 8, 'Super restore(4)': 6, 'Super combat potion(4)': 1, 'Ranging potion(4)': 1 })
+				new Bank({
+					'Saradomin brew(4)': 8,
+					'Super restore(4)': 6,
+					'Super combat potion(4)': 1,
+					'Ranging potion(4)': 1
+				})
 			)
 		).toBe(true);
 		expect(tfaSuppliesForKc(0).equals(tfaSuppliesPerRaid)).toBe(true);

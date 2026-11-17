@@ -1,5 +1,3 @@
-import { Items } from 'oldschooljs';
-
 import {
 	gorajanArcherOutfit,
 	gorajanOccultOutfit,
@@ -8,6 +6,9 @@ import {
 	torvaOutfit,
 	virtusOutfit
 } from '@/lib/bso/collection-log/main.js';
+
+import { Items } from 'oldschooljs';
+
 import type { Gear } from '@/lib/structures/Gear.js';
 
 /**
@@ -77,10 +78,19 @@ const mageWeapons: TfaRoomGroup = {
 };
 
 const armour = (style: TfaRoomSetup): TfaRoomGroup => {
-	const sets = { melee: ['Gorajan warrior', 'Torva'], range: ['Gorajan archer', 'Pernix'], mage: ['Gorajan occult', 'Virtus'] }[
-		style
-	];
-	return { label: `${style} armour`, where: style, items: [[`Full ${sets[0]}`, 2], [`Full ${sets[1]}`, 1]] };
+	const sets = {
+		melee: ['Gorajan warrior', 'Torva'],
+		range: ['Gorajan archer', 'Pernix'],
+		mage: ['Gorajan occult', 'Virtus']
+	}[style];
+	return {
+		label: `${style} armour`,
+		where: style,
+		items: [
+			[`Full ${sets[0]}`, 2],
+			[`Full ${sets[1]}`, 1]
+		]
+	};
 };
 
 const meleeJewellery: TfaRoomGroup = {
@@ -259,7 +269,11 @@ export function tfaTeamRoomPercent(team: { roomBoosts?: TfaRoomBoosts }[], bossI
 	return team.reduce((acc, m) => acc + tfaRoomPercent(m.roomBoosts, bossID), 0) / team.length;
 }
 
-export function tfaRoomBoostsText(boosts: TfaRoomBoosts | undefined, bossIDs: number[], bossName: (id: number) => string) {
+export function tfaRoomBoostsText(
+	boosts: TfaRoomBoosts | undefined,
+	bossIDs: number[],
+	bossName: (id: number) => string
+) {
 	return bossIDs
 		.filter(id => (boosts?.[id]?.length ?? 0) > 0)
 		.map(id => `${bossName(id)}: ${boosts![id]!.map(b => `${b.name} ${b.percent}%`).join(', ')}`);
@@ -278,7 +292,8 @@ function compactItems(items: TfaRoomItem[]): string {
 export function tfaRoomItemsHelpLines(bossName: (id: number) => string): string[] {
 	return Object.entries(TFA_ROOM_ITEMS).map(([id, groups]) => {
 		const parts = groups.map(g => {
-			const where = g.where === 'owned' ? 'bank' : g.items.some(i => i[2]) ? 'matching setup' : `${g.where} setup`;
+			const where =
+				g.where === 'owned' ? 'bank' : g.items.some(i => i[2]) ? 'matching setup' : `${g.where} setup`;
 			return `${compactItems(g.items)} (${where})`;
 		});
 		return `${bossName(Number(id))}: ${parts.join('; ')}`;

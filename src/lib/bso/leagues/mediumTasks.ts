@@ -11,11 +11,11 @@ import { Bank, type ItemBank, Monsters, resolveItems } from 'oldschooljs';
 import { BitField } from '@/lib/constants.js';
 import { barrowsChestCL, cyclopsCL } from '@/lib/data/CollectionsExport.js';
 import { implings } from '@/lib/implings.js';
-import { chincannonDestroyedUniqueCount } from './chincannonUniques.js';
 import Darts from '@/lib/skilling/skills/fletching/fletchables/darts.js';
 import Javelins from '@/lib/skilling/skills/fletching/fletchables/javelins.js';
 import { ashes } from '@/lib/skilling/skills/prayer.js';
 import { eggs } from '@/mahoji/commands/offer.js';
+import { chincannonDestroyedUniqueCount } from './chincannonUniques.js';
 import { leaguesHasCatches, leaguesHasKC, leaguesSlayerTaskForMonster, type Task } from './leaguesUtils.js';
 import { calculateChargedItems, calculateTiarasMade, calculateTotalMahoganyHomesPoints } from './stats.js';
 

@@ -1,4 +1,3 @@
-import { TfaItem, tfaCL } from '@/lib/bsc/tfa/tfaItems.js';
 import {
 	abyssalDragonCL,
 	allDOAPets,
@@ -43,6 +42,7 @@ import { calcWhatPercent, objectEntries, sumArr, toTitleCase } from '@oldschoolg
 import { Bank, type ItemBank, ItemGroups, Items, itemID, resolveItems } from 'oldschooljs';
 
 import { tame_growth, type UserStats } from '@/prisma/main.js';
+import { TfaItem, tfaCL } from '@/lib/bsc/tfa/tfaItems.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { BitField } from '@/lib/constants.js';
 import {

@@ -1,10 +1,11 @@
 import '../../src/lib/util/clientSettings.js';
 
+import { inventionBoosts } from '@/lib/bso/skills/invention/inventions.js';
+
 import { SeedableRNG } from 'node-rng';
 import { describe, expect, test } from 'vitest';
 
 import { createTfaRaids, type TfaTeamMember, tfaChincannonFactor, tfaSingleRaidDuration } from '@/lib/bsc/tfa/tfa.js';
-import { inventionBoosts } from '@/lib/bso/skills/invention/inventions.js';
 
 const member = (id: string): TfaTeamMember => ({
 	id,

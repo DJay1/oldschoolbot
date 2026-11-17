@@ -1,13 +1,19 @@
 import '../../src/lib/util/clientSettings.js';
-import { Items } from 'oldschooljs';
+
 import { SeedableRNG } from 'node-rng';
+import { Items } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import { rollTfaTripLoot } from '@/lib/bsc/tfa/tfaActivity.js';
 import { TfaItem, tfaFragmentIDs, tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
 
 // Tertiaries: elite clue, folio, fragments, Orion.
-const tertiaries = [Items.getOrThrow('Clue scroll (elite)').id, TfaItem.ARCHIVISTS_FOLIO, TfaItem.ORION, ...tfaFragmentIDs];
+const tertiaries = [
+	Items.getOrThrow('Clue scroll (elite)').id,
+	TfaItem.ARCHIVISTS_FOLIO,
+	TfaItem.ORION,
+	...tfaFragmentIDs
+];
 const raid = (n: number) => ({ b: [1, 2, 4, 6, 8], w: null, u: Array.from({ length: n }, () => ({ d: [], p: 100 })) });
 
 function run(flappy: Record<string, boolean>, seed: number) {
@@ -33,7 +39,12 @@ describe('TFA Flappy', () => {
 				if (tertiaries.includes(item.id)) expect(qty, item.name).toBe(base.loot.get('a').amount(item.id));
 				else expect(qty % 2, item.name).toBe(0);
 			}
-			expect(flap.loot.get('b').items().some(([item, qty]) => !tertiaries.includes(item.id) && qty % 2 === 1)).toBe(true);			// Fragments stay one each (they're one-time unlocks) and Orion isn't doubled.
+			expect(
+				flap.loot
+					.get('b')
+					.items()
+					.some(([item, qty]) => !tertiaries.includes(item.id) && qty % 2 === 1)
+			).toBe(true); // Fragments stay one each (they're one-time unlocks) and Orion isn't doubled.
 			for (const frag of tfaFragmentIDs) expect(flap.loot.get('a').amount(frag)).toBeLessThanOrEqual(1);
 			expect(flap.loot.get('a').amount(TfaItem.ORION)).toBe(base.loot.get('a').amount(TfaItem.ORION));
 		}

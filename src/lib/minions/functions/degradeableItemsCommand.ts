@@ -1,10 +1,10 @@
 import { stringMatches } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
+import type { DegradeableItem } from '@/lib/degradeableItems.js';
 import { degradeableItems } from '@/lib/degradeableItems.js';
 import { chargeHornOfPlentyCommand, getHornOfPlentyCharges } from '@/lib/skilling/skills/hunter/hornOfPlenty.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
-import type { DegradeableItem } from '@/lib/degradeableItems.js';
 
 export async function degradeableItemsCommand(
 	interaction: MInteraction,

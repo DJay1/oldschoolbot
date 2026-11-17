@@ -7,8 +7,8 @@ import { TfaItem, tfaAscensionBoltIDs } from '@/lib/bsc/tfa/tfaItems.js';
 import { type TfaRoomBoosts, tfaRoomBoostsFor, tfaTeamRoomPercent } from '@/lib/bsc/tfa/tfaRooms.js';
 import { BitField } from '@/lib/constants.js';
 import { calcTOBRangePercent, calculateTOBUserGearPercents } from '@/lib/data/tob.js';
-import { Gear } from '@/lib/structures/Gear.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
+import { Gear } from '@/lib/structures/Gear.js';
 import type { Skills } from '@/lib/types/index.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 
@@ -206,7 +206,8 @@ export function createTfaRaids({
 		const points: number[] = team.map(() => 0);
 		let wipedAt: number | null = null;
 
-		const roomTime = (id: number) => tfaBossByID(id).baseTime * speedFactor * (1 - tfaTeamRoomPercent(team, id) / 100);
+		const roomTime = (id: number) =>
+			tfaBossByID(id).baseTime * speedFactor * (1 - tfaTeamRoomPercent(team, id) / 100);
 		const raidFullTime = LOBBY_TIME + bosses.reduce((acc, id) => acc + roomTime(id), 0);
 		fakeDuration += raidFullTime * ccFactor;
 		let raidTime = LOBBY_TIME;
@@ -260,7 +261,9 @@ export function tfaSingleRaidDuration(team: TfaTeamMember[], chincannonPercent =
 	const avgReduction = team.reduce((acc, m) => acc + tfaUserSpeedReduction(m), 0) / size;
 	const speedFactor = (1 - avgReduction / 100) * TEAM_SIZE_TIME_FACTOR[size];
 	// Worst case boss picks
-	return Math.floor((LOBBY_TIME + (7 + 6 + 6 + 7 + 12) * Time.Minute * speedFactor) * tfaChincannonFactor(chincannonPercent));
+	return Math.floor(
+		(LOBBY_TIME + (7 + 6 + 6 + 7 + 12) * Time.Minute * speedFactor) * tfaChincannonFactor(chincannonPercent)
+	);
 }
 
 /**

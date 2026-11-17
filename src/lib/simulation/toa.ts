@@ -35,8 +35,8 @@ import type { MakePartyOptions, Skills } from '@/lib/types/index.js';
 import type { TOAOptions } from '@/lib/types/minions.js';
 import { assert } from '@/lib/util/logError.js';
 import { bankToStrShortNames, formatList, formatSkillRequirements } from '@/lib/util/smallUtils.js';
-import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 import { launchPetPercent } from '@/lib/util.js';
+import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
 const teamSizeScale: Record<number, number> = {
 	1: 1.0,

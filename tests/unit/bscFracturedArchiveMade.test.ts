@@ -5,8 +5,8 @@ import { TFA_UNCHARGEABLE, tfaUnchargeRefund } from '@/lib/bsc/tfa/tfaCharges.js
 import { TfaItem, tfaAscensionBoltIDs, tfaCL } from '@/lib/bsc/tfa/tfaItems.js';
 import { degradeableItems } from '@/lib/degradeableItems.js';
 import { projectiles } from '@/lib/gear/projectiles.js';
-import { Enchantables } from '@/lib/skilling/skills/magic/enchantables.js';
 import { Fletchables, fletchingCL } from '@/lib/skilling/skills/fletching/fletchables/index.js';
+import { Enchantables } from '@/lib/skilling/skills/magic/enchantables.js';
 import Mining from '@/lib/skilling/skills/mining.js';
 
 describe('The Fractured Archive made items', () => {

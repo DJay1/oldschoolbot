@@ -1,4 +1,5 @@
 import '../../src/lib/util/clientSettings.js';
+
 import { describe, expect, test } from 'vitest';
 
 import { tfaRangePercent } from '@/lib/bsc/tfa/tfa.js';
@@ -43,6 +44,7 @@ describe('TFA range score with Ascension crossbows', () => {
 });
 
 import { Items } from 'oldschooljs';
+
 function Items_getOrThrow(id: number) {
 	return Items.getOrThrow(id);
 }

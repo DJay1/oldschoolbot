@@ -1,9 +1,10 @@
 import '../../src/lib/util/clientSettings.js';
-import { Items } from 'oldschooljs';
+
 import { SeedableRNG } from 'node-rng';
+import { Items } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
-import { createTfaRaids, tfaBossByID, type TfaTeamMember } from '@/lib/bsc/tfa/tfa.js';
+import { createTfaRaids, type TfaTeamMember, tfaBossByID } from '@/lib/bsc/tfa/tfa.js';
 import {
 	TFA_ROOM_BOOST_CAP,
 	TFA_ROOM_ITEMS,
@@ -38,7 +39,19 @@ const member = (roomBoosts?: TfaTeamMember['roomBoosts']): TfaTeamMember => ({
 
 const empty = { melee: new Gear(), range: new Gear(), mage: new Gear() };
 
-const bsoTop = ['Axe of the high sungod', 'Drygore longsword', 'Drygore mace', 'Drygore rapier', 'Dwarven warhammer', 'Hellfire bow', 'Zaryte bow', 'Virtus wand', 'Full Gorajan warrior', 'Full Gorajan archer', 'Full Gorajan occult'];
+const bsoTop = [
+	'Axe of the high sungod',
+	'Drygore longsword',
+	'Drygore mace',
+	'Drygore rapier',
+	'Dwarven warhammer',
+	'Hellfire bow',
+	'Zaryte bow',
+	'Virtus wand',
+	'Full Gorajan warrior',
+	'Full Gorajan archer',
+	'Full Gorajan occult'
+];
 
 describe('TFA room boosts', () => {
 	test('top BSO gear is at or above the best OSRS item in every group it is in', () => {
@@ -52,18 +65,26 @@ describe('TFA room boosts', () => {
 		}
 		// Drygore beats Scythe, Zaryte/Hellfire bow beat Twisted bow.
 		const ez = TFA_ROOM_ITEMS[2][0].items;
-		expect(ez.find(i => i[0] === 'Drygore longsword')![1]).toBeGreaterThan(ez.find(i => i[0] === 'Scythe of vitur')![1]);
+		expect(ez.find(i => i[0] === 'Drygore longsword')![1]).toBeGreaterThan(
+			ez.find(i => i[0] === 'Scythe of vitur')![1]
+		);
 		const ag = TFA_ROOM_ITEMS[1][0].items;
 		expect(ag.find(i => i[0] === 'Zaryte bow')![1]).toBeGreaterThan(ag.find(i => i[0] === 'Twisted bow')![1]);
 	});
 
 	test('dyed and ornament versions count the same as the base item', () => {
 		const melee = constructGearSetup({ weapon: 'Drygore longsword (blood)' });
-		expect(tfaRoomBoostsFor({ ...empty, melee }, () => false)[2]![0]).toEqual({ name: 'Drygore longsword', percent: 5 });
+		expect(tfaRoomBoostsFor({ ...empty, melee }, () => false)[2]![0]).toEqual({
+			name: 'Drygore longsword',
+			percent: 5
+		});
 		const range = constructGearSetup({ '2h': 'Twisted bow (shadow)' });
 		expect(tfaRoomBoostsFor({ ...empty, range }, () => false)[1]![0]).toEqual({ name: 'Twisted bow', percent: 4 });
 		const holy = constructGearSetup({ '2h': 'Holy scythe of vitur' });
-		expect(tfaRoomBoostsFor({ ...empty, melee: holy }, () => false)[7]![0]).toEqual({ name: 'Scythe of vitur', percent: 4 });
+		expect(tfaRoomBoostsFor({ ...empty, melee: holy }, () => false)[7]![0]).toEqual({
+			name: 'Scythe of vitur',
+			percent: 4
+		});
 		// Bank switches use hasEquippedOrInBank in the bot, which checks similar items; the extra ornament map is checked here.
 		const ornament = new Set(Items.resolveItems(['Elder maul (or)']));
 		expect(tfaRoomBoostsFor(empty, id => ornament.has(id))[2]).toEqual([{ name: 'Elder maul', percent: 3 }]);
@@ -80,7 +101,9 @@ describe('TFA room boosts', () => {
 			hands: 'Gorajan warrior gloves',
 			feet: 'Gorajan warrior boots'
 		});
-		expect(tfaRoomBoostsFor({ ...empty, melee: mixed }, () => false)[2]).toEqual([{ name: 'Full Gorajan warrior', percent: 2 }]);
+		expect(tfaRoomBoostsFor({ ...empty, melee: mixed }, () => false)[2]).toEqual([
+			{ name: 'Full Gorajan warrior', percent: 2 }
+		]);
 	});
 
 	test('a Gorajan set only counts when every piece is worn in the matching setup', () => {
@@ -102,28 +125,35 @@ describe('TFA room boosts', () => {
 		expect(tfaRoomPercent(boosts, 2)).toBe(8);
 		const missing = full.clone();
 		missing.set('feet', null);
-		expect(tfaRoomBoostsFor({ ...empty, melee: missing }, () => false)[2]!.map(b => b.name)).not.toContain('Full Gorajan warrior');
+		expect(tfaRoomBoostsFor({ ...empty, melee: missing }, () => false)[2]!.map(b => b.name)).not.toContain(
+			'Full Gorajan warrior'
+		);
 		// Same set in the range setup doesn't count for melee armour, and Ocellus picks the matching style.
 		expect(tfaRoomBoostsFor({ ...empty, range: full }, () => false)[2]).toBeUndefined();
-		expect(tfaRoomBoostsFor({ ...empty, melee: full }, () => false)[8]!.map(b => b.name)).toContain('Full Gorajan warrior');
+		expect(tfaRoomBoostsFor({ ...empty, melee: full }, () => false)[8]!.map(b => b.name)).toContain(
+			'Full Gorajan warrior'
+		);
 		// Owning the set in the bank gives nothing.
 		expect(tfaRoomBoostsFor(empty, () => true)[2]!.map(b => b.name)).toEqual(['Elder maul']);
 	});
 
 	test('every room item is a real item', () => {
 		for (const groups of Object.values(TFA_ROOM_ITEMS)) {
-			for (const g of groups) for (const [name, pct] of g.items) {
-				for (const n of TFA_ROOM_SETS[name] ?? [name]) expect(Items.getItem(n), n).toBeTruthy();
-				expect(pct).toBeGreaterThan(0);
-				expect(pct).toBeLessThanOrEqual(5);
-			}
+			for (const g of groups)
+				for (const [name, pct] of g.items) {
+					for (const n of TFA_ROOM_SETS[name] ?? [name]) expect(Items.getItem(n), n).toBeTruthy();
+					expect(pct).toBeGreaterThan(0);
+					expect(pct).toBeLessThanOrEqual(5);
+				}
 		}
 		expect(tfaRoomItemsHelpLines(id => tfaBossByID(id).name).length).toBe(8);
 	});
 
 	test('equipped items need the right setup, switches count from the bank, best per group', () => {
 		const range = constructGearSetup({ '2h': 'Twisted bow' });
-		const ownsSet = new Set(Items.resolveItems(['Venator bow', 'Black chinchompa', 'Red chinchompa', 'Serpentine helm']));
+		const ownsSet = new Set(
+			Items.resolveItems(['Venator bow', 'Black chinchompa', 'Red chinchompa', 'Serpentine helm'])
+		);
 		const boosts = tfaRoomBoostsFor({ ...empty, range }, id => ownsSet.has(id));
 		expect(boosts[4]).toEqual([
 			{ name: 'Venator bow', percent: 4 },
@@ -141,7 +171,13 @@ describe('TFA room boosts', () => {
 	});
 
 	test('room total is capped and the team boost is the average', () => {
-		const big = { 5: [{ name: 'a', percent: 4 }, { name: 'b', percent: 4 }, { name: 'c', percent: 4 }] };
+		const big = {
+			5: [
+				{ name: 'a', percent: 4 },
+				{ name: 'b', percent: 4 },
+				{ name: 'c', percent: 4 }
+			]
+		};
 		expect(tfaRoomPercent(big, 5)).toBe(TFA_ROOM_BOOST_CAP);
 		expect(tfaTeamRoomPercent([{ roomBoosts: big }, {}], 5)).toBe(TFA_ROOM_BOOST_CAP / 2);
 		expect(tfaTeamRoomPercent([], 5)).toBe(0);
