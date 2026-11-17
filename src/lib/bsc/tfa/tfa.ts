@@ -5,12 +5,12 @@ import { Bank, Items } from 'oldschooljs';
 import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
 import { TfaItem, tfaAscensionBoltIDs } from '@/lib/bsc/tfa/tfaItems.js';
 import { type TfaRoomBoosts, tfaRoomBoostsFor, tfaTeamRoomPercent } from '@/lib/bsc/tfa/tfaRooms.js';
+import { compactSkillRequirements } from '@/lib/bsc/tfa/tfaText.js';
 import { BitField } from '@/lib/constants.js';
 import { calcTOBRangePercent, calculateTOBUserGearPercents } from '@/lib/data/tob.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 import { Gear } from '@/lib/structures/Gear.js';
 import type { Skills } from '@/lib/types/index.js';
-import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 
 export type TfaStyle = 'melee' | 'range' | 'mage' | 'hybrid';
 
@@ -420,7 +420,7 @@ export function checkTfaUser(user: MUser, quantity = 1, kc = 0): string | null {
 		return `${user.usernameOrMention} needs to complete While Guthix Sleeps.`;
 	}
 	if (!user.hasSkillReqs(minTfaStats)) {
-		return `${user.usernameOrMention} needs these stats: ${formatSkillRequirements(minTfaStats)}.`;
+		return `${user.usernameOrMention} needs these stats: ${compactSkillRequirements(minTfaStats)}.`;
 	}
 	const gear = calculateTfaGearPercents(user);
 	for (const style of ['melee', 'range', 'mage'] as const) {

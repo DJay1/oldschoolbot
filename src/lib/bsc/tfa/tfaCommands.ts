@@ -5,7 +5,6 @@ import {
 	inventionItemBoost
 } from '@/lib/bso/skills/invention/inventions.js';
 
-import { bold, EmbedBuilder } from '@oldschoolgg/discord';
 import { formatDuration, Time } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank } from 'oldschooljs';
 import { clamp } from 'remeda';
@@ -42,12 +41,12 @@ import {
 	tfaRoomItemsHelpLines,
 	tfaRoomPercent
 } from '@/lib/bsc/tfa/tfaRooms.js';
+import { buildTfaHelpText, compactSkillRequirements, fitDiscordMessage } from '@/lib/bsc/tfa/tfaText.js';
 import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
 import { BitField } from '@/lib/constants.js';
 import { degradeableItems, degradeItem } from '@/lib/degradeableItems.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import type { MakePartyOptions } from '@/lib/types/index.js';
-import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
 const RAID_NAME = 'The Fractured Archive';
@@ -212,7 +211,7 @@ export async function tfaStartCommand(
 		cc: chinCannonUser?.id
 	});
 
-	return `${user.usernameOrMention}'s party (${users.map(u => u.usernameOrMention).join(', ')}) is now off to do ${
+	const startText = `${user.usernameOrMention}'s party (${users.map(u => u.usernameOrMention).join(', ')}) is now off to do ${
 		quantity === 1 ? 'a' : `${quantity}x`
 	} ${RAID_NAME} raid${quantity === 1 ? '' : 's'} - the total trip will take ${formatDuration(fakeDuration)}. Team unique chance: 1 in ${tfaTeamUniqueOdds(users.length)} per raid. Wipe chance: ${wipeChance.toFixed(1)}% per raid.${tfaPityLine(team)}
 
@@ -222,65 +221,66 @@ ${
 		? `${details.replaceAll(`  Used: ${usedSupplies[0]}\n`, '')}Each player used: ${usedSupplies[0]}`
 		: details
 }${chincannonStr}`;
+	// Big masses with long names can pass 2,000 characters; never let Discord cut it off.
+	return fitDiscordMessage(startText, `${RAID_NAME} raid started`);
 }
 
-export async function tfaHelpCommand(user: MUser): Promise<string> {
+export async function tfaHelpCommand(user: MUser): CommandResponse {
 	const gear = calculateTfaGearPercents(user);
 	const kc = await user.fetchMinigameScore('fractured_archive');
 	const stats = await user.fetchStats();
 	const uniques = tfaUniqueItems.reduce((acc, id) => acc + user.cl.amount(id), 0);
 	const { boosts, deathReduction } = tfaItemBoosts(user);
-	const check = checkTfaUser(user, 1, kc);
 	const minutes = stats.tfa_total_minutes ?? 0;
 	const streak = stats.tfa_wipe_streak ?? 0;
-	const soloWipe = tfaRaidWipeChance([tfaTeamMemberFromUser(user, kc, streak)]);
 	const roomLines = tfaRoomBoostsText(
 		tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id)),
 		[1, 2, 3, 4, 5, 6, 7, 8],
 		id => tfaBossByID(id).name
 	);
+	const yourBoosts = [...boosts.map(b => `${b.name} (${b.percent}%)`), ...(deathReduction > 0 ? ['Rondache'] : [])];
 
-	return `**${RAID_NAME}**
-
-**KC:** ${kc}
-**Attempts:** ${stats.tfa_attempts ?? 0}
-**Uniques:** ${uniques}${uniques > 0 ? ` (one every ${Math.floor(kc / uniques)} raids, one every ${formatDuration((minutes * Time.Minute) / uniques)})` : ''}
-
-**Requirements**
-- While Guthix Sleeps
-- ${formatSkillRequirements(minTfaStats)}
-- At least ${TFA_MIN_GEAR_PERCENT}% in your melee, range and mage setups (yours: melee ${gear.melee.toFixed(1)}%, range ${gear.range.toFixed(1)}%, mage ${gear.mage.toFixed(1)}%)
-- Supplies per raid at your KC: ${tfaSuppliesForKc(kc)} (one less Saradomin brew(4) every ${TFA_SUPPLY_KC_STEP} KC, down to 4 at 200 KC)
-
-**How it works**
-Archive Guardian, then one of Ezekiel or Bork and the Smorks, one of Moia or Dreadnoth the Jellied, one of The Dagon'hai or Xarth, then Ocellus. Bosses are picked at random each raid.
-Team unique chance is 1/16 solo or duo, down to 1/7.5 with 8. The unique goes to one player weighted by contribution points (700 per raid, split by damage; each death costs 10% of your expected share). Everyone else gets 3 rolls on the normal loot. If the whole team dies at a boss, the raid fails and the supplies are lost. Each raid wiped in a row lowers your death chance by ${TFA_PITY_PER_WIPE}% (up to ${TFA_PITY_CAP}%) until you complete a raid.
-**Your solo wipe chance:** ${soloWipe.toFixed(1)}% per raid${streak > 0 ? ` (${streak} wiped in a row, ${tfaPityPercent(streak)}% wipe pity)` : ''}
-
-**Boosts**
-${tfaHelpBoostsText()
-	.map(b => `- ${b}`)
-	.join('\n')}
-- Each used elemental fragment: 0.5% faster (you've used ${tfaFragmentsUsed(user)}/4)
-- Room items: some items speed up a boss's room when it's rolled. See \`/raid tfa rooms\` (you have ${roomLines.length} room${roomLines.length === 1 ? '' : 's'} boosted).
-
-**Your boosts:** ${boosts.length > 0 ? boosts.map(b => `${b.name} (${b.percent}%)`).join(', ') : 'None'}${deathReduction > 0 ? ', Rondache' : ''}
-**Zeal:** ${user.bitfield.includes(BitField.HasZeal) ? 'Unlocked' : 'Locked'}
-
-${check ? `\u26A0\uFE0F ${bold('Not ready:')} ${check}` : '\u2705 You are ready to start a raid.'}`;
+	const text = buildTfaHelpText({
+		raidName: RAID_NAME,
+		kc,
+		attempts: stats.tfa_attempts ?? 0,
+		uniques,
+		uniqueRate:
+			uniques > 0
+				? `1 per ${Math.floor(kc / uniques)} raids, 1 per ${formatDuration((minutes * Time.Minute) / uniques)}`
+				: null,
+		notReady: checkTfaUser(user, 1, kc),
+		soloWipe: tfaRaidWipeChance([tfaTeamMemberFromUser(user, kc, streak)]),
+		streak,
+		pityPercent: tfaPityPercent(streak),
+		skillReqs: compactSkillRequirements(minTfaStats),
+		minGear: TFA_MIN_GEAR_PERCENT,
+		gear,
+		supplies: tfaSuppliesForKc(kc).toString(),
+		kcStep: TFA_SUPPLY_KC_STEP,
+		pityPerWipe: TFA_PITY_PER_WIPE,
+		pityCap: TFA_PITY_CAP,
+		boostLines: tfaHelpBoostsText(),
+		fragmentsUsed: tfaFragmentsUsed(user),
+		roomsBoosted: roomLines.length,
+		yourBoosts: yourBoosts.length > 0 ? yourBoosts.join(', ') : 'None',
+		zeal: user.bitfield.includes(BitField.HasZeal)
+	});
+	return fitDiscordMessage(text, RAID_NAME);
 }
 
-export async function tfaStatsCommand(user: MUser): Promise<string> {
+export async function tfaStatsCommand(user: MUser): CommandResponse {
 	const kc = await user.fetchMinigameScore('fractured_archive');
 	const stats = await user.fetchStats();
 	const loot = new Bank(stats.tfa_loot as ItemBank);
 	const cost = new Bank(stats.tfa_cost as ItemBank);
-	return `**${RAID_NAME} stats**
+	const text = `**${RAID_NAME} stats**
 **KC:** ${kc}
 **Attempts:** ${stats.tfa_attempts ?? 0}
 **Time raided:** ${formatDuration((stats.tfa_total_minutes ?? 0) * Time.Minute)}
 **Loot value:** ${loot.value().toLocaleString()} GP
 **Supplies used:** ${cost.length > 0 ? cost.toString() : 'None'}`;
+	return fitDiscordMessage(text, `${RAID_NAME} stats`);
 }
 
 export async function tfaRoomsCommand(user: MUser): CommandResponse {
@@ -297,7 +297,5 @@ ${tfaRoomItemsHelpLines(bossName)
 	.join('\n')}
 
 **Yours:** ${mine.length > 0 ? mine.join(' | ') : 'None'}`;
-	return {
-		embeds: [new EmbedBuilder().setTitle(`${RAID_NAME} room items`).setDescription(description.slice(0, 4096))]
-	};
+	return fitDiscordMessage(description, `${RAID_NAME} room items`, true);
 }

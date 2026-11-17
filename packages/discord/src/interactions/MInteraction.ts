@@ -21,11 +21,19 @@ import { interactionConfirmation } from './confirmation.js';
 import { PaginatedMessage, type PaginatedMessageOptions } from './PaginatedMessage.js';
 
 const IMAGE_RENDER_FALLBACK = 'Finished, but the result image could not be rendered.';
+const CONTENT_LIMIT = 2000;
+const CUT_NOTE = '\n(Message too long, cut off.)';
+
+/** Visibly marks a cut instead of silently dropping the end of a long message. */
+function fitContent(text: string): string {
+	if (text.length <= CONTENT_LIMIT) return text;
+	return `${text.slice(0, CONTENT_LIMIT - CUT_NOTE.length)}${CUT_NOTE}`;
+}
 
 function plainTextFromSendable(message: SendableMessage): string {
 	if (typeof message === 'string') {
 		const text = message.trim();
-		return text.length > 0 ? text.slice(0, 2000) : IMAGE_RENDER_FALLBACK;
+		return text.length > 0 ? fitContent(text) : IMAGE_RENDER_FALLBACK;
 	}
 
 	let content: unknown;
@@ -41,7 +49,7 @@ function plainTextFromSendable(message: SendableMessage): string {
 	}
 	if (typeof content === 'string') {
 		const text = content.trim();
-		if (text.length > 0) return text.slice(0, 2000);
+		if (text.length > 0) return fitContent(text);
 	}
 	return IMAGE_RENDER_FALLBACK;
 }
@@ -107,6 +115,11 @@ export class MInteraction<T extends AnyInteraction = AnyInteraction> extends Bas
 	}
 
 	async reply(message: SendableMessage): Promise<null> {
+		// Discord rejects content over 2,000 characters; send it as an attached file instead of failing.
+		const content = typeof message === 'string' ? message : (message as BaseSendableMessage).content;
+		if (typeof content === 'string' && content.length > CONTENT_LIMIT) {
+			message = this.returnStringOrFile(message as string | BaseSendableMessage);
+		}
 		try {
 			await this.baseReply(message);
 		} catch (err) {
