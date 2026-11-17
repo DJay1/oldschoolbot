@@ -1,6 +1,7 @@
 import { Bank, type Item, type ItemBank, Items, itemID, resolveItems } from 'oldschooljs';
 import { clamp } from 'remeda';
 
+import { MAX_XP } from '@/lib/constants.js';
 import { BloodMoonItem } from '@/lib/customItems/bloodMoon.js';
 import { type SkillNameType, SkillsArray } from '@/lib/skilling/types.js';
 import type { Skills } from '@/lib/types/index.js';
@@ -294,7 +295,16 @@ export const Lampables: IXPObject[] = [
 	}
 ];
 
-export async function lampCommand(user: MUser, itemToUse: string, skill: string, _quantity: number | undefined) {
+/** Most lamps used in one go (also the cap for `all`). */
+export const LAMP_MAX_PER_USE = 1000;
+
+export async function lampCommand(
+	user: MUser,
+	itemToUse: string,
+	skill: string,
+	_quantity: number | undefined,
+	all = false
+) {
 	const item = Items.getItem(itemToUse);
 	if (!item) return "That's not a valid item.";
 
@@ -303,7 +313,19 @@ export async function lampCommand(user: MUser, itemToUse: string, skill: string,
 
 	if (!isValidSkill(skill)) return "That's not a valid skill.";
 
-	const qty = !_quantity ? 1 : clamp(_quantity, { min: 1, max: 1000 });
+	if (all && user.bank.amount(item.id) < 1) return `You don't have any ${item.name}.`;
+	let qty = all
+		? Math.min(user.bank.amount(item.id), LAMP_MAX_PER_USE)
+		: !_quantity
+			? 1
+			: clamp(_quantity, { min: 1, max: LAMP_MAX_PER_USE });
+	if (all && isValidSkill(skill)) {
+		// Don't burn lamps past max XP: only use as many as it takes to get there.
+		const room = MAX_XP - user.skillsAsXP[skill];
+		if (room <= 0) return `You already have ${MAX_XP.toLocaleString()} ${skill} XP.`;
+		const perLamp = xpObject.function({ user, quantity: 1, item })[0][skill];
+		if (typeof perLamp === 'number' && perLamp > 0) qty = Math.max(1, Math.min(qty, Math.ceil(room / perLamp)));
+	}
 	const toRemoveFromBank = new Bank().add(item.id, qty);
 	if (!user.owns(toRemoveFromBank)) {
 		return `You don't have **${toRemoveFromBank}** in your bank.`;

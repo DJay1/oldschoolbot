@@ -263,6 +263,12 @@ export const minionCommand = defineCommand({
 					required: false,
 					min_value: 1,
 					max_value: 100_000
+				},
+				{
+					type: 'Boolean',
+					name: 'all',
+					description: 'Use all of this lamp you own (up to 1,000 at a time).',
+					required: false
 				}
 			]
 		},
@@ -518,7 +524,7 @@ export const minionCommand = defineCommand({
 		}
 
 		if (options.lamp) {
-			return lampCommand(user, options.lamp.item, options.lamp.skill, options.lamp.quantity);
+			return lampCommand(user, options.lamp.item, options.lamp.skill, options.lamp.quantity, options.lamp.all);
 		}
 
 		if (options.cancel) return cancelTaskCommand(user, interaction);
