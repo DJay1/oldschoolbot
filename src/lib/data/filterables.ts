@@ -12,6 +12,7 @@ import { uniqueArr } from '@oldschoolgg/toolkit';
 import {
 	BeginnerClueTable,
 	EasyClueTable,
+	EItem,
 	EliteClueTable,
 	HardClueTable,
 	MasterClueTable,
@@ -43,6 +44,7 @@ import { allOpenables } from '@/lib/openables.js';
 import { gracefulItems } from '@/lib/skilling/skills/agility.js';
 import { Craftables } from '@/lib/skilling/skills/crafting/craftables/index.js';
 import { Fletchables } from '@/lib/skilling/skills/fletching/fletchables/index.js';
+import Crush from '@/lib/skilling/skills/herblore/mixables/crush.js';
 import Grimy from '@/lib/skilling/skills/herblore/mixables/grimy.js';
 import PotionsMixable from '@/lib/skilling/skills/herblore/mixables/potions.js';
 import unfinishedPotions from '@/lib/skilling/skills/herblore/mixables/unfinishedPotions.js';
@@ -375,7 +377,11 @@ export const allSecondaries = PotionsMixable.flatMap(item => item.inputItems.ite
 );
 export const secondaries = [...new Set(allSecondaries)];
 
-const herblore = resolveItems([...potions, ...herbs, ...unfPotions, ...secondaries]);
+// Only the empty bird nest (id 5075) can be crushed into Crushed nest. Seed, ring and egg nests are not crushable.
+const crushableBirdNests = Crush.find(i => i.item.id === EItem.CRUSHED_NEST)?.inputItems.itemIDs ?? [
+	EItem.EMPTY_BIRD_NEST
+];
+const herblore = resolveItems([...potions, ...herbs, ...unfPotions, ...secondaries, ...crushableBirdNests]);
 
 const bones = resolveItems([
 	'Bones',
