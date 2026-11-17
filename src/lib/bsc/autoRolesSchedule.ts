@@ -14,7 +14,11 @@ export type AutoRolesDecision = 'run' | 'skip' | 'seed';
  * No stored run: record "now" and wait a full interval (roles were already refreshed by the old schedule).
  * Otherwise run only once a full interval has passed since the last stored run, so restarts never trigger it.
  */
-export function autoRolesDecision(lastRun: number | null, now: number, interval = AUTO_ROLES_INTERVAL): AutoRolesDecision {
+export function autoRolesDecision(
+	lastRun: number | null,
+	now: number,
+	interval = AUTO_ROLES_INTERVAL
+): AutoRolesDecision {
 	if (lastRun === null || !Number.isFinite(lastRun)) return 'seed';
 	return now - lastRun >= interval ? 'run' : 'skip';
 }
