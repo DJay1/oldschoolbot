@@ -1,5 +1,8 @@
+import { CHINCANNON_MESSAGES } from '@/lib/bso/bsoConstants.js';
+import { userHasFlappy } from '@/lib/bso/skills/invention/inventions.js';
+
 import { Emoji, Events, formatOrdinal, Time } from '@oldschoolgg/toolkit';
-import { MathRNG, randArrItem, type RNGProvider } from 'node-rng';
+import { MathRNG, type RNGProvider, randArrItem } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
 import { tfaBossByID } from '@/lib/bsc/tfa/tfa.js';
@@ -13,8 +16,6 @@ import {
 	tfaTeamUniqueOdds
 } from '@/lib/bsc/tfa/tfaLoot.js';
 import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
-import { CHINCANNON_MESSAGES } from '@/lib/bso/bsoConstants.js';
-import { userHasFlappy } from '@/lib/bso/skills/invention/inventions.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { resolveAttackStyles } from '@/lib/minions/functions/resolveAttackStyles.js';
 import { TeamLoot } from '@/lib/simulation/TeamLoot.js';
@@ -23,6 +24,35 @@ import { launchPetRate } from '@/lib/util.js';
 
 const RAID_NAME = 'The Fractured Archive';
 
+/** Trip result header. Says the raid failed when every raid wiped, and how many failed on mixed trips. */
+export function tfaResultHeader({
+	mention,
+	isSolo,
+	quantity,
+	completed,
+	kc
+}: {
+	mention: string;
+	isSolo: boolean;
+	quantity: number;
+	completed: number;
+	kc?: number;
+}): string {
+	const who = isSolo ? `${mention}, your minion` : `${mention} Your team`;
+	const failed = quantity - completed;
+	const kcStr = kc !== undefined ? ` Your KC is now ${kc}.` : '';
+	if (completed === 0) {
+		return quantity === 1
+			? `${who} failed ${RAID_NAME} raid!`
+			: `${who} failed all ${quantity} raids in ${RAID_NAME}!`;
+	}
+	if (failed === 0) {
+		return quantity === 1
+			? `${who} finished ${RAID_NAME} raid!${kcStr}`
+			: `${who} finished all ${quantity} raids in ${RAID_NAME}!${kcStr}`;
+	}
+	return `${who} finished ${completed}/${quantity} raids in ${RAID_NAME} (${failed} failed).${kcStr}`;
+}
 /** XP per boss killed. A full raid is 5 bosses. */
 const XP_PER_BOSS = {
 	hitpoints: 1800,
@@ -52,7 +82,13 @@ export const TFA_IMAGE_MAX_TEAM = 3;
  * Whether the trip result gets the chest loot image. The panel grows with the item count, so there's no item limit
  * (multi-raid trips roll 3 standard drops per raid, which used to go over the old 6-item limit and drop the image).
  */
-export function tfaShouldShowLootImage({ completed, lootPerUser }: { completed: number; lootPerUser: Bank[] }): boolean {
+export function tfaShouldShowLootImage({
+	completed,
+	lootPerUser
+}: {
+	completed: number;
+	lootPerUser: Bank[];
+}): boolean {
 	if (completed <= 0) return false;
 	if (lootPerUser.length < 1 || lootPerUser.length > TFA_IMAGE_MAX_TEAM) return false;
 	return lootPerUser.some(l => l.length > 0);
@@ -181,11 +217,13 @@ export const tfaTask: MinionTask = {
 		}
 
 		const resultMessage = new MessageBuilder().setContent(
-			isSolo
-				? `${allUsers[0]}, your minion finished ${quantity === 1 ? 'a' : `${quantity}x`} ${RAID_NAME} raid${
-						quantity > 1 ? 's' : ''
-					}! ${completed > 0 ? `Your KC is now ${newScores[allUsers[0].id]}.` : ''}\n`
-				: `<@${leader}> Your ${RAID_NAME} raid${quantity > 1 ? 's have' : ' has'} finished.\n`
+			`${tfaResultHeader({
+				mention: isSolo ? allUsers[0].toString() : `<@${leader}>`,
+				isSolo,
+				quantity: raids.length,
+				completed,
+				kc: isSolo && completed > 0 ? newScores[allUsers[0].id] : undefined
+			})}\n`
 		);
 
 		const raidLines: string[] = [];
