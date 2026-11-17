@@ -43,19 +43,23 @@ export async function tfaUnchargeCommand(interaction: MInteraction, user: MUser,
 		}`
 	);
 
-	await user.sync();
-	if (await user.minionIsBusy()) return "Your minion is busy, you can't uncharge items right now.";
-	if (!user.bank.has(degItem.item.id)) return `You no longer have a ${degItem.item.name} in your bank.`;
-	if (user.user[degItem.settingsKey] !== charges) {
-		return 'Your charges changed while confirming, please try again.';
-	}
-
-	// One transaction: the charged item is removed, the uncharged item and refund added, and charges set to 0.
-	await user.transactItems({
-		itemsToRemove: new Bank().add(degItem.item.id),
-		itemsToAdd: new Bank().add(degItem.unchargedItem.id).add(refund),
-		otherUpdates: { [degItem.settingsKey]: 0 }
+	const unchargedItem = degItem.unchargedItem;
+	// Re-check and apply under the per-user lock, so two uncharges at once can't both refund the same charges.
+	const failure = await user.withLock('tfa_uncharge', async u => {
+		if (await u.minionIsBusy()) return "Your minion is busy, you can't uncharge items right now.";
+		if (!u.bank.has(degItem.item.id)) return `You no longer have a ${degItem.item.name} in your bank.`;
+		if (u.user[degItem.settingsKey] !== charges) {
+			return 'Your charges changed while confirming, please try again.';
+		}
+		// One transaction: the charged item is removed, the uncharged item and refund added, and charges set to 0.
+		await u.transactItems({
+			itemsToRemove: new Bank().add(degItem.item.id),
+			itemsToAdd: new Bank().add(unchargedItem.id).add(refund),
+			otherUpdates: { [degItem.settingsKey]: 0 }
+		});
+		return null;
 	});
+	if (failure) return failure;
 
 	return `You uncharged your ${degItem.item.name} and received ${new Bank()
 		.add(degItem.unchargedItem.id)
