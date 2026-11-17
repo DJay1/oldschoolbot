@@ -6,11 +6,12 @@ import { SuperiorTormentedDemon } from '@/lib/bso/monsters/demi-bosses/Tormented
 import { LampTable } from '@/lib/bso/xpLamps.js';
 
 import { sumArr } from '@oldschoolgg/toolkit';
-import { Bank, type ItemBank, ItemGroups, Monsters, resolveItems } from 'oldschooljs';
+import { Bank, type ItemBank, Monsters, resolveItems } from 'oldschooljs';
 
 import { BitField } from '@/lib/constants.js';
-import { barrowsChestCL, chambersOfXericCL, cyclopsCL, theatreOfBLoodCL } from '@/lib/data/CollectionsExport.js';
+import { barrowsChestCL, cyclopsCL } from '@/lib/data/CollectionsExport.js';
 import { implings } from '@/lib/implings.js';
+import { chincannonDestroyedUniqueCount } from './chincannonUniques.js';
 import Darts from '@/lib/skilling/skills/fletching/fletchables/darts.js';
 import Javelins from '@/lib/skilling/skills/fletching/fletchables/javelins.js';
 import { ashes } from '@/lib/skilling/skills/prayer.js';
@@ -1076,9 +1077,7 @@ export const mediumTasks: Task[] = [
 		name: 'Have 3 unique items destroyed by the Chincannon',
 		has: async ({ userStats }) => {
 			const bank = new Bank(userStats.chincannon_destroyed_loot_bank as ItemBank);
-			const uniques = [...chambersOfXericCL, ...theatreOfBLoodCL, ...ItemGroups.toaCL];
-			const destroyedUniques = bank.items().filter(i => uniques.includes(i[0].id));
-			return destroyedUniques.length >= 5;
+			return chincannonDestroyedUniqueCount(bank) >= 5;
 		}
 	},
 	{
