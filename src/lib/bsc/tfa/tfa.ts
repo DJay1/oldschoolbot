@@ -65,13 +65,31 @@ export const minTfaStats: Skills = {
 	prayer: 77
 };
 
-/** Supplies used per raid (lost even if the team wipes). */
-export const tfaSuppliesPerRaid = new Bank({
-	'Saradomin brew(4)': 8,
-	'Super restore(4)': 6,
-	'Super combat potion(4)': 1,
-	'Ranging potion(4)': 1
-});
+/** Every this many KC, one less Saradomin brew(4) is needed per raid (like CoX and DoA). */
+export const TFA_SUPPLY_KC_STEP = 50;
+const TFA_BASE_BREWS = 8;
+const TFA_MIN_BREWS = 4;
+const TFA_MIN_RESTORES = 3;
+
+/**
+ * Supplies used per raid for a player with this KC (lost even if the team wipes).
+ * Brews: 8 at 0-49 KC, then one fewer every 50 KC, down to 4 at 200+ KC. Restores: 3/4 of the brews (rounded up, min 3).
+ * Combat and ranging potions don't change.
+ */
+export function tfaSuppliesForKc(kc: number): Bank {
+	const safeKc = Number.isFinite(kc) ? Math.max(0, kc) : 0;
+	const brews = Math.max(TFA_MIN_BREWS, TFA_BASE_BREWS - Math.floor(safeKc / TFA_SUPPLY_KC_STEP));
+	const restores = Math.max(TFA_MIN_RESTORES, Math.ceil((brews * 3) / 4));
+	return new Bank({
+		'Saradomin brew(4)': brews,
+		'Super restore(4)': restores,
+		'Super combat potion(4)': 1,
+		'Ranging potion(4)': 1
+	});
+}
+
+/** Supplies per raid at 0 KC (the most anyone needs). */
+export const tfaSuppliesPerRaid = tfaSuppliesForKc(0);
 
 export const TFA_MIN_GEAR_PERCENT = 30;
 export const TFA_MAX_QUANTITY = 10;
@@ -353,7 +371,7 @@ export function tfaTeamMemberFromUser(user: MUser, kc: number): TfaTeamMember {
 	};
 }
 
-export function checkTfaUser(user: MUser, quantity = 1): string | null {
+export function checkTfaUser(user: MUser, quantity = 1, kc = 0): string | null {
 	if (!user.user.finished_quest_ids.includes(QuestID.WhileGuthixSleeps)) {
 		return `${user.usernameOrMention} needs to complete While Guthix Sleeps.`;
 	}
@@ -366,7 +384,7 @@ export function checkTfaUser(user: MUser, quantity = 1): string | null {
 			return `${user.usernameOrMention}'s ${style} gear is too weak (${gear[style].toFixed(1)}%, needs ${TFA_MIN_GEAR_PERCENT}%).`;
 		}
 	}
-	const supplies = tfaSuppliesPerRaid.clone().multiply(quantity);
+	const supplies = tfaSuppliesForKc(kc).multiply(quantity);
 	if (!user.bank.has(supplies)) {
 		return `${user.usernameOrMention} needs ${supplies} for ${quantity}x raid${quantity === 1 ? '' : 's'}.`;
 	}

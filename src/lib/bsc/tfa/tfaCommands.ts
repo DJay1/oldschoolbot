@@ -13,7 +13,8 @@ import {
 	tfaHelpBoostsText,
 	tfaItemBoosts,
 	tfaSingleRaidDuration,
-	tfaSuppliesPerRaid,
+	tfaSuppliesForKc,
+	TFA_SUPPLY_KC_STEP,
 	tfaBossByID,
 	tfaTeamMemberFromUser,
 	tfaUserSpeedReduction
@@ -49,7 +50,7 @@ export async function tfaStartCommand(
 ): CommandResponse {
 	if (await user.minionIsBusy()) return `${user.usernameOrMention} minion is busy.`;
 
-	const initialCheck = checkTfaUser(user, 1);
+	const initialCheck = checkTfaUser(user, 1, await user.fetchMinigameScore('fractured_archive'));
 	if (initialCheck) return initialCheck;
 
 	const maxSize = mahojiParseNumber({ input: teamSize, min: 2, max: 8 }) ?? 8;
@@ -66,7 +67,7 @@ export async function tfaStartCommand(
 			ironmanAllowed: true,
 			message: `${user.usernameOrMention} is hosting a ${RAID_NAME} mass! Use the buttons below to join/leave.`,
 			customDenier: async checkUser => {
-				const res = checkTfaUser(checkUser, 1);
+				const res = checkTfaUser(checkUser, 1, await checkUser.fetchMinigameScore('fractured_archive'));
 				if (res) return [true, res];
 				return [false];
 			}
@@ -96,8 +97,9 @@ export async function tfaStartCommand(
 	const maxQuantity = clamp(Math.floor(maxTripLength / singleRaid), { min: 1, max: TFA_MAX_QUANTITY });
 	const quantity = clamp(quantityInput ?? maxQuantity, { min: 1, max: maxQuantity });
 
-	for (const u of users) {
-		const res = checkTfaUser(u, quantity);
+	for (let i = 0; i < users.length; i++) {
+		const u = users[i];
+		const res = checkTfaUser(u, quantity, team[i].kc);
 		if (res) {
 			return {
 				content: `Your mass failed to start because of this reason: ${res}`,
@@ -121,14 +123,16 @@ export async function tfaStartCommand(
 		chincannonStr = `\n${chinCannonUser.usernameOrMention}'s Chincannon: ${chincannonPercent}% faster (${res.messages}). **All loot from this trip will be destroyed.**`;
 	}
 
-	const supplies = tfaSuppliesPerRaid.clone().multiply(quantity);
 	const rolledBosses = [...new Set(raids.flatMap(r => r.b))].sort((a, b) => a - b);
 	const bossName = (id: number) => tfaBossByID(id).name;
 	const totalCost = new Bank();
 	const costs: { id: string; cost: Bank }[] = [];
 	let details = '';
+	const usedSupplies: Bank[] = [];
 	for (let i = 0; i < users.length; i++) {
 		const u = users[i];
+		// Supplies scale with this player's own KC (same KC the start check used).
+		const supplies = tfaSuppliesForKc(team[i].kc).multiply(quantity);
 		await u.transactItems({ itemsToRemove: supplies.clone() });
 		await u.statsBankUpdate('tfa_cost', supplies);
 		for (const charge of tfaChargesNeeded(u, quantity)) {
@@ -150,6 +154,8 @@ export async function tfaStartCommand(
 						.filter(id => tfaRoomPercent(member.roomBoosts, id) > 0)
 						.map(id => `${bossName(id)} ${tfaRoomPercent(member.roomBoosts, id)}%`);
 		if (rooms.length > 0) details += `  Rooms: ${rooms.join(' | ')}\n`;
+		details += `  Used: ${supplies}\n`;
+		usedSupplies.push(supplies);
 	}
 
 	await ClientSettings.updateBankSetting('tfa_cost', totalCost);
@@ -179,7 +185,12 @@ export async function tfaStartCommand(
 		quantity === 1 ? 'a' : `${quantity}x`
 	} ${RAID_NAME} raid${quantity === 1 ? '' : 's'} - the total trip will take ${formatDuration(fakeDuration)}. Team unique chance: 1 in ${tfaTeamUniqueOdds(users.length)} per raid.
 
-${details}Each player used: ${supplies}${chincannonStr}`;
+${
+		// Same supplies for everyone: one line at the end instead of a line per player (keeps big masses short).
+		usedSupplies.every(s => s.equals(usedSupplies[0]))
+			? `${details.replaceAll(`  Used: ${usedSupplies[0]}\n`, '')}Each player used: ${usedSupplies[0]}`
+			: details
+	}${chincannonStr}`;
 }
 
 export async function tfaHelpCommand(user: MUser): Promise<string> {
@@ -188,7 +199,7 @@ export async function tfaHelpCommand(user: MUser): Promise<string> {
 	const stats = await user.fetchStats();
 	const uniques = tfaUniqueItems.reduce((acc, id) => acc + user.cl.amount(id), 0);
 	const { boosts, deathReduction } = tfaItemBoosts(user);
-	const check = checkTfaUser(user, 1);
+	const check = checkTfaUser(user, 1, kc);
 	const minutes = stats.tfa_total_minutes ?? 0;
 	const roomLines = tfaRoomBoostsText(
 		tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id)),
@@ -206,7 +217,7 @@ export async function tfaHelpCommand(user: MUser): Promise<string> {
 - While Guthix Sleeps
 - ${formatSkillRequirements(minTfaStats)}
 - At least ${TFA_MIN_GEAR_PERCENT}% in your melee, range and mage setups (yours: melee ${gear.melee.toFixed(1)}%, range ${gear.range.toFixed(1)}%, mage ${gear.mage.toFixed(1)}%)
-- Supplies per raid: ${tfaSuppliesPerRaid}
+- Supplies per raid at your KC: ${tfaSuppliesForKc(kc)} (one less Saradomin brew(4) every ${TFA_SUPPLY_KC_STEP} KC, down to 4 at 200 KC)
 
 **How it works**
 Archive Guardian, then one of Ezekiel or Bork and the Smorks, one of Moia or Dreadnoth the Jellied, one of The Dagon'hai or Xarth, then Ocellus. Bosses are picked at random each raid.
