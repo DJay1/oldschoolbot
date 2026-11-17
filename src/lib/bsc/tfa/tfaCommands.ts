@@ -28,6 +28,12 @@ import { calculateTfaGearPercents } from '@/lib/bsc/tfa/tfa.js';
 import { degradeableItems, degradeItem } from '@/lib/degradeableItems.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import type { MakePartyOptions } from '@/lib/types/index.js';
+import {
+	canAffordInventionBoost,
+	InventionID,
+	inventionBoosts,
+	inventionItemBoost
+} from '@/lib/bso/skills/invention/inventions.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
@@ -81,7 +87,11 @@ export async function tfaStartCommand(
 		users.map(async u => tfaTeamMemberFromUser(u, await u.fetchMinigameScore('fractured_archive')))
 	);
 
-	const singleRaid = tfaSingleRaidDuration(team);
+	// Chincannon (like CoX): one team member's equipped Chincannon makes the whole raid faster, but destroys all loot.
+	const chinCannonUser = users.find(u => u.hasEquipped('Chincannon')) ?? null;
+	const chincannonPercent = chinCannonUser ? inventionBoosts.chincannon.tfaPercentReduction : 0;
+
+	const singleRaid = tfaSingleRaidDuration(team, chincannonPercent);
 	const maxTripLength = Math.min(...(await Promise.all(users.map(u => u.calcMaxTripLength('FracturedArchive')))));
 	const maxQuantity = clamp(Math.floor(maxTripLength / singleRaid), { min: 1, max: TFA_MAX_QUANTITY });
 	const quantity = clamp(quantityInput ?? maxQuantity, { min: 1, max: maxQuantity });
@@ -96,7 +106,20 @@ export async function tfaStartCommand(
 		}
 	}
 
-	const { raids, realDuration, fakeDuration } = createTfaRaids({ team, quantity });
+	const { raids, realDuration, fakeDuration } = createTfaRaids({ team, quantity, chincannonPercent });
+
+	let chincannonStr = '';
+	if (chinCannonUser) {
+		if (!canAffordInventionBoost(chinCannonUser, InventionID.ChinCannon, realDuration).canAfford) {
+			return `${chinCannonUser.usernameOrMention} doesn't have enough materials to use the Chincannon for this trip.`;
+		}
+		// Charged before any supplies are removed, so a failed charge costs nothing.
+		const res = await inventionItemBoost({ user: chinCannonUser, inventionID: InventionID.ChinCannon, duration: realDuration });
+		if (!res.success) {
+			return `${chinCannonUser.usernameOrMention} couldn't use the Chincannon for this trip.`;
+		}
+		chincannonStr = `\n${chinCannonUser.usernameOrMention}'s Chincannon: ${chincannonPercent}% faster (${res.messages}). **All loot from this trip will be destroyed.**`;
+	}
 
 	const supplies = tfaSuppliesPerRaid.clone().multiply(quantity);
 	const rolledBosses = [...new Set(raids.flatMap(r => r.b))].sort((a, b) => a - b);
@@ -148,14 +171,15 @@ export async function tfaStartCommand(
 		fakeDuration,
 		quantity,
 		raids,
-		repeatMaxSize: solo || !interaction ? undefined : maxSize
+		repeatMaxSize: solo || !interaction ? undefined : maxSize,
+		cc: chinCannonUser?.id
 	});
 
 	return `${user.usernameOrMention}'s party (${users.map(u => u.usernameOrMention).join(', ')}) is now off to do ${
 		quantity === 1 ? 'a' : `${quantity}x`
 	} ${RAID_NAME} raid${quantity === 1 ? '' : 's'} - the total trip will take ${formatDuration(fakeDuration)}. Team unique chance: 1 in ${tfaTeamUniqueOdds(users.length)} per raid.
 
-${details}Each player used: ${supplies}`;
+${details}Each player used: ${supplies}${chincannonStr}`;
 }
 
 export async function tfaHelpCommand(user: MUser): Promise<string> {

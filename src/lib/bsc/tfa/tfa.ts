@@ -153,18 +153,27 @@ export interface TfaStoredRaid {
 	u: { d: number[]; p: number }[];
 }
 
+/** Whole-raid time multiplier from a Chincannon (percent off, like CoX: 60 means 60% faster). */
+export function tfaChincannonFactor(chincannonPercent = 0) {
+	return 1 - Math.min(100, Math.max(0, chincannonPercent)) / 100;
+}
+
 export function createTfaRaids({
 	team,
 	quantity,
-	rng = MathRNG
+	rng = MathRNG,
+	chincannonPercent = 0
 }: {
 	team: TfaTeamMember[];
 	quantity: number;
 	rng?: RNGProvider;
+	/** Set when someone in the team has a Chincannon equipped: the whole raid is this % faster, but all loot is destroyed. */
+	chincannonPercent?: number;
 }) {
 	const size = team.length;
 	if (size < 1 || size > 8) throw new Error('Team must be 1-8 players');
 	const sizeFactor = TEAM_SIZE_TIME_FACTOR[size];
+	const ccFactor = tfaChincannonFactor(chincannonPercent);
 	const avgReduction = team.reduce((acc, m) => acc + tfaUserSpeedReduction(m), 0) / size;
 	const speedFactor = (1 - avgReduction / 100) * sizeFactor;
 	const expectedPerPlayer = TFA_TOTAL_POINTS / size;
@@ -181,7 +190,7 @@ export function createTfaRaids({
 
 		const roomTime = (id: number) => tfaBossByID(id).baseTime * speedFactor * (1 - tfaTeamRoomPercent(team, id) / 100);
 		const raidFullTime = LOBBY_TIME + bosses.reduce((acc, id) => acc + roomTime(id), 0);
-		fakeDuration += raidFullTime;
+		fakeDuration += raidFullTime * ccFactor;
 		let raidTime = LOBBY_TIME;
 
 		for (const bossID of bosses) {
@@ -213,7 +222,7 @@ export function createTfaRaids({
 			raidTime += bossTime;
 		}
 
-		realDuration += Math.floor(raidTime);
+		realDuration += Math.floor(raidTime * ccFactor);
 		raids.push({
 			b: bosses,
 			w: wipedAt,
@@ -228,12 +237,12 @@ export function createTfaRaids({
 }
 
 /** Per-raid duration estimate for this team, used to work out max quantity. */
-export function tfaSingleRaidDuration(team: TfaTeamMember[]) {
+export function tfaSingleRaidDuration(team: TfaTeamMember[], chincannonPercent = 0) {
 	const size = team.length;
 	const avgReduction = team.reduce((acc, m) => acc + tfaUserSpeedReduction(m), 0) / size;
 	const speedFactor = (1 - avgReduction / 100) * TEAM_SIZE_TIME_FACTOR[size];
 	// Worst case boss picks
-	return Math.floor(LOBBY_TIME + (7 + 6 + 6 + 7 + 12) * Time.Minute * speedFactor);
+	return Math.floor((LOBBY_TIME + (7 + 6 + 6 + 7 + 12) * Time.Minute * speedFactor) * tfaChincannonFactor(chincannonPercent));
 }
 
 /**

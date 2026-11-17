@@ -10,4 +10,6 @@ export interface TFAOptions extends ActivityTaskOptions {
 	raids: TfaStoredRaid[];
 	/** Max team size the leader picked for a mass, reused when the trip is repeated. */
 	repeatMaxSize?: number;
+	/** ID of the user whose Chincannon blew up the team's loot (like CoX). */
+	cc?: string;
 }

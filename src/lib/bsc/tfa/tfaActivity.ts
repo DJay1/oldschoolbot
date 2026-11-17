@@ -1,5 +1,5 @@
 import { Emoji, Events, formatOrdinal, Time } from '@oldschoolgg/toolkit';
-import { MathRNG, type RNGProvider } from 'node-rng';
+import { MathRNG, randArrItem, type RNGProvider } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
 import { tfaBossByID } from '@/lib/bsc/tfa/tfa.js';
@@ -13,6 +13,7 @@ import {
 	tfaTeamUniqueOdds
 } from '@/lib/bsc/tfa/tfaLoot.js';
 import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
+import { CHINCANNON_MESSAGES } from '@/lib/bso/bsoConstants.js';
 import { userHasFlappy } from '@/lib/bso/skills/invention/inventions.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { resolveAttackStyles } from '@/lib/minions/functions/resolveAttackStyles.js';
@@ -125,7 +126,7 @@ export function rollTfaTripLoot({
 export const tfaTask: MinionTask = {
 	type: 'FracturedArchive',
 	async run(data: TFAOptions, { handleTripFinish }) {
-		const { channelId, duration, leader, quantity, users, raids } = data;
+		const { channelId, duration, leader, quantity, users, raids, cc } = data;
 		const allUsers = await Promise.all(users.map(id => mUserFetch(id)));
 		const isSolo = allUsers.length === 1;
 		const previousCLs = allUsers.map(u => u.cl.clone());
@@ -150,9 +151,10 @@ export const tfaTask: MinionTask = {
 			fragmentsObtained[u.id] = tfaFragmentIDs.filter(id => u.cl.has(id));
 		}
 		// Flappy / RoboFlappy: checked once per user per trip (RoboFlappy charges its materials once), only if there's loot.
+		// Skipped when a Chincannon destroys the loot, so RoboFlappy materials aren't spent on nothing.
 		const flappy: Record<string, boolean> = {};
 		const flappyMsgs: Record<string, string> = {};
-		if (completed > 0) {
+		if (completed > 0 && !cc) {
 			for (const u of allUsers) {
 				const res = await userHasFlappy({ user: u, duration });
 				if (res.shouldGiveBoost) {
@@ -197,10 +199,13 @@ export const tfaTask: MinionTask = {
 			);
 		}
 
-		const shouldShowImage = tfaShouldShowLootImage({
-			completed,
-			lootPerUser: allUsers.map(u => totalLoot.get(u.id))
-		});
+		// No image when a Chincannon destroyed the loot (nothing was received).
+		const shouldShowImage =
+			!cc &&
+			tfaShouldShowLootImage({
+				completed,
+				lootPerUser: allUsers.map(u => totalLoot.get(u.id))
+			});
 
 		for (let idx = 0; idx < allUsers.length; idx++) {
 			const user = allUsers[idx];
@@ -209,7 +214,10 @@ export const tfaTask: MinionTask = {
 			const points = raids.filter(r => r.w === null).reduce((acc, r) => acc + (r.u[idx]?.p ?? 0), 0);
 
 			let itemsAdded = new Bank();
-			if (userLoot.length > 0) {
+			if (cc) {
+				// Chincannon (like CoX): the loot is destroyed. Tracked in stats only, never banked or added to the CL.
+				if (userLoot.length > 0) await user.statsBankUpdate('chincannon_destroyed_loot_bank', userLoot);
+			} else if (userLoot.length > 0) {
 				const res = await user.transactItems({ itemsToAdd: userLoot, collectionLog: true });
 				itemsAdded = res.itemsAdded;
 				await user.statsBankUpdate('tfa_loot', userLoot);
@@ -240,7 +248,11 @@ export const tfaTask: MinionTask = {
 			const deathStr = deaths === 0 ? '' : `${new Array(Math.min(deaths, 10)).fill(Emoji.Skull).join('')} `;
 			resultMessage.addContent(
 				`\n${deathStr}**${user}** (${points} points)${
-					shouldShowImage || itemsAdded.length === 0 ? '' : ` received: ${lootStr}`
+					cc && userLoot.length > 0
+						? ` had this loot blown up: ${userLoot}`
+						: shouldShowImage || itemsAdded.length === 0
+							? ''
+							: ` received: ${lootStr}`
 				} ${xpStr}`
 			);
 			if (flappyMsgs[user.id]) resultMessage.addContent(isSolo ? `\n${flappyMsgs[user.id]}` : Emoji.Flappy);
@@ -251,7 +263,10 @@ export const tfaTask: MinionTask = {
 			resultMessage.addContent(`\nTeam unique chance was 1 in ${tfaTeamUniqueOdds(users.length)} per raid.`);
 		}
 
-		const lootTotal = totalLoot.totalLoot();
+		if (cc) resultMessage.addContent(`\n\n**${randArrItem(CHINCANNON_MESSAGES)}**`);
+
+		// Destroyed loot doesn't count as loot anywhere (same as CoX).
+		const lootTotal = cc ? new Bank() : totalLoot.totalLoot();
 		if (lootTotal.length > 0) {
 			await ClientSettings.updateBankSetting('tfa_loot', lootTotal);
 		}
@@ -262,7 +277,7 @@ export const tfaTask: MinionTask = {
 			changeType: 'loot',
 			duration,
 			kc: completed,
-			users: allUsers.map(u => ({ id: u.id, duration, loot: totalLoot.get(u.id) }))
+			users: allUsers.map(u => ({ id: u.id, duration, loot: cc ? new Bank() : totalLoot.get(u.id) }))
 		});
 
 		if (shouldShowImage) {

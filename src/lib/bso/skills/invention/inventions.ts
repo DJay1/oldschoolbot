@@ -127,7 +127,8 @@ export const inventionBoosts = {
 	chincannon: {
 		coxPercentReduction: 60,
 		tobPercentReduction: 60,
-		toaPercentReduction: 60
+		toaPercentReduction: 60,
+		tfaPercentReduction: 60
 	},
 	wispBuster: {
 		xpIncreasePercent: 30
