@@ -13,6 +13,7 @@ import {
 	tfaTeamUniqueOdds
 } from '@/lib/bsc/tfa/tfaLoot.js';
 import type { TFAOptions } from '@/lib/bsc/tfa/tfaTypes.js';
+import { userHasFlappy } from '@/lib/bso/skills/invention/inventions.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { resolveAttackStyles } from '@/lib/minions/functions/resolveAttackStyles.js';
 import { TeamLoot } from '@/lib/simulation/TeamLoot.js';
@@ -54,6 +55,8 @@ export function tfaBossesKilled(raid: TFAOptions['raids'][number]): number {
  * - One team unique roll per completed raid, given out by contribution.
  * - Everyone who didn't get the unique gets 3 standard rolls.
  * - Tertiaries for everyone on every completed raid.
+ * - Flappy / RoboFlappy users get their raid loot (unique or standard rolls) doubled, like CoX. Tertiaries (folio,
+ *   fragments, Orion) are never doubled, the same way CoX doesn't double its separate pet rolls.
  */
 export function rollTfaTripLoot({
 	userIDs,
@@ -61,6 +64,7 @@ export function rollTfaTripLoot({
 	ownsFolio,
 	fragmentsObtained,
 	petOdds = TFA_ORION_ODDS,
+	flappy = {},
 	rng = MathRNG
 }: {
 	userIDs: string[];
@@ -68,6 +72,7 @@ export function rollTfaTripLoot({
 	ownsFolio: Record<string, boolean>;
 	fragmentsObtained: Record<string, number[]>;
 	petOdds?: number;
+	flappy?: Record<string, boolean>;
 	rng?: RNGProvider;
 }) {
 	const loot = new TeamLoot(tfaCL);
@@ -84,10 +89,11 @@ export function rollTfaTripLoot({
 		for (const id of userIDs) {
 			if (recipient === id) {
 				const item = rollTfaUniqueItem(rng);
-				loot.add(id, item);
+				loot.add(id, item, flappy[id] ? 2 : 1);
 				purples.push({ userID: id, item });
 			} else {
-				loot.add(id, rollTfaStandardLoot(rng));
+				const standard = rollTfaStandardLoot(rng);
+				loot.add(id, flappy[id] ? standard.multiply(2) : standard);
 			}
 			const tertiary = rollTfaTertiaries({
 				ownsFolio: folio[id] ?? false,
@@ -130,12 +136,25 @@ export const tfaTask: MinionTask = {
 			ownsFolio[u.id] = u.allItemsOwned.has(TfaItem.ARCHIVISTS_FOLIO);
 			fragmentsObtained[u.id] = tfaFragmentIDs.filter(id => u.cl.has(id));
 		}
+		// Flappy / RoboFlappy: checked once per user per trip (RoboFlappy charges its materials once), only if there's loot.
+		const flappy: Record<string, boolean> = {};
+		const flappyMsgs: Record<string, string> = {};
+		if (completed > 0) {
+			for (const u of allUsers) {
+				const res = await userHasFlappy({ user: u, duration });
+				if (res.shouldGiveBoost) {
+					flappy[u.id] = true;
+					flappyMsgs[u.id] = res.userMsg;
+				}
+			}
+		}
 		const { loot: totalLoot } = rollTfaTripLoot({
 			userIDs: users,
 			raids,
 			ownsFolio,
 			fragmentsObtained,
-			petOdds: launchPetRate(TFA_ORION_ODDS)
+			petOdds: launchPetRate(TFA_ORION_ODDS),
+			flappy
 		});
 
 		const newScores: Record<string, number> = {};
@@ -209,6 +228,7 @@ export const tfaTask: MinionTask = {
 					shouldShowImage || itemsAdded.length === 0 ? '' : ` received: ${lootStr}`
 				} ${xpStr}`
 			);
+			if (flappyMsgs[user.id]) resultMessage.addContent(isSolo ? `\n${flappyMsgs[user.id]}` : Emoji.Flappy);
 		}
 
 		resultMessage.addContent(`\n\n${raidLines.join('\n')}`);
