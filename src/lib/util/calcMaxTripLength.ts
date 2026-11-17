@@ -31,6 +31,48 @@ export async function getPatronTripBonusMs(user: MUser): Promise<number> {
 	return patronTripBonusFromSources(perkTier, user.bitfield, roboBits);
 }
 
+const HP_CAPE_20_PERCENT: readonly activity_type_enum[] = [
+	'Nightmare',
+	'GroupMonsterKilling',
+	'MonsterKilling',
+	'Wintertodt',
+	'Zalcano',
+	'BarbarianAssault',
+	'AnimatedArmour',
+	'Sepulchre',
+	'Raids',
+	'TheatreOfBlood',
+	'TombsOfAmascut',
+	'FracturedArchive',
+	'Pickpocket',
+	'SoulWars',
+	'Cyclops'
+];
+
+const HP_CAPE_10_PERCENT: readonly activity_type_enum[] = [
+	'KalphiteKing',
+	'Nex',
+	'VasaMagus',
+	'Ignecarus',
+	'KingGoldemar',
+	'Moktang',
+	'DepthsOfAtlantis',
+	'Naxxus',
+	'TuraelsTrials',
+	'Dungeoneering'
+];
+
+/**
+ * Extra max trip length (percent) from a Hitpoints master cape for this activity. These activities also get the
+ * regular Hitpoints level boost. 0 means neither applies.
+ */
+export function masterHPCapeTripBoostPercent(activity?: activity_type_enum): number {
+	if (!activity) return 0;
+	if (HP_CAPE_20_PERCENT.includes(activity)) return 20;
+	if (HP_CAPE_10_PERCENT.includes(activity)) return 10;
+	return 0;
+}
+
 export async function calcMaxTripLength(user: MUser, activity?: activity_type_enum) {
 	const perkTier = await user.fetchPerkTier({ forceNoCache: true });
 	const roboBits = (await Cache.getRoboChimpUser(user.id)).bits;
@@ -43,43 +85,10 @@ export async function calcMaxTripLength(user: MUser, activity?: activity_type_en
 	}
 
 	const hasMasterHPCape = user.hasEquipped('Hitpoints master cape');
-	let masterHPCapeBoost = 0;
-	let regularHPBoost = false;
+	const masterHPCapeBoost = masterHPCapeTripBoostPercent(activity);
+	const regularHPBoost = masterHPCapeBoost > 0;
 
 	switch (activity) {
-		case 'Nightmare':
-		case 'GroupMonsterKilling':
-		case 'MonsterKilling':
-		case 'Wintertodt':
-		case 'Zalcano':
-		case 'BarbarianAssault':
-		case 'AnimatedArmour':
-		case 'Sepulchre':
-		case 'Raids':
-		case 'TheatreOfBlood':
-		case 'TombsOfAmascut':
-		case 'Pickpocket':
-		case 'SoulWars':
-		case 'Cyclops': {
-			masterHPCapeBoost = 20;
-			regularHPBoost = true;
-			break;
-		}
-		case 'KalphiteKing':
-		case 'Nex':
-		case 'VasaMagus':
-		case 'Ignecarus':
-		case 'KingGoldemar':
-		case 'Moktang':
-		case 'DepthsOfAtlantis':
-		case 'FracturedArchive':
-		case 'Naxxus':
-		case 'TuraelsTrials':
-		case 'Dungeoneering': {
-			masterHPCapeBoost = 10;
-			regularHPBoost = true;
-			break;
-		}
 		case 'Alching': {
 			max = applyTripLengthMultiplier(max, 2, patronBonusMs);
 			break;
