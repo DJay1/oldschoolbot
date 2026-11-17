@@ -4,6 +4,7 @@ import { cryptoRng } from 'node-rng/crypto';
 
 import { convertAPIOptionsToCommandOptions } from '@/discord/index.js';
 import { preCommand } from '@/discord/preCommand.js';
+import { userErrorResponse } from '@/discord/userErrorResponse.js';
 import { busyImmuneCommands, SILENT_ERROR } from '@/lib/constants.js';
 import { RawSQL } from '@/lib/rawSql.js';
 
@@ -109,7 +110,7 @@ export async function rawCommandHandlerInner({
 				options: JSON.stringify(options)
 			}
 		});
-		if (err instanceof UserError) return SpecialResponse.RespondedManually;
+		if (err instanceof UserError) return userErrorResponse(err, interaction);
 		return {
 			content: `An error occurred while running this command.`
 		};

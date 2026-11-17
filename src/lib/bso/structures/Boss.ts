@@ -330,7 +330,7 @@ export class BossInstance {
 			return [true, 'minion is busy'];
 		}
 		if (!user.hasSkillReqs(this.skillRequirements)) {
-			return [true, "doesn't meet skill requirements"];
+			return [true, `doesn't meet the skill requirements: ${formatSkillRequirements(this.skillRequirements)}`];
 		}
 		if (this.quantity) {
 			const itemCost = await this.calcFoodForUser(user, false);
