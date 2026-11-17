@@ -8,6 +8,7 @@ import { TimerManager } from '@sapphire/timer-manager';
 import type { User } from '@/prisma/main.js';
 import { resolveBotSendableMessage } from '@/discord/utils.js';
 import { analyticsTick } from '@/lib/analytics.js';
+import { AUTO_ROLES_CHECK_INTERVAL, autoRolesTick } from '@/lib/bsc/autoRolesSchedule.js';
 import { syncBscPatrons } from '@/lib/bsc/patronSync.js';
 import { processPollTicker } from '@/lib/bsc/pollService.js';
 import { serverFirstsTick } from '@/lib/bsc/serverFirsts.js';
@@ -376,11 +377,11 @@ tickers.push({
 tickers.push({
 	name: 'bsc_auto_roles',
 	startupWait: Time.Minute * 10,
-	interval: Time.Hour * 6,
+	interval: AUTO_ROLES_CHECK_INTERVAL,
 	timer: null,
 	productionOnly: true,
 	cb: async () => {
-		await runRolesTask(false);
+		await autoRolesTick(() => runRolesTask(false));
 	}
 });
 
