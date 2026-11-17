@@ -206,9 +206,18 @@ export const activitiesCommand = defineCommand({
 					name: 'potion_name',
 					description: 'The name of the potion.',
 					autocomplete: async ({ value }: StringAutoComplete) => {
-						return Potions.filter(p =>
-							!value ? true : p.name.toLowerCase().includes(value.toLowerCase())
-						).map(p => ({ name: p.name, value: p.name }));
+						const search = value?.toLowerCase() ?? '';
+						const choices = [];
+						if (!search || 'all'.includes(search)) {
+							choices.push({ name: 'All', value: 'all' });
+						}
+						choices.push(
+							...Potions.filter(p => (!search ? true : p.name.toLowerCase().includes(search))).map(p => ({
+								name: p.name,
+								value: p.name
+							}))
+						);
+						return choices;
 					},
 					required: true
 				},
@@ -219,6 +228,13 @@ export const activitiesCommand = defineCommand({
 					required: false,
 					min_value: 1,
 					max_value: 4
+				},
+				{
+					type: 'Integer',
+					name: 'quantity',
+					description: 'How many potions of the chosen dose to make of each type. Default: all.',
+					required: false,
+					min_value: 1
 				}
 			]
 		},
@@ -543,7 +559,7 @@ export const activitiesCommand = defineCommand({
 	run: async ({ options, channelId, user, interaction, rng }) => {
 		// Minion can be busy
 		if (options.decant) {
-			return decantCommand(user, options.decant.potion_name, options.decant.dose);
+			return decantCommand(user, options.decant.potion_name, options.decant.dose, options.decant.quantity);
 		}
 		if (options.charge?.item === 'glory_exchange') {
 			return unchargeGloriesCommand(user, channelId, options.charge.quantity, true);
