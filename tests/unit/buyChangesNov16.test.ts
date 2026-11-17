@@ -16,7 +16,9 @@ import { sellPriceOfItem } from '@/mahoji/commands/sell.js';
 describe('Nov 16 /buy changes', () => {
 	test('Tokkul shop: 3,000 per ore per day, own counter, nothing else capped', () => {
 		const ores = TokkulShopItems.filter(i => /ore$|^Coal$/.test(i.name)).map(i => i.name);
-		expect(ores.sort()).toEqual(Object.keys(TOKKUL_SHOP_DAILY_LIMITS).sort());
+		// Gems were added to the same caps on Nov 17.
+		const gems = ['Uncut sapphire', 'Uncut emerald', 'Uncut ruby', 'Uncut diamond', 'Uncut onyx'];
+		expect([...ores, ...gems].sort()).toEqual(Object.keys(TOKKUL_SHOP_DAILY_LIMITS).sort());
 		for (const ore of ores) expect(tokkulShopDailyLimitFor(ore), ore).toBe(3_000);
 		expect(tokkulShopDailyLimitFor('Adamantite ore')).toBe(3_000);
 		expect(tokkulShopDailyLimitFor('Runite ore')).toBe(3_000);

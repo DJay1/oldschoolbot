@@ -3,7 +3,12 @@ import { Bank, Monsters } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main/enums.js';
 import { tokkulShopDailyLimitFor, tokkulShopLimitName } from '@/lib/data/buyables/skillingSupplyLimits.js';
-import { TokkulShopItems } from '@/lib/data/buyables/tokkulBuyables.js';
+import {
+	TokkulShopItems,
+	tokkulShopBuyDuration,
+	tokkulShopMaxBuyable,
+	tokkulShopStockFor
+} from '@/lib/data/buyables/tokkulBuyables.js';
 import type { TokkulShopOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
 import { runWithDailyLimit } from '@/lib/util/runWithBuyDailyLimit.js';
@@ -100,48 +105,38 @@ export const tksCommand = defineCommand({
 		const cost = new Bank();
 		const loot = new Bank();
 
-		// Calculate the shop stock for the item the user wants to buy
-		let shopStock = null;
-		if (options.buy) {
-			if (hasKilledJad) {
-				if (isIronman) {
-					shopStock = item.rinIMShopStock ?? item.rinShopStock ?? item.stock ?? null;
-				} else {
-					shopStock = item.rinShopStock ?? item.stock ?? null;
-				}
-			} else {
-				shopStock = item.stock ?? null;
-			}
-		}
-
-		// Calculate the amount of trips needed to buy the quantity given
-		const amountOfRestocksNeededToBuy = shopStock ? Math.ceil(quantity / shopStock) : null;
-
-		// Calculate trip duration
-		const duration = amountOfRestocksNeededToBuy
-			? amountOfRestocksNeededToBuy * Time.Minute
-			: quantity * TIME_PER_1;
+		const buyer = { hasKilledJad, isIronman };
+		let duration: number;
 
 		// Calculate tokkul cost for buying or selling
 		if (options.buy) {
 			if (!item.diaryTokkulCost || !item.tokkulCost) return "You can't buy this item.";
+			// Uses the stock that applies to this player (TzHaar-Hur-Rin's after a TzTok-Jad kill), and flat gem times.
+			const buyDuration = tokkulShopBuyDuration(item, buyer, quantity);
+			if (buyDuration === null) {
+				return tokkulShopStockFor(item, { hasKilledJad: true, isIronman })
+					? `This item isn't stocked for you yet. Defeat TzTok-Jad to buy ${item.name}.`
+					: "This item isn't stocked.";
+			}
+			duration = buyDuration;
 			const tokkulCost = (hasKaramjaDiary ? item.diaryTokkulCost : item.tokkulCost) * quantity;
-			if (!item.stock) return "This item isn't stocked.";
 			cost.add('Tokkul', tokkulCost);
 			loot.add(item.itemID, quantity);
 		} else {
 			if (!item.diaryTokkulReturn || !item.tokkulReturn) return "You can't sell this item.";
+			duration = quantity * TIME_PER_1;
 			const tokkulReturn = (hasKaramjaDiary ? item.diaryTokkulReturn : item.tokkulReturn) * quantity;
 			loot.add('Tokkul', tokkulReturn);
 			cost.add(item.itemID, quantity);
 		}
-
 		// If the user doesn't have the items or tokkul
 		if (!bank.has(cost)) return `You don't own ${cost}.`;
 		const action = options.buy ? 'buy' : 'sell';
 
 		// Calculate the max amount of items the user can buy or sell
-		const maxCanTransact = shopStock ? (maxTripLength / Time.Minute) * shopStock : (maxTripLength / 1000) * 50;
+		const maxCanTransact = options.buy
+			? tokkulShopMaxBuyable(item, buyer, maxTripLength)
+			: Math.floor((maxTripLength / 1000) * 50);
 
 		// If the duration of the trip is longer than the users max allowed trip, give the reason why and the max they can buy or sell
 		if (duration > maxTripLength) {

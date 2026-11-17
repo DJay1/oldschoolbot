@@ -1,3 +1,4 @@
+import { Time } from '@oldschoolgg/toolkit';
 import { itemID } from 'oldschooljs';
 
 interface BaseTKSItem {
@@ -10,7 +11,7 @@ interface BaseTKSItem {
 	requireFireCape?: boolean;
 }
 
-interface TokkulShopItem extends BaseTKSItem {
+export interface TokkulShopItem extends BaseTKSItem {
 	tokkulCost?: number;
 	tokkulReturn: number;
 	diaryTokkulCost?: number;
@@ -381,3 +382,57 @@ export const TokkulShopItems: TokkulShopItem[] = [
 		aliases: ['death']
 	}
 ];
+
+/**
+ * Flat buy time per gem. Gems used to take 1 minute per restock, and most gem stocks are 1 to 16, so 30 Uncut
+ * emeralds took 30 minutes. A TzTok-Jad kill halves these. Uncut onyx is left on the stock rule (1 minute each).
+ */
+export const TOKKUL_GEM_BUY_TIMES: Record<string, number> = {
+	'Uncut sapphire': Time.Second,
+	'Uncut emerald': Time.Second * 1.5,
+	'Uncut ruby': Time.Second * 2,
+	'Uncut diamond': Time.Second * 3
+};
+
+export interface TokkulShopBuyer {
+	hasKilledJad: boolean;
+	isIronman: boolean;
+}
+
+/** The shop stock that applies to this player, or null if the item isn't stocked for them. */
+export function tokkulShopStockFor(item: TokkulShopItem, { hasKilledJad, isIronman }: TokkulShopBuyer): number | null {
+	if (hasKilledJad) {
+		if (isIronman) return item.rinIMShopStock ?? item.rinShopStock ?? item.stock ?? null;
+		return item.rinShopStock ?? item.stock ?? null;
+	}
+	return item.stock ?? null;
+}
+
+/** Buy time for one gem, or null if the item isn't a flat-time gem. */
+export function tokkulGemBuyTime(item: TokkulShopItem, buyer: TokkulShopBuyer): number | null {
+	const time = TOKKUL_GEM_BUY_TIMES[item.name];
+	if (time === undefined) return null;
+	return buyer.hasKilledJad ? time / 2 : time;
+}
+
+/**
+ * Trip length to buy `quantity`, or null if this player can't buy the item. Gems use their flat time per item,
+ * everything else takes 1 minute per shop restock.
+ */
+export function tokkulShopBuyDuration(item: TokkulShopItem, buyer: TokkulShopBuyer, quantity: number): number | null {
+	if (!item.tokkulCost || !item.diaryTokkulCost) return null;
+	const stock = tokkulShopStockFor(item, buyer);
+	if (!stock) return null;
+	const gemTime = tokkulGemBuyTime(item, buyer);
+	if (gemTime !== null) return quantity * gemTime;
+	return Math.ceil(quantity / stock) * Time.Minute;
+}
+
+/** Most of the item this player can buy in one trip of `maxTripLength`. */
+export function tokkulShopMaxBuyable(item: TokkulShopItem, buyer: TokkulShopBuyer, maxTripLength: number): number {
+	const stock = tokkulShopStockFor(item, buyer);
+	if (!stock) return 0;
+	const gemTime = tokkulGemBuyTime(item, buyer);
+	if (gemTime !== null) return Math.floor(maxTripLength / gemTime);
+	return Math.floor(maxTripLength / Time.Minute) * stock;
+}
