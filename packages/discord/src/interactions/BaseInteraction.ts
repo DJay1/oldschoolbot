@@ -22,6 +22,11 @@ type EditMessageOptions = SendableMessage;
 // Discord subtext ("-# "): small grey text. A lone emoji would render jumbo-sized and clutter the channel.
 export const DEFERRED_PING_PLACEHOLDER = '-# ↓ See below';
 
+/** True for a plain message object that asks to be ephemeral (strings and builders are never ephemeral). */
+export function wantsEphemeral(options: SendableMessage): boolean {
+	return typeof options === 'object' && options !== null && !('build' in options) && options.ephemeral === true;
+}
+
 export class BaseInteraction {
 	public client: DiscordClient;
 	public readonly id: string;
@@ -230,6 +235,21 @@ export class BaseInteraction {
 	async baseReply(
 		options: SendableMessage
 	): Promise<RESTPostAPIInteractionCallbackWithResponseResult | APIBaseMessageNoChannel | APIMessage | null> {
+		// Commands are acknowledged (deferred, public) as soon as they arrive. An edit can't turn that public
+		// placeholder private, so the first ephemeral reply removes the placeholder and is sent as an ephemeral
+		// follow-up instead. Later replies edit that follow-up.
+		if (this._deferred && !this._replied && !this._ephemeral && wantsEphemeral(options)) {
+			this._replied = true;
+			try {
+				await this.rest.delete(Routes.webhookMessage(this.applicationId, this.token, '@original'), {
+					auth: false
+				});
+			} catch {}
+			const prepared = await this.toBody(options);
+			const created = await this.createTracked(options, (prepared.message.components?.length ?? 0) > 0);
+			this._notifyMessageId = created.id;
+			return created;
+		}
 		if (this._deferred || this._replied) {
 			const prepared = await this.toBody(options);
 			const notifiable = this.notifiableUsers(prepared.message);

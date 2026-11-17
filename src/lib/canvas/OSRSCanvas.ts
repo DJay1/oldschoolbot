@@ -30,6 +30,7 @@ import {
 	type IBgSprite
 } from '@/lib/canvas/canvasUtil.js';
 import { type IconPackID, ItemIconPacks } from '@/lib/canvas/iconPacks.js';
+import { BoundedImageCache, imageSourceId } from '@/lib/canvas/imageCaches.js';
 import { BitField, BOT_TYPE } from '@/lib/constants.js';
 
 const Fonts = {
@@ -54,6 +55,10 @@ for (const [fontFamily, fontPath] of Object.entries(fonts)) {
 
 export class OSRSCanvas {
 	public static LOCAL_ICON_CACHE = new Map<number, CanvasImage>();
+	/** Spritesheet icons cut out once and reused (about 4.6 KB each). */
+	public static SPRITE_ICON_CACHE = new BoundedImageCache<Canvas>(6000);
+	/** Patron-dye recoloured sprites, keyed by source sprite + colour + size. */
+	public static TINTED_ICON_CACHE = new BoundedImageCache<Canvas>(3000);
 	public static ITEM_ICON_CACHE_DIR = path.resolve(process.env.ICON_CACHE_DIR ?? 'icon_cache');
 	public static ITEM_BSO_ICON_DIR = path.resolve('src/lib/resources/images/bso_icons');
 	public static Fonts = Fonts;
@@ -390,6 +395,29 @@ export class OSRSCanvas {
 	}
 
 	private static localIconInflight = new Map<number, Promise<Image | Canvas>>();
+	/** Items with no icon anywhere (disk or sprite host), so renders don't re-check disk and re-fetch every time. */
+	public static MISSING_ICONS = new Map<number, number>();
+	public static readonly MISSING_ICON_NOT_FOUND_MS = 6 * 60 * 60 * 1000;
+	public static readonly MISSING_ICON_FAILED_MS = 10 * 60 * 1000;
+	public static readonly MISSING_ICON_MAX = 5000;
+
+	public static isKnownMissingIcon(itemID: number, now = Date.now()): boolean {
+		const until = OSRSCanvas.MISSING_ICONS.get(itemID);
+		if (until === undefined) return false;
+		if (until > now) return true;
+		OSRSCanvas.MISSING_ICONS.delete(itemID);
+		return false;
+	}
+
+	public static markMissingIcon(itemID: number, forMs: number, now = Date.now()) {
+		OSRSCanvas.MISSING_ICONS.delete(itemID);
+		OSRSCanvas.MISSING_ICONS.set(itemID, now + forMs);
+		while (OSRSCanvas.MISSING_ICONS.size > OSRSCanvas.MISSING_ICON_MAX) {
+			const oldest = OSRSCanvas.MISSING_ICONS.keys().next().value;
+			if (oldest === undefined) break;
+			OSRSCanvas.MISSING_ICONS.delete(oldest);
+		}
+	}
 	private static placeholderIcon: Canvas | null = null;
 	private static readonly iconFetchBudgetMs = 1500;
 
@@ -445,8 +473,10 @@ export class OSRSCanvas {
 		// Spritesheet icons
 		const itemSpriteData = OSRSCanvas.getItemSpriteData(itemID);
 		if (itemSpriteData) {
-			const { x, y, width, height } = itemSpriteData.getData(itemID) as SpriteData;
-			return getClippedRegion(itemSpriteData.getImage(), x, y, width, height);
+			return OSRSCanvas.SPRITE_ICON_CACHE.getOrCreate(String(itemID), () => {
+				const { x, y, width, height } = itemSpriteData.getData(itemID) as SpriteData;
+				return getClippedRegion(itemSpriteData.getImage(), x, y, width, height);
+			});
 		}
 
 		return OSRSCanvas.loadLocalIcon(itemID, networkTimeoutMs);
@@ -458,6 +488,7 @@ export class OSRSCanvas {
 	private static loadLocalIcon(itemID: number, networkTimeoutMs: number): Promise<Image | Canvas> {
 		const cached = OSRSCanvas.LOCAL_ICON_CACHE.get(itemID);
 		if (cached) return Promise.resolve(cached);
+		if (OSRSCanvas.isKnownMissingIcon(itemID)) return Promise.resolve(OSRSCanvas.placeholderItemIcon());
 		if (networkTimeoutMs <= 0) return OSRSCanvas.readLocalIcon(itemID);
 		const existing = OSRSCanvas.localIconInflight.get(itemID);
 		if (existing) return existing;
@@ -492,13 +523,17 @@ export class OSRSCanvas {
 
 		const controller = new AbortController();
 		let timer: ReturnType<typeof setTimeout> | undefined;
+		let notFound = false;
 		try {
 			const imageBuffer = await Promise.race([
 				(async () => {
 					const response = await fetch(`https://chisel.weirdgloop.org/static/img/osrs-sprite/${itemID}.png`, {
 						signal: controller.signal
 					});
-					if (!response.ok) return null;
+					if (!response.ok) {
+						notFound = response.status === 404;
+						return null;
+					}
 					return Buffer.from(await response.arrayBuffer());
 				})(),
 				new Promise<never>((_, reject) => {
@@ -511,13 +546,21 @@ export class OSRSCanvas {
 					timer = setTimeout(() => controller.abort(), networkTimeoutMs);
 				})
 			]);
-			if (!imageBuffer) return OSRSCanvas.placeholderItemIcon();
+			if (!imageBuffer) {
+				OSRSCanvas.markMissingIcon(
+					itemID,
+					notFound ? OSRSCanvas.MISSING_ICON_NOT_FOUND_MS : OSRSCanvas.MISSING_ICON_FAILED_MS
+				);
+				return OSRSCanvas.placeholderItemIcon();
+			}
 			const image = await loadImage(imageBuffer);
 			await mkdir(OSRSCanvas.ITEM_ICON_CACHE_DIR, { recursive: true });
 			await writeFile(path.join(OSRSCanvas.ITEM_ICON_CACHE_DIR, `${itemID}.png`), imageBuffer).catch(() => null);
 			OSRSCanvas.LOCAL_ICON_CACHE.set(itemID, image);
 			return image;
 		} catch {
+			// Timed out, aborted or a bad image: try again later, not on every render.
+			OSRSCanvas.markMissingIcon(itemID, OSRSCanvas.MISSING_ICON_FAILED_MS);
 			return OSRSCanvas.placeholderItemIcon();
 		} finally {
 			clearTimeout(timer);
@@ -635,6 +678,11 @@ export class OSRSCanvas {
 	}
 
 	private tintImage(image: Image | Canvas, color: string, width: number, height: number): Canvas {
+		const key = `${imageSourceId(image)}:${color.toLowerCase()}:${width}x${height}`;
+		return OSRSCanvas.TINTED_ICON_CACHE.getOrCreate(key, () => OSRSCanvas.renderTint(image, color, width, height));
+	}
+
+	private static renderTint(image: Image | Canvas, color: string, width: number, height: number): Canvas {
 		const canvas = new SkiaCanvas(width, height);
 		canvas.gpu = false;
 		const ctx = canvas.getContext('2d');

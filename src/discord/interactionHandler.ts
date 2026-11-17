@@ -11,11 +11,52 @@ import { DiscordSnowflake } from '@sapphire/snowflake';
 import { autoCompleteHandler } from '@/discord/autoCompleteHandler.js';
 import { commandHandler } from '@/discord/commandHandler.js';
 import type { OldSchoolBotClient } from '@/discord/OldSchoolBotClient.js';
+import { handlePollUpdateComponent } from '@/lib/bsc/pollService.js';
 import { DISCORD_USER_IDS_INSERTED_CACHE } from '@/lib/cache.js';
 import { OSInteraction } from '@/lib/structures/OSInteraction.js';
 import { claimDiscordEvent } from '@/lib/util/discordEventGate.js';
-import { handlePollUpdateComponent } from '@/lib/bsc/pollService.js';
 import { globalButtonInteractionHandlerWrapper } from '@/lib/util/globalInteractions.js';
+
+function chatInputData(
+	itx: APIChatInputApplicationCommandInteraction,
+	userId: string,
+	guildId: string | null
+): IChatInputCommandInteraction {
+	return {
+		id: itx.id,
+		token: itx.token,
+		user_id: userId,
+		created_timestamp: DiscordSnowflake.timestampFrom(itx.id),
+		guild_id: guildId,
+		channel_id: itx.channel.id,
+		kind: 'ChatInputCommand',
+		command_name: itx.data.name,
+		command_type: itx.data.type
+	};
+}
+
+/** Private (ephemeral) when the command lists the used subcommand as private, same rule as the lock defer. */
+export function isPrivateCommandUse(
+	command: { privateSubcommands?: readonly string[] } | undefined,
+	options: { name: string }[] | undefined
+): boolean {
+	const used = new Set((options ?? []).map(o => o.name));
+	return Boolean(command?.privateSubcommands?.some(name => used.has(name)));
+}
+
+async function deferCommandOnArrival(
+	client: OldSchoolBotClient,
+	interaction: OSInteraction<IChatInputCommandInteraction>,
+	itx: APIChatInputApplicationCommandInteraction
+) {
+	const command = client.allCommands.find(c => c.name === itx.data.name);
+	try {
+		await interaction.defer({ ephemeral: isPrivateCommandUse(command, itx.data.options) });
+	} catch (err) {
+		// Already expired or acknowledged: carry on so the command behaves exactly as before.
+		Logging.logDebug('Early command defer failed', { error: (err as Error).message, command_name: itx.data.name });
+	}
+}
 
 export async function interactionHandler(client: OldSchoolBotClient, itx: APIInteraction) {
 	if (!claimDiscordEvent('interaction', itx.id)) return;
@@ -25,6 +66,20 @@ export async function interactionHandler(client: OldSchoolBotClient, itx: APIInt
 
 	if (!DISCORD_USER_IDS_INSERTED_CACHE.has(userId) && user) {
 		client.upsertDiscordUser(user);
+	}
+
+	// Acknowledge slash commands before any database or image work, so Discord's 3 second window is never missed
+	// while the bot is busy. Autocomplete, select menus and buttons are handled below as before.
+	let earlyCommand: OSInteraction<IChatInputCommandInteraction> | null = null;
+	if (itx.type === InteractionType.ApplicationCommand && itx.data.type === ApplicationCommandType.ChatInput) {
+		earlyCommand = new OSInteraction({
+			interaction: chatInputData(itx as APIChatInputApplicationCommandInteraction, userId, guildId),
+			rawInteraction: itx as APIChatInputApplicationCommandInteraction,
+			client,
+			// Filled in right after the defer.
+			user: null as unknown as MUser
+		});
+		await deferCommandOnArrival(client, earlyCommand, itx as APIChatInputApplicationCommandInteraction);
 	}
 
 	const fullUser = await mUserFetch(userId);
@@ -83,18 +138,8 @@ export async function interactionHandler(client: OldSchoolBotClient, itx: APIInt
 
 	if (itx.type === InteractionType.ApplicationCommand && itx.data.type === ApplicationCommandType.ChatInput) {
 		const chatInputItx = itx as APIChatInputApplicationCommandInteraction;
-		const d: IChatInputCommandInteraction = {
-			id: itx.id,
-			token: itx.token,
-			user_id: userId,
-			created_timestamp: DiscordSnowflake.timestampFrom(chatInputItx.id),
-			guild_id: itx.guild_id ?? null,
-			channel_id: itx.channel.id,
-			kind: 'ChatInputCommand',
-			command_name: itx.data.name,
-			command_type: itx.data.type
-		};
-		const interaction = new OSInteraction({ interaction: d, rawInteraction: chatInputItx, client, user: fullUser });
+		const interaction = earlyCommand!;
+		interaction.user = fullUser;
 		await commandHandler(chatInputItx, interaction);
 		return;
 	}

@@ -18,6 +18,7 @@ import {
 	type IBgSprite,
 	loadImage
 } from '@/lib/canvas/canvasUtil.js';
+import { RENDER_YIELD_EVERY, yieldToEventLoop } from '@/lib/canvas/imageCaches.js';
 import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
 import { BitField } from '@/lib/constants.js';
 import { allCLItems } from '@/lib/data/Collections.js';
@@ -390,6 +391,9 @@ class BankImageTask {
 		let xLoc = 0;
 		let yLoc = compact ? 5 : 0;
 		for (let i = 0; i < items.length; i++) {
+			// Big banks: let other events (new commands, heartbeats) run between chunks instead of
+			// holding the event loop for the whole render.
+			if (i > 0 && i % RENDER_YIELD_EVERY === 0) await yieldToEventLoop();
 			if (i % itemsPerRow === 0) yLoc += floor((itemSize + spacer / 2) * (compact ? 0.9 : 1.08)) + verticalSpacer;
 			// For some reason, it starts drawing at -2 so we compensate that
 			// Adds the border width
