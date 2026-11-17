@@ -99,6 +99,8 @@ export interface KillableMonster {
 	slayerOnly?: boolean;
 	canChinning?: boolean;
 	canBarrage?: boolean;
+	/** If true, Ice Burst/Barrage can be used without a slayer task. */
+	canBarrageOffTask?: boolean;
 	canCannon?: boolean;
 	cannonMulti?: boolean;
 	specialLoot?: (data: { loot: Bank; ownedItems: Bank; quantity: number; cl: Bank; user?: MUser }) => void;

@@ -38,7 +38,8 @@ export enum QuestID {
 	'Scrambled!' = 16,
 	ShadowsOfCustodia = 17,
 	TutorialIsland = 18,
-	TheBloodMoonRises = 19
+	TheBloodMoonRises = 19,
+	MonkeyMadnessII = 20
 }
 
 export const quests: Quest[] = [
@@ -484,6 +485,28 @@ export const quests: Quest[] = [
 			let duration = Time.Hour * 3;
 			if (user.combatLevel < 110) {
 				duration += Time.Minute * 30;
+			}
+			return duration;
+		}
+	},
+	{
+		id: QuestID.MonkeyMadnessII,
+		qp: 4,
+		name: 'Monkey Madness II',
+		skillReqs: {
+			slayer: 69,
+			crafting: 70,
+			hunter: 60,
+			agility: 55,
+			strength: 60,
+			mining: 5
+		},
+		combatLevelReq: 85,
+		qpReq: 60,
+		calcTime: (user: MUser) => {
+			let duration = Time.Minute * 90;
+			if (user.combatLevel < 100) {
+				duration += Time.Minute * 20;
 			}
 			return duration;
 		}

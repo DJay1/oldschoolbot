@@ -134,10 +134,12 @@ export const lowKillableMonsters: KillableMonster[] = [
 			hitpoints: 74
 		},
 		qpRequired: 175,
+		requiredQuests: [QuestID.MonkeyMadnessII],
 		wildy: false,
 		difficultyRating: 4,
 		canChinning: true,
 		canBarrage: true,
+		canBarrageOffTask: true,
 		canCannon: true,
 		cannonMulti: true,
 		itemInBankBoosts: [

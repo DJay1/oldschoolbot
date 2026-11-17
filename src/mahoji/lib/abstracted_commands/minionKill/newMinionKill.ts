@@ -157,7 +157,7 @@ export function newMinionKillCommand(args: MinionKillOptions): string | MinionKi
 			return `${monster.name} cannot be barraged or burst.`;
 		}
 	}
-	if (isBurstingOrBarraging && !isOnTask) {
+	if (isBurstingOrBarraging && !isOnTask && !monster.canBarrageOffTask) {
 		return `You can't barrage or burst ${monster.name}, because you're not on a slayer task.`;
 	}
 
