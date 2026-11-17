@@ -52,7 +52,9 @@ export async function runWithDailyLimit<T>(
 	buyableName: string,
 	quantity: number,
 	dailyLimit: number | undefined,
-	fn: (ctx: { commit: () => void }) => Promise<T>
+	fn: (ctx: { commit: () => void }) => Promise<T>,
+	/** Item name shown in the limit message, if the limit key isn't the item's name. */
+	displayName: string = buyableName
 ): Promise<T | string> {
 	if (dailyLimit === undefined) return fn({ commit() {} });
 
@@ -65,7 +67,7 @@ export async function runWithDailyLimit<T>(
 	);
 	if (!reserved.ok) {
 		return formatBuyDailyLimitMessage({
-			name: buyableName,
+			name: displayName,
 			requested: quantity,
 			dailyLimit,
 			remaining: reserved.remaining,

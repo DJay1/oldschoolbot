@@ -31,7 +31,7 @@ export const SKILLING_SUPPLY_DAILY_LIMITS: Record<string, number> = {
 	'Olive oil pack': 10
 };
 
-/** Per-player daily caps for /tokkulshop buy, per ore. Separate allowance from /buy. */
+/** Per-player daily caps for /tokkulshop buy, per ore and gem. Separate allowance from /buy. */
 export const TOKKUL_SHOP_DAILY_LIMITS: Record<string, number> = {
 	'Tin ore': 3_000,
 	'Copper ore': 3_000,
@@ -41,7 +41,13 @@ export const TOKKUL_SHOP_DAILY_LIMITS: Record<string, number> = {
 	'Gold ore': 3_000,
 	'Mithril ore': 3_000,
 	'Adamantite ore': 3_000,
-	'Runite ore': 3_000
+	'Runite ore': 3_000,
+	// Gems (Nov 17), same cap as the ores now that gems buy in seconds instead of 1 minute each.
+	'Uncut sapphire': 3_000,
+	'Uncut emerald': 3_000,
+	'Uncut ruby': 3_000,
+	'Uncut diamond': 3_000,
+	'Uncut onyx': 3_000
 };
 
 /** Name used for the Tokkul shop allowance, so it never shares a counter with /buy. */
