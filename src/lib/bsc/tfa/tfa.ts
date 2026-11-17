@@ -130,6 +130,8 @@ export interface TfaTeamMember {
 	boosts: TfaBoost[];
 	/** Relative reduction to death chance from items (0-100). */
 	deathReduction: number;
+	/** Raids wiped in a row before this trip (pity: lowers death chance, resets on a completed raid). */
+	wipeStreak?: number;
 	/** Room-only speed boosts, applied only to that boss's room when it's rolled. */
 	roomBoosts?: TfaRoomBoosts;
 }
@@ -153,13 +155,48 @@ export function tfaUserSpeedReduction(member: TfaTeamMember) {
 	return gear + kc + items;
 }
 
+/** Each raid wiped in a row lowers your death chance by this much (relative), up to TFA_PITY_CAP. A completed raid resets it. */
+export const TFA_PITY_PER_WIPE = 10;
+export const TFA_PITY_CAP = 50;
+
+/** Pity reduction (percent, relative) to death chance for this many raids wiped in a row. */
+export function tfaPityPercent(streak = 0) {
+	return Math.min(TFA_PITY_CAP, Math.max(0, Math.floor(streak)) * TFA_PITY_PER_WIPE);
+}
+
+/** Wipe streak after these raids: +1 for each wiped raid, back to 0 on a completed one. */
+export function tfaNextWipeStreak(streak: number, raids: { w: number | null }[]) {
+	let s = Math.max(0, Math.floor(streak));
+	for (const raid of raids) s = raid.w === null ? 0 : s + 1;
+	return s;
+}
+
 /** Death chance (percent) for one player at one boss. */
-export function tfaDeathChance(member: TfaTeamMember, boss: TfaBoss) {
+export function tfaDeathChance(member: TfaTeamMember, boss: TfaBoss, streak = member.wipeStreak ?? 0) {
 	const base = Math.max(1.5, 8 - member.kc * 0.035);
 	const gearPenalty = (100 - stylePercent(member.gear, boss.style)) * 0.08;
 	let chance = (base + gearPenalty) * boss.deathMultiplier;
 	chance *= 1 - member.deathReduction / 100;
+	chance *= 1 - tfaPityPercent(streak) / 100;
 	return Math.min(60, Math.max(1, chance));
+}
+
+/** Chance (percent) this team wipes one raid, averaged over every boss route, at the team's current wipe streaks. */
+export function tfaRaidWipeChance(team: TfaTeamMember[]) {
+	let success = 0;
+	for (const a of [2, 3]) {
+		for (const b of [4, 5]) {
+			for (const c of [6, 7]) {
+				let p = 1;
+				for (const id of [1, a, b, c, 8]) {
+					const boss = tfaBossByID(id);
+					p *= 1 - team.reduce((acc, m) => acc * (tfaDeathChance(m, boss) / 100), 1);
+				}
+				success += p / 8;
+			}
+		}
+	}
+	return (1 - success) * 100;
 }
 
 export interface TfaStoredRaid {
@@ -197,6 +234,8 @@ export function createTfaRaids({
 	const expectedPerPlayer = TFA_TOTAL_POINTS / size;
 
 	const raids: TfaStoredRaid[] = [];
+	// Pity streaks carry across the raids in this trip, the same way they're saved when it finishes.
+	const streaks = team.map(m => m.wipeStreak ?? 0);
 	let realDuration = 0;
 	let fakeDuration = 0;
 
@@ -219,7 +258,7 @@ export function createTfaRaids({
 			const weights: number[] = [];
 			for (let i = 0; i < size; i++) {
 				const member = team[i];
-				const died = rng.percentChance(tfaDeathChance(member, boss));
+				const died = rng.percentChance(tfaDeathChance(member, boss, streaks[i]));
 				if (died) {
 					deaths[i].push(boss.id);
 					diedHere++;
@@ -241,6 +280,7 @@ export function createTfaRaids({
 			raidTime += bossTime;
 		}
 
+		for (let i = 0; i < size; i++) streaks[i] = wipedAt === null ? 0 : streaks[i] + 1;
 		realDuration += Math.floor(raidTime * ccFactor);
 		raids.push({
 			b: bosses,
@@ -362,7 +402,7 @@ export function calculateTfaGearPercents(user: MUser) {
 	return { melee, range, mage, total: (melee + range + mage) / 3 };
 }
 
-export function tfaTeamMemberFromUser(user: MUser, kc: number): TfaTeamMember {
+export function tfaTeamMemberFromUser(user: MUser, kc: number, wipeStreak = 0): TfaTeamMember {
 	const { boosts, deathReduction } = tfaItemBoosts(user);
 	return {
 		id: user.id,
@@ -370,6 +410,7 @@ export function tfaTeamMemberFromUser(user: MUser, kc: number): TfaTeamMember {
 		gear: calculateTfaGearPercents(user),
 		boosts,
 		deathReduction,
+		wipeStreak,
 		roomBoosts: tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id))
 	};
 }

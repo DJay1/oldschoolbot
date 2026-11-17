@@ -1031,6 +1031,7 @@ model UserStats {
   tfa_total_minutes        Int  @default(0)
   tfa_cost                 Json @default("{}") @db.Json
   tfa_loot                 Json @default("{}") @db.Json
+  tfa_wipe_streak          Int  @default(0)
 
   chincannon_destroyed_loot_bank Json     @default("{}") @db.Json
   comp_cape_percent              Decimal?

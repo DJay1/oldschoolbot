@@ -17,11 +17,16 @@ import {
 	minTfaStats,
 	TFA_MAX_QUANTITY,
 	TFA_MIN_GEAR_PERCENT,
+	TFA_PITY_CAP,
+	TFA_PITY_PER_WIPE,
 	TFA_SUPPLY_KC_STEP,
+	type TfaTeamMember,
 	tfaBossByID,
 	tfaChargesNeeded,
 	tfaHelpBoostsText,
 	tfaItemBoosts,
+	tfaPityPercent,
+	tfaRaidWipeChance,
 	tfaSingleRaidDuration,
 	tfaSuppliesForKc,
 	tfaTeamMemberFromUser,
@@ -46,6 +51,14 @@ import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
 const RAID_NAME = 'The Fractured Archive';
+
+function tfaPityLine(team: TfaTeamMember[]) {
+	const best = Math.max(...team.map(m => tfaPityPercent(m.wipeStreak)));
+	if (best <= 0) return '';
+	return team.length === 1
+		? ` Wipe pity: ${best}% lower death chance after ${team[0].wipeStreak} wiped raid${team[0].wipeStreak === 1 ? '' : 's'} in a row.`
+		: '';
+}
 
 export async function tfaStartCommand(
 	interaction: MInteraction | null | undefined,
@@ -92,7 +105,13 @@ export async function tfaStartCommand(
 	users = await Promise.all(users.map(u => mUserFetch(u.id)));
 
 	const team = await Promise.all(
-		users.map(async u => tfaTeamMemberFromUser(u, await u.fetchMinigameScore('fractured_archive')))
+		users.map(async u =>
+			tfaTeamMemberFromUser(
+				u,
+				await u.fetchMinigameScore('fractured_archive'),
+				(await u.fetchStats()).tfa_wipe_streak ?? 0
+			)
+		)
 	);
 
 	// Chincannon (like CoX): one team member's equipped Chincannon makes the whole raid faster, but destroys all loot.
@@ -115,6 +134,7 @@ export async function tfaStartCommand(
 		}
 	}
 
+	const wipeChance = tfaRaidWipeChance(team);
 	const { raids, realDuration, fakeDuration } = createTfaRaids({ team, quantity, chincannonPercent });
 
 	let chincannonStr = '';
@@ -156,7 +176,7 @@ export async function tfaStartCommand(
 		const boostNames = member.boosts.map(b => b.name);
 		details += `**- ${u.usernameOrMention}** Gear: ${member.gear.total.toFixed(1)}% | Speed: ${tfaUserSpeedReduction(member).toFixed(1)}%${
 			boostNames.length > 0 ? ` | Boosts: ${boostNames.join(', ')}` : ''
-		}${member.deathReduction > 0 ? ' | Rondache' : ''}\n`;
+		}${member.deathReduction > 0 ? ' | Rondache' : ''}${tfaPityPercent(member.wipeStreak) > 0 ? ` | Wipe pity ${tfaPityPercent(member.wipeStreak)}%` : ''}\n`;
 		// Item names for small teams; big masses get per-room totals so the message stays under Discord's limit.
 		const rooms =
 			users.length <= 2
@@ -194,7 +214,7 @@ export async function tfaStartCommand(
 
 	return `${user.usernameOrMention}'s party (${users.map(u => u.usernameOrMention).join(', ')}) is now off to do ${
 		quantity === 1 ? 'a' : `${quantity}x`
-	} ${RAID_NAME} raid${quantity === 1 ? '' : 's'} - the total trip will take ${formatDuration(fakeDuration)}. Team unique chance: 1 in ${tfaTeamUniqueOdds(users.length)} per raid.
+	} ${RAID_NAME} raid${quantity === 1 ? '' : 's'} - the total trip will take ${formatDuration(fakeDuration)}. Team unique chance: 1 in ${tfaTeamUniqueOdds(users.length)} per raid. Wipe chance: ${wipeChance.toFixed(1)}% per raid.${tfaPityLine(team)}
 
 ${
 	// Same supplies for everyone: one line at the end instead of a line per player (keeps big masses short).
@@ -212,6 +232,8 @@ export async function tfaHelpCommand(user: MUser): Promise<string> {
 	const { boosts, deathReduction } = tfaItemBoosts(user);
 	const check = checkTfaUser(user, 1, kc);
 	const minutes = stats.tfa_total_minutes ?? 0;
+	const streak = stats.tfa_wipe_streak ?? 0;
+	const soloWipe = tfaRaidWipeChance([tfaTeamMemberFromUser(user, kc, streak)]);
 	const roomLines = tfaRoomBoostsText(
 		tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id)),
 		[1, 2, 3, 4, 5, 6, 7, 8],
@@ -232,7 +254,8 @@ export async function tfaHelpCommand(user: MUser): Promise<string> {
 
 **How it works**
 Archive Guardian, then one of Ezekiel or Bork and the Smorks, one of Moia or Dreadnoth the Jellied, one of The Dagon'hai or Xarth, then Ocellus. Bosses are picked at random each raid.
-Team unique chance is 1/16 solo or duo, down to 1/7.5 with 8. The unique goes to one player weighted by contribution points (700 per raid, split by damage; each death costs 10% of your expected share). Everyone else gets 3 rolls on the normal loot. If the whole team dies at a boss, the raid fails and the supplies are lost.
+Team unique chance is 1/16 solo or duo, down to 1/7.5 with 8. The unique goes to one player weighted by contribution points (700 per raid, split by damage; each death costs 10% of your expected share). Everyone else gets 3 rolls on the normal loot. If the whole team dies at a boss, the raid fails and the supplies are lost. Each raid wiped in a row lowers your death chance by ${TFA_PITY_PER_WIPE}% (up to ${TFA_PITY_CAP}%) until you complete a raid.
+**Your solo wipe chance:** ${soloWipe.toFixed(1)}% per raid${streak > 0 ? ` (${streak} wiped in a row, ${tfaPityPercent(streak)}% wipe pity)` : ''}
 
 **Boosts**
 ${tfaHelpBoostsText()

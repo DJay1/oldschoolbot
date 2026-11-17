@@ -5,7 +5,7 @@ import { Emoji, Events, formatOrdinal, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, type RNGProvider, randArrItem } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
-import { tfaBossByID } from '@/lib/bsc/tfa/tfa.js';
+import { tfaBossByID, tfaNextWipeStreak } from '@/lib/bsc/tfa/tfa.js';
 import { TfaItem, tfaAnnouncedItems, tfaCL, tfaFragmentIDs, tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
 import {
 	pickTfaUniqueRecipient,
@@ -171,12 +171,15 @@ export const tfaTask: MinionTask = {
 		const completed = raids.filter(r => r.w === null).length;
 
 		await Promise.all(
-			allUsers.map(u =>
-				u.statsUpdate({
+			allUsers.map(async u => {
+				// Wipe pity: walk this trip's raids from the saved streak (wipe +1, completed raid resets to 0).
+				const streak = (await u.fetchStats()).tfa_wipe_streak ?? 0;
+				await u.statsUpdate({
 					tfa_attempts: { increment: quantity },
-					tfa_total_minutes: { increment: minutes }
-				})
-			)
+					tfa_total_minutes: { increment: minutes },
+					tfa_wipe_streak: tfaNextWipeStreak(streak, raids)
+				});
+			})
 		);
 
 		// Loot (only completed raids give loot)
