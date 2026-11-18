@@ -171,15 +171,37 @@ export function formatPollPercent(percent: number | null): string {
 	return `${percent.toFixed(1)}%`;
 }
 
-export function pollMessageUrl(poll: PollRecord): string {
+const DISCORD_SNOWFLAKE_ID = /^\d{1,20}$/;
+
+export function pollJumpUrl(
+	poll: Pick<PollRecord, 'guildId' | 'channelId' | 'messageId'>
+): string | null {
+	if (
+		!DISCORD_SNOWFLAKE_ID.test(poll.guildId) ||
+		!DISCORD_SNOWFLAKE_ID.test(poll.channelId) ||
+		!DISCORD_SNOWFLAKE_ID.test(poll.messageId)
+	) {
+		return null;
+	}
 	return `https://discord.com/channels/${poll.guildId}/${poll.channelId}/${poll.messageId}`;
+}
+
+export function pollMessageUrl(poll: PollRecord): string {
+	return pollJumpUrl(poll) ?? '';
+}
+
+export function pollViewLink(poll: Pick<PollRecord, 'guildId' | 'channelId' | 'messageId'>): string {
+	const url = pollJumpUrl(poll);
+	return url ? ` [View poll](${url})` : '';
 }
 
 export function formatPollListLine(poll: PollRecord): string {
 	const title = truncatePollText(poll.question, 80);
 	const pct = poll.status === 'Open' ? 'open' : formatPollPercent(poll.percent);
 	const note = poll.note ? ` — ${truncatePollText(poll.note, 60)}` : '';
-	return `[${title}](${pollMessageUrl(poll)}) · ${pct} · ${poll.status}${note}`;
+	const url = pollJumpUrl(poll);
+	const label = url ? `[${title}](${url})` : title;
+	return `${label} · ${pct} · ${poll.status}${note}`;
 }
 
 export function groupPollsByStatus(polls: PollRecord[]): { status: PollStatus; polls: PollRecord[] }[] {
@@ -222,16 +244,22 @@ export function buildPollListPages(polls: PollRecord[], pageSize = 12): { embeds
 export function closeResultSummary(poll: PollRecord): string {
 	const pct = formatPollPercent(poll.percent);
 	const scores = `${poll.yes} Yes / ${poll.total} counted (${pct} yes)`;
+	const link = pollViewLink(poll);
 	switch (poll.status) {
 		case 'Passed':
-			return `Your poll passed and is waiting for implementation. ${scores}`;
+			return `Your poll passed and is waiting for implementation. ${scores}${link}`;
 		case 'Repoll':
-			return `Your poll is eligible for a repoll (60–69% yes). Use /poll repoll within 5 days or it will fail. ${scores}`;
+			return `Your poll is eligible for a repoll (60–69% yes). Use /poll repoll within 5 days or it will fail. ${scores}${link}`;
 		case 'Failed':
-			return `Your poll failed. ${scores}`;
+			return `Your poll failed. ${scores}${link}`;
 		default:
-			return `Your poll closed as ${poll.status}. ${scores}`;
+			return `Your poll closed as ${poll.status}. ${scores}${link}`;
 	}
+}
+
+export function repollExpiredSummary(poll: PollRecord): string {
+	const pct = poll.percent === null ? '—' : `${poll.percent.toFixed(1)}%`;
+	return `Your poll was eligible for a repoll, but none was created in time, so it failed. ${poll.yes} Yes / ${poll.total} counted (${pct} yes).${pollViewLink(poll)}`;
 }
 
 export function pollResultEmbed(poll: PollRecord): EmbedBuilder {

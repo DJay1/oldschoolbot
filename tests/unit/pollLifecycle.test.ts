@@ -9,11 +9,15 @@ import {
 	canDeletePoll,
 	canUpdatePollStatus,
 	countedPollVotes,
+	closeResultSummary,
 	formatPollListLine,
 	isAllowedUpdateTarget,
 	isPollStillUpdateable,
 	parsePollDuration,
 	pollCloseOutcome,
+	pollJumpUrl,
+	pollViewLink,
+	repollExpiredSummary,
 	shouldPostWeeklyPollReminder,
 	truncatePollText,
 	weeklyPollReminderWeekId,
@@ -152,5 +156,77 @@ describe('min vote threshold', () => {
 	test('uses the agreed floor of 7 counted votes', () => {
 		expect(POLL_MIN_VOTES).toBe(7);
 		expect(pollCloseOutcome(7, 0, false).status).toBe('Passed');
+	});
+});
+
+describe('poll result jump links', () => {
+	const linked = {
+		guildId: '1323755235793178655',
+		channelId: '1510687250420072498',
+		messageId: '1439111111111111111'
+	};
+	const url = `https://discord.com/channels/${linked.guildId}/${linked.channelId}/${linked.messageId}`;
+
+	test('builds a Discord jump URL only when all IDs look valid', () => {
+		expect(pollJumpUrl(poll(linked))).toBe(url);
+		expect(pollJumpUrl(poll({ guildId: '', channelId: '2', messageId: '3' }))).toBeNull();
+		expect(pollJumpUrl(poll({ guildId: '1', channelId: '', messageId: '3' }))).toBeNull();
+		expect(pollJumpUrl(poll({ guildId: '1', channelId: '2', messageId: '' }))).toBeNull();
+		expect(pollJumpUrl(poll({ guildId: 'not-an-id', channelId: '2', messageId: '3' }))).toBeNull();
+		expect(pollViewLink(poll({ guildId: '', channelId: '2', messageId: '3' }))).toBe('');
+		expect(pollViewLink(poll(linked))).toBe(` [View poll](${url})`);
+	});
+
+	test('close and expired-repoll updates include a View poll link, and skip it when IDs are missing', () => {
+		const passed = closeResultSummary(poll({ ...linked, status: 'Passed', yes: 13, no: 1, total: 14, percent: 92.857 }));
+		expect(passed).toContain('Your poll passed and is waiting for implementation.');
+		expect(passed).toContain('13 Yes / 14 counted (92.9% yes)');
+		expect(passed).toContain(`[View poll](${url})`);
+
+		const repoll = closeResultSummary(poll({ ...linked, status: 'Repoll', yes: 6, no: 4, total: 10, percent: 60 }));
+		expect(repoll).toContain('eligible for a repoll');
+		expect(repoll).toContain(`[View poll](${url})`);
+
+		const failed = closeResultSummary(poll({ ...linked, status: 'Failed', yes: 2, no: 8, total: 10, percent: 20 }));
+		expect(failed).toContain('Your poll failed.');
+		expect(failed).toContain(`[View poll](${url})`);
+
+		const expired = repollExpiredSummary(
+			poll({ ...linked, status: 'Failed', yes: 6, no: 4, total: 10, percent: 60 })
+		);
+		expect(expired).toContain('none was created in time, so it failed');
+		expect(expired).toContain(`[View poll](${url})`);
+
+		const noLink = closeResultSummary(
+			poll({ guildId: '', channelId: '', messageId: '', status: 'Passed', yes: 13, no: 1, total: 14, percent: 92.9 })
+		);
+		expect(noLink).toContain('Your poll passed and is waiting for implementation.');
+		expect(noLink).not.toContain('View poll');
+		expect(noLink).not.toContain('https://discord.com/channels');
+	});
+
+	test('worst-case poll status updates stay at least 150 under Discord\'s 2,000-character limit', () => {
+		const maxIds = {
+			guildId: '9'.repeat(20),
+			channelId: '9'.repeat(20),
+			messageId: '9'.repeat(20)
+		};
+		const huge = {
+			...maxIds,
+			yes: Number.MAX_SAFE_INTEGER,
+			no: Number.MAX_SAFE_INTEGER,
+			total: Number.MAX_SAFE_INTEGER,
+			percent: 99.999,
+			note: 'n'.repeat(200),
+			question: 'q'.repeat(500),
+			status: 'Repoll' as const
+		};
+		const close = closeResultSummary(poll(huge));
+		const expired = repollExpiredSummary(poll({ ...huge, status: 'Failed' }));
+		const staffUpdate = `Updated **${'q'.repeat(80)}** to **In progress**. Note: ${'n'.repeat(200)}${pollViewLink(poll(maxIds))}`;
+		for (const content of [close, expired, staffUpdate]) {
+			expect(content.length).toBeLessThanOrEqual(2000 - 150);
+			expect(content).toContain('View poll');
+		}
 	});
 });

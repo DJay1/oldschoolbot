@@ -23,7 +23,10 @@ import {
 	POLL_UPDATE_STATUS_PREFIX,
 	POLL_UPDATE_TARGET_STATUSES,
 	pollCloseOutcome,
+	pollJumpUrl,
 	pollResultEmbed,
+	pollViewLink,
+	repollExpiredSummary,
 	shouldPostWeeklyPollReminder,
 	truncatePollText,
 	weeklyPollReminderWeekId,
@@ -147,7 +150,7 @@ export async function expireRepollWindow(poll: PollRecord, now = Date.now()): Pr
 	const closed: PollRecord = { ...poll, status: 'Failed', updatedAt: now };
 	await Cache.savePoll(closed);
 	await updatePollMessage(closed);
-	await notifyCreator(closed, `Your poll was eligible for a repoll, but none was created in time, so it failed. ${closed.yes} Yes / ${closed.total} counted (${closed.percent?.toFixed(1)}% yes).`);
+	await notifyCreator(closed, repollExpiredSummary(closed));
 	return closed;
 }
 
@@ -290,7 +293,9 @@ export async function postWeeklyPollReminder(now = Date.now()): Promise<boolean>
 						.map(poll => {
 							const title = truncatePollText(poll.question, 80);
 							const pct = poll.percent === null ? '' : ` (${poll.percent.toFixed(1)}% yes)`;
-							return `- [${title}](https://discord.com/channels/${poll.guildId}/${poll.channelId}/${poll.messageId}) — ${poll.status}${pct}`;
+							const url = pollJumpUrl(poll);
+							const label = url ? `[${title}](${url})` : title;
+							return `- ${label} — ${poll.status}${pct}`;
 						})
 						.join('\n');
 		const mentions = [`<@${POLL_DJ_USER_ID}>`, ...roleIds.map(id => `<@&${id}>`)].join(' ');
@@ -466,7 +471,7 @@ export async function handlePollUpdateComponent(itx: {
 		itx.id,
 		itx.token,
 		{
-			content: `Updated **${truncatePollText(result.question, 80)}** to **${result.status}**.${noteText}`,
+			content: `Updated **${truncatePollText(result.question, 80)}** to **${result.status}**.${noteText}${pollViewLink(result)}`,
 			components: [],
 			flags: MessageFlags.Ephemeral
 		},
