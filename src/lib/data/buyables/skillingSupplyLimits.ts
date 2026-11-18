@@ -68,7 +68,31 @@ const limitsByLowerName = new Map(
 	Object.entries(SKILLING_SUPPLY_DAILY_LIMITS).map(([name, cap]) => [name.toLowerCase(), cap] as const)
 );
 
-export function buyDailyLimitFor(name: string): number | undefined {
+/** /buy Cosmic rune daily caps and rates. The higher cap needs Lunar Diplomacy. */
+export const COSMIC_RUNE_BUY_NAME = 'Cosmic rune';
+export const COSMIC_RUNE_DAILY_LIMIT = 3_000;
+export const COSMIC_RUNE_DAILY_LIMIT_LUNARS = 5_000;
+export const COSMIC_RUNE_BUY_PER_HOUR = 7_500;
+export const COSMIC_RUNE_BUY_PER_HOUR_LUNARS = 15_000;
+export const LUNAR_DIPLOMACY_CAP_HINT =
+	'Complete Lunar Diplomacy with `/activities quest` to raise the cap to 5,000 a day and buy them twice as fast.';
+
+export function isCosmicRuneBuyName(name: string): boolean {
+	return name.toLowerCase() === COSMIC_RUNE_BUY_NAME.toLowerCase();
+}
+
+export function cosmicRuneDailyLimit(hasLunarDiplomacy: boolean): number {
+	return hasLunarDiplomacy ? COSMIC_RUNE_DAILY_LIMIT_LUNARS : COSMIC_RUNE_DAILY_LIMIT;
+}
+
+export function cosmicRuneBuyPerHour(hasLunarDiplomacy: boolean): number {
+	return hasLunarDiplomacy ? COSMIC_RUNE_BUY_PER_HOUR_LUNARS : COSMIC_RUNE_BUY_PER_HOUR;
+}
+
+export function buyDailyLimitFor(name: string, opts?: { hasLunarDiplomacy?: boolean }): number | undefined {
+	if (isCosmicRuneBuyName(name)) {
+		return cosmicRuneDailyLimit(opts?.hasLunarDiplomacy ?? false);
+	}
 	return limitsByLowerName.get(name.toLowerCase());
 }
 
@@ -101,6 +125,37 @@ export function formatBuyDailyLimitMessage(opts: {
 	}
 
 	return `You can only buy ${limitFmt}x ${name} per day. You tried to buy ${requestedFmt}, but you have ${remainingFmt} left today. ${when}`;
+}
+
+export function formatCosmicRuneBuyLimitMessage(opts: {
+	requested: number;
+	dailyLimit: number;
+	remaining: number;
+	resetAtSeconds: number | null;
+	hasLunarDiplomacy: boolean;
+}): string {
+	const base = formatBuyDailyLimitMessage({
+		name: COSMIC_RUNE_BUY_NAME,
+		requested: opts.requested,
+		dailyLimit: opts.dailyLimit,
+		remaining: opts.remaining,
+		resetAtSeconds: opts.resetAtSeconds
+	});
+	if (opts.hasLunarDiplomacy) return base;
+	return `${base} ${LUNAR_DIPLOMACY_CAP_HINT}`;
+}
+
+export function formatCosmicRunePurchaseNote(opts: {
+	remaining: number;
+	dailyLimit: number;
+	hasLunarDiplomacy: boolean;
+}): string {
+	const remainingFmt = opts.remaining.toLocaleString();
+	const limitFmt = opts.dailyLimit.toLocaleString();
+	if (opts.hasLunarDiplomacy) {
+		return `You have ${remainingFmt} of ${limitFmt} Cosmic rune left today (Lunar Diplomacy cap).`;
+	}
+	return `You have ${remainingFmt} of ${limitFmt} Cosmic rune left today. ${LUNAR_DIPLOMACY_CAP_HINT}`;
 }
 
 export type BuyDailyReserveResult =

@@ -29,6 +29,7 @@ export const tripBuyables: TripBuyable[] = [
 	{ item: EItem.DEATH_RUNE, gpCost: 360, quantityPerHour: 15_000, shopQuantity: 250, changePer: 0.1 },
 	{ item: EItem.NATURE_RUNE, gpCost: 360, quantityPerHour: 15_000, shopQuantity: 250, changePer: 0.1 },
 	{ item: EItem.CHAOS_RUNE, gpCost: 180, quantityPerHour: 15_000, shopQuantity: 250, changePer: 0.1 },
+	{ item: EItem.COSMIC_RUNE, gpCost: 100, quantityPerHour: 7_500, shopQuantity: 250, changePer: 0.1 },
 	{
 		item: EItem.CHAOS_RUNE,
 		gpCost: 19_900,

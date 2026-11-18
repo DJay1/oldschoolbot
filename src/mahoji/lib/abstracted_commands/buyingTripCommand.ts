@@ -1,11 +1,37 @@
 import { Time } from '@oldschoolgg/toolkit';
 import { Bank, EItem, Items } from 'oldschooljs';
 
+import {
+	cosmicRuneBuyPerHour,
+	cosmicRuneDailyLimit,
+	formatCosmicRuneBuyLimitMessage,
+	formatCosmicRunePurchaseNote,
+	isCosmicRuneBuyName
+} from '@/lib/data/buyables/skillingSupplyLimits.js';
 import type { TripBuyable } from '@/lib/data/buyables/tripBuyables.js';
+import { QuestID } from '@/lib/minions/data/quests.js';
 import { applyBuyCostSellFloor } from '@/lib/util/buySellFloor.js';
 import { calculateShopBuyCost } from '@/lib/util/calculateShopBuyCost.js';
 import { dailyBuyLimitMessage, peekDailyBuyRemaining, runWithBuyDailyLimit } from '@/lib/util/runWithBuyDailyLimit.js';
 import { MAX_QUANTITY, safePositiveProduct, validateQuantity } from '@/lib/util/validateQuantity.js';
+
+function tripBuyLimitMessage(
+	itemDisplayName: string,
+	requested: number,
+	state: { remaining: number; dailyLimit: number; resetAtSeconds: number | null },
+	hasLunarDiplomacy: boolean
+): string {
+	if (isCosmicRuneBuyName(itemDisplayName)) {
+		return formatCosmicRuneBuyLimitMessage({
+			requested,
+			dailyLimit: state.dailyLimit,
+			remaining: state.remaining,
+			resetAtSeconds: state.resetAtSeconds,
+			hasLunarDiplomacy
+		});
+	}
+	return dailyBuyLimitMessage(itemDisplayName, requested, state);
+}
 
 export async function buyingTripCommand(
 	user: MUser,
@@ -13,10 +39,14 @@ export async function buyingTripCommand(
 	quantity: number | null,
 	interaction: MInteraction
 ) {
+	const hasLunarDiplomacy = user.user.finished_quest_ids.includes(QuestID.LunarDiplomacy);
 	let quantityPerHour = buyable.quantityPerHour!;
 
 	if (buyable.item === EItem.COAL && user.owns('Coal bag')) {
 		quantityPerHour *= 1.6;
+	}
+	if (buyable.item === EItem.COSMIC_RUNE) {
+		quantityPerHour = cosmicRuneBuyPerHour(hasLunarDiplomacy);
 	}
 
 	const timePerItem = Time.Hour / quantityPerHour;
@@ -34,14 +64,15 @@ export async function buyingTripCommand(
 	if (!parsedQuantity.ok) return parsedQuantity.error;
 	quantity = parsedQuantity.value;
 
-	const dailyState = await peekDailyBuyRemaining(user.id, itemDisplayName);
+	const dailyLimitOverride = buyable.item === EItem.COSMIC_RUNE ? cosmicRuneDailyLimit(hasLunarDiplomacy) : undefined;
+	const dailyState = await peekDailyBuyRemaining(user.id, itemDisplayName, dailyLimitOverride);
 	if (dailyState) {
 		if (userSpecifiedQuantity) {
 			if (quantity > dailyState.remaining) {
-				return dailyBuyLimitMessage(itemDisplayName, quantity, dailyState);
+				return tripBuyLimitMessage(itemDisplayName, quantity, dailyState, hasLunarDiplomacy);
 			}
 		} else if (dailyState.remaining <= 0) {
-			return dailyBuyLimitMessage(itemDisplayName, quantity, dailyState);
+			return tripBuyLimitMessage(itemDisplayName, quantity, dailyState, hasLunarDiplomacy);
 		} else {
 			quantity = Math.min(quantity, dailyState.remaining);
 		}
@@ -73,24 +104,38 @@ export async function buyingTripCommand(
 	}
 
 	const cost = new Bank().add('Coins', totalCost);
-	return runWithBuyDailyLimit(user.id, itemDisplayName, quantity, async ({ commit }) => {
-		if (!user.owns(cost)) {
-			return `You need ${cost} to buy ${quantity}x ${itemDisplayName}.`;
-		}
+	return runWithBuyDailyLimit(
+		user.id,
+		itemDisplayName,
+		quantity,
+		async ({ commit }) => {
+			if (!user.owns(cost)) {
+				return `You need ${cost} to buy ${quantity}x ${itemDisplayName}.`;
+			}
 
-		await interaction.confirmation(
-			`Buying ${quantity}x ${itemDisplayName} will cost ${totalCost.toLocaleString()} GP (avg ${displayAverage.toLocaleString()} ea). Please confirm.`
-		);
+			await interaction.confirmation(
+				`Buying ${quantity}x ${itemDisplayName} will cost ${totalCost.toLocaleString()} GP (avg ${displayAverage.toLocaleString()} ea). Please confirm.`
+			);
 
-		await user.transactItems({
-			itemsToRemove: cost,
-			itemsToAdd: loot,
-			collectionLog: false
-		});
-		await ClientSettings.updateBankSetting('buy_cost_bank', cost);
-		await ClientSettings.updateBankSetting('buy_loot_bank', loot);
+			await user.transactItems({
+				itemsToRemove: cost,
+				itemsToAdd: loot,
+				collectionLog: false
+			});
+			await ClientSettings.updateBankSetting('buy_cost_bank', cost);
+			await ClientSettings.updateBankSetting('buy_loot_bank', loot);
 
-		commit();
-		return `You purchased ${loot}. This cost ${totalCost.toLocaleString()} GP (avg ${displayAverage.toLocaleString()} ea).`;
-	});
+			commit();
+			let message = `You purchased ${loot}. This cost ${totalCost.toLocaleString()} GP (avg ${displayAverage.toLocaleString()} ea).`;
+			if (buyable.item === EItem.COSMIC_RUNE && dailyState) {
+				message += ` ${formatCosmicRunePurchaseNote({
+					remaining: Math.max(0, dailyState.remaining - quantity),
+					dailyLimit: dailyState.dailyLimit,
+					hasLunarDiplomacy
+				})}`;
+			}
+			return message;
+		},
+		dailyLimitOverride
+	);
 }

@@ -39,6 +39,7 @@ const EXPECTED_EFFECTIVE_UNIT_COST: Record<string, number> = {
 	'Mind rune': 50,
 	'Body rune': 40,
 	'Astral rune': 100,
+	'Cosmic rune': 100,
 	'Chaos rune': 180,
 	'Chaos rune (pack)': 19_900,
 	'Nature rune': 360,
@@ -141,6 +142,8 @@ describe('skilling supply /buy prices and daily limits', () => {
 			expect(buyDailyLimitFor(name), name).toBeUndefined();
 		}
 		expect(buyDailyLimitFor('Astral rune')).toBe(10_000);
+		expect(buyDailyLimitFor('Cosmic rune')).toBe(3_000);
+		expect(buyDailyLimitFor('Cosmic rune', { hasLunarDiplomacy: true })).toBe(5_000);
 		expect(buyDailyLimitFor('Chaos rune')).toBe(10_000);
 		expect(buyDailyLimitFor('Chaos rune (pack)')).toBe(100);
 		for (const name of ['Nature rune', 'Death rune', 'Law rune', 'Soul rune', 'Blood rune']) {

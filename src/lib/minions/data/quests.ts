@@ -39,7 +39,8 @@ export enum QuestID {
 	ShadowsOfCustodia = 17,
 	TutorialIsland = 18,
 	TheBloodMoonRises = 19,
-	MonkeyMadnessII = 20
+	MonkeyMadnessII = 20,
+	LunarDiplomacy = 21
 }
 
 export const quests: Quest[] = [
@@ -507,6 +508,29 @@ export const quests: Quest[] = [
 			let duration = Time.Minute * 90;
 			if (user.combatLevel < 100) {
 				duration += Time.Minute * 20;
+			}
+			return duration;
+		}
+	},
+	{
+		id: QuestID.LunarDiplomacy,
+		qp: 2,
+		name: 'Lunar Diplomacy',
+		skillReqs: {
+			crafting: 61,
+			defence: 40,
+			firemaking: 49,
+			herblore: 5,
+			magic: 65,
+			mining: 60,
+			woodcutting: 55
+		},
+		combatLevelReq: 70,
+		qpReq: 40,
+		calcTime: (user: MUser) => {
+			let duration = Time.Minute * 60;
+			if (user.combatLevel < 80) {
+				duration += Time.Minute * 15;
 			}
 			return duration;
 		}

@@ -6,9 +6,9 @@ import {
 
 export async function peekDailyBuyRemaining(
 	userId: string,
-	buyableName: string
+	buyableName: string,
+	dailyLimit: number | undefined = buyDailyLimitFor(buyableName)
 ): Promise<{ remaining: number; dailyLimit: number; resetAtSeconds: number | null } | null> {
-	const dailyLimit = buyDailyLimitFor(buyableName);
 	if (dailyLimit === undefined) return null;
 	const peek = await Cache.peekBuyDailyLimit(userId, buyableName);
 	return {
@@ -41,9 +41,10 @@ export async function runWithBuyDailyLimit<T>(
 	userId: string,
 	buyableName: string,
 	quantity: number,
-	fn: (ctx: { commit: () => void }) => Promise<T>
+	fn: (ctx: { commit: () => void }) => Promise<T>,
+	dailyLimit: number | undefined = buyDailyLimitFor(buyableName)
 ): Promise<T | string> {
-	return runWithDailyLimit(userId, buyableName, quantity, buyDailyLimitFor(buyableName), fn);
+	return runWithDailyLimit(userId, buyableName, quantity, dailyLimit, fn);
 }
 
 /** Same as runWithBuyDailyLimit, with the cap given directly (used by /tokkulshop). */
