@@ -65,7 +65,7 @@ const CLUE_SCROLLS: readonly (readonly [string, number, number, number])[] = [
 ];
 
 const RARE_SCALE = 1_000_000;
-/** Opens needed for the guaranteed Corgo party hat (and the Launch box badge). */
+/** Opens needed for the guaranteed Corgo partyhat (and the Launch box badge). */
 export const CORGO_PARTY_HAT_GUARANTEE_OPENS = 100;
 
 export interface Closeness {
@@ -157,7 +157,7 @@ export function buildFounderLaunchExtras(rng: LaunchBoxRng): Bank {
 	return loot;
 }
 
-const CLOSENESS_NAMES = ['Corgo party hat', 'Spooky piece', 'Gregoyle', 'Kuro', 'Flappy'] as const;
+const CLOSENESS_NAMES = ['Corgo partyhat', 'Spooky piece', 'Gregoyle', 'Kuro', 'Flappy'] as const;
 
 function closenessLine(name: string, track: Closeness): string {
 	return track.got ? `${name}: ✅ Got it!` : `${name}: best roll ${track.roll}/${track.denominator}`;
@@ -174,7 +174,7 @@ export function openLaunchBoxes({
 }): { bank: Bank; message: string } {
 	const loot = new Bank();
 	const tracks: Record<(typeof CLOSENESS_NAMES)[number], Closeness> = {
-		'Corgo party hat': { got: false, roll: 0, denominator: 75 },
+		'Corgo partyhat': { got: false, roll: 0, denominator: 75 },
 		'Spooky piece': { got: false, roll: 0, denominator: 5 },
 		Gregoyle: { got: false, roll: 0, denominator: 125 },
 		Kuro: { got: false, roll: 0, denominator: 250 },
@@ -212,7 +212,7 @@ export function openLaunchBoxes({
 			loot.add(LaunchItem.CORGO_PARTY_HAT);
 			gotGuaranteedHat = true;
 		}
-		note(tracks['Corgo party hat'], hat.got || guaranteedDrop ? { got: true, roll: 75, denominator: 75 } : hat);
+		note(tracks['Corgo partyhat'], hat.got || guaranteedDrop ? { got: true, roll: 75, denominator: 75 } : hat);
 
 		const greg = oneIn(rng, 125);
 		note(tracks.Gregoyle, greg);
@@ -232,10 +232,10 @@ export function openLaunchBoxes({
 	const opensAfter = boxesOpenedBefore + quantity;
 	if (gotGuaranteedHat) {
 		extras.push(
-			`You reached ${CORGO_PARTY_HAT_GUARANTEE_OPENS} opens and received your guaranteed Corgo party hat!`
+			`You reached ${CORGO_PARTY_HAT_GUARANTEE_OPENS} opens and received your guaranteed Corgo partyhat!`
 		);
 	} else if (opensAfter < CORGO_PARTY_HAT_GUARANTEE_OPENS) {
-		extras.push(`Corgo party hat guaranteed drop: ${opensAfter}/${CORGO_PARTY_HAT_GUARANTEE_OPENS} opens`);
+		extras.push(`Corgo partyhat guaranteed drop: ${opensAfter}/${CORGO_PARTY_HAT_GUARANTEE_OPENS} opens`);
 	}
 	return {
 		bank: loot,

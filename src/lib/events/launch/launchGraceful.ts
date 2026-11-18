@@ -105,7 +105,7 @@ export interface LaunchGracefulAward {
 	totalSets: number;
 }
 
-/** Same style as the rare item announcements (e.g. Corgo party hat). One message per award, not per piece. */
+/** Same style as the rare item announcements (e.g. Corgo partyhat). One message per award, not per piece. */
 export function buildLaunchGracefulAnnouncement(input: {
 	notificationName: string;
 	sets: number;

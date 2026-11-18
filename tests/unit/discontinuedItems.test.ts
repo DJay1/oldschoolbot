@@ -65,8 +65,8 @@ describe('discontinued items', () => {
 		expect(getDiscontinuedItemStatus(Items.getOrThrow('Gregoyle').id, Date.now(), launchCheck)).toBe(
 			'Released (Launch box)'
 		);
-		expect(isDiscontinuedItem(Items.getOrThrow('Corgo party hat').id)).toBe(true);
-		expect(getDiscontinuedItemStatus(Items.getOrThrow('Corgo party hat').id, Date.now(), launchCheck)).toBe(
+		expect(isDiscontinuedItem(Items.getOrThrow('Corgo partyhat').id)).toBe(true);
+		expect(getDiscontinuedItemStatus(Items.getOrThrow('Corgo partyhat').id, Date.now(), launchCheck)).toBe(
 			'Released (Launch box)'
 		);
 		expect(getDiscontinuedItemStatus(chickaxe, Date.now(), launchCheck)).toBe('Unreleased');

@@ -20,11 +20,11 @@ describe('BSC discontinued collection logs and bank filter', () => {
 	const all = getBscDiscontinuedItemIDs(launchEnded);
 	const groups = getDiscontinuedCLGroups(all);
 
-	test('only BSC items: Launch box, Corgo party hat and Launch graceful once the Launch event is over', () => {
+	test('only BSC items: Launch box, Corgo partyhat and Launch graceful once the Launch event is over', () => {
 		expect([...all].sort()).toEqual(
 			[
 				'Launch box',
-				'Corgo party hat',
+				'Corgo partyhat',
 				'Launch graceful hood',
 				'Launch graceful top',
 				'Launch graceful legs',
@@ -46,7 +46,7 @@ describe('BSC discontinued collection logs and bank filter', () => {
 			])
 		);
 		expect(groups[DiscontinuedCLName.Boxes]).toEqual([id('Launch box')]);
-		expect(groups[DiscontinuedCLName.Partyhats]).toEqual([id('Corgo party hat')]);
+		expect(groups[DiscontinuedCLName.Partyhats]).toEqual([id('Corgo partyhat')]);
 	});
 
 	test('returning and inherited items are left out', () => {

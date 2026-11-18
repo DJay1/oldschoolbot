@@ -479,3 +479,6 @@ setItemAlias(48_231, ['indy2 box', 'indy2'], false);
 /**
  * END BSO Supply Crates
  */
+
+/** Old display name so typed lookups still resolve after the rename to Corgo partyhat. */
+setItemAlias(74_201, 'Corgo party hat', false);

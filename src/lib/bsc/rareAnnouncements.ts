@@ -11,7 +11,7 @@ import { countUsersWithItemInCl } from '@/lib/rawSql.js';
 export type RareAnnounceKind = 'custom_pet' | 'discord_event_rare' | 'rare_drop';
 
 /** Discord-event launch rares that should announce with a received-so-far count. */
-export const DISCORD_EVENT_RARE_NAMES = ['Kuro', 'Gregoyle', 'Corgo party hat', 'Flappy'] as const;
+export const DISCORD_EVENT_RARE_NAMES = ['Kuro', 'Gregoyle', 'Corgo partyhat', 'Flappy'] as const;
 
 export const DISCORD_EVENT_RARE_IDS: readonly number[] = [
 	itemID('Kuro'),

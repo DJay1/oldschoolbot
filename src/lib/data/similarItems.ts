@@ -193,7 +193,7 @@ const source: [string, (string | number)[]][] = [
 			'Amulet of eternal glory'
 		]
 	],
-	// Launch graceful counts as Graceful. The Corgo party hat can stand in for the hood.
+	// Launch graceful counts as Graceful. The Corgo partyhat can stand in for the hood.
 	['Graceful hood', [...gracefulHoods, LaunchItem.LAUNCH_GRACEFUL_HOOD, LaunchItem.CORGO_PARTY_HAT]],
 	['Graceful top', [...gracefulTops, LaunchItem.LAUNCH_GRACEFUL_TOP]],
 	['Graceful legs', [...gracefulLegs, LaunchItem.LAUNCH_GRACEFUL_LEGS]],

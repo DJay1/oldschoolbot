@@ -116,7 +116,7 @@ export function getUnreleasedItemIDs(): number[] {
  * (Double XP token, Double loot token) are deliberately left out.
  */
 export const bscEndedEventItems: readonly { event: SeasonalEventId; items: readonly number[] }[] = [
-	// Launch boxes only dropped from trips during the Launch event. The Corgo party hat only comes from them.
+	// Launch boxes only dropped from trips during the Launch event. The Corgo partyhat only comes from them.
 	{ event: 'launch', items: [LaunchItem.LAUNCH_BOX, LaunchItem.CORGO_PARTY_HAT] }
 ];
 

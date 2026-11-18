@@ -106,7 +106,7 @@ describe('Launch graceful', () => {
 		expect(await claimLaunchGracefulSets('y', 200, store)).toBe(1);
 	});
 
-	test('Launch graceful counts as a full Graceful set, with the Corgo party hat as the hood', () => {
+	test('Launch graceful counts as a full Graceful set, with the Corgo partyhat as the hood', () => {
 		const set = [
 			'Graceful hood',
 			'Graceful top',
@@ -125,7 +125,7 @@ describe('Launch graceful', () => {
 		});
 		expect(launch.hasEquipped(set, true)).toBe(true);
 		const withHat = new Gear({
-			head: 'Corgo party hat',
+			head: 'Corgo partyhat',
 			body: 'Launch graceful top',
 			legs: 'Launch graceful legs',
 			feet: 'Launch graceful boots',

@@ -71,21 +71,21 @@ test('opening a Launch box gives the fixed supplies and skips patron boxes', () 
 	expect(bank.amount('Clue scroll (elder)')).toBe(0);
 	expect(bank.amount(LaunchItem.CORGO_PARTY_HAT)).toBe(0);
 	expect(message).toContain('Your best rolls (hit the top number to win):');
-	expect(message).toContain('Corgo party hat:');
-	expect(message).not.toContain('Corgo party hat: ✅ Got it!');
-	expect(message).toContain('Corgo party hat guaranteed drop: 1/100 opens');
+	expect(message).toContain('Corgo partyhat:');
+	expect(message).not.toContain('Corgo partyhat: ✅ Got it!');
+	expect(message).toContain('Corgo partyhat guaranteed drop: 1/100 opens');
 	expect(message).not.toContain('pity');
 });
 
-test('the 100th Launch box always grants a Corgo party hat', () => {
+test('the 100th Launch box always grants a Corgo partyhat', () => {
 	const missed = openLaunchBoxes({
 		quantity: 1,
 		boxesOpenedBefore: CORGO_PARTY_HAT_GUARANTEE_OPENS - 2,
 		rng: worst
 	});
 	expect(missed.bank.amount(LaunchItem.CORGO_PARTY_HAT)).toBe(0);
-	expect(missed.message).toContain('Corgo party hat guaranteed drop: 99/100 opens');
-	expect(missed.message).not.toContain('received your guaranteed Corgo party hat');
+	expect(missed.message).toContain('Corgo partyhat guaranteed drop: 99/100 opens');
+	expect(missed.message).not.toContain('received your guaranteed Corgo partyhat');
 
 	const guaranteed = openLaunchBoxes({
 		quantity: 1,
@@ -93,24 +93,24 @@ test('the 100th Launch box always grants a Corgo party hat', () => {
 		rng: worst
 	});
 	expect(guaranteed.bank.amount(LaunchItem.CORGO_PARTY_HAT)).toBe(1);
-	expect(guaranteed.message).toContain('Corgo party hat: ✅ Got it!');
-	expect(guaranteed.message).toContain('You reached 100 opens and received your guaranteed Corgo party hat!');
+	expect(guaranteed.message).toContain('Corgo partyhat: ✅ Got it!');
+	expect(guaranteed.message).toContain('You reached 100 opens and received your guaranteed Corgo partyhat!');
 	expect(guaranteed.message).not.toContain('guaranteed drop:');
 	expect(guaranteed.message).not.toContain('pity');
 });
 
-test('a lucky 1/75 on the 100th open grants two Corgo party hats', () => {
+test('a lucky 1/75 on the 100th open grants two Corgo partyhats', () => {
 	const both = openLaunchBoxes({
 		quantity: 1,
 		boxesOpenedBefore: CORGO_PARTY_HAT_GUARANTEE_OPENS - 1,
 		rng: best
 	});
 	expect(both.bank.amount(LaunchItem.CORGO_PARTY_HAT)).toBe(2);
-	expect(both.message).toContain('You reached 100 opens and received your guaranteed Corgo party hat!');
+	expect(both.message).toContain('You reached 100 opens and received your guaranteed Corgo partyhat!');
 	expect(both.message).not.toContain('guaranteed drop:');
 });
 
-test('opens after 100 do not grant another guaranteed Corgo party hat', () => {
+test('opens after 100 do not grant another guaranteed Corgo partyhat', () => {
 	const later = openLaunchBoxes({
 		quantity: 1,
 		boxesOpenedBefore: CORGO_PARTY_HAT_GUARANTEE_OPENS,
@@ -118,7 +118,7 @@ test('opens after 100 do not grant another guaranteed Corgo party hat', () => {
 	});
 	expect(later.bank.amount(LaunchItem.CORGO_PARTY_HAT)).toBe(0);
 	expect(later.message).not.toContain('guaranteed drop:');
-	expect(later.message).not.toContain('received your guaranteed Corgo party hat');
+	expect(later.message).not.toContain('received your guaranteed Corgo partyhat');
 });
 
 test('a lucky open can roll the chase items and a dry batch of 100 still has one hat', () => {
@@ -131,8 +131,8 @@ test('a lucky open can roll the chase items and a dry batch of 100 still has one
 	expect(lucky.bank.amount('Double loot token')).toBe(1);
 	expect(lucky.bank.amount(LaunchItem.DOUBLE_XP_TOKEN)).toBe(1);
 	expect(lucky.message).toContain('Spooky piece: ✅ Got it!');
-	expect(lucky.message).not.toContain('received your guaranteed Corgo party hat');
-	expect(lucky.message).toContain('Corgo party hat guaranteed drop: 1/100 opens');
+	expect(lucky.message).not.toContain('received your guaranteed Corgo partyhat');
+	expect(lucky.message).toContain('Corgo partyhat guaranteed drop: 1/100 opens');
 
 	const batch = openLaunchBoxes({
 		quantity: CORGO_PARTY_HAT_GUARANTEE_OPENS,
@@ -141,7 +141,7 @@ test('a lucky open can roll the chase items and a dry batch of 100 still has one
 	});
 	expect(batch.bank.amount(LaunchItem.CORGO_PARTY_HAT)).toBe(1);
 	expect(batch.bank.amount('Potato with cheese')).toBe(2000 * CORGO_PARTY_HAT_GUARANTEE_OPENS);
-	expect(batch.message).toContain('You reached 100 opens and received your guaranteed Corgo party hat!');
+	expect(batch.message).toContain('You reached 100 opens and received your guaranteed Corgo partyhat!');
 	expect(batch.message).not.toContain('guaranteed drop:');
 });
 
@@ -151,8 +151,8 @@ test('the Launch box badge unlocks at 100 opens', () => {
 	expect(hasLaunchBoxOpenBadge(150)).toBe(true);
 });
 
-test('Corgo party hat is a tradeable head item', () => {
-	const hat = Items.getOrThrow('Corgo party hat');
+test('Corgo partyhat is a tradeable head item', () => {
+	const hat = Items.getOrThrow('Corgo partyhat');
 	expect(hat.id).toBe(LaunchItem.CORGO_PARTY_HAT);
 	expect(hat.tradeable).toBe(true);
 	expect(hat.equipable).toBe(true);
@@ -160,6 +160,14 @@ test('Corgo party hat is a tradeable head item', () => {
 	expect(hat.customItemData?.examine).toBe(CORGO_PARTY_HAT_EXAMINE);
 	expect(Items.getOrThrow('Launch box').id).toBe(74_200);
 	expect(Items.getOrThrow('Double XP token').id).toBe(74_202);
+});
+
+test('the old Corgo party hat name still resolves to the same item', () => {
+	const current = Items.getOrThrow('Corgo partyhat');
+	const previous = Items.getOrThrow('Corgo party hat');
+	expect(previous.id).toBe(current.id);
+	expect(current.name).toBe('Corgo partyhat');
+	expect(current.id).toBe(LaunchItem.CORGO_PARTY_HAT);
 });
 
 test('mass members: everyone but the roller, once each', () => {

@@ -42,7 +42,7 @@ setCustomItem(
 
 setCustomItem(
 	LaunchItem.CORGO_PARTY_HAT,
-	'Corgo party hat',
+	'Corgo partyhat',
 	'Blue partyhat',
 	{
 		tradeable: true,
