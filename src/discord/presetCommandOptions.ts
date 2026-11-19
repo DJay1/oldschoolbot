@@ -1,3 +1,4 @@
+import { equippedItemIds, skillingOutfitPresetAutocompleteChoices } from '@/lib/bso/firstAge/skillingOutfitEquip.js';
 import { type MaterialType, materialTypes } from '@/lib/bso/skills/invention/index.js';
 
 import type { APIApplicationCommandOptionChoice } from '@oldschoolgg/discord';
@@ -165,6 +166,67 @@ export const gearPresetOption: CommandOption = {
 					value: i.name
 				};
 			});
+	}
+};
+
+export const gearEquipPresetOption: CommandOption = {
+	type: 'String',
+	name: 'preset',
+	description: 'A saved gear preset or a skilling outfit.',
+	required: false,
+	autocomplete: async ({ value, userId }: StringAutoComplete) => {
+		const [presets, user] = await Promise.all([
+			prisma.gearPreset.findMany({
+				where: {
+					user_id: userId
+				}
+			}),
+			mUserFetch(userId)
+		]);
+
+		const query = value ?? '';
+		let userPresets = [...presets];
+		let globals = [...globalPresets];
+		if (query) {
+			userPresets = userPresets.filter(preset => stringSearch(query, preset));
+			globals = globals.filter(preset => stringSearch(query, preset));
+		}
+
+		const formatPreset = (preset: GlobalPreset | GearPreset) => {
+			const gear = Gear.fromGearPreset(preset);
+			const ownsAllItems = user.bank.has(gear.toBank());
+			return {
+				name: truncateString(`${ownsAllItems ? '🟢' : '🔴'} ${preset.name} (${gear.toString()})`, 100),
+				value: preset.name
+			};
+		};
+
+		const equippedIds = new Set<number>();
+		for (const setup of Object.values(user.gear)) {
+			for (const id of equippedItemIds(setup)) equippedIds.add(id);
+		}
+
+		const reservedNames = presets.map(preset => preset.name);
+		const outfits = skillingOutfitPresetAutocompleteChoices({
+			value: query,
+			bank: user.bank,
+			equippedIds,
+			reservedNames
+		});
+
+		const choices = [
+			...userPresets.sort((a, b) => b.times_equipped - a.times_equipped).map(formatPreset),
+			...outfits,
+			...globals.sort((a, b) => b.times_equipped - a.times_equipped).map(formatPreset)
+		];
+		const seen = new Set<string>();
+		const unique: { name: string; value: string }[] = [];
+		for (const choice of choices) {
+			if (seen.has(choice.value)) continue;
+			seen.add(choice.value);
+			unique.push(choice);
+		}
+		return unique.slice(0, 25);
 	}
 };
 

@@ -1,10 +1,14 @@
-import { gearEquipAutoChoices } from '@/lib/bso/firstAge/skillingOutfitEquip.js';
-
 import { GearSetupTypes, GearStat } from '@oldschoolgg/gear';
 import { toTitleCase } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
 
-import { choicesOf, equippedItemOption, gearPresetOption, gearSetupOption, ownedItemOption } from '@/discord/index.js';
+import {
+	choicesOf,
+	equippedItemOption,
+	gearEquipPresetOption,
+	gearSetupOption,
+	ownedItemOption
+} from '@/discord/index.js';
 import { canvasToBuffer, createCanvas, loadImage } from '@/lib/canvas/canvasUtil.js';
 import { BOT_TYPE } from '@/lib/constants.js';
 import { allPetIDs } from '@/lib/data/CollectionsExport.js';
@@ -47,7 +51,7 @@ export const gearCommand = defineCommand({
 					description: 'The item you want to equip.'
 				},
 				{
-					...gearPresetOption,
+					...gearEquipPresetOption,
 					required: false,
 					name: 'preset'
 				},
@@ -62,9 +66,9 @@ export const gearCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'auto',
-					description: 'Automatically equip the best gear you have for a style or skilling outfit.',
+					description: 'Automatically equip the best gear you have for a certain style.',
 					required: false,
-					autocomplete: async ({ value }: StringAutoComplete) => gearEquipAutoChoices(value ?? '')
+					choices: choicesOf(Object.values(GearStat))
 				}
 			]
 		},

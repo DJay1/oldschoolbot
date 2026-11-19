@@ -7,10 +7,10 @@ import {
 	allSkillingOutfitItemIDs,
 	findSkillingOutfitOption,
 	formatSkillingOutfitEquipMessage,
-	gearEquipAutoChoices,
 	getSkillingOutfitOptions,
+	ownsAllSkillingOutfitPieces,
 	pickSkillingOutfitEquip,
-	skillingOutfitAutocompleteChoices
+	skillingOutfitPresetAutocompleteChoices
 } from '@/lib/bso/firstAge/skillingOutfitEquip.js';
 import { skillXpOutfits } from '@/lib/bso/firstAge/skillOutfits.js';
 
@@ -220,7 +220,7 @@ describe('Skilling outfit auto-equip picker', () => {
 		expect(picked.toEquipIds.includes(itemID('Kyatt top'))).toBe(false);
 	});
 
-	test("returns a short message that stays under Discord's 2000-character limit", () => {
+	test('returns one short line and does not list equipped items', () => {
 		const longName = 'A'.repeat(80);
 		const equippedNames = Array.from({ length: 7 }, (_, i) => `${longName} ${i}`);
 		const alreadyNames = Array.from({ length: 7 }, (_, i) => `${longName} already ${i}`);
@@ -235,22 +235,85 @@ describe('Skilling outfit auto-equip picker', () => {
 			alreadyNames,
 			failReasons
 		});
-		expect(message.length).toBeLessThanOrEqual(1850);
-		expect(message.startsWith(failReasons[0]) || message.startsWith('- ')).toBe(true);
+		expect(message).toBe('You equipped your First Age (max) in your skilling setup.');
+		expect(message.includes(longName)).toBe(false);
+		expect(message.includes('\n')).toBe(false);
+		expect(
+			formatSkillingOutfitEquipMessage({
+				label: 'Graceful',
+				setup: 'skilling',
+				equippedNames: [],
+				alreadyNames: ['Graceful hood'],
+				failReasons: []
+			})
+		).toBe('Your skilling setup already has your best Graceful pieces.');
+		expect(
+			formatSkillingOutfitEquipMessage({
+				label: 'Lumberjack',
+				setup: 'skilling',
+				equippedNames: [],
+				alreadyNames: [],
+				failReasons: []
+			})
+		).toBe("You don't have any Lumberjack pieces to equip.");
 	});
 
-	test('/gear equip auto autocomplete stays within 25 choices and finds stats and outfits', () => {
-		const empty = gearEquipAutoChoices('');
-		expect(empty.length).toBeGreaterThan(0);
-		expect(empty.length).toBeLessThanOrEqual(25);
-		expect(empty.some(choice => choice.value === 'attack_slash')).toBe(true);
-		expect(gearEquipAutoChoices('wood').some(choice => choice.value === 'lumberjack')).toBe(true);
-		expect(gearEquipAutoChoices('grace').some(choice => choice.value === 'graceful')).toBe(true);
-		expect(gearEquipAutoChoices('hunter').some(choice => choice.value === 'hunter')).toBe(true);
-		expect(gearEquipAutoChoices('smith').some(choice => choice.value === 'smiths_uniform')).toBe(true);
-		expect(gearEquipAutoChoices('attack').some(choice => choice.value === 'attack_stab')).toBe(true);
-		expect(getSkillingOutfitOptions().every(option => findSkillingOutfitOption(option.key))).toBe(true);
-		expect(skillingOutfitAutocompleteChoices('fish').some(choice => choice.value === 'angler')).toBe(true);
+	test('outfit names stay plain and skill searches still find them', () => {
+		const lumberjack = findSkillingOutfitOption('woodcutting');
+		expect(lumberjack?.name).toBe('Lumberjack');
+		expect(lumberjack?.name.includes('(')).toBe(false);
+		expect(findSkillingOutfitOption('Graceful')?.name).toBe('Graceful');
+		expect(findSkillingOutfitOption('first age')?.name).toBe('First Age (max)');
+		expect(findSkillingOutfitOption("Smiths' uniform")?.name).toBe("Smiths' uniform");
+		expect(
+			getSkillingOutfitOptions().every(option => !option.name.includes('(') || option.name === 'First Age (max)')
+		).toBe(true);
+		expect(getSkillingOutfitOptions().every(option => findSkillingOutfitOption(option.name))).toBe(true);
+	});
+
+	test('/gear equip preset outfit autocomplete uses dots, plain names and skips reserved preset names', () => {
+		const emptyBank = new Bank();
+		const empty = skillingOutfitPresetAutocompleteChoices({
+			value: '',
+			bank: emptyBank,
+			equippedIds: new Set()
+		});
+		expect(empty.some(choice => choice.value === 'Graceful' && choice.name === '🔴 Graceful')).toBe(true);
+		expect(empty.some(choice => choice.value === 'Lumberjack' && choice.name === '🔴 Lumberjack')).toBe(true);
+		expect(empty.every(choice => !choice.name.includes('Outfit:') && !choice.name.includes('(woodcutting)'))).toBe(
+			true
+		);
+
+		const fullGraceful = new Bank()
+			.add('Graceful hood')
+			.add('Graceful top')
+			.add('Graceful legs')
+			.add('Graceful gloves')
+			.add('Graceful boots')
+			.add('Graceful cape');
+		const gracefulOption = findSkillingOutfitOption('Graceful')!;
+		expect(ownsAllSkillingOutfitPieces(gracefulOption, fullGraceful, new Set())).toBe(true);
+		const owned = skillingOutfitPresetAutocompleteChoices({
+			value: 'grace',
+			bank: fullGraceful,
+			equippedIds: new Set()
+		});
+		expect(owned.some(choice => choice.value === 'Graceful' && choice.name === '🟢 Graceful')).toBe(true);
+
+		const wood = skillingOutfitPresetAutocompleteChoices({
+			value: 'wood',
+			bank: emptyBank,
+			equippedIds: new Set()
+		});
+		expect(wood.some(choice => choice.value === 'Lumberjack')).toBe(true);
+
+		const reserved = skillingOutfitPresetAutocompleteChoices({
+			value: 'grace',
+			bank: fullGraceful,
+			equippedIds: new Set(),
+			reservedNames: ['Graceful']
+		});
+		expect(reserved.some(choice => choice.value === 'Graceful')).toBe(false);
 	});
 });
 

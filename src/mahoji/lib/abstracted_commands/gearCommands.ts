@@ -194,6 +194,9 @@ export async function gearEquipCommand(args: {
 }): CommandResponse {
 	const { user, setup, item, items, preset, quantity, auto } = args;
 	if (!isValidGearSetup(setup)) return 'Invalid gear setup.';
+	if ([items, item, preset, auto].filter(Boolean).length > 1) {
+		return 'Pick just one of items, item, preset, or auto.';
+	}
 	if (await user.minionIsBusy()) {
 		return `${user.minionName} is currently out on a trip, so you can't change their gear!`;
 	}
@@ -205,12 +208,17 @@ export async function gearEquipCommand(args: {
 		return withPatreonLink(PATRON_ONLY_GEAR_SETUP);
 	}
 	if (preset) {
-		return gearPresetEquipCommand(user, setup, preset);
+		const userPreset = await prisma.gearPreset.findFirst({ where: { user_id: user.id, name: preset } });
+		const globalPreset = globalPresets.find(i => i.name === preset);
+		if (userPreset || globalPreset) {
+			return gearPresetEquipCommand(user, setup, preset);
+		}
+		if (findSkillingOutfitOption(preset)) {
+			return gearSkillingOutfitCommand(user, preset, setup);
+		}
+		return "You don't have a gear preset with that name.";
 	}
 	if (auto) {
-		if (findSkillingOutfitOption(auto)) {
-			return gearSkillingOutfitCommand(user, auto, setup);
-		}
 		return autoEquipCommand(user, setup, auto);
 	}
 

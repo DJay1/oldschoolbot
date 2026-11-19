@@ -1,4 +1,3 @@
-import { GearStat } from '@oldschoolgg/gear';
 import { Items, itemID } from 'oldschooljs';
 
 import {
@@ -11,7 +10,6 @@ import {
 } from '@/lib/data/gracefulVariants.js';
 import type { SkillNameType } from '@/lib/skilling/types.js';
 import type { Skills } from '@/lib/types/index.js';
-import { formatList } from '@/lib/util/smallUtils.js';
 import { FIRST_AGE_REQUIRED_SACRIFICES, firstAgeMaxUpgrades, getFirstAgeSacrificeSlots } from './shards.js';
 import { skillXpOutfits } from './skillOutfits.js';
 
@@ -98,7 +96,7 @@ function optionFromOutfit(
 	const resolvedSlots: SkillingOutfitSlot[] = slots.map(slot => ('ids' in slot ? slot : slotFromNames(slot)));
 	return {
 		key: slug(outfitName),
-		name: opts?.name ?? (skill ? `${outfitName} (${skill})` : outfitName),
+		name: opts?.name ?? outfitName,
 		aliases,
 		kind: 'outfit',
 		outfitName,
@@ -399,56 +397,49 @@ export function formatSkillingOutfitEquipMessage(input: {
 	alreadyNames: string[];
 	failReasons: string[];
 }): string {
-	const lines: string[] = [];
-	if (input.failReasons.length > 0) {
-		lines.push(
-			input.failReasons.length === 1
-				? input.failReasons[0]
-				: input.failReasons.map(reason => `- ${reason}`).join('\n')
-		);
-	}
 	if (input.equippedNames.length > 0) {
-		const setLabel =
-			input.label.endsWith('set') || input.label.includes('Age') ? input.label : `${input.label} outfit`;
-		if (input.equippedNames.length >= 4) {
-			lines.push(`You equipped your ${setLabel} in your ${input.setup} setup.`);
-		} else {
-			lines.push(`You equipped ${formatList(input.equippedNames)} in your ${input.setup} setup.`);
-		}
-	} else if (input.alreadyNames.length > 0) {
-		lines.push(`Your ${input.setup} setup already has your best ${input.label} pieces.`);
-	} else if (input.failReasons.length === 0) {
-		lines.push(`You don't have any ${input.label} pieces to equip.`);
+		return `You equipped your ${input.label} in your ${input.setup} setup.`;
 	}
-	return lines.join('\n');
+	if (input.alreadyNames.length > 0) {
+		return `Your ${input.setup} setup already has your best ${input.label} pieces.`;
+	}
+	if (input.failReasons.length > 0) {
+		return `You don't have any ${input.label} pieces you can wear.`;
+	}
+	return `You don't have any ${input.label} pieces to equip.`;
 }
 
-export function skillingOutfitAutocompleteChoices(value: string): { name: string; value: string }[] {
-	const query = value.trim().toLowerCase();
-	return getSkillingOutfitOptions()
-		.filter(
-			option =>
-				!query ||
-				option.name.toLowerCase().includes(query) ||
-				option.outfitName.toLowerCase().includes(query) ||
-				option.aliases.some(alias => alias.toLowerCase().includes(query))
-		)
-		.map(option => ({ name: option.name, value: option.key }));
+export function ownsAllSkillingOutfitPieces(
+	option: SkillingOutfitOption,
+	bank: { amount(id: number): number },
+	equippedIds: Set<number>
+): boolean {
+	return option.slots.every(slot => slot.ids.some(id => ownsPiece(bank, equippedIds, id)));
 }
 
-export function gearEquipAutoChoices(value: string): { name: string; value: string }[] {
+export function skillingOutfitMatchesQuery(option: SkillingOutfitOption, value: string): boolean {
 	const query = value.trim().toLowerCase();
-	const stats = Object.values(GearStat)
-		.filter(stat => !query || stat.toLowerCase().includes(query) || stat.replaceAll('_', ' ').includes(query))
-		.map(stat => ({ name: stat, value: stat }));
-	const outfits = skillingOutfitAutocompleteChoices(value);
-	const merged = query ? [...outfits, ...stats] : [...stats, ...outfits];
-	const seen = new Set<string>();
+	if (!query) return true;
+	return (
+		option.name.toLowerCase().includes(query) ||
+		option.outfitName.toLowerCase().includes(query) ||
+		option.aliases.some(alias => alias.toLowerCase().includes(query))
+	);
+}
+
+export function skillingOutfitPresetAutocompleteChoices(input: {
+	value: string;
+	bank: { amount(id: number): number };
+	equippedIds: Set<number>;
+	reservedNames?: Iterable<string>;
+}): { name: string; value: string }[] {
+	const reserved = new Set([...(input.reservedNames ?? [])].map(name => name.trim().toLowerCase()).filter(Boolean));
 	const choices: { name: string; value: string }[] = [];
-	for (const choice of merged) {
-		if (seen.has(choice.value)) continue;
-		seen.add(choice.value);
-		choices.push(choice);
+	for (const option of getSkillingOutfitOptions()) {
+		if (!skillingOutfitMatchesQuery(option, input.value)) continue;
+		if (reserved.has(option.name.toLowerCase())) continue;
+		const dot = ownsAllSkillingOutfitPieces(option, input.bank, input.equippedIds) ? '🟢' : '🔴';
+		choices.push({ name: `${dot} ${option.name}`, value: option.name });
 	}
-	return choices.slice(0, 25);
+	return choices;
 }
