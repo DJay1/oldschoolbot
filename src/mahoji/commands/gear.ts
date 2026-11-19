@@ -1,3 +1,5 @@
+import { skillingOutfitAutocompleteChoices } from '@/lib/bso/firstAge/skillingOutfitEquip.js';
+
 import { GearSetupTypes, GearStat } from '@oldschoolgg/gear';
 import { toTitleCase } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
@@ -12,6 +14,7 @@ import { unequipPet } from '@/lib/minions/functions/unequipPet.js';
 import { validateEquippedGear } from '@/lib/user/userUtils.js';
 import {
 	gearEquipCommand,
+	gearSkillingOutfitCommand,
 	gearStatsCommand,
 	gearSwapCommand,
 	gearUnequipCommand,
@@ -174,6 +177,21 @@ export const gearCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'skilling_outfit',
+			description: 'Equip the best skilling outfit you own for a skill.',
+			options: [
+				{
+					type: 'String',
+					name: 'outfit',
+					description: 'The skill or outfit to equip.',
+					required: true,
+					autocomplete: async ({ value }: StringAutoComplete) =>
+						skillingOutfitAutocompleteChoices(value ?? '')
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
 			name: 'best_in_slot',
 			description: 'View the best in slot items for a particular stat.',
 			options: [
@@ -213,7 +231,7 @@ ${res
 				files: [{ buffer: await canvasToBuffer(totalCanvas), name: 'best_in_slot.png' }]
 			};
 		}
-		if ((options.equip || options.unequip) && !gearValidationChecks.has(user.id)) {
+		if ((options.equip || options.unequip || options.skilling_outfit) && !gearValidationChecks.has(user.id)) {
 			const { itemsUnequippedAndRefunded } = await validateEquippedGear(user);
 			if (itemsUnequippedAndRefunded.length > 0) {
 				return `You had some items equipped that you didn't have the requirements to use, so they were unequipped and refunded to your bank: ${itemsUnequippedAndRefunded}`;
@@ -241,6 +259,9 @@ ${res
 		if (options.view) return gearViewCommand(user, options.view.setup, Boolean(options.view.text_format));
 		if (options.swap) {
 			return gearSwapCommand(interaction, user, options.swap.setup_one, options.swap.setup_two);
+		}
+		if (options.skilling_outfit) {
+			return gearSkillingOutfitCommand(user, options.skilling_outfit.outfit);
 		}
 
 		return 'Invalid command.';

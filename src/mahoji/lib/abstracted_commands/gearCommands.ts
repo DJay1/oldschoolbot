@@ -1,3 +1,10 @@
+import {
+	equippedItemIds,
+	findSkillingOutfitOption,
+	formatSkillingOutfitEquipMessage,
+	pickSkillingOutfitEquip
+} from '@/lib/bso/firstAge/skillingOutfitEquip.js';
+
 import type { GearSetupType } from '@oldschoolgg/gear';
 import { defaultGearSetup, type GearSetup, type GearStat, isValidGearSetup, isValidGearStat } from '@oldschoolgg/gear';
 import { PerkTier, stringMatches, toTitleCase } from '@oldschoolgg/toolkit';
@@ -5,11 +12,11 @@ import { Bank, Items } from 'oldschooljs';
 
 import type { GearPreset } from '@/prisma/main.js';
 import { PATRON_ONLY_GEAR_SETUP } from '@/lib/constants.js';
-import { withPatreonLink } from '@/lib/patreonLink.js';
 import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { globalPresets } from '@/lib/gear/gearPresets.js';
 import getUserBestGearFromBank from '@/lib/minions/functions/getUserBestGearFromBank.js';
 import { unEquipAllCommand } from '@/lib/minions/functions/unequipAllCommand.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { Gear } from '@/lib/structures/Gear.js';
 import calculateGearLostOnDeathWilderness from '@/lib/util/calculateGearLostOnDeathWilderness.js';
 import { formatGearEquipFailures, gearEquipMultiImpl } from '@/lib/util/equipMulti.js';
@@ -297,6 +304,81 @@ async function autoEquipCommand(user: MUser, gearSetup: GearSetupType, equipment
 	const image = await user.generateGearImage({ setupType: gearSetup });
 	return {
 		content: `You auto-equipped your best ${equipmentType} in your ${gearSetup} preset.`,
+		files: [{ name: 'gear.png', buffer: image }]
+	};
+}
+
+export async function gearSkillingOutfitCommand(user: MUser, outfitInput: string): CommandResponse {
+	if (await user.minionIsBusy()) {
+		return `${user.minionName} is currently out on a trip, so you can't change their gear!`;
+	}
+
+	const option = findSkillingOutfitOption(outfitInput);
+	if (!option) return "That's not a skilling outfit.";
+
+	const picked = pickSkillingOutfitEquip({
+		option,
+		bank: user.bank,
+		equippedIds: equippedItemIds(user.gear.skilling),
+		skills: user.skillsAsRequirements
+	});
+
+	if (picked.toEquipIds.length === 0) {
+		const reqFails = picked.skippedRequirements.map(item => {
+			const gearItem = Items.get(item.id);
+			const requirements = gearItem?.equipment?.requirements;
+			if (!requirements) return `You don't meet the requirements for ${item.name}.`;
+			return `${item.name} needs ${formatSkillRequirements(requirements, false)}.`;
+		});
+		return formatSkillingOutfitEquipMessage({
+			label: picked.label,
+			setup: 'skilling',
+			equippedNames: [],
+			alreadyNames: picked.alreadyEquippedIds.map(id => Items.itemNameFromId(id)!).filter(Boolean),
+			failReasons: reqFails
+		});
+	}
+
+	const items = picked.toEquipIds.map(id => Items.itemNameFromId(id)).filter((name): name is string => Boolean(name));
+	if (items.length === 0) {
+		return `You don't have any ${option.outfitName} pieces to equip.`;
+	}
+
+	const {
+		success: resultSuccess,
+		failMsg,
+		failReasons = [],
+		equippedGear,
+		equipBank,
+		unequipBank
+	} = gearEquipMultiImpl(user, 'skilling', items.join(', '));
+	if (!resultSuccess) return failMsg!;
+	const failureText = formatGearEquipFailures(failReasons);
+	if ((!equipBank || equipBank.length === 0) && (!unequipBank || unequipBank.length === 0)) {
+		return failureText || `You don't have any ${option.outfitName} pieces to equip.`;
+	}
+
+	const setup: string = 'skilling';
+	const dbKey = `gear_${setup}` as const;
+	await user.transactItems({
+		filterLoot: false,
+		itemsToRemove: equipBank,
+		itemsToAdd: unequipBank,
+		otherUpdates: {
+			[dbKey]: equippedGear
+		}
+	});
+
+	const image = await user.generateGearImage({ setupType: 'skilling' });
+	const content = formatSkillingOutfitEquipMessage({
+		label: picked.label,
+		setup: 'skilling',
+		equippedNames: equipBank ? equipBank.items().map(([item]) => item.name) : [],
+		alreadyNames: picked.alreadyEquippedIds.map(id => Items.itemNameFromId(id)!).filter(Boolean),
+		failReasons: failReasons
+	});
+	return {
+		content,
 		files: [{ name: 'gear.png', buffer: image }]
 	};
 }

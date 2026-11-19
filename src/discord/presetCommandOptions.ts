@@ -7,7 +7,7 @@ import { Bank, type Item, type ItemBank, Items } from 'oldschooljs';
 
 import type { GearPreset } from '@/prisma/main.js';
 import { choicesOf, defineOption } from '@/discord/index.js';
-import { baseFilters, filterableTypes } from '@/lib/data/filterables.js';
+import { getFilterAutocompleteChoices } from '@/lib/data/filterables.js';
 import { type GlobalPreset, globalPresets } from '@/lib/gear/gearPresets.js';
 import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js';
 import { SkillsArray } from '@/lib/skilling/types.js';
@@ -18,14 +18,7 @@ export const filterOption = {
 	name: 'filter',
 	description: 'The filter you want to use.',
 	required: false,
-	autocomplete: async ({ value }: StringAutoComplete) => {
-		const res = !value
-			? filterableTypes
-			: [...filterableTypes].filter(filter => filter.name.toLowerCase().includes(value.toLowerCase()));
-		return [...res]
-			.sort((a, b) => baseFilters.indexOf(b) - baseFilters.indexOf(a))
-			.map(val => ({ name: val.name, value: val.aliases[0] ?? val.name }));
-	}
+	autocomplete: async ({ value }: StringAutoComplete) => getFilterAutocompleteChoices(value ?? '')
 } as const;
 
 export const itemArr = Items.array()
