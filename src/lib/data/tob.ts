@@ -10,6 +10,7 @@ import type { GearStats } from '@oldschoolgg/gear';
 import { calcPercentOfNum, calcWhatPercent, reduceNumByPercent, round, Time } from '@oldschoolgg/toolkit';
 import { Bank, Items, resolveItems } from 'oldschooljs';
 
+import { soulflameHornSpeedBoost } from '@/lib/bsc/soulflameHorn.js';
 import { blowpipeDarts } from '@/lib/minions/functions/blowpipeCommand.js';
 import { constructGearSetup, type Gear } from '@/lib/structures/Gear.js';
 
@@ -411,6 +412,11 @@ export function calcTOBBaseDuration({ team, hardMode }: { team: TobTeam[]; hardM
 		if (u.gear.mage.hasEquipped(gorajanOccultOutfit, true)) {
 			userPercentChange += 2;
 		}
+
+		userPercentChange += soulflameHornSpeedBoost(
+			team.map(member => ({ id: member.user.id })),
+			u
+		);
 
 		const reduction = round(userPercentChange / teamSize, 1);
 

@@ -6,6 +6,7 @@ import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
 import { TfaItem, tfaAscensionBoltIDs } from '@/lib/bsc/tfa/tfaItems.js';
 import { type TfaRoomBoosts, tfaRoomBoostsFor, tfaTeamRoomPercent } from '@/lib/bsc/tfa/tfaRooms.js';
 import { compactSkillRequirements } from '@/lib/bsc/tfa/tfaText.js';
+import { SOULFLAME_HORN_BOOST_LINE, SOULFLAME_HORN_GROUP_SPEED_PERCENT } from '@/lib/bsc/soulflameHorn.js';
 import { BitField } from '@/lib/constants.js';
 import { calcTOBRangePercent, calculateTOBUserGearPercents } from '@/lib/data/tob.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
@@ -134,6 +135,8 @@ export interface TfaTeamMember {
 	wipeStreak?: number;
 	/** Room-only speed boosts, applied only to that boss's room when it's rolled. */
 	roomBoosts?: TfaRoomBoosts;
+	/** True when this player has a Soulflame horn in melee and the team has 2+ distinct users. */
+	soulflameHorn?: boolean;
 }
 
 function stylePercent(gear: TfaGearPercents, style: TfaStyle) {
@@ -152,7 +155,8 @@ export function tfaUserSpeedReduction(member: TfaTeamMember) {
 		ITEM_REDUCTION_CAP,
 		member.boosts.reduce((acc, b) => acc + b.percent, 0)
 	);
-	return gear + kc + items;
+	const horn = member.soulflameHorn ? SOULFLAME_HORN_GROUP_SPEED_PERCENT : 0;
+	return gear + kc + items + horn;
 }
 
 /** Each raid wiped in a row lowers your death chance by this much (relative), up to TFA_PITY_CAP. A completed raid resets it. */
@@ -411,7 +415,8 @@ export function tfaTeamMemberFromUser(user: MUser, kc: number, wipeStreak = 0): 
 		boosts,
 		deathReduction,
 		wipeStreak,
-		roomBoosts: tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id))
+		roomBoosts: tfaRoomBoostsFor(user.gear, id => user.hasEquippedOrInBank(id)),
+		soulflameHorn: false
 	};
 }
 
@@ -483,6 +488,7 @@ export function tfaHelpBoostsText() {
 		'Ascension crossbows in range setup: 3% faster',
 		"Owning an Archivist's folio (either version): 2% faster",
 		'Zeal prayer unlocked (use Horn of Bran) and 84 Prayer: 2% faster',
+		SOULFLAME_HORN_BOOST_LINE,
 		'Rondache in melee setup: 20% lower death chance'
 	];
 }

@@ -31,6 +31,11 @@ import {
 	tfaTeamMemberFromUser,
 	tfaUserSpeedReduction
 } from '@/lib/bsc/tfa/tfa.js';
+import {
+	applySoulflameHornToTfaTeam,
+	SOULFLAME_HORN_YOUR_BOOST,
+	userHasSoulflameHornEquipped
+} from '@/lib/bsc/soulflameHorn.js';
 import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
 import { tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
 import { tfaTeamUniqueOdds } from '@/lib/bsc/tfa/tfaLoot.js';
@@ -112,6 +117,7 @@ export async function tfaStartCommand(
 			)
 		)
 	);
+	applySoulflameHornToTfaTeam(team, users);
 
 	// Chincannon (like CoX): one team member's equipped Chincannon makes the whole raid faster, but destroys all loot.
 	const chinCannonUser = users.find(u => u.hasEquipped('Chincannon')) ?? null;
@@ -173,6 +179,7 @@ export async function tfaStartCommand(
 		costs.push({ id: u.id, cost: supplies.clone() });
 		const member = team[i];
 		const boostNames = member.boosts.map(b => b.name);
+		if (member.soulflameHorn) boostNames.push('Soulflame horn');
 		details += `**- ${u.usernameOrMention}** Gear: ${member.gear.total.toFixed(1)}% | Speed: ${tfaUserSpeedReduction(member).toFixed(1)}%${
 			boostNames.length > 0 ? ` | Boosts: ${boostNames.join(', ')}` : ''
 		}${member.deathReduction > 0 ? ' | Rondache' : ''}${tfaPityPercent(member.wipeStreak) > 0 ? ` | Wipe pity ${tfaPityPercent(member.wipeStreak)}%` : ''}\n`;
@@ -238,7 +245,11 @@ export async function tfaHelpCommand(user: MUser): CommandResponse {
 		[1, 2, 3, 4, 5, 6, 7, 8],
 		id => tfaBossByID(id).name
 	);
-	const yourBoosts = [...boosts.map(b => `${b.name} (${b.percent}%)`), ...(deathReduction > 0 ? ['Rondache'] : [])];
+	const yourBoosts = [
+		...boosts.map(b => `${b.name} (${b.percent}%)`),
+		...(deathReduction > 0 ? ['Rondache'] : []),
+		...(userHasSoulflameHornEquipped(user) ? [SOULFLAME_HORN_YOUR_BOOST] : [])
+	];
 
 	const text = buildTfaHelpText({
 		raidName: RAID_NAME,

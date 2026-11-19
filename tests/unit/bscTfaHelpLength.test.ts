@@ -53,7 +53,7 @@ function worstCase(notReady: string | null) {
 		fragmentsUsed: 4,
 		roomsBoosted: 8,
 		yourBoosts:
-			"Obligator (4%), Zorya's tome (3%), Ascension crossbows (3%), Archivist's folio (2%), Zeal (2%), Elemental fragments (2%), Rondache",
+			"Obligator (4%), Zorya's tome (3%), Ascension crossbows (3%), Archivist's folio (2%), Zeal (2%), Elemental fragments (2%), Rondache, Soulflame horn (5%, groups of 2+)",
 		zeal: true
 	});
 }
