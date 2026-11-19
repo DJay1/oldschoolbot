@@ -7,6 +7,7 @@ import {
 	allSkillingOutfitItemIDs,
 	findSkillingOutfitOption,
 	formatSkillingOutfitEquipMessage,
+	gearEquipAutoChoices,
 	getSkillingOutfitOptions,
 	pickSkillingOutfitEquip,
 	skillingOutfitAutocompleteChoices
@@ -53,6 +54,44 @@ describe('Skilling outfit bank filter', () => {
 			}
 		}
 		expect(filterIDs.size).toBe(allSkillingOutfitItemIDs().length);
+	});
+
+	test('includes Smiths uniform, Graceful variants, hunter outfits and dyed Raiments', () => {
+		for (const name of [
+			'Smiths tunic',
+			'Smiths trousers',
+			'Smiths gloves',
+			'Smiths boots',
+			'Graceful hood',
+			'Arceuus graceful hood',
+			'Spooky graceful cape',
+			'Varlamore graceful top',
+			'Trailblazer graceful legs',
+			'Launch graceful hood',
+			'Launch graceful cape',
+			'Polar camo top',
+			'Wood camo legs',
+			'Jungle camo top',
+			'Desert camo legs',
+			'Larupia hat',
+			'Graahk headdress',
+			'Kyatt top',
+			'Hat of the eye (red)',
+			'Robe top of the eye (green)',
+			'Robe bottoms of the eye (blue)'
+		]) {
+			expect(filterIDs.has(itemID(name)), name).toBe(true);
+		}
+		for (const name of [
+			'Max cape',
+			'Agility cape',
+			'Agility cape (t)',
+			'Silverhawk boots',
+			'Corgo partyhat',
+			'Varrock armour 1'
+		]) {
+			expect(filterIDs.has(itemID(name)), name).toBe(false);
+		}
 	});
 
 	test("typing skill or outfit finds it inside Discord's 25-choice limit", () => {
@@ -125,7 +164,7 @@ describe('Skilling outfit auto-equip picker', () => {
 			option: option!,
 			bank,
 			equippedIds: new Set(),
-			skills: maxWearSkills
+			skills: emptySkills
 		});
 		expect(picked.fromMaxSet).toBe(false);
 		expect(picked.toEquipIds).toEqual(idsFrom(['Angler hat', 'Angler top']));
@@ -149,7 +188,6 @@ describe('Skilling outfit auto-equip picker', () => {
 		const option = findSkillingOutfitOption('mining');
 		const goldenHelmet = itemID('Golden prospector helmet');
 		const regularHelmet = itemID('Prospector helmet');
-		// Force a requirement by only owning the regular piece; this still asserts unowned golden is not picked.
 		const bank = new Bank().add('Prospector helmet').add('Prospector jacket');
 		const picked = pickSkillingOutfitEquip({
 			option: option!,
@@ -160,6 +198,26 @@ describe('Skilling outfit auto-equip picker', () => {
 		expect(picked.toEquipIds.includes(goldenHelmet)).toBe(false);
 		expect(picked.toEquipIds).toEqual(idsFrom(['Prospector helmet', 'Prospector jacket']));
 		expect(picked.toEquipIds).toContain(regularHelmet);
+	});
+
+	test('Hunter auto-equip prefers Kyatt over Larupia and camo, and never equips unowned pieces', () => {
+		const option = findSkillingOutfitOption('hunter');
+		expect(option?.outfitName).toBe('Hunter');
+		const bank = new Bank()
+			.add('Larupia hat')
+			.add('Larupia top')
+			.add('Kyatt hat')
+			.add('Jungle camo top')
+			.add('Jungle camo legs');
+		const picked = pickSkillingOutfitEquip({
+			option: option!,
+			bank,
+			equippedIds: new Set(),
+			skills: { hunter: 99 }
+		});
+		expect(picked.toEquipIds).toEqual(idsFrom(['Kyatt hat', 'Larupia top', 'Jungle camo legs']));
+		expect(picked.toEquipIds.includes(itemID('Larupia hat'))).toBe(false);
+		expect(picked.toEquipIds.includes(itemID('Kyatt top'))).toBe(false);
 	});
 
 	test("returns a short message that stays under Discord's 2000-character limit", () => {
@@ -181,14 +239,18 @@ describe('Skilling outfit auto-equip picker', () => {
 		expect(message.startsWith(failReasons[0]) || message.startsWith('- ')).toBe(true);
 	});
 
-	test('outfit autocomplete stays within 25 choices and finds skill names', () => {
-		const all = skillingOutfitAutocompleteChoices('');
-		expect(all.length).toBeGreaterThan(0);
-		expect(all.length).toBeLessThanOrEqual(25);
-		expect(all.some(choice => choice.value === 'first_age')).toBe(true);
-		expect(skillingOutfitAutocompleteChoices('fish').some(choice => choice.value === 'angler')).toBe(true);
-		expect(skillingOutfitAutocompleteChoices('outfit').length).toBeLessThanOrEqual(25);
+	test('/gear equip auto autocomplete stays within 25 choices and finds stats and outfits', () => {
+		const empty = gearEquipAutoChoices('');
+		expect(empty.length).toBeGreaterThan(0);
+		expect(empty.length).toBeLessThanOrEqual(25);
+		expect(empty.some(choice => choice.value === 'attack_slash')).toBe(true);
+		expect(gearEquipAutoChoices('wood').some(choice => choice.value === 'lumberjack')).toBe(true);
+		expect(gearEquipAutoChoices('grace').some(choice => choice.value === 'graceful')).toBe(true);
+		expect(gearEquipAutoChoices('hunter').some(choice => choice.value === 'hunter')).toBe(true);
+		expect(gearEquipAutoChoices('smith').some(choice => choice.value === 'smiths_uniform')).toBe(true);
+		expect(gearEquipAutoChoices('attack').some(choice => choice.value === 'attack_stab')).toBe(true);
 		expect(getSkillingOutfitOptions().every(option => findSkillingOutfitOption(option.key))).toBe(true);
+		expect(skillingOutfitAutocompleteChoices('fish').some(choice => choice.value === 'angler')).toBe(true);
 	});
 });
 
@@ -197,6 +259,9 @@ describe('First Age sacrifice list coverage', () => {
 		const names = new Set(getSkillingOutfitOptions().map(option => option.outfitName));
 		for (const group of FIRST_AGE_REQUIRED_SACRIFICES) {
 			expect(names.has(group.outfit), group.outfit).toBe(true);
+		}
+		for (const name of ["Smiths' uniform", 'Graceful', 'Hunter', 'Larupia', 'Kyatt', 'Jungle camo']) {
+			expect(names.has(name), name).toBe(true);
 		}
 	});
 });

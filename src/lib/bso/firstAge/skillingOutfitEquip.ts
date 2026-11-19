@@ -1,5 +1,14 @@
+import { GearStat } from '@oldschoolgg/gear';
 import { Items, itemID } from 'oldschooljs';
 
+import {
+	gracefulCapes,
+	gracefulFeet,
+	gracefulHands,
+	gracefulHoods,
+	gracefulLegs,
+	gracefulTops
+} from '@/lib/data/gracefulVariants.js';
 import type { SkillNameType } from '@/lib/skilling/types.js';
 import type { Skills } from '@/lib/types/index.js';
 import { formatList } from '@/lib/util/smallUtils.js';
@@ -9,6 +18,7 @@ import { skillXpOutfits } from './skillOutfits.js';
 export interface SkillingOutfitSlot {
 	names: readonly string[];
 	ids: number[];
+	tiers: number[];
 }
 
 export interface SkillingOutfitOption {
@@ -25,7 +35,35 @@ const EXTRA_SKILL_BY_OUTFIT: Record<string, SkillNameType> = {
 	'Master farmer': 'farming',
 	Rogue: 'thieving',
 	'Raiments of the Eye': 'runecraft',
-	"Zealot's": 'prayer'
+	"Zealot's": 'prayer',
+	"Smiths' uniform": 'smithing',
+	Graceful: 'agility',
+	'Polar camo': 'hunter',
+	'Wood camo': 'hunter',
+	'Jungle camo': 'hunter',
+	'Desert camo': 'hunter',
+	Larupia: 'hunter',
+	Graahk: 'hunter',
+	Kyatt: 'hunter'
+};
+
+const NOT_GRACEFUL_OUTFIT_PIECES = new Set([
+	'Max cape',
+	'Agility cape',
+	'Agility cape (t)',
+	'Agility cape(t)',
+	'Agility master cape',
+	'Silverhawk boots'
+]);
+
+const RAIMENTS_COLOR_VARIANTS: Record<string, string[]> = {
+	'Hat of the eye': ['Hat of the eye (red)', 'Hat of the eye (green)', 'Hat of the eye (blue)'],
+	'Robe top of the eye': ['Robe top of the eye (red)', 'Robe top of the eye (green)', 'Robe top of the eye (blue)'],
+	'Robe bottoms of the eye': [
+		'Robe bottoms of the eye (red)',
+		'Robe bottoms of the eye (green)',
+		'Robe bottoms of the eye (blue)'
+	]
 };
 
 function slug(name: string) {
@@ -41,23 +79,114 @@ function skillForOutfit(outfitName: string): SkillNameType | null {
 	return EXTRA_SKILL_BY_OUTFIT[outfitName] ?? null;
 }
 
-function slotFromNames(names: readonly string[]): SkillingOutfitSlot {
-	return { names, ids: names.map(name => itemID(name)) };
+function slotFromNames(names: readonly string[], tiers?: number[]): SkillingOutfitSlot {
+	return {
+		names,
+		ids: names.map(name => itemID(name)),
+		tiers: tiers ?? names.map((_, index) => index)
+	};
 }
 
-function optionFromOutfit(outfitName: string, slots: readonly (readonly string[])[]): SkillingOutfitOption {
+function optionFromOutfit(
+	outfitName: string,
+	slots: readonly SkillingOutfitSlot[] | readonly (readonly string[])[],
+	opts?: { skillAlias?: boolean; name?: string; aliases?: string[] }
+): SkillingOutfitOption {
 	const skill = skillForOutfit(outfitName);
-	const aliases = [outfitName.toLowerCase(), slug(outfitName)];
-	if (skill && !aliases.includes(skill)) aliases.push(skill);
+	const aliases = opts?.aliases ? [...opts.aliases] : [outfitName.toLowerCase(), slug(outfitName)];
+	if (opts?.skillAlias !== false && skill && !aliases.includes(skill)) aliases.push(skill);
+	const resolvedSlots: SkillingOutfitSlot[] = slots.map(slot => ('ids' in slot ? slot : slotFromNames(slot)));
 	return {
 		key: slug(outfitName),
-		name: skill ? `${outfitName} (${skill})` : outfitName,
+		name: opts?.name ?? (skill ? `${outfitName} (${skill})` : outfitName),
 		aliases,
 		kind: 'outfit',
 		outfitName,
 		skill,
-		slots: slots.map(slotFromNames)
+		slots: resolvedSlots
 	};
+}
+
+function gracefulSlot(names: readonly string[], launchName: string): SkillingOutfitSlot {
+	const filtered = names.filter(name => !NOT_GRACEFUL_OUTFIT_PIECES.has(name));
+	return slotFromNames(
+		[...filtered, launchName],
+		[...filtered, launchName].map(() => 0)
+	);
+}
+
+function withRaimentsColorVariants(option: SkillingOutfitOption): SkillingOutfitOption {
+	if (option.outfitName !== 'Raiments of the Eye') return option;
+	return {
+		...option,
+		slots: option.slots.map(slot => {
+			const extraNames = slot.names.flatMap(name => RAIMENTS_COLOR_VARIANTS[name] ?? []);
+			if (extraNames.length === 0) return slot;
+			const names = [...slot.names, ...extraNames];
+			const baseTier = slot.tiers[0] ?? 0;
+			return slotFromNames(
+				names,
+				names.map(() => baseTier)
+			);
+		})
+	};
+}
+
+function extraOutfits(): SkillingOutfitOption[] {
+	return [
+		optionFromOutfit("Smiths' uniform", [
+			['Smiths tunic'],
+			['Smiths trousers'],
+			['Smiths gloves'],
+			['Smiths boots']
+		]),
+		optionFromOutfit('Graceful', [
+			gracefulSlot(gracefulHoods, 'Launch graceful hood'),
+			gracefulSlot(gracefulTops, 'Launch graceful top'),
+			gracefulSlot(gracefulLegs, 'Launch graceful legs'),
+			gracefulSlot(gracefulHands, 'Launch graceful gloves'),
+			gracefulSlot(gracefulFeet, 'Launch graceful boots'),
+			gracefulSlot(gracefulCapes, 'Launch graceful cape')
+		]),
+		optionFromOutfit(
+			'Hunter',
+			[
+				slotFromNames(['Larupia hat', 'Graahk headdress', 'Kyatt hat'], [1, 2, 3]),
+				slotFromNames(
+					[
+						'Polar camo top',
+						'Wood camo top',
+						'Jungle camo top',
+						'Desert camo top',
+						'Larupia top',
+						'Graahk top',
+						'Kyatt top'
+					],
+					[0, 0, 0, 0, 1, 2, 3]
+				),
+				slotFromNames(
+					[
+						'Polar camo legs',
+						'Wood camo legs',
+						'Jungle camo legs',
+						'Desert camo legs',
+						'Larupia legs',
+						'Graahk legs',
+						'Kyatt legs'
+					],
+					[0, 0, 0, 0, 1, 2, 3]
+				)
+			],
+			{ name: 'Hunter', aliases: ['hunter', 'hunter outfit', 'hunter outfits'] }
+		),
+		optionFromOutfit('Polar camo', [['Polar camo top'], ['Polar camo legs']], { skillAlias: false }),
+		optionFromOutfit('Wood camo', [['Wood camo top'], ['Wood camo legs']], { skillAlias: false }),
+		optionFromOutfit('Jungle camo', [['Jungle camo top'], ['Jungle camo legs']], { skillAlias: false }),
+		optionFromOutfit('Desert camo', [['Desert camo top'], ['Desert camo legs']], { skillAlias: false }),
+		optionFromOutfit('Larupia', [['Larupia hat'], ['Larupia top'], ['Larupia legs']], { skillAlias: false }),
+		optionFromOutfit('Graahk', [['Graahk headdress'], ['Graahk top'], ['Graahk legs']], { skillAlias: false }),
+		optionFromOutfit('Kyatt', [['Kyatt hat'], ['Kyatt top'], ['Kyatt legs']], { skillAlias: false })
+	];
 }
 
 let cachedOptions: SkillingOutfitOption[] | null = null;
@@ -78,43 +207,45 @@ export function getSkillingOutfitOptions(): SkillingOutfitOption[] {
 
 	const options = [
 		firstAge,
-		...FIRST_AGE_REQUIRED_SACRIFICES.map(group => optionFromOutfit(group.outfit, group.slots))
+		...FIRST_AGE_REQUIRED_SACRIFICES.map(group =>
+			withRaimentsColorVariants(optionFromOutfit(group.outfit, group.slots))
+		)
 	];
 
 	for (const outfit of skillXpOutfits) {
 		if (options.some(option => option.outfitName === outfit.outfit)) continue;
 		const slots = outfit.pieces.map(piece => {
 			const names = piece.ids.map(id => Items.itemNameFromId(id)).filter((name): name is string => Boolean(name));
-			return { names, ids: [...piece.ids] };
+			return slotFromNames(names);
 		});
-		options.push({
-			...optionFromOutfit(
-				outfit.outfit,
-				slots.map(slot => slot.names)
-			),
-			slots
-		});
+		options.push(optionFromOutfit(outfit.outfit, slots));
+	}
+
+	for (const extra of extraOutfits()) {
+		if (options.some(option => option.key === extra.key || option.outfitName === extra.outfitName)) continue;
+		options.push(extra);
 	}
 
 	cachedOptions = options;
 	return options;
 }
 
-/** Every piece used by First Age sacrifices, First Age (base and max) items, and XP skilling outfits. */
+/** Every piece from First Age lists, XP outfits, and the extra skilling outfits. */
 export function allSkillingOutfitItemIDs(): number[] {
 	if (cachedItemIDs) return cachedItemIDs;
 	const ids = new Set<number>();
+	for (const option of getSkillingOutfitOptions()) {
+		for (const slot of option.slots) {
+			for (const id of slot.ids) ids.add(id);
+		}
+	}
+	// Keep sacrifice IDs even if an option is skipped for any reason.
 	for (const slot of getFirstAgeSacrificeSlots()) {
 		for (const id of slot.ids) ids.add(id);
 	}
 	for (const piece of firstAgeMaxUpgrades) {
 		ids.add(piece.baseId);
 		ids.add(piece.maxId);
-	}
-	for (const outfit of skillXpOutfits) {
-		for (const piece of outfit.pieces) {
-			for (const id of piece.ids) ids.add(id);
-		}
 	}
 	cachedItemIDs = [...ids];
 	return cachedItemIDs;
@@ -123,12 +254,15 @@ export function allSkillingOutfitItemIDs(): number[] {
 export function findSkillingOutfitOption(input: string): SkillingOutfitOption | undefined {
 	const value = input.trim().toLowerCase();
 	if (!value) return undefined;
-	return getSkillingOutfitOptions().find(
-		option =>
-			option.key === value ||
-			option.name.toLowerCase() === value ||
-			option.outfitName.toLowerCase() === value ||
-			option.aliases.some(alias => alias.toLowerCase() === value)
+	const options = getSkillingOutfitOptions();
+	return (
+		options.find(option => option.key === value) ??
+		options.find(
+			option =>
+				option.name.toLowerCase() === value ||
+				option.outfitName.toLowerCase() === value ||
+				option.aliases.some(alias => alias.toLowerCase() === value)
+		)
 	);
 }
 
@@ -180,19 +314,24 @@ function pickBestIdForSlot(
 	skills: Skills,
 	skippedRequirements: { id: number; name: string }[]
 ): number | null {
-	for (let i = slot.ids.length - 1; i >= 0; i--) {
+	const eligible: { id: number; name: string; tier: number }[] = [];
+	for (let i = 0; i < slot.ids.length; i++) {
 		const id = slot.ids[i];
+		const name = slot.names[i] ?? Items.itemNameFromId(id) ?? 'Unknown item';
+		const tier = slot.tiers[i] ?? i;
 		if (!ownsPiece(bank, equipped, id)) continue;
 		if (!meetsSkillRequirements(id, skills)) {
-			const name = slot.names[i] ?? Items.itemNameFromId(id) ?? 'Unknown item';
 			if (!skippedRequirements.some(skipped => skipped.id === id)) {
 				skippedRequirements.push({ id, name });
 			}
 			continue;
 		}
-		return id;
+		eligible.push({ id, name, tier });
 	}
-	return null;
+	if (eligible.length === 0) return null;
+	const bestTier = Math.max(...eligible.map(piece => piece.tier));
+	const top = eligible.filter(piece => piece.tier === bestTier);
+	return top.find(piece => equipped.has(piece.id))?.id ?? top[top.length - 1].id;
 }
 
 function ownsFullFirstAgeMax(bank: { amount(id: number): number }, equipped: Set<number>, skills: Skills): boolean {
@@ -212,7 +351,7 @@ function labelForPickedIds(option: SkillingOutfitOption, pickedIds: number[]): s
 	const prefixes = names.map(name =>
 		name
 			.replace(
-				/\s+(hat|headband|helmet|hood|headwear|top|jacket|shirt|torso|robe|garb|legs|waders|trousers|pants|skirt|legwear|boots|footwear|gloves|handwear|apron|backpack|mask|helm|strawhat|amulet|cape|bracelet|ring|tiara|robe top|robe bottom)$/i,
+				/\s+(\((red|green|blue)\)|hat|headband|headdress|helmet|hood|headwear|top|jacket|shirt|tunic|torso|robe|garb|legs|waders|trousers|pants|skirt|legwear|boots|footwear|gloves|handwear|apron|backpack|mask|helm|strawhat|amulet|cape|bracelet|ring|tiara|robe top|robe bottom)$/i,
 				''
 			)
 			.trim()
@@ -295,4 +434,21 @@ export function skillingOutfitAutocompleteChoices(value: string): { name: string
 				option.aliases.some(alias => alias.toLowerCase().includes(query))
 		)
 		.map(option => ({ name: option.name, value: option.key }));
+}
+
+export function gearEquipAutoChoices(value: string): { name: string; value: string }[] {
+	const query = value.trim().toLowerCase();
+	const stats = Object.values(GearStat)
+		.filter(stat => !query || stat.toLowerCase().includes(query) || stat.replaceAll('_', ' ').includes(query))
+		.map(stat => ({ name: stat, value: stat }));
+	const outfits = skillingOutfitAutocompleteChoices(value);
+	const merged = query ? [...outfits, ...stats] : [...stats, ...outfits];
+	const seen = new Set<string>();
+	const choices: { name: string; value: string }[] = [];
+	for (const choice of merged) {
+		if (seen.has(choice.value)) continue;
+		seen.add(choice.value);
+		choices.push(choice);
+	}
+	return choices.slice(0, 25);
 }

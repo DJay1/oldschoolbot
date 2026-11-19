@@ -208,6 +208,9 @@ export async function gearEquipCommand(args: {
 		return gearPresetEquipCommand(user, setup, preset);
 	}
 	if (auto) {
+		if (findSkillingOutfitOption(auto)) {
+			return gearSkillingOutfitCommand(user, auto, setup);
+		}
 		return autoEquipCommand(user, setup, auto);
 	}
 
@@ -308,10 +311,12 @@ async function autoEquipCommand(user: MUser, gearSetup: GearSetupType, equipment
 	};
 }
 
-export async function gearSkillingOutfitCommand(user: MUser, outfitInput: string): CommandResponse {
+export async function gearSkillingOutfitCommand(user: MUser, outfitInput: string, setup = 'skilling'): CommandResponse {
 	if (await user.minionIsBusy()) {
 		return `${user.minionName} is currently out on a trip, so you can't change their gear!`;
 	}
+
+	if (!isValidGearSetup(setup)) return 'Invalid gear setup.';
 
 	const option = findSkillingOutfitOption(outfitInput);
 	if (!option) return "That's not a skilling outfit.";
@@ -319,7 +324,7 @@ export async function gearSkillingOutfitCommand(user: MUser, outfitInput: string
 	const picked = pickSkillingOutfitEquip({
 		option,
 		bank: user.bank,
-		equippedIds: equippedItemIds(user.gear.skilling),
+		equippedIds: equippedItemIds(user.gear[setup]),
 		skills: user.skillsAsRequirements
 	});
 
@@ -332,7 +337,7 @@ export async function gearSkillingOutfitCommand(user: MUser, outfitInput: string
 		});
 		return formatSkillingOutfitEquipMessage({
 			label: picked.label,
-			setup: 'skilling',
+			setup,
 			equippedNames: [],
 			alreadyNames: picked.alreadyEquippedIds.map(id => Items.itemNameFromId(id)!).filter(Boolean),
 			failReasons: reqFails
@@ -351,14 +356,13 @@ export async function gearSkillingOutfitCommand(user: MUser, outfitInput: string
 		equippedGear,
 		equipBank,
 		unequipBank
-	} = gearEquipMultiImpl(user, 'skilling', items.join(', '));
+	} = gearEquipMultiImpl(user, setup, items.join(', '));
 	if (!resultSuccess) return failMsg!;
 	const failureText = formatGearEquipFailures(failReasons);
 	if ((!equipBank || equipBank.length === 0) && (!unequipBank || unequipBank.length === 0)) {
 		return failureText || `You don't have any ${option.outfitName} pieces to equip.`;
 	}
 
-	const setup: string = 'skilling';
 	const dbKey = `gear_${setup}` as const;
 	await user.transactItems({
 		filterLoot: false,
@@ -369,14 +373,18 @@ export async function gearSkillingOutfitCommand(user: MUser, outfitInput: string
 		}
 	});
 
-	const image = await user.generateGearImage({ setupType: 'skilling' });
-	const content = formatSkillingOutfitEquipMessage({
+	const image = await user.generateGearImage({ setupType: setup });
+	let content = formatSkillingOutfitEquipMessage({
 		label: picked.label,
-		setup: 'skilling',
+		setup,
 		equippedNames: equipBank ? equipBank.items().map(([item]) => item.name) : [],
 		alreadyNames: picked.alreadyEquippedIds.map(id => Items.itemNameFromId(id)!).filter(Boolean),
 		failReasons: failReasons
 	});
+	if (setup === 'wildy') {
+		content +=
+			"\n\nYou're trying to equip items into your *wildy* setup. ANY item in this setup can potentially be lost if doing Wilderness activities. Please confirm you understand this.";
+	}
 	return {
 		content,
 		files: [{ name: 'gear.png', buffer: image }]
