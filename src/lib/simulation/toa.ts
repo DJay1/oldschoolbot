@@ -19,6 +19,7 @@ import { Bank, Items, itemID, LootTable, resolveItems, SimpleTable } from 'oldsc
 import { clamp } from 'remeda';
 
 import { type Minigame, XpGainSource } from '@/prisma/main.js';
+import { SOULFLAME_HORN_BOOST_LINE, soulflameHornSpeedBoost, userHasSoulflameHornEquipped } from '@/lib/bsc/soulflameHorn.js';
 import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { degradeItem } from '@/lib/degradeableItems.js';
 import type { UserFullGearSetup } from '@/lib/gear/types.js';
@@ -1472,6 +1473,7 @@ function createTOATeam({
 		}
 
 		userPercentChange = calcWhatPercent(userPercentChange, totalSpeedReductions);
+		userPercentChange += soulflameHornSpeedBoost(arr, u);
 		const reduction = round(userPercentChange / teamSize, 1);
 
 		individualReductions.push({ id: u.id, reduction: userPercentChange });
@@ -1589,6 +1591,9 @@ async function toaCheckCommand(user: MUser) {
 
 function calculateBoostString(user: MUser) {
 	let str = '**Boosts**\n';
+	str += `**${SOULFLAME_HORN_BOOST_LINE}**`;
+	if (userHasSoulflameHornEquipped(user)) str += ' (you have this equipped)';
+	str += '\n';
 	const hasMiscBoosts = miscBoosts.map(([name, , gearSetup]) => ({
 		has: gearSetup !== null ? user.gear[gearSetup].hasEquipped(name) : user.hasEquippedOrInBank(name),
 		item: Items.getOrThrow(name)

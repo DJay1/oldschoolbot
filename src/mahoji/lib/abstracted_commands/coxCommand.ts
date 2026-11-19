@@ -5,6 +5,7 @@ import {
 	inventionItemBoost
 } from '@/lib/bso/skills/invention/inventions.js';
 
+import { SOULFLAME_HORN_BOOST_LINE } from '@/lib/bsc/soulflameHorn.js';
 import { calcWhatPercent, customEmoji, Emoji, sumArr } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
@@ -328,5 +329,6 @@ ${[
 **Challenge Mode:** ${await readiness(true)}
 
 **Gear:** Melee ${gear.melee.toFixed(1)}% · Range ${gear.range.toFixed(1)}% · Mage ${gear.mage.toFixed(1)}%
+**Boosts:** ${SOULFLAME_HORN_BOOST_LINE}
 **Supplies per solo raid:** ${await calcCoxInput(user, true)}`.slice(0, 1900);
 }
