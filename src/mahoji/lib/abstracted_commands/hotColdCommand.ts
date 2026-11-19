@@ -24,6 +24,23 @@ const blackAndWhite = resolveItems(['Black flowers', 'White flowers']);
 const explanation =
 	"Hot and Cold Rules: You pick hot (red, yellow, orange) or cold (purple, blue, assorted), and if you guess right, you win. If it's mixed, you lose. If its black or white, you win **5x** your bet.";
 
+async function trackHotCold(
+	user: MUser,
+	userDelta: number,
+	clientChange: { increment: number } | { decrement: number }
+) {
+	// gp_hotcold is a net win/loss tracker, not a spendable balance.
+	// Never let bookkeeping hide the game result after GP has already moved.
+	try {
+		await user.updateGPTrackSetting('gp_hotcold', userDelta);
+		await ClientSettings.update({
+			gp_hotcold: clientChange
+		});
+	} catch (err) {
+		Logging.logError(err as Error, { user_id: user.id, source: 'hotColdTrack' });
+	}
+}
+
 export async function hotColdCommand(
 	interaction: MInteraction,
 	user: MUser,
@@ -45,10 +62,6 @@ ${explanation}`
 
 	await user.sync();
 	if (user.GP < amount) return "You can't afford to gamble that much.";
-	await user.transactItems({
-		itemsToAdd: flowerLoot,
-		collectionLog: true
-	});
 
 	const embed = new EmbedBuilder()
 		.setTitle(`You picked ${choice} and got '${flower.name}'!`)
@@ -63,19 +76,13 @@ ${explanation}`
 	// You get 5x if you roll a black/white flower
 	if (blackAndWhite.includes(flower.id)) {
 		const amountWon = amount * 5;
+		await user.transactItems({
+			itemsToAdd: flowerLoot,
+			collectionLog: true
+		});
 		await user.update({
 			GP: {
 				increment: amountWon
-			}
-		});
-		await user.statsUpdate({
-			gp_hotcold: {
-				increment: amountWon
-			}
-		});
-		await ClientSettings.update({
-			gp_hotcold: {
-				decrement: amountWon
 			}
 		});
 		embed
@@ -83,44 +90,40 @@ ${explanation}`
 				`You rolled a special flower, and received 5x of your bet! You received ${toKMB(amountWon)}`
 			)
 			.setColor(6_875_960);
+		await trackHotCold(user, amountWon, { decrement: amountWon });
 		return response;
 	}
 
+	const arrToCheck = choice === 'hot' ? hot : cold;
+	const playerDidWin = flower.name !== 'Mixed flowers' && arrToCheck.includes(flower.id);
+
+	if (playerDidWin) {
+		const amountWon = amount * 2;
+		await user.transactItems({
+			itemsToAdd: flowerLoot,
+			collectionLog: true
+		});
+		// Net +amount: keep the stake and pay even money, in one write.
+		await user.update({
+			GP: {
+				increment: amount
+			}
+		});
+		embed.setDescription(`You **won** ${toKMB(amountWon)}!`).setColor(6_875_960);
+		await trackHotCold(user, amount, { increment: amount });
+		return response;
+	}
+
+	await user.transactItems({
+		itemsToAdd: flowerLoot,
+		collectionLog: true
+	});
 	await user.update({
 		GP: {
 			decrement: amount
 		}
 	});
-	const arrToCheck = choice === 'hot' ? hot : cold;
-	const playerDidWin = flower.name !== 'Mixed flowers' && arrToCheck.includes(flower.id);
-	const key = playerDidWin ? 'increment' : 'decrement';
-	await ClientSettings.update({
-		gp_hotcold: {
-			[key]: amount
-		}
-	});
-
-	if (playerDidWin) {
-		const amountWon = amount * 2;
-		await user.update({
-			GP: {
-				increment: amount * 2
-			}
-		});
-		await user.statsUpdate({
-			gp_hotcold: {
-				increment: amount
-			}
-		});
-		embed.setDescription(`You **won** ${toKMB(amountWon)}!`).setColor(6_875_960);
-		return response;
-	}
-	await user.statsUpdate({
-		gp_hotcold: {
-			decrement: amount
-		}
-	});
-
 	embed.setDescription(`You lost ${toKMB(amount)}.`).setColor(15_417_396);
+	await trackHotCold(user, -amount, { decrement: amount });
 	return response;
 }

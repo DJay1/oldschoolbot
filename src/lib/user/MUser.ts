@@ -939,7 +939,7 @@ Charge your items using ${globalClient.mentionCommand('minion', 'charge')}.`
 		});
 	}
 
-	async updateGPTrackSetting(setting: 'gp_dice' | 'gp_luckypick' | 'gp_slots', amount: number) {
+	async updateGPTrackSetting(setting: 'gp_dice' | 'gp_luckypick' | 'gp_slots' | 'gp_hotcold', amount: number) {
 		// Net win/loss tracker, not a balance: losses are negative, so skip the balance validator.
 		if (!Number.isSafeInteger(amount) || amount === 0) return;
 		const id = BigInt(this.id);
