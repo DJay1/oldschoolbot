@@ -173,6 +173,7 @@ export const lowKillableMonsters: KillableMonster[] = [
 		itemsRequired: resolveItems(['Frozen key']),
 		healAmountNeeded: 30,
 		attackStyleToUse: GearStat.AttackRanged,
+		defaultAttackStyles: ['ranged'],
 		disallowedAttackStyles: ['magic'],
 		attackStylesUsed: [GearStat.AttackMagic],
 		itemInBankBoosts: [
