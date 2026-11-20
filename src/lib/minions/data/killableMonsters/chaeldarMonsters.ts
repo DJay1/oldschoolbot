@@ -422,6 +422,7 @@ export const chaeldarMonsters: KillableMonster[] = [
 			prayer: 43
 		},
 		healAmountNeeded: 20 * 2,
+		defaultAttackStyles: ['ranged'],
 		disallowedAttackStyles: ['attack', 'strength', 'magic'],
 		attackStyleToUse: GearStat.AttackRanged,
 		attackStylesUsed: [GearStat.AttackRanged],
