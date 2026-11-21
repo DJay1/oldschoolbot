@@ -1,5 +1,4 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { customEmoji, lookupApplicationEmoji, resetApplicationEmojiCache } from '@oldschoolgg/toolkit';
 import { afterEach, describe, expect, test } from 'vitest';
@@ -46,7 +45,8 @@ const originalIdsEnv = process.env[ID_FILE_ENV];
 const tempDirs: string[] = [];
 
 function useFakeIds(seed: number): void {
-	const dir = mkdtempSync(join(tmpdir(), 'badge-ids-'));
+	// The emoji loader resolves the ids file relative to the repo, so keep it inside node_modules.
+	const dir = mkdtempSync(join(process.cwd(), 'node_modules', '.badge-ids-'));
 	tempDirs.push(dir);
 	const ids: Record<string, string> = {};
 	allBadgeEmojiNames().forEach((name, i) => {
@@ -55,7 +55,7 @@ function useFakeIds(seed: number): void {
 	});
 	const file = join(dir, 'ids.json');
 	writeFileSync(file, JSON.stringify(ids));
-	process.env[ID_FILE_ENV] = file;
+	process.env[ID_FILE_ENV] = relative(process.cwd(), file);
 	resetApplicationEmojiCache();
 }
 
