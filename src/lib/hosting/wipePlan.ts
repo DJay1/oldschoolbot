@@ -278,6 +278,20 @@ export const MAIN_MODELS: readonly ClassifiedModel[] = [
 		table: 'bsc_patron_item_dyes',
 		action: 'keep',
 		reason: 'Item dyes bought with patron points'
+	},
+	{
+		schema: 'main',
+		model: 'BscAccountLink',
+		table: 'bsc_account_link',
+		action: 'keep',
+		reason: 'Main-to-ironman patron perk links'
+	},
+	{
+		schema: 'main',
+		model: 'BscAccountLinkCooldown',
+		table: 'bsc_account_link_cooldown',
+		action: 'keep',
+		reason: 'Relink cooldown after an account unlink'
 	}
 ];
 

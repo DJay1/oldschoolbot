@@ -117,7 +117,7 @@ describe('shop purchases reject invalid quantities before writing', () => {
 		const transactItems = vi.fn();
 		const owns = vi.fn();
 		const confirmation = vi.fn();
-		const user = { owns, transactItems, calcMaxTripLength: vi.fn() };
+		const user = { user: { finished_quest_ids: [] }, owns, transactItems, calcMaxTripLength: vi.fn() };
 		const buyable = tripBuyables[0];
 		for (const quantity of [-50_000, 0, Number.NaN, Number.POSITIVE_INFINITY, 1.5]) {
 			const result = await buyingTripCommand(user as never, buyable, quantity, { confirmation } as never);
