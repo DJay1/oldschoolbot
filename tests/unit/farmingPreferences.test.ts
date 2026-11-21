@@ -275,6 +275,23 @@ describe('farming seed preferences', () => {
 		expect(result).toBeNull();
 	});
 
+	it('resolveSeedForPatch keeps the last planted crop when no preference is saved', () => {
+		const patch = {
+			...basePatchData,
+			lastPlanted: herbPlant.name,
+			patchPlanted: true,
+			plant: herbPlant
+		};
+		const result = resolveSeedForPatch({
+			patch,
+			preferContract: false,
+			contractPlant: null,
+			preferences: new Map(),
+			fallbackPlant: treePlant
+		});
+		expect(result).toEqual({ type: 'plant', plant: herbPlant, reason: 'last_planted' });
+	});
+
 	it('resolveSeedForPatch respects empty preference type', () => {
 		const preferences = new Map<FarmingPatchName, FarmingSeedPreference>();
 		preferences.set(herbPlant.seedType as FarmingPatchName, { type: 'empty' });

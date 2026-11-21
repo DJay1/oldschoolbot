@@ -97,6 +97,8 @@ export interface OpenArgs {
 	self: UnifiedOpenable;
 	totalLeaguesPoints: number;
 	rng: RNGProvider;
+	/** When true, roll loot only. Do not grant items, change KC, or announce drops. */
+	simulate?: boolean;
 }
 
 export interface UnifiedOpenable {
@@ -118,6 +120,10 @@ export interface UnifiedOpenable {
 	excludeFromOpenAll?: true;
 	extraCostPerOpen?: Bank;
 	trickableItems?: number[];
+	/** Seasonal event this openable belongs to, if any. */
+	seasonalEventId?: string;
+	/** If set, the box can be simulated even while its event is on hold. */
+	availableWhenEventInactive?: boolean;
 }
 
 const clueItemsToNotifyOf = resolveItems([
@@ -167,7 +173,7 @@ for (const clueTier of ClueTiers) {
 		id: casketItem.id,
 		openedItem: casketItem,
 		aliases: [clueTier.name.toLowerCase()],
-		output: async ({ quantity, user, self, rng }) => {
+		output: async ({ quantity, user, self, rng, simulate }) => {
 			const clueTier = ClueTiers.find(c => c.id === self.id)!;
 
 			// BSO Clue roll code:
@@ -223,20 +229,24 @@ for (const clueTier of ClueTiers) {
 				nthCasket >= clueTier.milestoneReward.scoreNeeded &&
 				user.allItemsOwned.amount(clueTier.milestoneReward.itemReward) === 0
 			) {
-				await user.addItemsToBank({
-					items: new Bank().add(clueTier.milestoneReward.itemReward),
-					collectionLog: true
-				});
+				if (simulate) {
+					loot.add(clueTier.milestoneReward.itemReward);
+				} else {
+					await user.addItemsToBank({
+						items: new Bank().add(clueTier.milestoneReward.itemReward),
+						collectionLog: true
+					});
+				}
 				gotMilestoneReward = true;
 			}
 
 			// Here we check if the loot has any ultra-rares (3rd age, gilded, bloodhound),
-			// and send a notification if they got one.
+			// and send a notification if they got one. Simulations never announce or change KC.
 			const announcedLoot = loot.filter(i => clueItemsToNotifyOf.includes(i.id));
 			if (gotMilestoneReward) {
 				announcedLoot.add(clueTier.milestoneReward?.itemReward);
 			}
-			if (announcedLoot.length > 0) {
+			if (!simulate && announcedLoot.length > 0) {
 				globalClient.emit(
 					Events.ServerNotification,
 					`${user.notificationName} just opened their ${formatOrdinal(
@@ -249,7 +259,7 @@ for (const clueTier of ClueTiers) {
 				return { bank: loot };
 			}
 
-			if (mimicNumber > 0) {
+			if (!simulate && mimicNumber > 0) {
 				await user.incrementKC(EMonster.MIMIC, mimicNumber);
 			}
 
@@ -636,15 +646,17 @@ export function getOpenableLoot({
 	quantity,
 	user,
 	totalLeaguesPoints,
-	rng
+	rng,
+	simulate = false
 }: {
 	openable: UnifiedOpenable;
 	quantity: number;
 	user: MUser;
 	totalLeaguesPoints: number;
 	rng: RNGProvider;
+	simulate?: boolean;
 }) {
 	return openable.output instanceof LootTable
 		? { bank: openable.output.roll(quantity), message: null }
-		: openable.output({ user, self: openable, quantity, totalLeaguesPoints, rng });
+		: openable.output({ user, self: openable, quantity, totalLeaguesPoints, rng, simulate });
 }

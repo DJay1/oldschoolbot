@@ -2,10 +2,19 @@ import { formatDuration, PerkTier } from '@oldschoolgg/toolkit';
 import { MathRNG, randInt, roll } from 'node-rng';
 import { averageBank, Bank, ChambersOfXeric, toKMB } from 'oldschooljs';
 
+import { simulateOpenCooldownLeft } from '@/lib/bsc/simulateOpenCooldown.js';
 import { ColosseumWaveBank, startColosseumRun } from '@/lib/colosseum.js';
 import pets from '@/lib/data/pets.js';
+import {
+	autocompleteSimulatableOpenables,
+	findSimulatableOpenable,
+	formatSimulateOpenCaption,
+	SIMULATE_OPEN_MAX,
+	simulateOpenableLoot
+} from '@/lib/simulation/simulateOpenable.js';
 import { assert } from '@/lib/util/logError.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
+import { validateQuantity } from '@/lib/util/validateQuantity.js';
 
 async function determineCoxLimit(user: MUser) {
 	const perkTier = await user.fetchPerkTier();
@@ -199,10 +208,73 @@ export const simulateCommand = defineCommand({
 			type: 'Subcommand',
 			name: 'colosseum',
 			description: 'Simulate colosseum.'
+		},
+		{
+			type: 'Subcommand',
+			name: 'open',
+			description: 'Simulate opening a box or other openable. Nothing is given or taken.',
+			options: [
+				{
+					type: 'String',
+					name: 'name',
+					description: 'The box or openable to simulate.',
+					required: true,
+					autocomplete: async ({ value }: StringAutoComplete) => autocompleteSimulatableOpenables(value ?? '')
+				},
+				{
+					type: 'Integer',
+					name: 'quantity',
+					description: 'How many to simulate opening.',
+					required: true,
+					min_value: 1,
+					max_value: SIMULATE_OPEN_MAX
+				}
+			]
 		}
 	],
-	run: async ({ interaction, options, user }) => {
+	run: async ({ interaction, options, user, rng }) => {
 		await interaction.defer();
+		if (options.open) {
+			const quantityCheck = validateQuantity(options.open.quantity, {
+				min: 1,
+				max: SIMULATE_OPEN_MAX,
+				label: 'Quantity'
+			});
+			if (!quantityCheck.ok) return quantityCheck.error;
+			const openable = findSimulatableOpenable(options.open.name);
+			if (!openable) {
+				return "That's not a box you can simulate right now.";
+			}
+			const wait = simulateOpenCooldownLeft(user.id, Date.now());
+			if (wait > 0) {
+				return `Please wait ${Math.ceil(wait / 1000)}s before simulating another box.`;
+			}
+			let totalLeaguesPoints = 0;
+			try {
+				totalLeaguesPoints = (await Cache.getRoboChimpUser(user.id)).leagues_points_total ?? 0;
+			} catch {
+				totalLeaguesPoints = 0;
+			}
+			const result = await simulateOpenableLoot({
+				openable,
+				quantity: quantityCheck.value,
+				user,
+				rng,
+				totalLeaguesPoints
+			});
+			const caption = formatSimulateOpenCaption(openable.name, quantityCheck.value);
+			const extra = result.message ? `\n${result.message}` : '';
+			let content = `${caption}${extra}`;
+			if (content.length > 1850) content = caption;
+			if (result.bank.length === 0) {
+				return `${content}\nNo items came out of the simulation.`;
+			}
+			const image = await makeBankImage({
+				bank: result.bank,
+				title: `Simulated loot from ${quantityCheck.value.toLocaleString()}x ${openable.name}`
+			});
+			return { content, files: [image] };
+		}
 		if (options.colosseum) {
 			return simulateColosseumRuns();
 		}

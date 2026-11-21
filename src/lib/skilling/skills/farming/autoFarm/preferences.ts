@@ -1,6 +1,6 @@
 import { plants } from '@/lib/skilling/skills/farming/index.js';
 import type { FarmingPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
-import { isPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
+import { findPlant, isPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import type {
 	FarmingPreferredSeeds,
 	FarmingSeedPreference,
@@ -120,6 +120,33 @@ export function serializePreferredSeeds(
 	return Object.fromEntries(entries);
 }
 
+export function preferencesEqual(
+	a: Map<FarmingPatchName, FarmingSeedPreference>,
+	b: Map<FarmingPatchName, FarmingSeedPreference>
+): boolean {
+	return JSON.stringify(serializePreferredSeeds(a)) === JSON.stringify(serializePreferredSeeds(b));
+}
+
+/**
+ * After Auto Farm plants a crop on a patch type with no saved preference, remember
+ * that crop so later trips keep planting it until the player changes it with
+ * /farming set_preferred. Existing preferences (including highest_available and empty)
+ * are left alone.
+ */
+export function rememberCropsInPreferences(
+	current: Map<FarmingPatchName, FarmingSeedPreference>,
+	planted: { patchName: FarmingPatchName; plant: Plant }[]
+): Map<FarmingPatchName, FarmingSeedPreference> {
+	const next = new Map(current);
+	for (const { patchName, plant } of planted) {
+		if (next.has(patchName)) continue;
+		const seedID = getPrimarySeedForPlant(plant);
+		if (!seedID) continue;
+		next.set(patchName, { type: 'seed', seedID });
+	}
+	return next;
+}
+
 export interface ResolveSeedForPatchOptions {
 	patch: IPatchDataDetailed;
 	preferContract: boolean;
@@ -130,8 +157,19 @@ export interface ResolveSeedForPatchOptions {
 }
 
 export type ResolvedSeedForPatchResult =
-	| { type: 'plant'; plant: Plant; reason: 'contract' | 'preference_seed' | 'fallback' }
+	| { type: 'plant'; plant: Plant; reason: 'contract' | 'preference_seed' | 'fallback' | 'last_planted' }
 	| { type: 'highest'; reason: 'preference_highest' };
+
+function lastPlantedCrop(patch: IPatchDataDetailed): Plant | null {
+	if (patch.plant && patch.plant.seedType === patch.patchName) {
+		return patch.plant;
+	}
+	const fromName = findPlant(patch.lastPlanted);
+	if (fromName && fromName.seedType === patch.patchName) {
+		return fromName;
+	}
+	return null;
+}
 
 export function resolveSeedForPatch({
 	patch,
@@ -177,6 +215,13 @@ export function resolveSeedForPatch({
 
 	if (contractFitsPatch) {
 		return { type: 'plant', plant: contractPlant, reason: 'contract' };
+	}
+
+	// Keep planting the same crop that is already in the patch until the player
+	// changes it. Do not fall through to a different seed type.
+	const sameCrop = lastPlantedCrop(patch);
+	if (sameCrop) {
+		return { type: 'plant', plant: sameCrop, reason: 'last_planted' };
 	}
 
 	if (fallbackPlant && fallbackPlant.seedType === patch.patchName) {
