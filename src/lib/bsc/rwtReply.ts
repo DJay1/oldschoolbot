@@ -19,6 +19,6 @@ export async function rwtReply(random: () => number = Math.random) {
 	return {
 		content: RWT_MESSAGE,
 		files: [{ name: 'rwt.gif', buffer: await readFile(path) }],
-		allowedMentions: { parse: [] as const, users: [] as const, roles: [] as const }
+		allowedMentions: { parse: [], users: [], roles: [] }
 	};
 }
