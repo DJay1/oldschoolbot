@@ -4,6 +4,8 @@ import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
 import { userMention } from '@oldschoolgg/discord';
 import { formatDuration, stringMatches } from '@oldschoolgg/toolkit';
 
+import { resetLinkedPerkCaches } from '@/lib/bsc/accountLink.js';
+import { getEffectivePaidPatronLevel, getGroupLastGiftAt, stampGroupLastGiftAt } from '@/lib/bsc/groupPatronPerks.js';
 import { GE_SLOTS_CACHE } from '@/lib/cache.js';
 import backgroundImages from '@/lib/minions/data/bankBackgrounds.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
@@ -42,13 +44,17 @@ export async function triggerBscDoubleLoot(user: MUser): Promise<string> {
 
 export async function performBscPatronGift(donor: MUser, recipientId: string): Promise<string> {
 	const recipient = await mUserFetch(recipientId);
-	const donorState = await getBscPatronOverride(donor.id);
 	const recipientState = await getBscPatronOverride(recipient.id);
 	const now = Date.now();
+	const [donorLevel, recipientLevel, donorLastGiftAt] = await Promise.all([
+		getEffectivePaidPatronLevel(donor.id, donor.bitfield, now),
+		getEffectivePaidPatronLevel(recipient.id, recipient.bitfield, now),
+		getGroupLastGiftAt(donor.id)
+	]);
 	const plan = planBscPatronGift({
-		donorLevel: bscPatronLevelFromBits(donor.bitfield),
-		donorLastGiftAt: donorState?.lastGiftAt ?? null,
-		recipientLevel: bscPatronLevelFromBits(recipient.bitfield),
+		donorLevel,
+		donorLastGiftAt,
+		recipientLevel,
 		recipientGiftTier: recipientState?.giftTier ?? null,
 		recipientGiftUntil: recipientState?.giftUntil ?? null,
 		sameUser: donor.id === recipient.id,
@@ -57,9 +63,10 @@ export async function performBscPatronGift(donor: MUser, recipientId: string): P
 	});
 	if (!plan.ok) return plan.message;
 
-	await updateBscPatronOverride(donor.id, { lastGiftAt: now });
+	await stampGroupLastGiftAt(donor.id, now);
 	await updateBscPatronOverride(recipient.id, { giftTier: plan.giftLevel, giftUntil: plan.until });
 	GE_SLOTS_CACHE.delete(recipient.id);
+	await resetLinkedPerkCaches(recipient.id);
 	await recipient.fetchPerkTier({ forceNoCache: true });
 	return plan.message;
 }

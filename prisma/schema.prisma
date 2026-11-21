@@ -2074,3 +2074,18 @@ model BscPatronItemDye {
   @@index([user_id])
   @@map("bsc_patron_item_dyes")
 }
+
+model BscAccountLink {
+  main_id   String   @id
+  iron_id   String   @unique
+  linked_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("bsc_account_link")
+}
+
+model BscAccountLinkCooldown {
+  user_id          String   @id
+  last_unlinked_at DateTime @db.Timestamptz(6)
+
+  @@map("bsc_account_link_cooldown")
+}

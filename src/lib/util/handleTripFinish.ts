@@ -19,9 +19,9 @@ import { Bank, EItem, itemID, toKMB } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main.js';
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import { getEffectivePaidPatronLevel } from '@/lib/bsc/groupPatronPerks.js';
 import { getBscPatronAccount } from '@/lib/bsc/patronAccount.js';
 import { formatTripFlairLine } from '@/lib/bsc/patronFlair.js';
-import { bscPatronLevelFromBits } from '@/lib/bsc/patronTiers.js';
 import { announceThanksgivingPets } from '@/lib/bsc/rareAnnouncements.js';
 import { tryStartQueuedTrip } from '@/lib/bsc/tripQueue.js';
 import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';
@@ -996,7 +996,7 @@ export async function handleTripFinish(
 		Logging.logError(err as Error);
 	}
 
-	if (bscPatronLevelFromBits(user.bitfield) >= 3) {
+	if ((await getEffectivePaidPatronLevel(user.id, user.bitfield)) >= 3) {
 		try {
 			const account = await getBscPatronAccount(user.id);
 			const flair = formatTripFlairLine(account.flair);

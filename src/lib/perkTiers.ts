@@ -1,6 +1,7 @@
 import { Time } from '@oldschoolgg/toolkit';
 import { LRUCache } from 'lru-cache';
 
+import { getLinkedPaidPerkSources } from '@/lib/bsc/groupPatronPerks.js';
 import { getBscPatronOverride } from '@/lib/bsc/patronStore.js';
 import { bscActiveGiftPerkTier } from '@/lib/bsc/patronTiers.js';
 import { BitField, BOT_TYPE, PerkTier } from '@/lib/constants.js';
@@ -60,6 +61,9 @@ const perkTierHotCache = new LRUCache<string, PerkTierHotCacheEntry>({
 function setHotCache(userId: string, tier: number, until: number | null = null) {
 	const expires = Date.now() + PerkTierHotTTL;
 	perkTierHotCache.set(userId, { tier, expires: until === null ? expires : Math.min(expires, until) });
+}
+export function clearPerkTierHotCache(userId: string) {
+	perkTierHotCache.delete(userId);
 }
 export function getPerkTierCached(userId: string) {
 	const tierCacheEntry = perkTierHotCache.get(userId);
@@ -228,6 +232,15 @@ export async function getUsersPerkTier({
 		}
 	} catch (err) {
 		Logging.logDebug(`BSC patron gift lookup failed for ${user.id}`, {
+			error: err instanceof Error ? err.message : String(err)
+		});
+	}
+	try {
+		const linked = await getLinkedPaidPerkSources(user.id);
+		eligibleTiers.push(...linked.tiers);
+		timedEnds.push(...linked.timedEnds);
+	} catch (err) {
+		Logging.logDebug(`Linked patron perk lookup failed for ${user.id}`, {
 			error: err instanceof Error ? err.message : String(err)
 		});
 	}
