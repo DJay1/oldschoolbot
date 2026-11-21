@@ -594,6 +594,7 @@ async function removeRawFood({
 		};
 	}
 	const itemCost = foodToRemove;
+	const potionRefund = new Bank();
 	if (monster.itemCost) {
 		const costs = getItemCostFromConsumables({
 			consumableCosts: Array.isArray(monster.itemCost) ? monster.itemCost : [monster.itemCost],
@@ -609,11 +610,17 @@ async function removeRawFood({
 		if (costs?.finalQuantity) {
 			quantity = costs.finalQuantity;
 		}
+		if (costs?.itemRefund && costs.itemRefund.length > 0) {
+			potionRefund.add(costs.itemRefund);
+		}
 	}
 	if (!user.owns(itemCost)) {
 		return { success: false, str: `You don't have the required items, you need: ${itemCost}.` };
 	}
 	await user.removeItemsFromBank(itemCost);
+	if (potionRefund.length > 0) {
+		await user.addItemsToBank({ items: potionRefund, collectionLog: false, dontAddToTempCL: true });
+	}
 	await tame.update({
 		total_cost: tame.totalCost.add(itemCost).toJSON()
 	});

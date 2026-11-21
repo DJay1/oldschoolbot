@@ -115,9 +115,10 @@ export const konarMonsters: KillableMonster[] = [
 		itemCost: {
 			itemCost: new Bank().add('Anti-venom+(4)', 1),
 			qtyPerMinute: 0.017,
+			consumeByDose: true,
 			alternativeConsumables: [
-				{ itemCost: new Bank().add('Anti-venom(4)', 1), qtyPerMinute: 0.021 },
-				{ itemCost: new Bank().add('Antidote++(4)', 1), qtyPerMinute: 0.021 }
+				{ itemCost: new Bank().add('Anti-venom(4)', 1), qtyPerMinute: 0.021, consumeByDose: true },
+				{ itemCost: new Bank().add('Antidote++(4)', 1), qtyPerMinute: 0.021, consumeByDose: true }
 			]
 		},
 		notifyDrops: resolveItems(['Hydra tail']),
@@ -143,9 +144,10 @@ export const konarMonsters: KillableMonster[] = [
 		itemCost: {
 			itemCost: new Bank().add('Anti-venom+(4)', 1),
 			qtyPerMinute: 0.017,
+			consumeByDose: true,
 			alternativeConsumables: [
-				{ itemCost: new Bank().add('Anti-venom(4)', 1), qtyPerMinute: 0.021 },
-				{ itemCost: new Bank().add('Antidote++(4)', 1), qtyPerMinute: 0.021 }
+				{ itemCost: new Bank().add('Anti-venom(4)', 1), qtyPerMinute: 0.021, consumeByDose: true },
+				{ itemCost: new Bank().add('Antidote++(4)', 1), qtyPerMinute: 0.021, consumeByDose: true }
 			]
 		},
 		notifyDrops: resolveItems(['Hydra leather', "Hydra's claw", 'Ikkle hydra', 'Jar of chemicals']),

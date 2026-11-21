@@ -145,6 +145,8 @@ export interface Consumable {
 	alternativeConsumables?: Consumable[];
 	boostPercent?: number;
 	optional?: boolean;
+	// Charge potions in doses and return leftover (3)/(2)/(1) vials instead of consuming a whole (4).
+	consumeByDose?: boolean;
 }
 
 export interface AddXpParams {

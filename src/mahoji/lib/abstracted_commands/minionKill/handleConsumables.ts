@@ -1,7 +1,15 @@
 import { reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
-import { EItem, itemID } from 'oldschooljs';
+import { Bank, EItem, itemID } from 'oldschooljs';
 
 import { getSimilarItems } from '@/lib/data/similarItems.js';
+import {
+	consumePotionDoses,
+	dosesInConsumableCost,
+	type PotionFamily,
+	pickDoseConsumable,
+	totalDosesInBank,
+	vialsForDoses
+} from '@/lib/minions/functions/consumePotionDoses.js';
 import type { Consumable } from '@/lib/minions/types.js';
 import { FloatBank } from '@/lib/structures/Bank.js';
 import type { GearBank } from '@/lib/structures/GearBank.js';
@@ -36,9 +44,51 @@ export function getItemCostFromConsumables({
 	const duration = timeToFinish * quantity;
 	const floatCostsPerKill = new FloatBank();
 	const boosts: { message: string; boostPercent: number }[] = [];
+	const dosePlans: { family: PotionFamily; dosesPerKill: number }[] = [];
 
 	for (const cc of consumableCosts) {
 		const flatConsumables = [cc, ...(cc.alternativeConsumables ?? [])];
+		if (flatConsumables.some(c => c.consumeByDose)) {
+			const picked = pickDoseConsumable({
+				options: flatConsumables,
+				bank: gearBank.bank,
+				quantity,
+				duration
+			});
+			if (cc.optional && !picked) {
+				continue;
+			}
+			const chosen =
+				picked ??
+				pickDoseConsumable({
+					options: flatConsumables.filter(c => !c.optional),
+					bank: new Bank(),
+					quantity,
+					duration
+				});
+			if (!chosen) continue;
+
+			const info = dosesInConsumableCost(chosen.consumable.itemCost);
+			if (!info) continue;
+			const itemMultiple = chosen.consumable.qtyPerKill ?? chosen.consumable.qtyPerMinute ?? null;
+			if (!itemMultiple) continue;
+			const unitsPerKill = chosen.consumable.qtyPerMinute
+				? (timeToFinish / Time.Minute) * itemMultiple
+				: itemMultiple;
+			dosePlans.push({ family: info.family, dosesPerKill: unitsPerKill * info.dosesPerUnit });
+			if (chosen.consumable.boostPercent) {
+				timeToFinish = reduceNumByPercent(timeToFinish, chosen.consumable.boostPercent);
+				boosts.push({
+					message: `${chosen.consumable.boostPercent}% for ${chosen.consumable.itemCost
+						.items()
+						.map(i => i[0].name)
+						.join(', ')}`,
+					boostPercent: chosen.consumable.boostPercent
+				});
+			}
+			continue;
+		}
+
 		const consumable =
 			flatConsumables.find(c => gearBank.bank.has(calculateTripConsumableCost(c, quantity, duration))) ?? cc;
 		if (consumable.optional && !gearBank.bank.has(calculateTripConsumableCost(cc, quantity, duration))) {
@@ -81,18 +131,53 @@ export function getItemCostFromConsumables({
 	}
 
 	const maxBasedOnTime = Math.floor(maxTripLength / timeToFinish);
-	const maxCanKillWithItemCost =
+	const itemFits =
 		consumableCosts.length === 0
 			? Number.POSITIVE_INFINITY
 			: floatCostsPerKill.length() === 0
 				? Number.POSITIVE_INFINITY
 				: Math.floor(floatCostsPerKill.fits(gearBank.bank));
+	const doseFits = dosePlans.reduce((max, plan) => {
+		if (plan.dosesPerKill <= 0) return max;
+		return Math.min(max, Math.floor(totalDosesInBank(gearBank.bank, plan.family) / plan.dosesPerKill));
+	}, Number.POSITIVE_INFINITY);
+	const maxCanKillWithItemCost = Math.min(itemFits, doseFits);
 	const maxAllowed = Math.min(maxBasedOnTime, maxCanKillWithItemCost);
 	let finalQuantity = Math.max(1, inputQuantity ? Math.min(inputQuantity, maxAllowed) : maxAllowed) ?? maxAllowed;
 	if (slayerKillsRemaining && finalQuantity > slayerKillsRemaining) {
 		finalQuantity = slayerKillsRemaining;
 	}
 	const itemCost = floatCostsPerKill.multiply(finalQuantity).toItemBankRoundedUp();
+	const itemRefund = new Bank();
+	const finalDuration = timeToFinish * finalQuantity;
+
+	for (const cc of consumableCosts) {
+		const flatConsumables = [cc, ...(cc.alternativeConsumables ?? [])];
+		if (!flatConsumables.some(c => c.consumeByDose)) continue;
+		const picked = pickDoseConsumable({
+			options: flatConsumables,
+			bank: gearBank.bank,
+			quantity: finalQuantity,
+			duration: finalDuration
+		});
+		if (cc.optional && !picked) continue;
+		const chosen =
+			picked ??
+			pickDoseConsumable({
+				options: flatConsumables.filter(c => !c.optional),
+				bank: new Bank(),
+				quantity: finalQuantity,
+				duration: finalDuration
+			});
+		if (!chosen) continue;
+		const plan = consumePotionDoses(gearBank.bank, chosen.family, chosen.dosesNeeded);
+		if (plan) {
+			itemCost.add(plan.itemsToRemove);
+			itemRefund.add(plan.itemsToAdd);
+		} else {
+			itemCost.add(vialsForDoses(chosen.family, chosen.dosesNeeded));
+		}
+	}
 
 	if (consumableCosts.length === 0) {
 		return {
@@ -103,6 +188,7 @@ export function getItemCostFromConsumables({
 
 	return {
 		itemCost,
+		itemRefund: itemRefund.length > 0 ? itemRefund : undefined,
 		finalQuantity,
 		boosts,
 		timeToFinish
