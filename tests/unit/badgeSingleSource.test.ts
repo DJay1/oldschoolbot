@@ -10,9 +10,12 @@ import {
 	badgeEmoji,
 	badgeRenderVersion,
 	badges,
+	DISCORD_EMBED_TITLE_MAX,
 	EXTRA_BADGE_EMOJI_NAMES,
+	fitBadgeLine,
 	missingBadgeEmojiNames,
-	PATRON_BADGE_EMOJI_NAMES
+	PATRON_BADGE_EMOJI_NAMES,
+	trimAtEmojiBoundary
 } from '@/lib/badges/badgeEmojis.js';
 import { BSC_PATRON_TIERS } from '@/lib/bsc/patronTiers.js';
 import { BitField } from '@/lib/constants.js';
@@ -44,12 +47,13 @@ const ID_FILE_ENV = 'APPLICATION_EMOJI_IDS_FILE';
 const originalIdsEnv = process.env[ID_FILE_ENV];
 const tempDirs: string[] = [];
 
-function useFakeIds(seed: number): void {
+function writeFakeIds(seed: number, omit: ReadonlySet<string> = new Set()): void {
 	// The emoji loader resolves the ids file relative to the repo, so keep it inside node_modules.
 	const dir = mkdtempSync(join(process.cwd(), 'node_modules', '.badge-ids-'));
 	tempDirs.push(dir);
 	const ids: Record<string, string> = {};
 	allBadgeEmojiNames().forEach((name, i) => {
+		if (omit.has(name)) return;
 		const entry = lookupApplicationEmoji(name);
 		if (entry) ids[entry.uploadName] = String(100000000000000000n + BigInt(seed * 1000 + i));
 	});
@@ -57,6 +61,10 @@ function useFakeIds(seed: number): void {
 	writeFileSync(file, JSON.stringify(ids));
 	process.env[ID_FILE_ENV] = relative(process.cwd(), file);
 	resetApplicationEmojiCache();
+}
+
+function useFakeIds(seed: number): void {
+	writeFakeIds(seed);
 }
 
 afterEach(() => {
@@ -156,5 +164,54 @@ describe('badge emojis have one source of truth', () => {
 		expect(page.length).toBeLessThanOrEqual(LB_PAGE_MAX_CHARS);
 		expect(page.split('\n')).toHaveLength(10);
 		expect(page).toContain(name);
+	});
+
+	test('a player with every badge keeps a valid minion-stats title', () => {
+		useFakeIds(4);
+		const allBits = [
+			BitField.Developer,
+			BitField.PatronTier6,
+			BitField.BSCPatronCosmetic,
+			BitField.BSCEarlySupporter,
+			BitField.LaunchFounder
+		];
+		const badges = makeBadgeString(Object.values(BadgesEnum), true, true, true, allBits);
+		const suffix = `${customEmoji('ironman')} ${customEmoji('minion')} **${'Z'.repeat(30)}**`;
+		const full = `${badges} ${suffix}`;
+		expect(full.length).toBeGreaterThan(DISCORD_EMBED_TITLE_MAX);
+		const naive = full.slice(0, 255);
+		const naiveStripped = naive.replace(/<a?:[A-Za-z0-9_]{2,32}:\d{17,20}>/g, '');
+		expect(naiveStripped).toMatch(/<a?:/);
+
+		const title = fitBadgeLine(badges, suffix);
+		expect(title.length).toBeLessThanOrEqual(DISCORD_EMBED_TITLE_MAX);
+		expect(title).toContain('Z'.repeat(30));
+		expect(title.replace(/<a?:[A-Za-z0-9_]{2,32}:\d{17,20}>/g, '')).not.toMatch(/<a?:/);
+		expect(title).toContain(customEmoji('esbcorgi'));
+		expect(title.length).toBeLessThan(full.length);
+	});
+
+	test('a missing emoji id is omitted instead of raw markup', () => {
+		writeFakeIds(5, new Set([BADGE_EMOJI_NAMES[BadgesEnum.TopCollector]]));
+		const missing = badgeEmoji(BadgesEnum.TopCollector);
+		expect(missing).not.toContain('<');
+		expect(missing).not.toContain('top_collector');
+		expect(badgeEmoji(BadgesEnum.Developer)).toMatch(/^<a?:spanner:\d{17,20}>$/);
+		const row = makeBadgeString([BadgesEnum.TopCollector, BadgesEnum.Developer], false, false);
+		expect(row).not.toMatch(/top_collector/);
+		expect(row.replace(/<a?:[A-Za-z0-9_]{2,32}:\d{17,20}>/g, '')).not.toMatch(/<a?:/);
+		expect(fitBadgeLine(`<:top_collector ${badgeEmoji(BadgesEnum.Developer)}`, 'Zootr')).toBe(
+			`${badgeEmoji(BadgesEnum.Developer)} Zootr`
+		);
+	});
+
+	test('trimAtEmojiBoundary drops an incomplete trailing emoji', () => {
+		useFakeIds(6);
+		const emoji = customEmoji('top_collector');
+		const text = `hello ${emoji}`;
+		const cut = trimAtEmojiBoundary(text, text.length - 3);
+		expect(cut).toBe('hello');
+		expect(cut).not.toContain('<:');
+		expect(trimAtEmojiBoundary(text, text.length)).toBe(text);
 	});
 });

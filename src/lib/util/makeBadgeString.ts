@@ -4,6 +4,7 @@ import {
 	badgeEmojiName,
 	EXTRA_BADGE_EMOJI_NAMES,
 	extraBadgeEmoji,
+	isSafeBadgeToken,
 	patronBadgeEmoji,
 	patronBadgeEmojiName
 } from '@/lib/badges/badgeEmojis.js';
@@ -65,7 +66,7 @@ export function makeBadgeString(
 ) {
 	return badgeSlots(badgeIDs, isIronman, isBSCEarlySupporter, isLaunchFounder, patronBits)
 		.map(slot => slot.render())
-		.filter(emoji => emoji.length > 0)
+		.filter(isSafeBadgeToken)
 		.join(' ')
 		.trim();
 }

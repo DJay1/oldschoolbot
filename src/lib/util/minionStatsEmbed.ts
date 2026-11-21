@@ -6,6 +6,7 @@ import { MathRNG } from 'node-rng';
 import { Bank, convertXPtoLVL, type ItemBank, toKMB } from 'oldschooljs';
 import type { SkillsScore } from 'oldschooljs/hiscores';
 
+import { DISCORD_EMBED_TITLE_MAX, fitBadgeLine } from '@/lib/badges/badgeEmojis.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { getClueScoresFromOpenables } from '@/lib/clues/clueUtils.js';
 import { MAX_LEVEL } from '@/lib/constants.js';
@@ -47,52 +48,52 @@ export async function minionStatsEmbed({
 		.filter(i => i.score > 0)
 		.sort((a, b) => b.score - a.score);
 
-	const badgesStr = user.badgesString ? `${user.badgesString} ` : '';
-
-	const embed = new EmbedBuilder().setTitle(`${badgesStr}${user.minionName}`.slice(0, 255)).addFields(
-		{
-			name: '\u200b',
-			value: [
-				'attack',
-				'strength',
-				'defence',
-				'ranged',
-				'prayer',
-				'magic',
-				'runecraft',
-				'construction',
-				'invention'
-			]
-				.map(skillCell)
-				.join('\n'),
-			inline: true
-		},
-		{
-			name: '\u200b',
-			value: ['hitpoints', 'agility', 'herblore', 'thieving', 'crafting', 'fletching', 'slayer', 'hunter']
-				.map(skillCell)
-				.join('\n'),
-			inline: true
-		},
-		{
-			name: '\u200b',
-			value: [
-				'mining',
-				'smithing',
-				'fishing',
-				'cooking',
-				'firemaking',
-				'woodcutting',
-				'farming',
-				'dungeoneering',
-				'divination',
-				'overall'
-			]
-				.map(skillCell)
-				.join('\n'),
-			inline: true
-		}
-	);
+	const embed = new EmbedBuilder()
+		.setTitle(fitBadgeLine(user.badgesString ?? '', user.minionName, DISCORD_EMBED_TITLE_MAX))
+		.addFields(
+			{
+				name: '\u200b',
+				value: [
+					'attack',
+					'strength',
+					'defence',
+					'ranged',
+					'prayer',
+					'magic',
+					'runecraft',
+					'construction',
+					'invention'
+				]
+					.map(skillCell)
+					.join('\n'),
+				inline: true
+			},
+			{
+				name: '\u200b',
+				value: ['hitpoints', 'agility', 'herblore', 'thieving', 'crafting', 'fletching', 'slayer', 'hunter']
+					.map(skillCell)
+					.join('\n'),
+				inline: true
+			},
+			{
+				name: '\u200b',
+				value: [
+					'mining',
+					'smithing',
+					'fishing',
+					'cooking',
+					'firemaking',
+					'woodcutting',
+					'farming',
+					'dungeoneering',
+					'divination',
+					'overall'
+				]
+					.map(skillCell)
+					.join('\n'),
+				inline: true
+			}
+		);
 
 	if (user.isIronman) {
 		embed.setColor([83, 83, 83]);

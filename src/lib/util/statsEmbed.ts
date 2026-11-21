@@ -2,7 +2,7 @@ import { EmbedBuilder } from '@oldschoolgg/discord';
 import { customEmoji, toTitleCase } from '@oldschoolgg/toolkit';
 import type { CluesScore, Player, SkillScore, SkillsScore } from 'oldschooljs/hiscores';
 
-import { badgeEmoji } from '@/lib/badges/badgeEmojis.js';
+import { badgeEmoji, DISCORD_EMBED_TITLE_MAX, fitBadgeLine } from '@/lib/badges/badgeEmojis.js';
 import { skillEmoji } from '@/lib/data/emojis.js';
 
 export async function statsEmbed({
@@ -30,18 +30,15 @@ AND CARDINALITY(badges) > 0;`;
 			skill as keyof SkillsScore
 		][key].toLocaleString()}`;
 
+	const badgeRow = userWithBadgeForRSN
+		? userWithBadgeForRSN.badges
+				.map(_b => badgeEmoji(_b))
+				.filter(Boolean)
+				.join(' ')
+		: '';
 	const embed = new EmbedBuilder()
 		.setColor(color)
-		.setTitle(
-			`${
-				userWithBadgeForRSN
-					? `${userWithBadgeForRSN.badges
-							.map(_b => badgeEmoji(_b))
-							.filter(Boolean)
-							.join(' ')} `
-					: ''
-			}${toTitleCase(username)}${postfix ?? ''}`
-		)
+		.setTitle(fitBadgeLine(badgeRow, `${toTitleCase(username)}${postfix ?? ''}`, DISCORD_EMBED_TITLE_MAX))
 		.addFields({
 			name: '\u200b',
 			value: ['attack', 'strength', 'defence', 'ranged', 'prayer', 'magic', 'runecraft', 'construction']

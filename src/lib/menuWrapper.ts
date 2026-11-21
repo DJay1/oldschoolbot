@@ -1,6 +1,8 @@
 import { EmbedBuilder, type PaginatedPages } from '@oldschoolgg/discord';
 import { chunk } from 'remeda';
 
+import { trimAtEmojiBoundary } from '@/lib/badges/badgeEmojis.js';
+
 const LB_PAGE_SIZE = 10;
 
 function getPos(page: number, record: number) {
@@ -23,7 +25,7 @@ export function fitLeaderboardPage(lines: string[]): string {
 		.map(line => line.replace(BADGE_RUN, run => `${(run.match(EMOJI_MARKUP) ?? []).slice(0, 3).join(' ')} `))
 		.join('\n');
 	if (trimmed.length <= LB_PAGE_MAX_CHARS) return trimmed;
-	return trimmed.slice(0, LB_PAGE_MAX_CHARS);
+	return trimAtEmojiBoundary(trimmed, LB_PAGE_MAX_CHARS);
 }
 
 export type LeaderboardUser<M extends object = {}> = { id: string; score: number; customName?: string } & M;

@@ -87,10 +87,81 @@ export function allBadgeEmojiNames(): string[] {
 	];
 }
 
+/** Discord embed title and author-name limit. */
+export const DISCORD_EMBED_TITLE_MAX = 256;
+
+const COMPLETE_CUSTOM_EMOJI = /^<a?:[A-Za-z0-9_]{2,32}:\d{17,20}>$/;
+
+/** True when this is a complete `<:name:id>` / `<a:name:id>` token. */
+export function isCompleteCustomEmoji(text: string): boolean {
+	return COMPLETE_CUSTOM_EMOJI.test(text);
+}
+
+/**
+ * True for a complete custom emoji, or a fallback that is not custom-emoji
+ * markup. Rejects raw or truncated `<:name` / `<:name:id` tokens.
+ */
+export function isSafeBadgeToken(text: string): boolean {
+	if (!text) return false;
+	if (isCompleteCustomEmoji(text)) return true;
+	return !text.includes('<') && !text.includes('>');
+}
+
+function resolvedBadgeMarkup(name: string): string {
+	const markup = customEmoji(name);
+	return isSafeBadgeToken(markup) ? markup : '';
+}
+
+/**
+ * Cut `text` to maxLen without splitting a custom emoji. If the cut lands
+ * inside `<:name:id>`, the incomplete token is dropped.
+ */
+export function trimAtEmojiBoundary(text: string, maxLen: number): string {
+	if (text.length <= maxLen) return text;
+	let cut = text.slice(0, maxLen);
+	const starts = [...cut.matchAll(/<a?:/g)].map(match => match.index ?? -1);
+	const lastStart = starts.length ? starts[starts.length - 1]! : -1;
+	if (lastStart >= 0) {
+		const tail = cut.slice(lastStart);
+		if (!isCompleteCustomEmoji(tail)) {
+			cut = cut.slice(0, lastStart).trimEnd();
+		}
+	}
+	return cut;
+}
+
+function joinBadgeLine(badges: string[], suffix: string): string {
+	if (badges.length === 0) return suffix;
+	if (!suffix) return badges.join(' ');
+	return `${badges.join(' ')} ${suffix}`;
+}
+
+/**
+ * Fit a badge row plus an optional suffix (minion name, RSN, etc.) into a
+ * Discord length cap. Whole badges are dropped from the end until it fits.
+ * Never splits a custom emoji, and never keeps a token with an unresolved id.
+ */
+export function fitBadgeLine(badgeString: string, suffix = '', maxLen = DISCORD_EMBED_TITLE_MAX): string {
+	const badges = (badgeString ?? '').split(/\s+/).filter(isSafeBadgeToken);
+	let suffixPart = suffix ?? '';
+	if (suffixPart.length > maxLen) {
+		suffixPart = trimAtEmojiBoundary(suffixPart, maxLen);
+	}
+	const kept: string[] = [];
+	for (const badge of badges) {
+		if (joinBadgeLine([...kept, badge], suffixPart).length <= maxLen) {
+			kept.push(badge);
+		} else {
+			break;
+		}
+	}
+	return joinBadgeLine(kept, suffixPart);
+}
+
 /** Emoji markup for a DB badge id, or '' for an unknown/retired id. */
 export function badgeEmoji(badgeId: number): string {
 	const name = BADGE_EMOJI_NAMES[badgeId];
-	return name ? customEmoji(name) : '';
+	return name ? resolvedBadgeMarkup(name) : '';
 }
 
 export function badgeEmojiName(badgeId: number): string | null {
@@ -98,7 +169,7 @@ export function badgeEmojiName(badgeId: number): string | null {
 }
 
 export function extraBadgeEmoji(key: keyof typeof EXTRA_BADGE_EMOJI_NAMES): string {
-	return customEmoji(EXTRA_BADGE_EMOJI_NAMES[key]);
+	return resolvedBadgeMarkup(EXTRA_BADGE_EMOJI_NAMES[key]);
 }
 
 export function patronBadgeEmojiName(tierKey: string): string | null {
@@ -107,7 +178,7 @@ export function patronBadgeEmojiName(tierKey: string): string | null {
 
 export function patronBadgeEmoji(tierKey: string): string {
 	const name = patronBadgeEmojiName(tierKey);
-	return name ? customEmoji(name) : '';
+	return name ? resolvedBadgeMarkup(name) : '';
 }
 
 export function launchFounderBadge(): string {
