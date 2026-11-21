@@ -1,7 +1,7 @@
 import '../../src/lib/util/clientSettings.js';
 
-import { EItem } from 'oldschooljs';
 import { SeedableRNG } from 'node-rng';
+import { EItem } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import {
@@ -22,7 +22,8 @@ function user(id: string, hasHorn: boolean) {
 		id,
 		gear: {
 			melee: {
-				hasEquipped: (item: string | number) => hasHorn && (item === SOULFLAME_HORN_ID || item === 'Soulflame horn')
+				hasEquipped: (item: string | number) =>
+					hasHorn && (item === SOULFLAME_HORN_ID || item === 'Soulflame horn')
 			}
 		}
 	};

@@ -2,11 +2,11 @@ import { calcWhatPercent, formatDuration, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, type RNGProvider } from 'node-rng';
 import { Bank, Items } from 'oldschooljs';
 
+import { SOULFLAME_HORN_BOOST_LINE, SOULFLAME_HORN_GROUP_SPEED_PERCENT } from '@/lib/bsc/soulflameHorn.js';
 import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
 import { TfaItem, tfaAscensionBoltIDs } from '@/lib/bsc/tfa/tfaItems.js';
 import { type TfaRoomBoosts, tfaRoomBoostsFor, tfaTeamRoomPercent } from '@/lib/bsc/tfa/tfaRooms.js';
 import { compactSkillRequirements } from '@/lib/bsc/tfa/tfaText.js';
-import { SOULFLAME_HORN_BOOST_LINE, SOULFLAME_HORN_GROUP_SPEED_PERCENT } from '@/lib/bsc/soulflameHorn.js';
 import { BitField } from '@/lib/constants.js';
 import { calcTOBRangePercent, calculateTOBUserGearPercents } from '@/lib/data/tob.js';
 import { QuestID } from '@/lib/minions/data/quests.js';

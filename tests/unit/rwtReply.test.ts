@@ -1,5 +1,4 @@
 import { readFileSync, statSync } from 'node:fs';
-
 import { describe, expect, test } from 'vitest';
 
 import { RWT_GIF_PATH, RWT_MAX_GIF_BYTES, RWT_PREFIX_RE, rwtReply } from '@/lib/bsc/rwtReply.js';

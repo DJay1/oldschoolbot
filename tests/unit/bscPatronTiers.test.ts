@@ -273,8 +273,12 @@ test('Patreon entitled tier ids map by env, and the patron page stays centralize
 	});
 	expect(members.get('42')).toBe(1);
 	expect(makeBadgeString([], false, false, false, [BitField.PatronTier1])).toBe(customEmoji('patron_pup'));
-	expect(makeBadgeString([], false, true, false, [BitField.PatronTier3, BitField.BSCPatronCosmetic])).toContain(customEmoji('patron_topdog'));
-	expect(makeBadgeString([], false, true, false, [BitField.PatronTier3, BitField.BSCPatronCosmetic])).toContain(customEmoji('patron_collar'));
+	expect(makeBadgeString([], false, true, false, [BitField.PatronTier3, BitField.BSCPatronCosmetic])).toContain(
+		customEmoji('patron_topdog')
+	);
+	expect(makeBadgeString([], false, true, false, [BitField.PatronTier3, BitField.BSCPatronCosmetic])).toContain(
+		customEmoji('patron_collar')
+	);
 	expect(makeBadgeString([], false, false, false, [BitField.PatronTier6])).toBe(customEmoji('patron_biggestofdogs'));
 	const overview = formatBscPatronOverview({
 		bits: [BitField.PatronTier4],

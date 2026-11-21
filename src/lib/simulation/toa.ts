@@ -19,7 +19,11 @@ import { Bank, Items, itemID, LootTable, resolveItems, SimpleTable } from 'oldsc
 import { clamp } from 'remeda';
 
 import { type Minigame, XpGainSource } from '@/prisma/main.js';
-import { SOULFLAME_HORN_BOOST_LINE, soulflameHornSpeedBoost, userHasSoulflameHornEquipped } from '@/lib/bsc/soulflameHorn.js';
+import {
+	SOULFLAME_HORN_BOOST_LINE,
+	soulflameHornSpeedBoost,
+	userHasSoulflameHornEquipped
+} from '@/lib/bsc/soulflameHorn.js';
 import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { degradeItem } from '@/lib/degradeableItems.js';
 import type { UserFullGearSetup } from '@/lib/gear/types.js';

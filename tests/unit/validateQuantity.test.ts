@@ -1,6 +1,7 @@
 import { Bank } from 'oldschooljs';
 import { describe, expect, test, vi } from 'vitest';
 
+import { tripBuyables } from '@/lib/data/buyables/tripBuyables.js';
 import { QuestID } from '@/lib/minions/data/quests.js';
 import {
 	MAX_INT32,
@@ -10,11 +11,10 @@ import {
 	safePositiveProduct,
 	validateQuantity
 } from '@/lib/util/validateQuantity.js';
+import { barbAssaultBuyCommand } from '@/mahoji/lib/abstracted_commands/barbAssault.js';
 import { buyFossilIslandNotes } from '@/mahoji/lib/abstracted_commands/buyFossilIslandNotes.js';
 import { buyingTripCommand } from '@/mahoji/lib/abstracted_commands/buyingTripCommand.js';
-import { barbAssaultBuyCommand } from '@/mahoji/lib/abstracted_commands/barbAssault.js';
 import { valeTotemsBuyCommand } from '@/mahoji/lib/abstracted_commands/valeTotemsCommand.js';
-import { tripBuyables } from '@/lib/data/buyables/tripBuyables.js';
 import { mahojiParseNumber } from '@/mahoji/mahojiSettings.js';
 
 const invalidNumbers = [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 0, -1, 1.5, 1.0000001];
@@ -135,10 +135,7 @@ describe('shop purchases reject invalid quantities before writing', () => {
 		const confirmation = vi.fn();
 		const user = { QP: 100, cl: new Bank(), transactItems, owns };
 		for (const quantity of [-50_000, 0, Number.NaN, Number.POSITIVE_INFINITY, 1.5]) {
-			const result = await buyFossilIslandNotes(
-				{ user, rng: {}, confirmation } as never,
-				quantity
-			);
+			const result = await buyFossilIslandNotes({ user, rng: {}, confirmation } as never, quantity);
 			expect(result).toEqual(expect.stringMatching(/whole number|at least|too large/i));
 		}
 		expect(owns).not.toHaveBeenCalled();

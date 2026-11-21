@@ -10,6 +10,11 @@ import { Bank, type ItemBank } from 'oldschooljs';
 import { clamp } from 'remeda';
 
 import {
+	applySoulflameHornToTfaTeam,
+	SOULFLAME_HORN_YOUR_BOOST,
+	userHasSoulflameHornEquipped
+} from '@/lib/bsc/soulflameHorn.js';
+import {
 	calculateTfaGearPercents,
 	checkTfaUser,
 	createTfaRaids,
@@ -31,11 +36,6 @@ import {
 	tfaTeamMemberFromUser,
 	tfaUserSpeedReduction
 } from '@/lib/bsc/tfa/tfa.js';
-import {
-	applySoulflameHornToTfaTeam,
-	SOULFLAME_HORN_YOUR_BOOST,
-	userHasSoulflameHornEquipped
-} from '@/lib/bsc/soulflameHorn.js';
 import { tfaFragmentsUsed } from '@/lib/bsc/tfa/tfaFragments.js';
 import { tfaUniqueItems } from '@/lib/bsc/tfa/tfaItems.js';
 import { tfaTeamUniqueOdds } from '@/lib/bsc/tfa/tfaLoot.js';

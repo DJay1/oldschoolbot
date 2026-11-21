@@ -5,10 +5,10 @@ import {
 	inventionItemBoost
 } from '@/lib/bso/skills/invention/inventions.js';
 
-import { SOULFLAME_HORN_BOOST_LINE } from '@/lib/bsc/soulflameHorn.js';
 import { calcWhatPercent, customEmoji, Emoji, sumArr } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
+import { SOULFLAME_HORN_BOOST_LINE } from '@/lib/bsc/soulflameHorn.js';
 import {
 	bareMinStats,
 	calcCoxDuration,

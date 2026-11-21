@@ -6,10 +6,10 @@ import {
 	inventionItemBoost
 } from '@/lib/bso/skills/invention/inventions.js';
 
-import { SOULFLAME_HORN_BOOST_LINE } from '@/lib/bsc/soulflameHorn.js';
 import { calcWhatPercent, customEmoji, Emoji, formatDuration } from '@oldschoolgg/toolkit';
 import { Bank, Items, itemID, TOBRooms } from 'oldschooljs';
 
+import { SOULFLAME_HORN_BOOST_LINE } from '@/lib/bsc/soulflameHorn.js';
 import { getSimilarItems } from '@/lib/data/similarItems.js';
 import {
 	baseTOBUniques,
