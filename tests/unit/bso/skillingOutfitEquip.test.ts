@@ -373,7 +373,7 @@ describe('Skilling outfit auto-equip picker', () => {
 	});
 });
 
-describe('First Age sacrifice list coverage'), () => {
+describe('First Age sacrifice list coverage', () => {
 	test('every sacrifice outfit is a selectable auto-equip option', () => {
 		const names = new Set(getSkillingOutfitOptions().map(option => option.outfitName));
 		for (const group of FIRST_AGE_REQUIRED_SACRIFICES) {
