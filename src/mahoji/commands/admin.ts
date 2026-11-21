@@ -41,6 +41,7 @@ import { Bank, type ItemBank, Items, toKMB } from 'oldschooljs';
 import { economy_transaction_type } from '@/prisma/main/enums.js';
 import type { ClientStorage } from '@/prisma/main.js';
 import { bulkUpdateCommands, choicesOf, itemOption } from '@/discord/index.js';
+import { badgeEmoji as renderBadgeEmoji } from '@/lib/badges/badgeEmojis.js';
 import {
 	bitfieldCanUserManipulate,
 	changeBitFieldForUser,
@@ -56,7 +57,7 @@ import { logStaffAction, staffGuildAllowed, staffTierOf } from '@/lib/bsc/staffA
 import { adminActionTier, tierAtLeast } from '@/lib/bsc/staffTiers.js';
 import { getTesterPoints, giveTesterPoints, removeTesterPoints } from '@/lib/bsc/testerPoints.js';
 import { giveawayCache } from '@/lib/cache.js';
-import { BadgesEnum, BitField, BitFieldData, badges, Channel, globalConfig, META_CONSTANTS } from '@/lib/constants.js';
+import { BadgesEnum, BitField, BitFieldData, Channel, globalConfig, META_CONSTANTS } from '@/lib/constants.js';
 import { handleSeasonalEventAdmin } from '@/lib/events/admin.js';
 import { getLydiaQuote } from '@/lib/events/summer/summerDays.js';
 import { seasonalEventIds } from '@/lib/events/types.js';
@@ -1418,9 +1419,8 @@ export const adminCommand = defineCommand({
 
 		if (options.badges) {
 			if ((!options.badges.remove && !options.badges.add) || (options.badges.add && options.badges.remove)) {
-				return Object.entries(badges)
-					.filter((entry): entry is [string, string] => Boolean(entry[1]))
-					.map(entry => `**${entry[1]}:** ${entry[0]}`)
+				return Object.entries(BadgesEnum)
+					.map(([name, id]) => `**${renderBadgeEmoji(id)}:** ${id} (${name})`)
 					.join('\n');
 			}
 			const badgeInput = options.badges.remove ?? options.badges.add;
@@ -1444,7 +1444,7 @@ export const adminCommand = defineCommand({
 				badges: uniqueArr(newBadges)
 			});
 
-			const badgeEmoji = badges[badgeID];
+			const badgeEmoji = renderBadgeEmoji(badgeID);
 			return `${action === 'add' ? 'Added' : 'Removed'} ${badgeName}${badgeEmoji ? ` ${badgeEmoji}` : ''} badge to ${
 				options.badges.user.user.username
 			}.`;

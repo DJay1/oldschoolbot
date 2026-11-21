@@ -19,6 +19,7 @@ import { isValidDiscordSnowflake, MockedRedis, RedisKeys } from '@oldschoolgg/ut
 import { Redis } from 'ioredis';
 
 import type { Guild, Prisma } from '@/prisma/main.js';
+import { badgeRenderVersion } from '@/lib/badges/badgeEmojis.js';
 import type { PollRecord } from '@/lib/bsc/polls.js';
 import { BitField, BOT_TYPE, globalConfig } from '@/lib/constants.js';
 import { type BuyDailyReserveResult, buyDailyLimitKeyType } from '@/lib/data/buyables/skillingSupplyLimits.js';
@@ -71,6 +72,14 @@ function redisOptions() {
 		db: Number.isFinite(db) ? db : 0,
 		keyPrefix: process.env.REDIS_KEY_PREFIX ?? ''
 	};
+}
+
+/**
+ * Badged-username cache key. Includes badgeRenderVersion() so a badge map change or a new
+ * `pnpm emojis:sync` makes old cached names unreachable (they just expire). No manual deletes.
+ */
+export function badgedUsernameCacheKey(userId: string): string {
+	return `${BotKeys.User.BadgedUsername(userId)}:${badgeRenderVersion()}`;
 }
 
 class CacheManager {
@@ -417,22 +426,22 @@ class CacheManager {
 
 	async resetUsername(userId: string) {
 		await this.client.del(RedisKeys.Discord.Username(userId));
-		await this.client.del(BotKeys.User.BadgedUsername(userId));
+		await this.client.del(badgedUsernameCacheKey(userId));
 	}
 
 	async _getBadgedUsernameRaw(userId: string): Promise<string | null> {
-		return this.getExpiringString(BotKeys.User.BadgedUsername(userId));
+		return this.getExpiringString(badgedUsernameCacheKey(userId));
 	}
 
 	async setBadgedUsername(userId: string, username: string): Promise<void> {
-		await this.setExpiringString(BotKeys.User.BadgedUsername(userId), username);
+		await this.setExpiringString(badgedUsernameCacheKey(userId), username);
 	}
 
 	async getBadgedUsername(userId: string): Promise<string> {
 		if (!isValidDiscordSnowflake(userId)) {
 			throw new Error(`Invalid userID: ${userId}`);
 		}
-		const key = BotKeys.User.BadgedUsername(userId);
+		const key = badgedUsernameCacheKey(userId);
 		const cached = await this.getExpiringString(key);
 		if (cached) return resolveEmojiText(cached);
 
@@ -642,7 +651,7 @@ class CacheManager {
 	}
 
 	private pendingTripNoticeKey(userId: string) {
-		return BOT_TYPE + ':pendingTripNotice:' + userId;
+		return `${BOT_TYPE}:pendingTripNotice:${userId}`;
 	}
 
 	async addPendingTripNotice(userId: string, content: string): Promise<void> {

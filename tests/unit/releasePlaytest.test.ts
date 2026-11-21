@@ -1,12 +1,12 @@
-import { afterEach, expect, test } from 'vitest';
+import { consolidateSkillXpBonusLines } from '@/lib/bso/firstAge/skillOutfits.js';
 
 import { Emoji } from '@oldschoolgg/toolkit';
+import { afterEach, expect, test } from 'vitest';
 
 import { parseAdminUserIds, testingShortcutsEnabled } from '@/lib/constants.js';
-import { isProductionMode } from '@/lib/hosting/productionMode.js';
-import { LAUNCH_FOUNDER_BADGE, LAUNCH_XP_BONUS_SENTENCE } from '@/lib/events/launch/constants.js';
+import { LAUNCH_XP_BONUS_SENTENCE, launchFounderBadge } from '@/lib/events/launch/constants.js';
 import { isEventActive } from '@/lib/events/registry.js';
-import { consolidateSkillXpBonusLines } from '@/lib/bso/firstAge/skillOutfits.js';
+import { isProductionMode } from '@/lib/hosting/productionMode.js';
 import { DEFAULT_PATREON_URL, patreonUrl, withPatreonLink } from '@/lib/patreonLink.js';
 import { makeBadgeString } from '@/lib/util/makeBadgeString.js';
 import {
@@ -93,8 +93,8 @@ test('admin ids come from ADMIN_USER_IDS', () => {
 
 test('the launch event is off until an admin enables it, and the founder mark still renders', () => {
 	expect(isEventActive('launch')).toBe(false);
-	expect(makeBadgeString([], false, false, true)).toBe(LAUNCH_FOUNDER_BADGE);
-	expect(makeBadgeString([], true, true, true)).toBe(`${Emoji.EsbCorgi} ${LAUNCH_FOUNDER_BADGE} ${Emoji.Ironman}`);
+	expect(makeBadgeString([], false, false, true)).toBe(launchFounderBadge());
+	expect(makeBadgeString([], true, true, true)).toBe(`${Emoji.EsbCorgi} ${launchFounderBadge()} ${Emoji.Ironman}`);
 });
 
 test('a trip keeps one launch XP sentence', () => {

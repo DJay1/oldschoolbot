@@ -1,6 +1,6 @@
 import { Routes } from '@oldschoolgg/discord';
-import { customEmoji } from '@oldschoolgg/toolkit';
 
+import { extraBadgeEmoji } from '@/lib/badges/badgeEmojis.js';
 import { resetLinkedPerkCaches } from '@/lib/bsc/accountLink.js';
 import { getEffectivePaidPatronLevel, getGroupCosmeticClaimedAt } from '@/lib/bsc/groupPatronPerks.js';
 import { creditMonthlyPatronRewards } from '@/lib/bsc/patronPoints.js';
@@ -328,5 +328,5 @@ export async function claimBscSupporterCosmetic(user: MUser): Promise<string> {
 	if (!user.bitfield.includes(BitField.BSCPatronCosmetic)) {
 		await user.update({ bitfield: [...user.bitfield, BitField.BSCPatronCosmetic] });
 	}
-	return `You opened a cosmetic-only supporter box ${customEmoji('patron_collar')}. It has no coins, items, or lamps. The mark stays on your name.`;
+	return `You opened a cosmetic-only supporter box ${extraBadgeEmoji('patronCollar')}. It has no coins, items, or lamps. The mark stays on your name.`;
 }

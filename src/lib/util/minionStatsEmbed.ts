@@ -8,7 +8,7 @@ import type { SkillsScore } from 'oldschooljs/hiscores';
 
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { getClueScoresFromOpenables } from '@/lib/clues/clueUtils.js';
-import { badges, MAX_LEVEL } from '@/lib/constants.js';
+import { MAX_LEVEL } from '@/lib/constants.js';
 import { calcCLDetails } from '@/lib/data/Collections.js';
 import { skillEmoji } from '@/lib/data/emojis.js';
 import { effectiveMonsters } from '@/lib/minions/data/killableMonsters/index.js';
@@ -47,8 +47,7 @@ export async function minionStatsEmbed({
 		.filter(i => i.score > 0)
 		.sort((a, b) => b.score - a.score);
 
-	const rawBadges = user.user.badges;
-	const badgesStr = rawBadges.map(num => badges[num]).join(' ');
+	const badgesStr = user.badgesString ? `${user.badgesString} ` : '';
 
 	const embed = new EmbedBuilder().setTitle(`${badgesStr}${user.minionName}`.slice(0, 255)).addFields(
 		{
@@ -113,7 +112,7 @@ ${customEmoji('questIcon')} **QP** ${QP}
 	const clueEntries = openableScores.items();
 	if (clueEntries.length > 0) {
 		embed.addFields({
-			name: customEmoji('Clue_scroll') + ' Clue Scores',
+			name: `${customEmoji('Clue_scroll')} Clue Scores`,
 			value: clueEntries
 				.map(([item, qty]) => {
 					const clueTier = ClueTiers.find(t => t.id === item.id)!;
@@ -126,7 +125,7 @@ ${customEmoji('questIcon')} **QP** ${QP}
 
 	if (minigameScores.length > 0) {
 		embed.addFields({
-			name: customEmoji('minigameIcon') + ' Minigames',
+			name: `${customEmoji('minigameIcon')} Minigames`,
 			value: minigameScores
 				.slice(0, 4)
 				.map(minigame => {

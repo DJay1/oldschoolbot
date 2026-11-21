@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { isMainThread } from 'node:worker_threads';
 import { dateFm } from '@oldschoolgg/discord';
-import { customEmoji, Emoji, PerkTier, Time } from '@oldschoolgg/toolkit';
+import { PerkTier, Time } from '@oldschoolgg/toolkit';
 import * as dotenv from 'dotenv';
 import { convertLVLtoXP } from 'oldschooljs';
 import * as z from 'zod';
@@ -616,48 +616,8 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 	}
 } as const;
 
-export const BadgesEnum = {
-	Developer: 0,
-	Booster: 1,
-	LimitedPatron: 2,
-	Patron: 3,
-	Moderator: 4,
-	GreenGem: 5,
-	Bug: 6,
-	GoldenTrophy: 7,
-	TopSacrifice: 8,
-	TopSkiller: 9,
-	TopCollector: 10,
-	TopMinigame: 11,
-	SotWTrophy: 12,
-	Slayer: 13,
-	TopGiveawayer: 14,
-	Farmer: 15,
-	Hacktoberfest: 16,
-	// Badge id 17 is reserved and retired.
-	TopClueHunter: 18
-} as const;
-
-export const badges: { [key: number]: string } = {
-	[BadgesEnum.Developer]: Emoji.Spanner,
-	[BadgesEnum.Booster]: Emoji.PinkGem,
-	[BadgesEnum.LimitedPatron]: Emoji.Crab,
-	[BadgesEnum.Patron]: Emoji.BigOrangeGem,
-	[BadgesEnum.Moderator]: Emoji.Hammer,
-	[BadgesEnum.GreenGem]: Emoji.GreenGem,
-	[BadgesEnum.Bug]: Emoji.Bug,
-	[BadgesEnum.GoldenTrophy]: Emoji.Trophy,
-	[BadgesEnum.TopSacrifice]: customEmoji('top_sacrificer'),
-	[BadgesEnum.TopSkiller]: customEmoji('top_skiller'),
-	[BadgesEnum.TopCollector]: customEmoji('top_collector'),
-	[BadgesEnum.TopMinigame]: customEmoji('top_minigamer'),
-	[BadgesEnum.SotWTrophy]: customEmoji('sotw_champ'),
-	[BadgesEnum.Slayer]: customEmoji('top_slayer'),
-	[BadgesEnum.TopGiveawayer]: customEmoji('top_giveawayer'),
-	[BadgesEnum.Farmer]: customEmoji('top_farmer'),
-	[BadgesEnum.Hacktoberfest]: customEmoji('hacktoberfest'),
-	[BadgesEnum.TopClueHunter]: customEmoji('top_clue_hunter')
-};
+// Badge ids and icons live in ONE file: src/lib/badges/badgeEmojis.ts
+export { BadgesEnum, badges } from '@/lib/badges/badgeEmojis.js';
 
 export const MAX_XP = BOT_TYPE === 'OSB' ? 200_000_000 : 5_000_000_000;
 export const MAX_LEVEL = BOT_TYPE === 'OSB' ? 99 : 120;
