@@ -3,6 +3,7 @@ import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 import { buttonUserPicker, SPAWNER_HEAD_START_MS } from '@/lib/bso/buttonUserPicker.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
+import { getGroupLastGivenBoxx, stampGroupLastGivenBoxx } from '@/lib/bsc/groupPatronPerks.js';
 import { LampTable } from '@/lib/bso/xpLamps.js';
 
 import { time, userMention } from '@oldschoolgg/discord';
@@ -143,7 +144,7 @@ export async function giveBox(user: MUser, _recipient: MahojiUserOption) {
 	const recipient = await mUserFetch(_recipient.user.id);
 
 	const currentDate = Date.now();
-	const lastDate = Number(user.user.lastGivenBoxx);
+	const lastDate = await getGroupLastGivenBoxx(user.id);
 	const difference = currentDate - lastDate;
 
 	// If no user or not an owner and can not send one yet, show time till next box.
@@ -153,9 +154,7 @@ export async function giveBox(user: MUser, _recipient: MahojiUserOption) {
 
 	if (recipient.id === user.id) return "You can't give boxes to yourself!";
 	if (recipient.isIronman) return "You can't give boxes to ironmen!";
-	await user.update({
-		lastGivenBoxx: currentDate
-	});
+	await stampGroupLastGivenBoxx(user.id, currentDate);
 
 	const boxToReceive = new Bank().add(roll(10) ? MysteryBoxes.roll() : itemID('Mystery box'));
 

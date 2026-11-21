@@ -11,12 +11,13 @@ import {
 import { PATRON_DYE_ITEM_IDS, PATRON_DYES, patronDyeById, resolveItemFromInput } from '@/lib/bsc/patronDyes.js';
 import { sanitizePatronFlair } from '@/lib/bsc/patronFlair.js';
 import { loyaltyBadgeLabel } from '@/lib/bsc/patronLoyalty.js';
+import { runPatronLink, runPatronUnlink } from '@/lib/bsc/accountLinkCommand.js';
+import { getEffectivePaidPatronLevel, getGroupLastGiftAt } from '@/lib/bsc/groupPatronPerks.js';
 import { performBscPatronGift, triggerBscDoubleLoot } from '@/lib/bsc/patronPerks.js';
 import { generatePatronProfileCard, setFavoritePatronPet } from '@/lib/bsc/patronProfile.js';
 import { renderPatronDyeGrid } from '@/lib/bsc/renderPatronDyeGrid.js';
 import { getBscPatronOverride } from '@/lib/bsc/patronStore.js';
 import {
-	bscPatronLevelFromBits,
 	bscPatronTierByLevel,
 	formatBscPatronOverview,
 	planBscPatronGift
@@ -120,6 +121,8 @@ export const patronCommand = defineCommand({
 			'/patron dyeclaim item:Bandos chestplate',
 			'/patron dye_preview item:Bandos chestplate',
 			'/patron gift user:@Friend',
+			'/patron link user:@iron',
+			'/patron unlink',
 			'/patron double_loot'
 		]
 	},
@@ -308,10 +311,30 @@ export const patronCommand = defineCommand({
 					required: true
 				}
 			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'link',
+			description: 'Link your regular account to one ironman, or show your link status.',
+			options: [
+				{
+					type: 'User',
+					name: 'user',
+					description: 'Your ironman account. Leave empty to see your current link.',
+					required: false
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'unlink',
+			description: 'Remove the link between your regular account and your ironman.'
 		}
 	],
 	run: async ({ options, user, interaction }) => {
 		await interaction.defer();
+		if (options.link) return runPatronLink(user, interaction, options.link.user);
+		if (options.unlink) return runPatronUnlink(user, interaction);
 		if (options.double_loot) return triggerBscDoubleLoot(user);
 		if (options.gift) {
 			const recipientId = options.gift.user.user.id;
@@ -320,10 +343,15 @@ export const patronCommand = defineCommand({
 				getBscPatronOverride(user.id),
 				getBscPatronOverride(recipient.id)
 			]);
+			const [donorLevel, recipientLevel, donorLastGiftAt] = await Promise.all([
+				getEffectivePaidPatronLevel(user.id, user.bitfield),
+				getEffectivePaidPatronLevel(recipient.id, recipient.bitfield),
+				getGroupLastGiftAt(user.id)
+			]);
 			const plan = planBscPatronGift({
-				donorLevel: bscPatronLevelFromBits(user.bitfield),
-				donorLastGiftAt: donorState?.lastGiftAt ?? null,
-				recipientLevel: bscPatronLevelFromBits(recipient.bitfield),
+				donorLevel,
+				donorLastGiftAt,
+				recipientLevel,
 				recipientGiftTier: recipientState?.giftTier ?? null,
 				recipientGiftUntil: recipientState?.giftUntil ?? null,
 				sameUser: user.id === recipient.id,

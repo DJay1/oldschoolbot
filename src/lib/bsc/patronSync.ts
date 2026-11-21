@@ -5,6 +5,11 @@ import { creditMonthlyPatronRewards } from '@/lib/bsc/patronPoints.js';
 import { GE_SLOTS_CACHE } from '@/lib/cache.js';
 import { BitField } from '@/lib/constants.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
+import { resetLinkedPerkCaches } from '@/lib/bsc/accountLink.js';
+import {
+	getEffectivePaidPatronLevel,
+	getGroupCosmeticClaimedAt
+} from '@/lib/bsc/groupPatronPerks.js';
 import { type BscPatronOverride, getBscPatronOverride, updateBscPatronOverride } from './patronStore.js';
 import {
 	BSC_COSMETIC_COOLDOWN,
@@ -33,11 +38,13 @@ export async function applyBscPatronTier(user: MUser, level: number): Promise<vo
 	const unchanged =
 		next.length === user.bitfield.length && next.every(bit => user.bitfield.includes(bit as BitField));
 	if (unchanged) {
+		await resetLinkedPerkCaches(user.id);
 		await user.fetchPerkTier({ forceNoCache: true });
 		return;
 	}
 	await user.update({ bitfield: next });
 	GE_SLOTS_CACHE.delete(user.id);
+	await resetLinkedPerkCaches(user.id);
 	await user.fetchPerkTier({ forceNoCache: true });
 }
 
@@ -305,14 +312,15 @@ export async function setBscPatronOverride(user: MUser, level: number, manual: b
 }
 
 export async function claimBscSupporterCosmetic(user: MUser): Promise<string> {
-	const level = bscPatronLevelFromBits(user.bitfield);
+	const level = await getEffectivePaidPatronLevel(user.id, user.bitfield);
 	if (level < 2) {
 		return withPatreonLink('The monthly cosmetic is for Good Boy and above.');
 	}
 	const override = await getBscPatronOverride(user.id);
 	const now = Date.now();
-	if (override?.cosmeticClaimedAt && now - override.cosmeticClaimedAt < BSC_COSMETIC_COOLDOWN) {
-		const wait = BSC_COSMETIC_COOLDOWN - (now - override.cosmeticClaimedAt);
+	const groupClaimedAt = await getGroupCosmeticClaimedAt(user.id);
+	if (groupClaimedAt && now - groupClaimedAt < BSC_COSMETIC_COOLDOWN) {
+		const wait = BSC_COSMETIC_COOLDOWN - (now - groupClaimedAt);
 		return `You already opened this month's cosmetic box. You can open another in ${Math.ceil(wait / (1000 * 60 * 60 * 24))} days.`;
 	}
 	await updateBscPatronOverride(user.id, {
