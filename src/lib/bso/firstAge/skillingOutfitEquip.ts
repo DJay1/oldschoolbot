@@ -417,6 +417,35 @@ export function ownsAllSkillingOutfitPieces(
 	return option.slots.every(slot => slot.ids.some(id => ownsPiece(bank, equippedIds, id)));
 }
 
+export type SkillingOutfitListStatus = 'available' | 'equipped' | 'missing';
+
+/**
+ * Shared list status for every skilling outfit in /gear equip preset autocomplete.
+ * Green only if the set can be assembled and is not already fully worn.
+ * Equipped pieces count toward assembling leftover slots, but a complete worn set is 'equipped'.
+ */
+export function skillingOutfitListStatus(
+	option: SkillingOutfitOption,
+	bank: { amount(id: number): number },
+	equippedIds: Set<number>
+): SkillingOutfitListStatus {
+	const fullyEquipped = option.slots.every(slot => slot.ids.some(id => equippedIds.has(id)));
+	if (fullyEquipped) return 'equipped';
+	if (ownsAllSkillingOutfitPieces(option, bank, equippedIds)) return 'available';
+	return 'missing';
+}
+
+export function skillingOutfitListDot(status: SkillingOutfitListStatus): string {
+	switch (status) {
+		case 'available':
+			return '🟢';
+		case 'equipped':
+			return '✅';
+		case 'missing':
+			return '🔴';
+	}
+}
+
 export function skillingOutfitMatchesQuery(option: SkillingOutfitOption, value: string): boolean {
 	const query = value.trim().toLowerCase();
 	if (!query) return true;
@@ -438,7 +467,7 @@ export function skillingOutfitPresetAutocompleteChoices(input: {
 	for (const option of getSkillingOutfitOptions()) {
 		if (!skillingOutfitMatchesQuery(option, input.value)) continue;
 		if (reserved.has(option.name.toLowerCase())) continue;
-		const dot = ownsAllSkillingOutfitPieces(option, input.bank, input.equippedIds) ? '🟢' : '🔴';
+		const dot = skillingOutfitListDot(skillingOutfitListStatus(option, input.bank, input.equippedIds));
 		choices.push({ name: `${dot} ${option.name}`, value: option.name });
 	}
 	return choices;
