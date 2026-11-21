@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { LeapingFish } from '../../src/lib/skilling/skills/cooking/leapingFish.js';
 import { Farming } from '../../src/lib/skilling/skills/farming/index.js';
 import type { IPatchData } from '../../src/lib/skilling/skills/farming/utils/types.js';
-import type { FarmingActivityTaskOptions } from '../../src/lib/types/minions.js';
+import type { CutLeapingFishActivityTaskOptions, FarmingActivityTaskOptions } from '../../src/lib/types/minions.js';
 import { minionStatus } from '../../src/lib/util/minionStatus.js';
 import { formatTripDuration } from '../../src/lib/util/minionUtils.js';
 import { mockMUser } from './userutil.js';
@@ -94,6 +95,62 @@ describe('minionStatus - Farming', () => {
 		expect(result).toContain(`currently farming ${task.quantity}x ${plantsName}`);
 		expect(result).toContain(`${formatTripDuration(user, currentDuration)} remaining.`);
 		expect(result).not.toContain('auto-farming multiple patches');
+
+		vi.useRealTimers();
+	});
+});
+
+describe('minionStatus - CutLeapingFish', () => {
+	it('renders a real fish name for every cuttable leaping fish, including Leechfin', () => {
+		const now = new Date('2024-01-01T00:00:00.000Z');
+		vi.useFakeTimers();
+		vi.setSystemTime(now);
+
+		const user = mockMUser({ id: '555' });
+		const duration = 10 * 60 * 1000;
+		const names: string[] = [];
+
+		expect(LeapingFish.some(fish => fish.item.name === 'Leechfin')).toBe(true);
+
+		for (const fish of LeapingFish) {
+			const task: CutLeapingFishActivityTaskOptions = {
+				type: 'CutLeapingFish',
+				userID: user.id,
+				channelId: '456',
+				id: 1,
+				fishID: fish.item.id,
+				quantity: 2404,
+				duration,
+				finishDate: now.getTime() + duration
+			};
+
+			const result = minionStatus(user, task);
+			names.push(fish.item.name);
+
+			expect(fish.item.name.length).toBeGreaterThan(0);
+			expect(result).toContain(`currently cutting ${task.quantity}x ${fish.item.name}`);
+			expect(result).not.toContain('undefined');
+			expect(result).not.toContain('null');
+			expect(result.length).toBeLessThanOrEqual(2000 - 150);
+		}
+
+		expect(names).toContain('Leechfin');
+
+		const longestName = [...LeapingFish].sort((a, b) => b.item.name.length - a.item.name.length)[0].item.name;
+		const worst: CutLeapingFishActivityTaskOptions = {
+			type: 'CutLeapingFish',
+			userID: user.id,
+			channelId: '456',
+			id: 1,
+			fishID: LeapingFish.find(fish => fish.item.name === longestName)!.item.id,
+			quantity: 100_000,
+			duration: 100 * 60 * 60 * 1000,
+			finishDate: now.getTime() + 100 * 60 * 60 * 1000
+		};
+		const worstResult = minionStatus(user, worst);
+		expect(worstResult).toContain(`currently cutting 100000x ${longestName}`);
+		expect(worstResult).not.toContain('undefined');
+		expect(worstResult.length).toBeLessThanOrEqual(2000 - 150);
 
 		vi.useRealTimers();
 	});

@@ -349,7 +349,7 @@ export function minionStatus(user: MUser, currentTask: ActivityTaskData | null, 
 		}
 		case 'CutLeapingFish': {
 			const data = currentTask as CutLeapingFishActivityTaskOptions;
-			const barbarianFish = LeapingFish.find(item => item.item.id === data.id);
+			const barbarianFish = LeapingFish.find(item => item.item.id === data.fishID);
 
 			return `${name} is currently cutting ${data.quantity}x ${
 				barbarianFish?.item.name
