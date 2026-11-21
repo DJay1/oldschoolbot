@@ -3,11 +3,11 @@
 Edit this file when shipping a batch you want listed as individual bullets on restart.
 Only used when this file changes between startups.
 
-- Ironman Black axe shop price is now 1,000 gp
-- Slayer Sweep-Up: metal dragons are now one task, each master has its own block list, Ring Bling and Bigger and Badder cost less, and Mazchna and Vannaka give more points
-- Existing slayer blocks and some unlocks have been refunded so the point changes don't leave anyone short
-- New slayer master Mortimer, who offers a choice of tasks with modifiers
-- New slayer monsters: Gryphon, Aquanite, Venator, and the Shellbane Gryphon boss
-- The Blood Moon Rises quest, the Maggot King, and new rewards including seeking arrows
-- Charge a Horn of plenty with Gryphon feathers using `/minion charge` to boost Hunter
-- Coral can be farmed in seaweed patches, and new coral potions are in Herblore
+- Equip a full skilling outfit with `/gear equip gear_setup:skilling preset:Graceful` (or any outfit name), or view them with `/bank filter:Skilling outfit`
+- Sets you already have equipped now show a check instead of green
+- Soulflame horn in your melee setup makes TFA, ToB, CoX and ToA 5% faster in groups of 2 or more
+- Leaderboards and names now use the new badge emojis
+- Lizardman Shaman and Blood Reaver now use Ranged when you are set to Magic
+- `/patron link` lets a main link one Ironman so sub perks show on both
+- Auto Farm no longer starts your last trip when nothing is ready
+- `.rwt` and `!rwt` now post a Corgo stealing coins GIF

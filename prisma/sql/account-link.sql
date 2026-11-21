@@ -1,5 +1,5 @@
--- Test-database migration for /patron link.
--- Apply only to the TEST database. Do not run prisma db push. Do not apply to prod until DJ ships this.
+-- /patron link tables for prod and test.
+-- Apply with prisma db execute. Do not run prisma db push.
 CREATE TABLE IF NOT EXISTS bsc_account_link (
 	main_id text PRIMARY KEY,
 	iron_id text NOT NULL UNIQUE,
