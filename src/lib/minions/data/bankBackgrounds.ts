@@ -761,6 +761,15 @@ const backgroundImages: BankBackground[] = [
 		perkTierNeeded: PerkTier.Two,
 		hasPurple: true,
 		purpleImage: null
+	},
+	{
+		id: 1031,
+		name: 'Xavier CustomBG',
+		image: null,
+		available: false,
+		owners: ['304309559068196867'],
+		purpleImage: null,
+		hasPurple: true
 	}
 ];
 
