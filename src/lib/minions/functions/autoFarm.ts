@@ -13,8 +13,7 @@ import {
 	buildPlanRequests,
 	buildSummaryForStep,
 	type PlannedAutoFarmStep,
-	selectCandidateForPatch,
-	tryRepeatPreviousTrip
+	selectCandidateForPatch
 } from '@/lib/minions/functions/autoFarmHelpers.js';
 import { getPlantsForPatch, parsePreferredSeeds } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
 import { plants } from '@/lib/skilling/skills/farming/index.js';
@@ -193,14 +192,7 @@ export async function autoFarm(
 
 		const components: ButtonBuilder[] = [checkPatchesButton];
 
-		const noCropsResponse = new MessageBuilderClass().setContent(errorString).addComponents(components);
-
-		const repeated = await tryRepeatPreviousTrip({ user, interaction, errorString });
-		if (repeated !== null) {
-			return repeated;
-		}
-
-		return noCropsResponse;
+		return new MessageBuilderClass().setContent(errorString).addComponents(components);
 	}
 
 	const firstStep = autoFarmPlan[0];

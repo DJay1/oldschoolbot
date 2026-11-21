@@ -28,19 +28,12 @@ import * as calcMaxTripLengthModule from '../../src/lib/util/calcMaxTripLength.j
 import { mockMUser } from './userutil.js';
 import '../../src/lib/util/clientSettings.js';
 
-import { fetchRepeatTrips, repeatTrip } from '@/lib/util/repeatStoredTrip.js';
-import { AutoFarmFilterEnum, activity_type_enum, CropUpgradeType } from '../../src/prisma/main/enums.js';
+import { AutoFarmFilterEnum, CropUpgradeType } from '../../src/prisma/main/enums.js';
 import type { User } from '../../src/prisma/main.js';
 
 // Mock addSubTaskToActivityTask so we can inspect calls
 vi.mock('../../src/lib/util/addSubTaskToActivityTask.js', () => ({
 	default: vi.fn()
-}));
-
-// Make sure the path matches the alias import so the mock is used
-vi.mock('@/lib/util/repeatStoredTrip.js', () => ({
-	fetchRepeatTrips: vi.fn().mockResolvedValue([]),
-	repeatTrip: vi.fn()
 }));
 
 // Mock the discord ButtonBuilder to avoid shapeshift emoji validation
@@ -223,26 +216,19 @@ describe('auto farm helpers', () => {
 			baseInteraction as MInteraction
 		);
 
-		// Response should be something sendable (string or message-like)
-		expect(typeof response === 'string' || isBaseMessage(response)).toBe(true);
-
-		// We still enforce the behaviour around repeat trips:
-		expect(fetchRepeatTrips).toHaveBeenCalledTimes(1);
-		expect(repeatTrip).not.toHaveBeenCalled();
+		expect((response as { message?: { content?: string } }).message?.content).toBe(
+			"There's no Farming crops that you have the requirements to plant, and nothing to harvest."
+		);
+		expect(addSubTaskToActivityTask).not.toHaveBeenCalled();
 	});
 
-	it('autoFarm attempts to repeat previous trip when available', async () => {
+	it('autoFarm does not start a previous trip when no crops are ready', async () => {
 		const user = mockMUser({
 			bank: new Bank(),
 			skills_farming: convertLVLtoXP(1)
 		});
 		const mutableUser = user.user as MutableUser;
 		mutableUser.auto_farm_filter = AutoFarmFilterEnum.Replant;
-
-		const repeatTripsMock = fetchRepeatTrips as unknown as MockInstance;
-		const repeatTripMock = repeatTrip as unknown as MockInstance;
-		repeatTripsMock.mockResolvedValueOnce([{ type: activity_type_enum.ClueCompletion, data: {} }]);
-		repeatTripMock.mockResolvedValueOnce('Resuming previous trip');
 
 		calcMaxTripLengthSpy.mockReturnValue(5 * 60 * 1000);
 
@@ -253,16 +239,10 @@ describe('auto farm helpers', () => {
 			baseInteraction as MInteraction
 		);
 
-		expect(fetchRepeatTrips).toHaveBeenCalledTimes(1);
-		expect(repeatTrip).toHaveBeenCalledTimes(1);
-		expect(repeatTrip).toHaveBeenCalledWith(
-			user,
-			baseInteraction,
-			expect.objectContaining({ type: activity_type_enum.ClueCompletion })
+		expect((response as { message?: { content?: string } }).message?.content).toBe(
+			"There's no Farming crops that you have planted that are ready to be replanted or no seeds remaining."
 		);
-		expect(response).toBe(
-			"There's no Farming crops that you have planted that are ready to be replanted or no seeds remaining.\n\nResuming previous trip"
-		);
+		expect(addSubTaskToActivityTask).not.toHaveBeenCalled();
 	});
 
 	it('prepareFarmingStep replant respects last quantity and costs', async () => {

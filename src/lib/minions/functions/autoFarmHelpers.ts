@@ -1,9 +1,7 @@
-import { SpecialResponse } from '@oldschoolgg/discord';
 import { formatDuration } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import type { CropUpgradeType } from '@/prisma/main/enums.js';
-import { activity_type_enum } from '@/prisma/main/enums.js';
 import { resolveSeedForPatch } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
 import type { FarmingPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import type {
@@ -13,7 +11,6 @@ import type {
 } from '@/lib/skilling/skills/farming/utils/types.js';
 import type { Plant } from '@/lib/skilling/types.js';
 import type { AutoFarmStepData } from '@/lib/types/minions.js';
-import { fetchRepeatTrips, repeatTrip } from '@/lib/util/repeatStoredTrip.js';
 import { prepareFarmingStep } from './farmingTripHelpers.js';
 
 export interface PlannedAutoFarmStep {
@@ -161,38 +158,6 @@ export function buildFallbackPlantsByPatch(
 		fallbackPlantsByPatch.set(patchName, plant);
 	}
 	return fallbackPlantsByPatch;
-}
-
-export async function tryRepeatPreviousTrip({
-	user,
-	interaction,
-	errorString
-}: {
-	user: MUser;
-	interaction: MInteraction;
-	errorString: string;
-}): Promise<CommandResponse | null> {
-	try {
-		const repeatableTrips = await fetchRepeatTrips(user);
-		const fallbackTrip = repeatableTrips.find(trip => trip.type !== activity_type_enum.Farming);
-		if (!fallbackTrip) {
-			return null;
-		}
-		const response = await repeatTrip(user, interaction as OSInteraction, fallbackTrip);
-		if (response === SpecialResponse.SilentErrorResponse || response === SpecialResponse.PaginatedMessageResponse) {
-			return response;
-		}
-		if (typeof response === 'string') {
-			return `${errorString}\n\n${response}`;
-		}
-		if (response && typeof response === 'object' && 'content' in response && typeof response.content === 'string') {
-			return { ...response, content: `${errorString}\n\n${response.content}` };
-		}
-		return response;
-	} catch (err) {
-		Logging.logError(err as Error);
-		return null;
-	}
 }
 
 export async function evaluateCandidateForPatch({
