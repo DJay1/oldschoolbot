@@ -1419,9 +1419,8 @@ export const adminCommand = defineCommand({
 
 		if (options.badges) {
 			if ((!options.badges.remove && !options.badges.add) || (options.badges.add && options.badges.remove)) {
-				return Object.entries(badges)
-					.filter((entry): entry is [string, string] => Boolean(entry[1]))
-					.map(entry => `**${entry[1]}:** ${entry[0]}`)
+				return Object.entries(BadgesEnum)
+					.map(([name, id]) => `**${renderBadgeEmoji(id)}:** ${id} (${name})`)
 					.join('\n');
 			}
 			const badgeInput = options.badges.remove ?? options.badges.add;
