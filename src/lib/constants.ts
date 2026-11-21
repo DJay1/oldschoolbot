@@ -647,16 +647,16 @@ export const badges: { [key: number]: string } = {
 	[BadgesEnum.GreenGem]: Emoji.GreenGem,
 	[BadgesEnum.Bug]: Emoji.Bug,
 	[BadgesEnum.GoldenTrophy]: Emoji.Trophy,
-	[BadgesEnum.TopSacrifice]: Emoji.Incinerator,
-	[BadgesEnum.TopSkiller]: Emoji.Skiller,
-	[BadgesEnum.TopCollector]: Emoji.CollectionLog,
-	[BadgesEnum.TopMinigame]: Emoji.MinigameIcon,
-	[BadgesEnum.SotWTrophy]: Emoji.SOTWTrophy,
-	[BadgesEnum.Slayer]: Emoji.Slayer,
-	[BadgesEnum.TopGiveawayer]: Emoji.SantaHat,
-	[BadgesEnum.Farmer]: Emoji.Farming,
+	[BadgesEnum.TopSacrifice]: customEmoji('top_sacrificer'),
+	[BadgesEnum.TopSkiller]: customEmoji('top_skiller'),
+	[BadgesEnum.TopCollector]: customEmoji('top_collector'),
+	[BadgesEnum.TopMinigame]: customEmoji('top_minigamer'),
+	[BadgesEnum.SotWTrophy]: customEmoji('sotw_champ'),
+	[BadgesEnum.Slayer]: customEmoji('top_slayer'),
+	[BadgesEnum.TopGiveawayer]: customEmoji('top_giveawayer'),
+	[BadgesEnum.Farmer]: customEmoji('top_farmer'),
 	[BadgesEnum.Hacktoberfest]: customEmoji('hacktoberfest'),
-	[BadgesEnum.TopClueHunter]: Emoji.ClueScroll
+	[BadgesEnum.TopClueHunter]: customEmoji('top_clue_hunter')
 };
 
 export const MAX_XP = BOT_TYPE === 'OSB' ? 200_000_000 : 5_000_000_000;

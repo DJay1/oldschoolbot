@@ -3489,6 +3489,141 @@
 			"usedIn": [
 				"src/lib/bsc/patronLoyalty.ts"
 			]
+		},
+		{
+			"name": "top_sacrificer",
+			"uploadName": "top_sacrificer",
+			"aliases": [],
+			"fallback": "🔥",
+			"animated": false,
+			"source": null,
+			"image": "top_sacrificer.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Top Sacrificer badge. Matches the Los Perros role icon.",
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
+		},
+		{
+			"name": "top_skiller",
+			"uploadName": "top_skiller",
+			"aliases": [],
+			"fallback": "⭐",
+			"animated": false,
+			"source": null,
+			"image": "top_skiller.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Top Skiller badge. Matches the Los Perros role icon.",
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
+		},
+		{
+			"name": "top_collector",
+			"uploadName": "top_collector",
+			"aliases": [],
+			"fallback": "📋",
+			"animated": false,
+			"source": null,
+			"image": "top_collector.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Top Collector badge. Matches the Los Perros role icon.",
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
+		},
+		{
+			"name": "top_minigamer",
+			"uploadName": "top_minigamer",
+			"aliases": [],
+			"fallback": "🎮",
+			"animated": false,
+			"source": null,
+			"image": "top_minigamer.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Top Minigamer / Minigame Champ badge. Matches the Los Perros role icon (v2c paw).",
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
+		},
+		{
+			"name": "top_clue_hunter",
+			"uploadName": "top_clue_hunter",
+			"aliases": [],
+			"fallback": "🗺️",
+			"animated": false,
+			"source": null,
+			"image": "top_clue_hunter.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Top Clue Hunter badge. Matches the Los Perros role icon.",
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
+		},
+		{
+			"name": "top_slayer",
+			"uploadName": "top_slayer",
+			"aliases": [],
+			"fallback": "⚔️",
+			"animated": false,
+			"source": null,
+			"image": "top_slayer.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Top Slayer badge. Matches the Los Perros role icon.",
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
+		},
+		{
+			"name": "top_farmer",
+			"uploadName": "top_farmer",
+			"aliases": [],
+			"fallback": "🌾",
+			"animated": false,
+			"source": null,
+			"image": "top_farmer.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Top Farmer badge. Matches the Los Perros role icon.",
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
+		},
+		{
+			"name": "top_giveawayer",
+			"uploadName": "top_giveawayer",
+			"aliases": [],
+			"fallback": "🪙",
+			"animated": false,
+			"source": null,
+			"image": "top_giveawayer.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Top Giveawayer badge. Matches the Los Perros role icon (celebrating Corgo with coins).",
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
+		},
+		{
+			"name": "sotw_champ",
+			"uploadName": "sotw_champ",
+			"aliases": [],
+			"fallback": "🏆",
+			"animated": false,
+			"source": null,
+			"image": "sotw_champ.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Skiller of the Week / SOTW Champ badge. Matches the Los Perros role icon.",
+			"usedIn": [
+				"src/lib/constants.ts"
+			]
 		}
 	]
 }
