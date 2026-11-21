@@ -19,6 +19,7 @@ import { Bank, type ItemBank, Items, toKMB } from 'oldschooljs';
 import type { command_name_enum } from '@/prisma/main.js';
 import { mentionCommand } from '@/discord/utils.js';
 import { PATRON_DOUBLE_LOOT_COOLDOWN } from '@/lib/bsc/patronTiers.js';
+import { RWT_PREFIX_RE, rwtReply } from '@/lib/bsc/rwtReply.js';
 import { describeQueuedTripsForCooldown } from '@/lib/bsc/tripQueue.js';
 import { lastRoboChimpSyncCache } from '@/lib/cache.js';
 import { CONSTANTS, globalConfig } from '@/lib/constants.js';
@@ -334,6 +335,13 @@ export async function onMessage(msg: IMessage) {
 	if (/^[.!]patreon$/i.test(content)) {
 		if (await globalClient.channelIsSendable(msg.channel_id)) {
 			await globalClient.replyToMessage(msg, { content: patreonMessage() });
+		}
+		return;
+	}
+
+	if (RWT_PREFIX_RE.test(content)) {
+		if (await globalClient.channelIsSendable(msg.channel_id)) {
+			await globalClient.replyToMessage(msg, await rwtReply());
 		}
 		return;
 	}
