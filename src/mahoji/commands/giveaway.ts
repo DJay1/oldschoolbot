@@ -7,6 +7,7 @@ import { Bank, type ItemBank, toKMB } from 'oldschooljs';
 import { chunk } from 'remeda';
 
 import type { Giveaway } from '@/prisma/main.js';
+import { extraBadgeEmoji } from '@/lib/badges/badgeEmojis.js';
 import { giveawayCache } from '@/lib/cache.js';
 import { BitField, patronFeatures } from '@/lib/constants.js';
 import { baseFilters, filterableTypes } from '@/lib/data/filterables.js';
@@ -125,7 +126,7 @@ export const giveawayCommand = defineCommand({
 			});
 			if (existingGiveaways.length >= maxGiveaways && !(await userHasUnlimitedGiveaways(user))) {
 				return `You cannot have more than ${
-					isBSCEarlySupporter ? Emoji.EsbCorgi : ''
+					isBSCEarlySupporter ? extraBadgeEmoji('earlySupporter') : ''
 				} ${maxGiveaways} giveaways active at a time.`;
 			}
 

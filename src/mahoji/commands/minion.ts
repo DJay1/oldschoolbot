@@ -2,10 +2,11 @@ import { feedHammyCommand } from '@/lib/bso/commands/hammyCommand.js';
 import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
 
 import { bold } from '@oldschoolgg/discord';
-import { customEmoji, FormattedCustomEmoji, formatOrdinal, notEmpty, roboChimpCLRankQuery } from '@oldschoolgg/toolkit';
+import { FormattedCustomEmoji, formatOrdinal, notEmpty, roboChimpCLRankQuery } from '@oldschoolgg/toolkit';
 import { convertLVLtoXP, Items } from 'oldschooljs';
 
 import { ownedItemOption, skillOption } from '@/discord/index.js';
+import { extraBadgeEmoji } from '@/lib/badges/badgeEmojis.js';
 import { sortBankBgsForAutocomplete } from '@/lib/bsc/bankBgAutocomplete.js';
 import { BSC_PATRON_TIERS, bscPatronNameForPerkTier } from '@/lib/bsc/patronTiers.js';
 import { tfaUnchargeCommand } from '@/lib/bsc/tfa/tfaCharges.js';
@@ -77,7 +78,7 @@ export async function getUserInfo(user: MUser) {
 
 	const launchBoxOpens = await launchBoxOpenCount(user);
 	const minionBadges = hasLaunchBoxOpenBadge(launchBoxOpens)
-		? [user.badgesString, customEmoji('launchbox')].filter(part => part.length > 0).join(' ')
+		? [user.badgesString, extraBadgeEmoji('launchBoxOpener')].filter(part => part.length > 0).join(' ')
 		: user.badgesString;
 	const result = {
 		perkTier: user.perkTier,

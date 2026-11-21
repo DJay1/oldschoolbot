@@ -7,6 +7,25 @@ function getPos(page: number, record: number) {
 	return `${page * LB_PAGE_SIZE + 1 + record}. `;
 }
 
+/** Embed description limit is 4096; keep 150+ headroom. */
+export const LB_PAGE_MAX_CHARS = 3900;
+const EMOJI_MARKUP = /<a?:\w+:\d+>/g;
+const BADGE_RUN = /(?:<a?:\w+:\d+>\s*){4,}/g;
+
+/**
+ * Join leaderboard lines. If a page is too long (players with many badges), trim each
+ * name's badge row to its first 3 icons, then hard-cap the text so Discord never rejects it.
+ */
+export function fitLeaderboardPage(lines: string[]): string {
+	const full = lines.join('\n');
+	if (full.length <= LB_PAGE_MAX_CHARS) return full;
+	const trimmed = lines
+		.map(line => line.replace(BADGE_RUN, run => `${(run.match(EMOJI_MARKUP) ?? []).slice(0, 3).join(' ')} `))
+		.join('\n');
+	if (trimmed.length <= LB_PAGE_MAX_CHARS) return trimmed;
+	return trimmed.slice(0, LB_PAGE_MAX_CHARS);
+}
+
 export type LeaderboardUser<M extends object = {}> = { id: string; score: number; customName?: string } & M;
 
 export async function doMenuWrapper<M extends object = {}>({
@@ -36,7 +55,7 @@ export async function doMenuWrapper<M extends object = {}>({
 					: `**${username}:** ${formatter ? formatter(user.score) : user.score.toLocaleString()}`;
 				return `${getPos(c, i)}${body}`;
 			});
-			const pageText = (await Promise.all(linesPromises)).join('\n');
+			const pageText = fitLeaderboardPage(await Promise.all(linesPromises));
 			return {
 				embeds: [
 					new EmbedBuilder()

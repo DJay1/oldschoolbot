@@ -1,6 +1,7 @@
 import { PerkTier } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
 
+import { EXTRA_BADGE_EMOJI_NAMES } from '@/lib/badges/badgeEmojis.js';
 import { getBscPatronAccount, updateBscPatronAccount } from '@/lib/bsc/patronAccount.js';
 import { earnedLoyaltyBadges, patronLoyaltySource } from '@/lib/bsc/patronLoyalty.js';
 import { renderPatronProfileCard } from '@/lib/bsc/patronProfileCard.js';
@@ -107,7 +108,7 @@ export async function generatePatronProfileCard(user: MUser): Promise<{ image: B
 				user.bitfield.includes(BitField.LaunchFounder),
 				user.bitfield
 			),
-			...(hasLaunchBoxOpenBadge(await launchBoxOpenCount(user)) ? ['launchbox'] : [])
+			...(hasLaunchBoxOpenBadge(await launchBoxOpenCount(user)) ? [EXTRA_BADGE_EMOJI_NAMES.launchBoxOpener] : [])
 		],
 		loyaltyBadgeFiles: loyaltyBadges.map(badge => badge.key),
 		totalLevel: user.totalLevel,

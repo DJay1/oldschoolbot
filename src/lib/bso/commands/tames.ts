@@ -49,18 +49,18 @@ import {
 } from '@/lib/canvas/canvasUtil.js';
 import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
 import { type ClueTier, ClueTiers } from '@/lib/clues/clueTiers.js';
-import { badges, PerkTier } from '@/lib/constants.js';
+import { PerkTier } from '@/lib/constants.js';
 import { Eatables } from '@/lib/data/eatables.js';
 import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 import { Planks } from '@/lib/minions/data/planks.js';
 import getUserFoodFromBank from '@/lib/minions/functions/getUserFoodFromBank.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import Tanning from '@/lib/skilling/skills/crafting/craftables/tanning.js';
 import Bars from '@/lib/skilling/skills/smithing/smeltables.js';
 import { assert } from '@/lib/util/logError.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { parseStringBank } from '@/lib/util/parseStringBank.js';
-import { withPatreonLink } from '@/lib/patreonLink.js';
 import { formatSkillRequirements } from '@/lib/util/smallUtils.js';
 import { getItemCostFromConsumables } from '@/mahoji/lib/abstracted_commands/minionKill/handleConsumables.js';
 import { collectables } from '@/mahoji/lib/collectables.js';
@@ -527,8 +527,7 @@ export async function tameImage(user: MUser): CommandResponse {
 		i++;
 	}
 
-	const rawBadges = user.user.badges;
-	const badgesStr = rawBadges.map(num => badges[num]).join(' ');
+	const badgesStr = user.badgesString ? `${user.badgesString} ` : '';
 	const buffer = await canvasToBuffer(canvas);
 
 	return {

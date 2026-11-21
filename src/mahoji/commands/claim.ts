@@ -4,11 +4,11 @@ import { stringMatches } from '@oldschoolgg/toolkit';
 import { randInt } from 'node-rng';
 import { Bank, Items } from 'oldschooljs';
 
+import { launchFounderBadge } from '@/lib/badges/badgeEmojis.js';
 import { claimBscSupporterCosmetic } from '@/lib/bsc/patronSync.js';
 import { BitField, Channel } from '@/lib/constants.js';
 import { BloodMoonItem } from '@/lib/customItems/bloodMoon.js';
 import { calcCLDetails } from '@/lib/data/Collections.js';
-import { LAUNCH_FOUNDER_BADGE } from '@/lib/events/launch/constants.js';
 import { buildFounderLaunchExtras } from '@/lib/events/launch/launchBox.js';
 import { isEventActive } from '@/lib/events/registry.js';
 import { getReclaimableItemsOfUser } from '@/lib/reclaimableItems.js';
@@ -52,7 +52,7 @@ const claimables = [
 		},
 		action: async (user: MUser) => {
 			if (user.bitfield.includes(BitField.LaunchFounder)) {
-				return `You already have the Founder title ${LAUNCH_FOUNDER_BADGE}.`;
+				return `You already have the Founder title ${launchFounderBadge()}.`;
 			}
 			await user.update({
 				bitfield: {
@@ -61,7 +61,7 @@ const claimables = [
 			});
 			const kit = new Bank().add(LAUNCH_STARTER_KIT).add(buildFounderLaunchExtras({ randInt }));
 			await user.transactItems({ itemsToAdd: kit });
-			return `You claimed the Founder title ${LAUNCH_FOUNDER_BADGE}. It stays on your name after the Launch event ends.\nYour launch starter kit is in your bank: ${kit}`;
+			return `You claimed the Founder title ${launchFounderBadge()}. It stays on your name after the Launch event ends.\nYour launch starter kit is in your bank: ${kit}`;
 		}
 	},
 	{

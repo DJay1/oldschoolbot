@@ -1,15 +1,18 @@
 import type { ItemBank } from 'oldschooljs';
 
+import { BADGE_EMOJI_NAMES, badgeEmoji } from '@/lib/badges/badgeEmojis.js';
 import { CUSTOM_PRICE_CACHE } from '@/lib/cache.js';
 import { syncCollectionLogSlotTable } from '@/lib/collection-log/databaseCl.js';
-import { badges, globalConfig } from '@/lib/constants.js';
+import { globalConfig } from '@/lib/constants.js';
 import { GrandExchange } from '@/lib/grandExchange.js';
 import { cacheGEPrices } from '@/lib/marketPrices.js';
 
 async function updateBadgeTable() {
 	const badgesInDb = await prisma.badges.findMany();
-	for (const [_id, emojiString] of Object.entries(badges)) {
+	// Legacy catalog only; nothing renders from badges.text. Icons come from badgeEmojis.ts.
+	for (const _id of Object.keys(BADGE_EMOJI_NAMES)) {
 		const id = Number(_id);
+		const emojiString = badgeEmoji(id);
 		if (!badgesInDb.find(b => b.id === id)) {
 			await prisma.badges.create({
 				data: {
