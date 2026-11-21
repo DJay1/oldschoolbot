@@ -8,6 +8,7 @@ import { calcWhatPercent, formatDuration, stringMatches, toTitleCase } from '@ol
 import { convertXPtoLVL } from 'oldschooljs';
 
 import { choicesOf, defineOption } from '@/discord/index.js';
+import { topRolesCooldownLeft } from '@/lib/bsc/topRolesCooldown.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { MAX_LEVEL, masteryKey } from '@/lib/constants.js';
 import { allClNames, getCollectionItems } from '@/lib/data/Collections.js';
@@ -19,6 +20,7 @@ import Agility from '@/lib/skilling/skills/agility.js';
 import Hunter from '@/lib/skilling/skills/hunter/hunter.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
 import { type SkillNameType, SkillsArray } from '@/lib/skilling/types.js';
+import { fetchTopRoleStandings, formatTopRoleStandings } from '@/lib/topRoleLeaders.js';
 import { fetchCLLeaderboard, fetchTameCLLeaderboard } from '@/lib/util/clLeaderboard.js';
 import { userEventsToMap } from '@/lib/util/userEvents.js';
 
@@ -910,9 +912,14 @@ export const leaderboardCommand = defineCommand({
 			name: 'mastery',
 			description: 'Check the mastery leaderboard.',
 			options: []
+		},
+		{
+			type: 'Subcommand',
+			name: 'top_roles',
+			description: 'See who is currently leading each Top role.'
 		}
 	],
-	run: async ({ options, interaction }) => {
+	run: async ({ options, interaction, user }) => {
 		await interaction.defer();
 
 		if (options.kc) {
@@ -1014,6 +1021,32 @@ export const leaderboardCommand = defineCommand({
 				Boolean(options.completion.untrimmed),
 				Boolean(options.completion.ironmen_only)
 			);
+		}
+
+		if (options.top_roles) {
+			const wait = topRolesCooldownLeft(user.id, Date.now());
+			if (wait > 0) {
+				return `Please wait ${Math.ceil(wait / 1000)}s before checking Top roles again.`;
+			}
+			const standings = await fetchTopRoleStandings();
+			const ids = [
+				...new Set(
+					standings.flatMap(row =>
+						[row.leader?.userID, row.runnerUp?.userID].filter((id): id is string => Boolean(id))
+					)
+				)
+			];
+			const names: Record<string, string> = {};
+			await Promise.all(
+				ids.map(async id => {
+					try {
+						names[id] = await Cache.getUsername(id);
+					} catch {
+						names[id] = 'Unknown';
+					}
+				})
+			);
+			return formatTopRoleStandings(standings, names);
 		}
 
 		return 'Invalid input.';

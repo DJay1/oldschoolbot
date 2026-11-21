@@ -15,7 +15,13 @@ import {
 	type PlannedAutoFarmStep,
 	selectCandidateForPatch
 } from '@/lib/minions/functions/autoFarmHelpers.js';
-import { getPlantsForPatch, parsePreferredSeeds } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
+import {
+	getPlantsForPatch,
+	parsePreferredSeeds,
+	preferencesEqual,
+	rememberCropsInPreferences,
+	serializePreferredSeeds
+} from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
 import { plants } from '@/lib/skilling/skills/farming/index.js';
 import { formatFarmingBoosts, formatItemsUsed } from '@/lib/skilling/skills/farming/utils/farmingFormatters.js';
 import type { FarmingPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
@@ -250,6 +256,25 @@ export async function autoFarm(
 		}
 		return 'There was an error starting your activity.';
 	}
+	const currentPreferences = parsePreferredSeeds(user.user.minion_farmingPreferredSeeds);
+	const nextPreferences = rememberCropsInPreferences(
+		currentPreferences,
+		plannedSteps.map(step => ({ patchName: step.patchName, plant: step.plant }))
+	);
+	if (!preferencesEqual(currentPreferences, nextPreferences)) {
+		try {
+			await user.update({
+				minion_farmingPreferredSeeds: serializePreferredSeeds(nextPreferences)
+			});
+		} catch (err) {
+			if ((globalThis as { prisma?: unknown }).prisma) {
+				Logging.logError(err as Error);
+			} else {
+				Logging.logDebug(`Failed to save Auto Farm crop preference: ${(err as Error).message}`);
+			}
+		}
+	}
+
 	await ClientSettings.updateBankSetting('farming_cost_bank', totalCost);
 	await user.statsBankUpdate('farming_plant_cost_bank', totalCost);
 
