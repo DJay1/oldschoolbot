@@ -7,6 +7,7 @@ import { ownedItemOption } from '@/discord/presetCommandOptions.js';
 import { itemEffectImageCache } from '@/lib/cache.js';
 import { canvasToBuffer } from '@/lib/canvas/canvasUtil.js';
 import { paintColors } from '@/lib/customItems/paintCans.js';
+import { busyBlocksPaintEquippedPet } from '@/lib/minions/functions/petActivityGuards.js';
 
 export const paintCommand = defineCommand({
 	name: 'paint',
@@ -63,6 +64,13 @@ export const paintCommand = defineCommand({
 				files: [{ buffer: imageBuffer, name: 'paint-preview.png' }]
 			};
 		}
+
+		const paintBlocked = busyBlocksPaintEquippedPet(
+			await user.minionIsBusy(),
+			user.user.minion_equippedPet,
+			item.id
+		);
+		if (paintBlocked) return paintBlocked;
 
 		await interaction.confirmation({
 			// TODO

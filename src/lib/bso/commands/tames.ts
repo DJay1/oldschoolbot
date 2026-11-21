@@ -639,9 +639,12 @@ async function setNameCommand(user: MUser, name: string) {
 	if (!name || name.length < 2 || name.length > 30 || ['\n', '`', '@', '<', ':'].some(char => name.includes(char))) {
 		return "That's not a valid name for your tame.";
 	}
-	const { tame } = await user.getTame();
+	const { tame, activity } = await user.getTame();
 	if (!tame) {
 		return 'You have no selected tame to set a nickname for, select one first.';
+	}
+	if (activity) {
+		return "You can't rename your tame, because it is busy.";
 	}
 
 	await tame.update({
@@ -2012,9 +2015,12 @@ export const tamesCommand = defineCommand({
 
 			// Handle resetting the custom image:
 			if (options.set_custom_image?.image.toLowerCase() === 'none') {
-				const { tame } = await user.getTame();
+				const { tame, activity } = await user.getTame();
 				if (tame === null) {
 					return "You don't have a tame selected, select the tame who's icon should be reset.";
+				}
+				if (activity) {
+					return "You can't change your tame's image, because it is busy.";
 				}
 				await tame.update({
 					custom_icon_id: null
@@ -2027,9 +2033,12 @@ export const tamesCommand = defineCommand({
 			if (!replacement) {
 				return 'Invalid image.';
 			}
-			const { tame } = await user.getTame();
+			const { tame, activity } = await user.getTame();
 			if (tame === null) {
 				return "You don't have a tame selected, select the tame you want to give this icon.";
+			}
+			if (activity) {
+				return "You can't change your tame's image, because it is busy.";
 			}
 			if (tame.species.id !== replacement.species) {
 				return `This image is for the ${tameSpecies.find(s => s.id === replacement.species)!.name} species.`;
