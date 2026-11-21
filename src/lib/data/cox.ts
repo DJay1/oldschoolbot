@@ -11,6 +11,7 @@ import {
 import { MathRNG } from 'node-rng';
 import { Bank, type ChambersOfXericOptions, type Item, Items } from 'oldschooljs';
 
+import { soulflameHornSpeedBoost, uniqueRaidTeamSize } from '@/lib/bsc/soulflameHorn.js';
 import { checkUserCanUseDegradeableItem } from '@/lib/degradeableItems.js';
 import { constructGearSetup } from '@/lib/structures/Gear.js';
 import type { Skills } from '@/lib/types/index.js';
@@ -539,6 +540,8 @@ export async function calcCoxDuration(
 			}
 		});
 
+		userPercentChange += soulflameHornSpeedBoost(team, u);
+
 		const perc = Math.min(100, userPercentChange / size);
 
 		totalReduction += perc;
@@ -568,7 +571,7 @@ export async function calcCoxDuration(
 	return {
 		duration,
 		reductions,
-		maxUserReduction: maxSpeedReductionUser / size,
+		maxUserReduction: (maxSpeedReductionUser + (uniqueRaidTeamSize(team) >= 2 ? 5 : 0)) / size,
 		degradeables: degradeableItems,
 		chinCannonUser
 	};
