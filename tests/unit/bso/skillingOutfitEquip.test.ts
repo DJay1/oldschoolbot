@@ -10,6 +10,8 @@ import {
 	getSkillingOutfitOptions,
 	ownsAllSkillingOutfitPieces,
 	pickSkillingOutfitEquip,
+	skillingOutfitListDot,
+	skillingOutfitListStatus,
 	skillingOutfitPresetAutocompleteChoices
 } from '@/lib/bso/firstAge/skillingOutfitEquip.js';
 import { skillXpOutfits } from '@/lib/bso/firstAge/skillOutfits.js';
@@ -315,9 +317,63 @@ describe('Skilling outfit auto-equip picker', () => {
 		});
 		expect(reserved.some(choice => choice.value === 'Graceful')).toBe(false);
 	});
+
+	test('preset list uses one shared check: green if assemblable, check if already worn, red if missing', () => {
+		const options = getSkillingOutfitOptions();
+		expect(options.some(option => option.name === 'Master runecrafter')).toBe(true);
+		expect(options.length).toBeGreaterThan(10);
+
+		function idsFor(option: NonNullable<ReturnType<typeof findSkillingOutfitOption>>) {
+			return option.slots.map(slot => slot.ids[0]);
+		}
+
+		for (const option of options) {
+			const ids = idsFor(option);
+			const bankOnly = new Bank();
+			for (const id of ids) bankOnly.add(id);
+			expect(skillingOutfitListStatus(option, bankOnly, new Set()), option.name).toBe('available');
+			expect(
+				skillingOutfitPresetAutocompleteChoices({
+					value: option.name,
+					bank: bankOnly,
+					equippedIds: new Set()
+				}).some(choice => choice.value === option.name && choice.name === `🟢 ${option.name}`),
+				option.name
+			).toBe(true);
+
+			const worn = new Set(ids);
+			expect(skillingOutfitListStatus(option, new Bank(), worn), option.name).toBe('equipped');
+			expect(ownsAllSkillingOutfitPieces(option, new Bank(), worn), option.name).toBe(true);
+			expect(
+				skillingOutfitPresetAutocompleteChoices({
+					value: option.name,
+					bank: new Bank(),
+					equippedIds: worn
+				}).some(choice => choice.value === option.name && choice.name === `✅ ${option.name}`),
+				option.name
+			).toBe(true);
+
+			// Already wearing the set stays 'equipped' even with a spare set in the bank.
+			expect(skillingOutfitListStatus(option, bankOnly, worn), option.name).toBe('equipped');
+
+			// Some worn, the rest in the bank: still available to finish equipping.
+			if (ids.length >= 2) {
+				const partialWorn = new Set(ids.slice(0, 1));
+				const restBank = new Bank();
+				for (const id of ids.slice(1)) restBank.add(id);
+				expect(skillingOutfitListStatus(option, restBank, partialWorn), option.name).toBe('available');
+			}
+
+			expect(skillingOutfitListStatus(option, new Bank(), new Set()), option.name).toBe('missing');
+		}
+
+		expect(skillingOutfitListDot('available')).toBe('🟢');
+		expect(skillingOutfitListDot('equipped')).toBe('✅');
+		expect(skillingOutfitListDot('missing')).toBe('🔴');
+	});
 });
 
-describe('First Age sacrifice list coverage', () => {
+describe('First Age sacrifice list coverage'), () => {
 	test('every sacrifice outfit is a selectable auto-equip option', () => {
 		const names = new Set(getSkillingOutfitOptions().map(option => option.outfitName));
 		for (const group of FIRST_AGE_REQUIRED_SACRIFICES) {
