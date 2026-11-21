@@ -2,7 +2,13 @@ import { GearSetupTypes, GearStat } from '@oldschoolgg/gear';
 import { toTitleCase } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
 
-import { choicesOf, equippedItemOption, gearPresetOption, gearSetupOption, ownedItemOption } from '@/discord/index.js';
+import {
+	choicesOf,
+	equippedItemOption,
+	gearEquipPresetOption,
+	gearSetupOption,
+	ownedItemOption
+} from '@/discord/index.js';
 import { canvasToBuffer, createCanvas, loadImage } from '@/lib/canvas/canvasUtil.js';
 import { BOT_TYPE } from '@/lib/constants.js';
 import { allPetIDs } from '@/lib/data/CollectionsExport.js';
@@ -45,7 +51,7 @@ export const gearCommand = defineCommand({
 					description: 'The item you want to equip.'
 				},
 				{
-					...gearPresetOption,
+					...gearEquipPresetOption,
 					required: false,
 					name: 'preset'
 				},

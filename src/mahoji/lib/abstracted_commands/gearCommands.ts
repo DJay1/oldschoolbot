@@ -1,3 +1,10 @@
+import {
+	equippedItemIds,
+	findSkillingOutfitOption,
+	formatSkillingOutfitEquipMessage,
+	pickSkillingOutfitEquip
+} from '@/lib/bso/firstAge/skillingOutfitEquip.js';
+
 import type { GearSetupType } from '@oldschoolgg/gear';
 import { defaultGearSetup, type GearSetup, type GearStat, isValidGearSetup, isValidGearStat } from '@oldschoolgg/gear';
 import { PerkTier, stringMatches, toTitleCase } from '@oldschoolgg/toolkit';
@@ -5,11 +12,11 @@ import { Bank, Items } from 'oldschooljs';
 
 import type { GearPreset } from '@/prisma/main.js';
 import { PATRON_ONLY_GEAR_SETUP } from '@/lib/constants.js';
-import { withPatreonLink } from '@/lib/patreonLink.js';
 import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { globalPresets } from '@/lib/gear/gearPresets.js';
 import getUserBestGearFromBank from '@/lib/minions/functions/getUserBestGearFromBank.js';
 import { unEquipAllCommand } from '@/lib/minions/functions/unequipAllCommand.js';
+import { withPatreonLink } from '@/lib/patreonLink.js';
 import { Gear } from '@/lib/structures/Gear.js';
 import calculateGearLostOnDeathWilderness from '@/lib/util/calculateGearLostOnDeathWilderness.js';
 import { formatGearEquipFailures, gearEquipMultiImpl } from '@/lib/util/equipMulti.js';
@@ -187,6 +194,9 @@ export async function gearEquipCommand(args: {
 }): CommandResponse {
 	const { user, setup, item, items, preset, quantity, auto } = args;
 	if (!isValidGearSetup(setup)) return 'Invalid gear setup.';
+	if ([items, item, preset, auto].filter(Boolean).length > 1) {
+		return 'Pick just one of items, item, preset, or auto.';
+	}
 	if (await user.minionIsBusy()) {
 		return `${user.minionName} is currently out on a trip, so you can't change their gear!`;
 	}
@@ -198,7 +208,15 @@ export async function gearEquipCommand(args: {
 		return withPatreonLink(PATRON_ONLY_GEAR_SETUP);
 	}
 	if (preset) {
-		return gearPresetEquipCommand(user, setup, preset);
+		const userPreset = await prisma.gearPreset.findFirst({ where: { user_id: user.id, name: preset } });
+		const globalPreset = globalPresets.find(i => i.name === preset);
+		if (userPreset || globalPreset) {
+			return gearPresetEquipCommand(user, setup, preset);
+		}
+		if (findSkillingOutfitOption(preset)) {
+			return gearSkillingOutfitCommand(user, preset, setup);
+		}
+		return "You don't have a gear preset with that name.";
 	}
 	if (auto) {
 		return autoEquipCommand(user, setup, auto);
@@ -297,6 +315,86 @@ async function autoEquipCommand(user: MUser, gearSetup: GearSetupType, equipment
 	const image = await user.generateGearImage({ setupType: gearSetup });
 	return {
 		content: `You auto-equipped your best ${equipmentType} in your ${gearSetup} preset.`,
+		files: [{ name: 'gear.png', buffer: image }]
+	};
+}
+
+export async function gearSkillingOutfitCommand(user: MUser, outfitInput: string, setup = 'skilling'): CommandResponse {
+	if (await user.minionIsBusy()) {
+		return `${user.minionName} is currently out on a trip, so you can't change their gear!`;
+	}
+
+	if (!isValidGearSetup(setup)) return 'Invalid gear setup.';
+
+	const option = findSkillingOutfitOption(outfitInput);
+	if (!option) return "That's not a skilling outfit.";
+
+	const picked = pickSkillingOutfitEquip({
+		option,
+		bank: user.bank,
+		equippedIds: equippedItemIds(user.gear[setup]),
+		skills: user.skillsAsRequirements
+	});
+
+	if (picked.toEquipIds.length === 0) {
+		const reqFails = picked.skippedRequirements.map(item => {
+			const gearItem = Items.get(item.id);
+			const requirements = gearItem?.equipment?.requirements;
+			if (!requirements) return `You don't meet the requirements for ${item.name}.`;
+			return `${item.name} needs ${formatSkillRequirements(requirements, false)}.`;
+		});
+		return formatSkillingOutfitEquipMessage({
+			label: picked.label,
+			setup,
+			equippedNames: [],
+			alreadyNames: picked.alreadyEquippedIds.map(id => Items.itemNameFromId(id)!).filter(Boolean),
+			failReasons: reqFails
+		});
+	}
+
+	const items = picked.toEquipIds.map(id => Items.itemNameFromId(id)).filter((name): name is string => Boolean(name));
+	if (items.length === 0) {
+		return `You don't have any ${option.outfitName} pieces to equip.`;
+	}
+
+	const {
+		success: resultSuccess,
+		failMsg,
+		failReasons = [],
+		equippedGear,
+		equipBank,
+		unequipBank
+	} = gearEquipMultiImpl(user, setup, items.join(', '));
+	if (!resultSuccess) return failMsg!;
+	const failureText = formatGearEquipFailures(failReasons);
+	if ((!equipBank || equipBank.length === 0) && (!unequipBank || unequipBank.length === 0)) {
+		return failureText || `You don't have any ${option.outfitName} pieces to equip.`;
+	}
+
+	const dbKey = `gear_${setup}` as const;
+	await user.transactItems({
+		filterLoot: false,
+		itemsToRemove: equipBank,
+		itemsToAdd: unequipBank,
+		otherUpdates: {
+			[dbKey]: equippedGear
+		}
+	});
+
+	const image = await user.generateGearImage({ setupType: setup });
+	let content = formatSkillingOutfitEquipMessage({
+		label: picked.label,
+		setup,
+		equippedNames: equipBank ? equipBank.items().map(([item]) => item.name) : [],
+		alreadyNames: picked.alreadyEquippedIds.map(id => Items.itemNameFromId(id)!).filter(Boolean),
+		failReasons: failReasons
+	});
+	if (setup === 'wildy') {
+		content +=
+			"\n\nYou're trying to equip items into your *wildy* setup. ANY item in this setup can potentially be lost if doing Wilderness activities. Please confirm you understand this.";
+	}
+	return {
+		content,
 		files: [{ name: 'gear.png', buffer: image }]
 	};
 }

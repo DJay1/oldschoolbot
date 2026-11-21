@@ -1,4 +1,5 @@
 import { BSOItemGroups } from '@/lib/bso/bsoItemGroups.js';
+import { allSkillingOutfitItemIDs } from '@/lib/bso/firstAge/skillingOutfitEquip.js';
 import { GrandmasterClueTable } from '@/lib/bso/grandmasterClue.js';
 import { PartyhatTable } from '@/lib/bso/holidayItems.js';
 import { keyCrates } from '@/lib/bso/keyCrates.js';
@@ -777,6 +778,11 @@ export const baseFilters: Filterable[] = [
 		items: () => skilling
 	},
 	{
+		name: 'Skilling outfit',
+		aliases: ['skilling outfit', 'skilling outfits', 'outfits', 'skilling_outfit'],
+		items: () => allSkillingOutfitItemIDs()
+	},
+	{
 		name: 'Gear',
 		aliases: ['gear', 'gr'],
 		items: () => gear
@@ -1074,4 +1080,34 @@ for (const god of gods) {
 		aliases: [name.toLowerCase()],
 		items: () => god.godItems
 	});
+}
+
+export function getFilterAutocompleteChoices(value: string): { name: string; value: string }[] {
+	const query = value.trim().toLowerCase();
+	const matches = !query
+		? [...filterableTypes]
+		: filterableTypes.filter(filter => {
+				if (filter.name.toLowerCase().includes(query)) return true;
+				return filter.aliases.some(alias => alias.toLowerCase().includes(query));
+			});
+
+	const rank = (filter: Filterable) => {
+		if (!query) return 3;
+		const name = filter.name.toLowerCase();
+		if (name === query || filter.aliases.some(alias => alias.toLowerCase() === query)) return 0;
+		if (name.startsWith(query)) return 1;
+		if (filter.aliases.some(alias => alias.toLowerCase().startsWith(query))) return 2;
+		return 3;
+	};
+
+	return [...matches]
+		.sort((a, b) => {
+			const rankDiff = rank(a) - rank(b);
+			if (rankDiff !== 0) return rankDiff;
+			const ia = baseFilters.indexOf(a);
+			const ib = baseFilters.indexOf(b);
+			if (ia !== ib) return ib - ia;
+			return a.name.localeCompare(b.name);
+		})
+		.map(filter => ({ name: filter.name, value: filter.aliases[0] ?? filter.name }));
 }
