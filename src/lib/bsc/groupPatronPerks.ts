@@ -1,11 +1,12 @@
 import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
+
+import { getBscPatronOverride, updateBscPatronOverride } from '@/lib/bsc/patronStore.js';
 import {
 	type BscPatronLevel,
 	bscActiveGiftLevel,
 	bscPatronLevelFromBits,
 	bscPatronTierByLevel
 } from '@/lib/bsc/patronTiers.js';
-import { getBscPatronOverride, updateBscPatronOverride } from '@/lib/bsc/patronStore.js';
 
 export async function getEffectivePaidPatronLevel(
 	userId: string,

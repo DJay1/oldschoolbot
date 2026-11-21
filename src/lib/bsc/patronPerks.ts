@@ -4,15 +4,11 @@ import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
 import { userMention } from '@oldschoolgg/discord';
 import { formatDuration, stringMatches } from '@oldschoolgg/toolkit';
 
+import { resetLinkedPerkCaches } from '@/lib/bsc/accountLink.js';
+import { getEffectivePaidPatronLevel, getGroupLastGiftAt, stampGroupLastGiftAt } from '@/lib/bsc/groupPatronPerks.js';
 import { GE_SLOTS_CACHE } from '@/lib/cache.js';
 import backgroundImages from '@/lib/minions/data/bankBackgrounds.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
-import {
-	getEffectivePaidPatronLevel,
-	getGroupLastGiftAt,
-	stampGroupLastGiftAt
-} from '@/lib/bsc/groupPatronPerks.js';
-import { resetLinkedPerkCaches } from '@/lib/bsc/accountLink.js';
 import { getBscPatronOverride, updateBscPatronOverride } from './patronStore.js';
 import {
 	bscDoubleLootCooldownRemaining,
@@ -48,7 +44,6 @@ export async function triggerBscDoubleLoot(user: MUser): Promise<string> {
 
 export async function performBscPatronGift(donor: MUser, recipientId: string): Promise<string> {
 	const recipient = await mUserFetch(recipientId);
-	const donorState = await getBscPatronOverride(donor.id);
 	const recipientState = await getBscPatronOverride(recipient.id);
 	const now = Date.now();
 	const [donorLevel, recipientLevel, donorLastGiftAt] = await Promise.all([

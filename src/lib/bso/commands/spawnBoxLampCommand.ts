@@ -3,7 +3,6 @@ import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 import { buttonUserPicker, SPAWNER_HEAD_START_MS } from '@/lib/bso/buttonUserPicker.js';
 import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
-import { getGroupLastGivenBoxx, stampGroupLastGivenBoxx } from '@/lib/bsc/groupPatronPerks.js';
 import { LampTable } from '@/lib/bso/xpLamps.js';
 
 import { time, userMention } from '@oldschoolgg/discord';
@@ -11,6 +10,7 @@ import { Emoji, formatDuration, PerkTier, Time } from '@oldschoolgg/toolkit';
 import { MathRNG, randArrItem, randInt, roll } from 'node-rng';
 import { Bank, convertLVLtoXP, itemID } from 'oldschooljs';
 
+import { getGroupLastGivenBoxx, stampGroupLastGivenBoxx } from '@/lib/bsc/groupPatronPerks.js';
 import { BitField, globalConfig, SPAWN_CHANNEL_ID, spawnChannelMessage } from '@/lib/constants.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
 

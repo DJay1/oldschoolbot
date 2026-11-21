@@ -19,9 +19,9 @@ import { Bank, EItem, itemID, toKMB } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main.js';
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import { getEffectivePaidPatronLevel } from '@/lib/bsc/groupPatronPerks.js';
 import { getBscPatronAccount } from '@/lib/bsc/patronAccount.js';
 import { formatTripFlairLine } from '@/lib/bsc/patronFlair.js';
-import { getEffectivePaidPatronLevel } from '@/lib/bsc/groupPatronPerks.js';
 import { announceThanksgivingPets } from '@/lib/bsc/rareAnnouncements.js';
 import { tryStartQueuedTrip } from '@/lib/bsc/tripQueue.js';
 import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';

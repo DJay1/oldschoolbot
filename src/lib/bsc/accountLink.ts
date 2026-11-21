@@ -1,10 +1,11 @@
+import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
+
 import { userMention } from '@oldschoolgg/discord';
 import { formatDuration, Time } from '@oldschoolgg/toolkit';
 
-import { findGroupOfUser } from '@/lib/bso/util/findGroupOfUser.js';
-import { GE_SLOTS_CACHE } from '@/lib/cache.js';
 import { getEffectivePaidPatronLevel } from '@/lib/bsc/groupPatronPerks.js';
 import { bscPatronTierByLevel } from '@/lib/bsc/patronTiers.js';
+import { GE_SLOTS_CACHE } from '@/lib/cache.js';
 import { clearPerkTierHotCache } from '@/lib/perkTiers.js';
 
 export const BSC_ACCOUNT_LINK_CONFIRM_MS = Time.Second * 90;

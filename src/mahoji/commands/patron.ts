@@ -1,5 +1,8 @@
 import { PerkTier } from '@oldschoolgg/toolkit';
+
 import { itemArr } from '@/discord/presetCommandOptions.js';
+import { runPatronLink, runPatronUnlink } from '@/lib/bsc/accountLinkCommand.js';
+import { getEffectivePaidPatronLevel, getGroupLastGiftAt } from '@/lib/bsc/groupPatronPerks.js';
 import { getBscPatronAccount, updateBscPatronAccount } from '@/lib/bsc/patronAccount.js';
 import {
 	buyPatronDye,
@@ -11,18 +14,12 @@ import {
 import { PATRON_DYE_ITEM_IDS, PATRON_DYES, patronDyeById, resolveItemFromInput } from '@/lib/bsc/patronDyes.js';
 import { sanitizePatronFlair } from '@/lib/bsc/patronFlair.js';
 import { loyaltyBadgeLabel } from '@/lib/bsc/patronLoyalty.js';
-import { runPatronLink, runPatronUnlink } from '@/lib/bsc/accountLinkCommand.js';
-import { getEffectivePaidPatronLevel, getGroupLastGiftAt } from '@/lib/bsc/groupPatronPerks.js';
 import { performBscPatronGift, triggerBscDoubleLoot } from '@/lib/bsc/patronPerks.js';
 import { generatePatronProfileCard, setFavoritePatronPet } from '@/lib/bsc/patronProfile.js';
-import { renderPatronDyeGrid } from '@/lib/bsc/renderPatronDyeGrid.js';
 import { getBscPatronOverride } from '@/lib/bsc/patronStore.js';
-import {
-	bscPatronTierByLevel,
-	formatBscPatronOverview,
-	planBscPatronGift
-} from '@/lib/bsc/patronTiers.js';
+import { bscPatronTierByLevel, formatBscPatronOverview, planBscPatronGift } from '@/lib/bsc/patronTiers.js';
 import { parsePatronTitle } from '@/lib/bsc/patronTitles.js';
+import { renderPatronDyeGrid } from '@/lib/bsc/renderPatronDyeGrid.js';
 import { patreonUrl } from '@/lib/patreonLink.js';
 import { patronMsg } from '@/lib/util/smallUtils.js';
 
@@ -339,10 +336,7 @@ export const patronCommand = defineCommand({
 		if (options.gift) {
 			const recipientId = options.gift.user.user.id;
 			const recipient = await mUserFetch(recipientId);
-			const [donorState, recipientState] = await Promise.all([
-				getBscPatronOverride(user.id),
-				getBscPatronOverride(recipient.id)
-			]);
+			const recipientState = await getBscPatronOverride(recipient.id);
 			const [donorLevel, recipientLevel, donorLastGiftAt] = await Promise.all([
 				getEffectivePaidPatronLevel(user.id, user.bitfield),
 				getEffectivePaidPatronLevel(recipient.id, recipient.bitfield),
