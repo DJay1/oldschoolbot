@@ -3,7 +3,7 @@ import { Routes } from '@oldschoolgg/discord';
 import { extraBadgeEmoji } from '@/lib/badges/badgeEmojis.js';
 import { resetLinkedPerkCaches } from '@/lib/bsc/accountLink.js';
 import { getEffectivePaidPatronLevel, getGroupCosmeticClaimedAt } from '@/lib/bsc/groupPatronPerks.js';
-import { creditMonthlyPatronRewards } from '@/lib/bsc/patronPoints.js';
+import { creditMonthlyPatronRewards, creditMonthlyPatronRewardsForSync } from '@/lib/bsc/patronPoints.js';
 import { GE_SLOTS_CACHE } from '@/lib/cache.js';
 import { BitField } from '@/lib/constants.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
@@ -144,7 +144,9 @@ export async function syncBscPatronFromRoles(userId: string, roleIds: readonly s
 	const sameCustom = decision.customBackground === (state?.customBackground ?? false);
 	const rolesClean = !changes.add && changes.remove.length === 0;
 	if (sameLevel && sameGrace && sameCustom && rolesClean) {
-		if (paidLevel > 0) await creditMonthlyPatronRewards(userId, paidLevel);
+		await creditMonthlyPatronRewardsForSync(userId, paidLevel, {
+			inPaidGrace: paidLevel === 0 && decision.level > 0 && !decision.reconcileRoles
+		});
 		return;
 	}
 
@@ -152,7 +154,9 @@ export async function syncBscPatronFromRoles(userId: string, roleIds: readonly s
 		roleMissingSince: decision.roleMissingSince,
 		customBackground: decision.customBackground
 	});
-	if (paidLevel > 0) await creditMonthlyPatronRewards(userId, paidLevel);
+	await creditMonthlyPatronRewardsForSync(userId, paidLevel, {
+		inPaidGrace: paidLevel === 0 && decision.level > 0 && !decision.reconcileRoles
+	});
 	if (!rolesClean) await alignBscPatronRoles(userId, decision.level, roleIds);
 }
 

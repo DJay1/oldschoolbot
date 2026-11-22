@@ -18,7 +18,9 @@ import {
 	patronLoyaltySource
 } from '@/lib/bsc/patronLoyalty.js';
 import {
+	monthNetGrantedPoints,
 	planMonthlyPatronGrant,
+	planMonthlyPatronTierAdjust,
 	pointsForPaidLevel,
 	previousUtcMonthKey,
 	utcMonthKey
@@ -96,6 +98,148 @@ test('monthly points equal the tier price and are idempotent per UTC month', () 
 		now
 	});
 	expect(brokenStreak).toMatchObject({ shouldGrant: true, points: 5, nextMonthsTotal: 5, nextMonthsStreak: 1 });
+});
+
+test("mid-month tier changes adjust that month's points, and downgrades never go below 0", () => {
+	const now = Date.UTC(2026, 10, 20, 18); // 2026-11-20 UTC
+	const monthKey = utcMonthKey(now);
+	expect(monthKey).toBe('2026-11');
+
+	// Xavier: Alpha 15 already granted, then Biggest of Dogs 50.
+	const upgrade = planMonthlyPatronTierAdjust({
+		paidLevel: 6,
+		lastCreditedMonth: '2026-11',
+		monthNetGranted: 15,
+		currentBalance: 15,
+		now
+	});
+	expect(upgrade).toMatchObject({
+		shouldAdjust: true,
+		delta: 35,
+		desiredDelta: 35,
+		target: 50,
+		shortfall: 0,
+		reason: 'tier_change_adjust',
+		monthKey: '2026-11'
+	});
+
+	const alreadyAtNewTier = planMonthlyPatronTierAdjust({
+		paidLevel: 6,
+		lastCreditedMonth: '2026-11',
+		monthNetGranted: 15 + 35,
+		currentBalance: 50,
+		now
+	});
+	expect(alreadyAtNewTier).toMatchObject({ shouldAdjust: false, reason: 'already_adjusted', delta: 0 });
+
+	const downgrade = planMonthlyPatronTierAdjust({
+		paidLevel: 4,
+		lastCreditedMonth: '2026-11',
+		monthNetGranted: 50,
+		currentBalance: 50,
+		now
+	});
+	expect(downgrade).toMatchObject({
+		shouldAdjust: true,
+		delta: -35,
+		desiredDelta: -35,
+		target: 15,
+		shortfall: 0,
+		reason: 'tier_change_adjust'
+	});
+
+	// Spent 20 of a 25-point month, then dropped to Alpha (15): only 5 left to claw back.
+	const spent = planMonthlyPatronTierAdjust({
+		paidLevel: 4,
+		lastCreditedMonth: '2026-11',
+		monthNetGranted: 25,
+		currentBalance: 5,
+		now
+	});
+	expect(spent).toMatchObject({
+		shouldAdjust: true,
+		delta: -5,
+		desiredDelta: -10,
+		target: 15,
+		shortfall: 5,
+		reason: 'tier_change_adjust'
+	});
+
+	const empty = planMonthlyPatronTierAdjust({
+		paidLevel: 4,
+		lastCreditedMonth: '2026-11',
+		monthNetGranted: 25,
+		currentBalance: 0,
+		now
+	});
+	expect(empty).toMatchObject({
+		shouldAdjust: false,
+		delta: 0,
+		desiredDelta: -10,
+		shortfall: 10,
+		reason: 'clamped_no_balance'
+	});
+
+	// A later refund can finish the clawback without going past the new target.
+	const afterRefund = planMonthlyPatronTierAdjust({
+		paidLevel: 4,
+		lastCreditedMonth: '2026-11',
+		monthNetGranted: 25 - 5,
+		currentBalance: 10,
+		now
+	});
+	expect(afterRefund).toMatchObject({ shouldAdjust: true, delta: -5, shortfall: 0, target: 15 });
+
+	const cancelAfterGrace = planMonthlyPatronTierAdjust({
+		paidLevel: 0,
+		lastCreditedMonth: '2026-11',
+		monthNetGranted: 15,
+		currentBalance: 15,
+		now
+	});
+	expect(cancelAfterGrace).toMatchObject({
+		shouldAdjust: true,
+		delta: -15,
+		target: 0,
+		reason: 'tier_change_adjust'
+	});
+
+	const noGrantYet = planMonthlyPatronTierAdjust({
+		paidLevel: 6,
+		lastCreditedMonth: null,
+		monthNetGranted: 0,
+		currentBalance: 0,
+		now
+	});
+	expect(noGrantYet).toMatchObject({ shouldAdjust: false, reason: 'no_grant_this_month' });
+
+	// Ledger sum of monthly_grant + tier_change_adjust is what we reconcile against.
+	expect(
+		monthNetGrantedPoints(
+			[
+				{ delta: 15, reason: 'monthly_grant', monthKey: '2026-11' },
+				{ delta: 35, reason: 'tier_change_adjust', monthKey: '2026-11' },
+				{ delta: -5, reason: 'buy_dye:halloween', monthKey: null }
+			],
+			'2026-11'
+		)
+	).toBe(50);
+
+	// A later month still gets a fresh full grant at the new tier, not another adjust.
+	const december = Date.UTC(2026, 11, 1, 0);
+	const nextMonthGrant = planMonthlyPatronGrant({
+		paidLevel: 6,
+		lastCreditedMonth: '2026-11',
+		monthsTotal: 1,
+		monthsStreak: 1,
+		now: december
+	});
+	expect(nextMonthGrant).toMatchObject({
+		shouldGrant: true,
+		points: 50,
+		reason: 'monthly_grant',
+		monthKey: '2026-12'
+	});
 });
 
 test('loyalty badges use total or streak months', () => {
