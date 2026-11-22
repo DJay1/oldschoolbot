@@ -2,6 +2,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank } from 'oldschooljs';
 
 import { announceThanksgivingPets, announceToRareChannel } from '@/lib/bsc/rareAnnouncements.js';
+import { resolveSeasonalEvent } from '@/lib/events/registry.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
 import { userQueueFn } from '@/lib/util/userQueues.js';
@@ -31,6 +32,7 @@ import {
 	saveHarvestFeast
 } from './feast.js';
 import { ThanksgivingItem } from './items.js';
+import { formatCornucopiaCanMakeLine, formatCornucopiaOfferEmpty, formatThanksgivingWindowLine } from './make.js';
 
 const ready = { done: false };
 
@@ -89,7 +91,7 @@ export async function thanksgivingOffer(
 		// 'all' is resolved inside the queue after sync, so it is exactly what the bank holds right now.
 		const owned = user.bank.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA);
 		if (owned === 0) {
-			return "You don't have any Bountiful cornucopias. Make one with `/create item:Bountiful cornucopia` (5 Harvest bundles + 1 Wicker basket).";
+			return formatCornucopiaOfferEmpty(user.bank);
 		}
 		const quantity = requested === 'all' ? owned : requested;
 		if (owned < quantity) {
@@ -221,9 +223,11 @@ export async function thanksgivingStatus(user: MUser): Promise<string> {
 	const today = await offersToday(user.id, ctDayKey()).catch(() => 0);
 	const bank = user.bank;
 	const hadGobbles = hasHadGobbles(user);
+	const window = resolveSeasonalEvent('thanksgiving');
 	const lines = [
-		`**The Straw Hat Harvest** is ${active ? 'running' : 'not running right now'}.`,
+		formatThanksgivingWindowLine(active, window.start, window.end),
 		`Harvest bundles: ${bank.amount(ThanksgivingItem.HARVEST_BUNDLE)}, Wicker baskets: ${bank.amount(ThanksgivingItem.WICKER_BASKET)}, Bountiful cornucopias: ${bank.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA)}`,
+		formatCornucopiaCanMakeLine(bank),
 		`Offers made: ${offers.toLocaleString()}`,
 		today >= GOBBLE_STREAK_OFFERS
 			? `Gobble Streak: active today (${today} offers). Rare chances are 15% better until midnight CT.`

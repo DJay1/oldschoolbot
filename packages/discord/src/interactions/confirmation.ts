@@ -19,7 +19,7 @@ export async function interactionConfirmation(
 	interaction: MInteraction,
 	message:
 		| string
-		| ({ content: string; timeout?: number } & (
+		| ({ content: string; timeout?: number; confirmLabel?: string } & (
 				| { ephemeral?: false; users?: string[] }
 				| { ephemeral?: boolean; users?: undefined }
 		  ))
@@ -30,9 +30,11 @@ export async function interactionConfirmation(
 	const users: string[] =
 		typeof message !== 'string' ? (message.users ?? [interaction.userId]) : [interaction.userId];
 	const timeout: number = typeof message !== 'string' ? (message.timeout ?? 15_000) : 15_000;
+	const requestedLabel = typeof message !== 'string' ? message.confirmLabel?.trim() : undefined;
+	const confirmLabel = requestedLabel ? requestedLabel.slice(0, 80) : 'Confirm';
 
 	const confirmRow: ButtonBuilder[] = [
-		new ButtonBuilder().setCustomId(InteractionID.CONFIRM).setLabel('Confirm').setStyle(ButtonStyle.Primary),
+		new ButtonBuilder().setCustomId(InteractionID.CONFIRM).setLabel(confirmLabel).setStyle(ButtonStyle.Primary),
 		new ButtonBuilder().setCustomId(InteractionID.CANCEL).setLabel('Cancel').setStyle(ButtonStyle.Secondary)
 	];
 

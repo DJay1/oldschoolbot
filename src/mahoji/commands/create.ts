@@ -4,8 +4,66 @@ import { isFunction, reduceNumByPercent, stringMatches } from '@oldschoolgg/tool
 import { Bank } from 'oldschooljs';
 
 import Createables from '@/lib/data/createables.js';
+import { thanksgivingCodeEnabled } from '@/lib/events/thanksgiving/core.js';
+import {
+	cornucopiaQuantityChoices,
+	formatCornucopiaCreateAutocompleteName,
+	formatCornucopiaMakeConfirm,
+	formatCornucopiaMakeSuccess,
+	formatCornucopiaPartsChanged,
+	isBountifulCornucopiaName,
+	previewCornucopiaMake,
+	resolveCornucopiaMakeAfterConfirm
+} from '@/lib/events/thanksgiving/make.js';
 import type { SkillNameType } from '@/lib/skilling/types.js';
+import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
+import { userQueueFn } from '@/lib/util/userQueues.js';
 import { MAX_QUANTITY, safePositiveProduct, validateQuantity } from '@/lib/util/validateQuantity.js';
+
+function createItemOptionValue(rawOptions: { name: string; value?: unknown }[] | undefined): string | null {
+	for (const option of rawOptions ?? []) {
+		if (option.name === 'item' && typeof option.value === 'string') return option.value;
+	}
+	return null;
+}
+
+async function createBountifulCornucopia({
+	user,
+	interaction,
+	quantity
+}: {
+	user: MUser;
+	interaction: { confirmation: (message: { content: string; confirmLabel?: string }) => Promise<void> };
+	quantity: number | undefined;
+}) {
+	if (!thanksgivingCodeEnabled()) return 'You cannot make this right now.';
+
+	await user.sync();
+	const preview = previewCornucopiaMake(user.bank, quantity);
+	if (!preview.ok) return preview.error;
+
+	const { content, confirmLabel } = formatCornucopiaMakeConfirm(preview);
+	await interaction.confirmation({ content, confirmLabel });
+
+	return userQueueFn(user.id, async () => {
+		await user.sync();
+		const next = resolveCornucopiaMakeAfterConfirm(user.bank, quantity, preview.quantity);
+		if (!next.ok) return next.error;
+		if (!user.owns(next.inItems)) return formatCornucopiaPartsChanged(user.bank);
+
+		await unqueuedTransactItems({
+			user,
+			collectionLog: true,
+			itemsToAdd: next.outItems,
+			itemsToRemove: next.inItems
+		});
+		await ClientSettings.updateBankSetting('create_cost', next.inItems);
+		await ClientSettings.updateBankSetting('create_loot', next.outItems);
+		await user.statsBankUpdate('create_cost_bank', next.inItems);
+		await user.statsBankUpdate('create_loot_bank', next.outItems);
+		return formatCornucopiaMakeSuccess(next, preview.quantity);
+	});
+}
 
 export const createCommand = defineCommand({
 	name: 'create',
@@ -16,11 +74,13 @@ export const createCommand = defineCommand({
 			name: 'item',
 			description: 'The item you want to create/revert.',
 			required: true,
-			autocomplete: async ({ value }: StringAutoComplete) => {
+			autocomplete: async ({ value, user }: StringAutoComplete) => {
 				return Createables.filter(i =>
 					!value ? true : i.name.toLowerCase().includes(value.toLowerCase())
 				).map(i => ({
-					name: i.name,
+					name: isBountifulCornucopiaName(i.name)
+						? formatCornucopiaCreateAutocompleteName(user.bank)
+						: i.name,
 					value: i.name
 				}));
 			}
@@ -28,10 +88,15 @@ export const createCommand = defineCommand({
 		{
 			type: 'Integer',
 			name: 'quantity',
-			description: 'The amount you want to create.',
+			description: 'The amount you want to create. Leave blank on Bountiful cornucopia to make all.',
 			required: false,
 			min_value: 1,
-			max_value: 1_000_000_000
+			max_value: 1_000_000_000,
+			autocomplete: async ({ value, user, rawOptions }: NumberAutoComplete) => {
+				const itemName = createItemOptionValue(rawOptions);
+				if (!isBountifulCornucopiaName(itemName)) return [];
+				return cornucopiaQuantityChoices(user.bank, value);
+			}
 		},
 		{
 			type: 'Boolean',
@@ -54,6 +119,10 @@ export const createCommand = defineCommand({
 			const parsedQuantity = validateQuantity(quantity, { min: 1, max: MAX_QUANTITY });
 			if (!parsedQuantity.ok) return parsedQuantity.error;
 			quantity = parsedQuantity.value;
+		}
+
+		if (createableItem.name === 'Bountiful cornucopia') {
+			return createBountifulCornucopia({ user, interaction, quantity });
 		}
 
 		if (!quantity || createableItem.cantHaveItems) {
