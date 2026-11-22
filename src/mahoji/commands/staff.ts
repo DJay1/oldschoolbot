@@ -1,5 +1,4 @@
-import { gifs } from '@/lib/bsc/corgoGifs.js';
-import { runStaffBoost, staffBoostsUsed, staffGuildAllowed, staffTierOf } from '@/lib/bsc/staffAccess.js';
+import { runStaffBoost, staffBoostsUsed, staffTierOf } from '@/lib/bsc/staffAccess.js';
 import {
 	STAFF_BOOST_LABELS,
 	STAFF_BOOST_MINUTES,
@@ -10,6 +9,13 @@ import {
 	staffBoostWeeklyCap,
 	tierAtLeast
 } from '@/lib/bsc/staffTiers.js';
+import {
+	runStaffView,
+	STAFF_PRIVATE_SUBCOMMANDS,
+	STAFF_VIEW_TYPE_CHOICES,
+	staffDeniedReply,
+	staffViewNameAutoComplete
+} from '@/lib/bsc/staffView.js';
 import { globalConfig } from '@/lib/constants.js';
 import { adminCommand } from '@/mahoji/commands/admin.js';
 import { rpCommand } from '@/mahoji/commands/rp.js';
@@ -74,12 +80,39 @@ export const staffCommand = defineCommand({
 	name: 'staff',
 	description: 'Staff tools. Use /staff help to see what your role can use.',
 	guildId: globalConfig.supportServerID,
-	privateSubcommands: ['help'],
+	privateSubcommands: [...STAFF_PRIVATE_SUBCOMMANDS],
 	options: [
 		{
 			type: 'Subcommand',
 			name: 'help',
 			description: 'See the staff commands your role can use and your boosts left.'
+		},
+		{
+			type: 'Subcommand',
+			name: 'view',
+			description: "Mod: look at a player's stats, bank, CL, or gear (read only).",
+			options: [
+				{
+					type: 'User',
+					name: 'user',
+					description: 'The player to look up.',
+					required: true
+				},
+				{
+					type: 'String',
+					name: 'type',
+					description: 'What to look at.',
+					required: true,
+					choices: [...STAFF_VIEW_TYPE_CHOICES]
+				},
+				{
+					type: 'String',
+					name: 'name',
+					description: 'For data: the stat name. For CL: the log name. For gear: the setup.',
+					required: false,
+					autocomplete: staffViewNameAutoComplete
+				}
+			]
 		},
 		{
 			type: 'Subcommand',
@@ -139,11 +172,20 @@ export const staffCommand = defineCommand({
 	run: async ctx => {
 		const { user, guildId, interaction, rng } = ctx;
 		const options = ctx.options as Record<string, any>;
-		if (!staffGuildAllowed(guildId)) return rng.pick(gifs);
 		const tier = staffTierOf(user);
-		if (tier === 'none') return rng.pick(gifs);
+		const denied = staffDeniedReply(guildId, tier, rng);
+		if (denied) return denied;
 
 		if (options.help) return staffHelp(user, tier);
+
+		if (options.view) {
+			const target = await mUserFetch(options.view.user.user.id);
+			return runStaffView({
+				target,
+				type: options.view.type,
+				name: options.view.name
+			});
+		}
 
 		if (options.boost) {
 			await interaction.defer();

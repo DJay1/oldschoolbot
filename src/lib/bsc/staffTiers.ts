@@ -134,6 +134,11 @@ export const STAFF_ACTIONS: StaffActionInfo[] = [
 		minTier: 'moderator',
 		help: `Adds ${STAFF_BOOST_MINUTES} min of Double XP for everyone. Weekly limit.`
 	},
+	{
+		command: '/staff view',
+		minTier: 'moderator',
+		help: "Look at a player's minion stats, /data stats, bank, collection log, or gear (read only, private)."
+	},
 	{ command: '/staff view_bank', minTier: 'moderator', help: "Look at a player's bank (read only)." },
 	{ command: '/staff view_gear', minTier: 'moderator', help: "Look at a player's gear (read only)." },
 	{ command: '/staff view_user', minTier: 'moderator', help: "Look at a player's account info (read only)." },
