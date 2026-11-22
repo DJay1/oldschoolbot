@@ -70,9 +70,9 @@ test('opening a Launch box gives the fixed supplies and skips patron boxes', () 
 	expect(bank.amount('Clue scroll (grandmaster)')).toBe(0);
 	expect(bank.amount('Clue scroll (elder)')).toBe(0);
 	expect(bank.amount(LaunchItem.CORGO_PARTY_HAT)).toBe(0);
-	expect(message).toContain('Your best rolls (hit the top number to win):');
-	expect(message).toContain('Corgo partyhat:');
-	expect(message).not.toContain('Corgo partyhat: ✅ Got it!');
+	expect(message).not.toContain('Your best rolls');
+	expect(message).not.toContain('best roll');
+	expect(message).not.toContain('Got it!');
 	expect(message).toContain('Corgo partyhat guaranteed drop: 1/100 opens');
 	expect(message).not.toContain('pity');
 });
@@ -93,7 +93,7 @@ test('the 100th Launch box always grants a Corgo partyhat', () => {
 		rng: worst
 	});
 	expect(guaranteed.bank.amount(LaunchItem.CORGO_PARTY_HAT)).toBe(1);
-	expect(guaranteed.message).toContain('Corgo partyhat: ✅ Got it!');
+	expect(guaranteed.message).not.toContain('Got it!');
 	expect(guaranteed.message).toContain('You reached 100 opens and received your guaranteed Corgo partyhat!');
 	expect(guaranteed.message).not.toContain('guaranteed drop:');
 	expect(guaranteed.message).not.toContain('pity');
@@ -130,7 +130,8 @@ test('a lucky open can roll the chase items and a dry batch of 100 still has one
 	expect(lucky.bank.amount('Spooky graceful hood')).toBe(1);
 	expect(lucky.bank.amount('Double loot token')).toBe(1);
 	expect(lucky.bank.amount(LaunchItem.DOUBLE_XP_TOKEN)).toBe(1);
-	expect(lucky.message).toContain('Spooky piece: ✅ Got it!');
+	expect(lucky.message).not.toContain('Got it!');
+	expect(lucky.message).not.toContain('best roll');
 	expect(lucky.message).not.toContain('received your guaranteed Corgo partyhat');
 	expect(lucky.message).toContain('Corgo partyhat guaranteed drop: 1/100 opens');
 

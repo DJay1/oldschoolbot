@@ -448,9 +448,44 @@ export function offerOddsDenominator(key: OfferRareKey, { streak, blessing }: { 
 	return base;
 }
 
+/** Base 1/N rates for every Bountiful cornucopia offer drop. */
+export function formatThanksgivingBaseRatesLine(): string {
+	return `Rates per offer: Paint box 1/${OFFER_RATES.paintBox}, Cornucopia 1/${OFFER_RATES.cornucopia}, Harvest turkey 1/${OFFER_RATES.turkey}, Pilgrim hat 1/${OFFER_RATES.pilgrimHat}, Straw hat 1/${OFFER_RATES.strawHat}, Gobbles 1/${OFFER_RATES.gobbles}, Laboon 1/${OFFER_RATES.laboon}.`;
+}
+
+export function formatGobbleStreakBoostDetail(): string {
+	const hatsAndGobbles = offerOddsDenominator('pilgrimHat', { streak: true, blessing: false });
+	const laboon = offerOddsDenominator('laboon', { streak: true, blessing: false });
+	return `+15% rare chances (Pilgrim hat, Straw hat, and Gobbles 1/${hatsAndGobbles}, Laboon 1/${laboon})`;
+}
+
+export function formatHarvestBlessingBoostDetail(): string {
+	const paint = offerOddsDenominator('paintBox', { streak: false, blessing: true });
+	const cornucopia = offerOddsDenominator('cornucopia', { streak: false, blessing: true });
+	const turkey = offerOddsDenominator('turkey', { streak: false, blessing: true });
+	return `+15% supplies, Paint box 1/${paint}, Cornucopia 1/${cornucopia}, Harvest turkey 1/${turkey}`;
+}
+
+export function formatGobbleStreakStatusLine(offersToday: number): string {
+	const boost = `${formatGobbleStreakBoostDetail()} until midnight CT`;
+	if (offersToday >= GOBBLE_STREAK_OFFERS) {
+		return `Gobble Streak: active today (${offersToday.toLocaleString()} offers). ${boost}.`;
+	}
+	return `Gobble Streak: ${offersToday.toLocaleString()}/${GOBBLE_STREAK_OFFERS} offers today (CT). At ${GOBBLE_STREAK_OFFERS}, ${boost}.`;
+}
+
+export function formatHarvestBlessingStatusLine(hasBlessing: boolean): string {
+	return `Harvest Blessing (Cornucopia in bank): ${hasBlessing ? 'yes' : 'no'}. ${formatHarvestBlessingBoostDetail()}.`;
+}
+
+export function formatLaboonFishingRateLine(): string {
+	const minutes = LABOON_FISHING_MIN_TRIP_MS / Time.Minute;
+	return `Laboon can also come from fishing trips of ${minutes} minutes or more (1/${LABOON_FISHING_RATE_PER_MINUTE} per minute).`;
+}
+
 /**
- * Offer reply text (the loot itself is shown as a bank image). Launch box style best rolls,
- * then the short status lines.
+ * Offer reply text (the loot itself is shown as a bank image). Buff lines and offer totals;
+ * the loot itself is the bank image.
  */
 export function formatOfferReply({
 	result,
@@ -467,29 +502,16 @@ export function formatOfferReply({
 	offersAfter: number;
 	offersTodayAfter: number;
 }): string {
-	const rareLines = OFFER_RARE_ORDER.map(key => {
-		const track = result.rares[key];
-		const name = OFFER_RARE_NAMES[key];
-		if (track.got > 0) {
-			const pity = key === 'gobbles' && result.gotPityGobbles ? ` (${GOBBLES_PITY_OFFERS}-offer guarantee)` : '';
-			return `**${name}: ✅ Got it!${track.got > 1 ? ` x${track.got}` : ''}${pity}**`;
-		}
-		return `${name}: best roll ${track.bestRoll}/${track.bestDenominator}`;
-	});
-
-	const lines: string[] = [`Your best rolls (hit the top number to win):`, ...rareLines];
-	const streakOdds = STREAK_KEYS.map(k => offerOddsDenominator(k, { streak: true, blessing }));
+	const lines: string[] = [];
 	if (result.streakOffers > 0) {
 		lines.push(
-			`🦃 Gobble Streak: ${result.streakOffers}/${quantity} offers had +15% rare chances (hats and Gobbles 1/${streakOdds[0]}, Laboon 1/${streakOdds[3]}).`
+			`🦃 Gobble Streak: ${result.streakOffers}/${quantity} offers had ${formatGobbleStreakBoostDetail()}.`
 		);
 	} else if (offersTodayAfter < GOBBLE_STREAK_OFFERS) {
 		lines.push(`Gobble Streak: ${offersTodayAfter}/${GOBBLE_STREAK_OFFERS} offers today (CT).`);
 	}
 	if (blessing) {
-		lines.push(
-			`Harvest Blessing: +15% supplies, Paint box 1/${offerOddsDenominator('paintBox', { streak: false, blessing })}, Cornucopia 1/${offerOddsDenominator('cornucopia', { streak: false, blessing })}, Harvest turkey 1/${offerOddsDenominator('turkey', { streak: false, blessing })}.`
-		);
+		lines.push(`Harvest Blessing: ${formatHarvestBlessingBoostDetail()}.`);
 	}
 	if (result.gotPityGobbles) {
 		lines.push(`You reached ${GOBBLES_PITY_OFFERS} offers and Gobbles joined you!`);

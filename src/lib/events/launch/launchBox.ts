@@ -86,15 +86,6 @@ function oneIn(rng: LaunchBoxRng, denominator: number): Closeness {
 	return rareRoll(denominator, rng.randInt(1, denominator));
 }
 
-function note(track: Closeness, next: Closeness) {
-	if (next.got) {
-		track.got = true;
-		track.roll = track.denominator;
-		return;
-	}
-	if (!track.got && next.roll > track.roll) track.roll = next.roll;
-}
-
 function addMaterials(loot: Bank, rng: LaunchBoxRng) {
 	for (const [name, min, max] of LAUNCH_BOX_MATERIALS) loot.add(name, rng.randInt(min, max));
 }
@@ -155,12 +146,6 @@ export function buildFounderLaunchExtras(rng: LaunchBoxRng): Bank {
 	return loot;
 }
 
-const CLOSENESS_NAMES = ['Corgo partyhat', 'Spooky piece', 'Gregoyle', 'Kuro', 'Flappy'] as const;
-
-function closenessLine(name: string, track: Closeness): string {
-	return track.got ? `${name}: ✅ Got it!` : `${name}: best roll ${track.roll}/${track.denominator}`;
-}
-
 export function openLaunchBoxes({
 	quantity,
 	boxesOpenedBefore,
@@ -171,13 +156,6 @@ export function openLaunchBoxes({
 	rng: LaunchBoxRng;
 }): { bank: Bank; message: string } {
 	const loot = new Bank();
-	const tracks: Record<(typeof CLOSENESS_NAMES)[number], Closeness> = {
-		'Corgo partyhat': { got: false, roll: 0, denominator: 75 },
-		'Spooky piece': { got: false, roll: 0, denominator: 5 },
-		Gregoyle: { got: false, roll: 0, denominator: 125 },
-		Kuro: { got: false, roll: 0, denominator: 250 },
-		Flappy: { got: false, roll: 0, denominator: 1000 }
-	};
 	let gotGuaranteedHat = false;
 
 	for (let i = 0; i < quantity; i++) {
@@ -199,7 +177,6 @@ export function openLaunchBoxes({
 		if (rng.randInt(1, 40) === 1) loot.add('Coins', 5_000_000);
 
 		const spooky = oneIn(rng, 5);
-		note(tracks['Spooky piece'], spooky);
 		if (spooky.got) loot.add(SPOOKY_GRACEFUL[rng.randInt(0, SPOOKY_GRACEFUL.length - 1)]);
 
 		const openNumber = boxesOpenedBefore + i + 1;
@@ -210,22 +187,17 @@ export function openLaunchBoxes({
 			loot.add(LaunchItem.CORGO_PARTY_HAT);
 			gotGuaranteedHat = true;
 		}
-		note(tracks['Corgo partyhat'], hat.got || guaranteedDrop ? { got: true, roll: 75, denominator: 75 } : hat);
 
 		const greg = oneIn(rng, 125);
-		note(tracks.Gregoyle, greg);
 		if (greg.got) loot.add('Gregoyle');
 		const kuro = oneIn(rng, 250);
-		note(tracks.Kuro, kuro);
 		if (kuro.got) loot.add('Kuro');
 		const flappy = oneIn(rng, 1000);
-		note(tracks.Flappy, flappy);
 		if (flappy.got) loot.add('Flappy');
 		if (rng.randInt(1, 50) === 1) loot.add(LaunchItem.DOUBLE_XP_TOKEN);
 		if (rng.randInt(1, 50) === 1) loot.add('Double loot token');
 	}
 
-	const closeness = CLOSENESS_NAMES.map(name => closenessLine(name, tracks[name])).join('\n');
 	const extras: string[] = [];
 	const opensAfter = boxesOpenedBefore + quantity;
 	if (gotGuaranteedHat) {
@@ -237,7 +209,7 @@ export function openLaunchBoxes({
 	}
 	return {
 		bank: loot,
-		message: [`Your best rolls (hit the top number to win):\n${closeness}`, ...extras].join('\n')
+		message: extras.join('\n')
 	};
 }
 

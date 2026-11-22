@@ -9,13 +9,15 @@ import { userQueueFn } from '@/lib/util/userQueues.js';
 import { withThanksgivingMakeButtons } from './buttons.js';
 import {
 	ctDayKey,
+	formatGobbleStreakStatusLine,
+	formatHarvestBlessingStatusLine,
+	formatLaboonFishingRateLine,
 	formatOfferReply,
-	GOBBLE_STREAK_OFFERS,
+	formatThanksgivingBaseRatesLine,
 	GOBBLES_IDS,
 	GOBBLES_PITY_OFFERS,
 	hasHarvestBlessing,
 	isThanksgivingActive,
-	OFFER_RATES,
 	offersFromScores,
 	parseOfferQuantity,
 	rollThanksgivingOffers,
@@ -233,16 +235,15 @@ export async function thanksgivingStatus(user: MUser) {
 		`Harvest bundles: ${bank.amount(ThanksgivingItem.HARVEST_BUNDLE)}, Wicker baskets: ${bank.amount(ThanksgivingItem.WICKER_BASKET)}, Bountiful cornucopias: ${bank.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA)}`,
 		formatCornucopiaCanMakeLine(bank),
 		`Offers made: ${offers.toLocaleString()}`,
-		today >= GOBBLE_STREAK_OFFERS
-			? `Gobble Streak: active today (${today} offers). Rare chances are 15% better until midnight CT.`
-			: `Gobble Streak: ${today}/${GOBBLE_STREAK_OFFERS} offers today (CT).`,
+		formatGobbleStreakStatusLine(today),
 		hadGobbles
 			? 'Gobbles: ✅ you have had Gobbles.'
 			: `Gobbles guarantee: ${Math.min(offers, GOBBLES_PITY_OFFERS)}/${GOBBLES_PITY_OFFERS} offers.`,
-		`Harvest Blessing (Cornucopia in bank): ${hasHarvestBlessing(user) ? 'yes' : 'no'}`,
+		formatHarvestBlessingStatusLine(hasHarvestBlessing(user)),
 		`Harvest turkeys: ${bank.amount(ThanksgivingItem.HARVEST_TURKEY)}`,
 		harvestFeastStatusLine(user.id),
-		`Rates per offer: Paint box 1/${OFFER_RATES.paintBox}, Cornucopia 1/${OFFER_RATES.cornucopia}, Harvest turkey 1/${OFFER_RATES.turkey}, Pilgrim hat 1/${OFFER_RATES.pilgrimHat}, Straw hat 1/${OFFER_RATES.strawHat}, Gobbles 1/${OFFER_RATES.gobbles}.`
+		formatThanksgivingBaseRatesLine(),
+		formatLaboonFishingRateLine()
 	];
 	return withThanksgivingMakeButtons(user, lines.join('\n'), { includeOffer: active });
 }

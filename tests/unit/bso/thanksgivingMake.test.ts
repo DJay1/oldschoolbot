@@ -3,9 +3,12 @@ import { describe, expect, test } from 'vitest';
 
 import { clearSeasonalEventOverrides, setSeasonalEventOverride } from '@/lib/events/registry.js';
 import {
+	formatGobbleStreakStatusLine,
+	formatHarvestBlessingStatusLine,
+	formatLaboonFishingRateLine,
+	formatThanksgivingBaseRatesLine,
 	GOBBLE_STREAK_OFFERS,
 	GOBBLES_PITY_OFFERS,
-	OFFER_RATES,
 	THANKSGIVING_MIN_TRIP_MS
 } from '@/lib/events/thanksgiving/core.js';
 import { harvestFeastStatusLine } from '@/lib/events/thanksgiving/feast.js';
@@ -207,15 +210,19 @@ describe('Bountiful cornucopia /create all QoL', () => {
 			`Harvest bundles: ${huge.toLocaleString()}, Wicker baskets: ${huge.toLocaleString()}, Bountiful cornucopias: ${huge.toLocaleString()}`,
 			canMake,
 			`Offers made: ${huge.toLocaleString()}`,
-			`Gobble Streak: active today (${huge.toLocaleString()} offers). Rare chances are 15% better until midnight CT.`,
+			formatGobbleStreakStatusLine(huge),
 			`Gobbles guarantee: ${GOBBLES_PITY_OFFERS}/${GOBBLES_PITY_OFFERS} offers.`,
-			'Harvest Blessing (Cornucopia in bank): yes',
+			formatHarvestBlessingStatusLine(true),
 			`Harvest turkeys: ${huge.toLocaleString()}`,
 			harvestFeastStatusLine('length-user', Date.parse('2026-11-22T20:00:00Z')),
-			`Rates per offer: Paint box 1/${OFFER_RATES.paintBox}, Cornucopia 1/${OFFER_RATES.cornucopia}, Harvest turkey 1/${OFFER_RATES.turkey}, Pilgrim hat 1/${OFFER_RATES.pilgrimHat}, Straw hat 1/${OFFER_RATES.strawHat}, Gobbles 1/${OFFER_RATES.gobbles}.`
+			formatThanksgivingBaseRatesLine(),
+			formatLaboonFishingRateLine()
 		].join('\n');
 		underLimit(status);
 		expect(status.startsWith('**The Straw Hat Harvest** is running (ends <t:')).toBe(true);
+		expect(status).toContain('Laboon 1/750');
+		expect(status).toContain('Harvest Blessing');
+		expect(formatLaboonFishingRateLine()).toContain('Laboon');
 		expect(canMake).toContain('Can make: ');
 		expect(GOBBLE_STREAK_OFFERS).toBeGreaterThan(0);
 		expect(isBountifulCornucopiaName('bountiful cornucopia')).toBe(true);
