@@ -27,6 +27,8 @@ import {
 	DAILY_WORDLE_LENGTH,
 	DAILY_WORDLE_MS,
 	DAILY_WORDLE_WORDS,
+	dailyModalIsValid,
+	dailyModalPayload,
 	discordButtonRowsAreValid,
 	formatButtonGameMessage,
 	formatTypingMessage,
@@ -36,13 +38,17 @@ import {
 	hardGameTimeoutMs,
 	isAllowedWordleGuess,
 	isTypingGuessCorrect,
+	isUnstartedTimedDaily,
 	normalizeTypingGuess,
 	normalizeWordleGuess,
 	parseButtonAction,
 	renderTypingPromptImage,
 	scoreWordleGuess,
+	showDailyGameModal,
 	typingGameRows,
+	typingModalSpec,
 	wordleGuessRows,
+	wordleModalSpec,
 	wordleTiles
 } from '@/lib/bsc/dailyGames.js';
 import type { DailyPendingRow } from '@/lib/bsc/dailyPending.js';
@@ -556,5 +562,48 @@ describe('daily button ratelimit exemption', () => {
 		);
 		expect(exempt).toBeGreaterThan(-1);
 		expect(handle).toBeGreaterThan(exempt);
+	});
+});
+
+describe('hard daily modals', () => {
+	test('Wordle and typing modal specs stay within Discord limits', () => {
+		for (const modal of [wordleModalSpec(), typingModalSpec()]) {
+			expect(dailyModalIsValid(modal)).toBe(true);
+			const payload = dailyModalPayload(modal);
+			expect(payload.custom_id.length).toBeLessThanOrEqual(100);
+			expect(payload.title.length).toBeLessThanOrEqual(45);
+			expect(payload.components).toHaveLength(1);
+			expect(payload.components[0].components).toHaveLength(1);
+			const input = payload.components[0].components[0];
+			expect(input.custom_id.length).toBeLessThanOrEqual(100);
+			expect(input.label.length).toBeLessThanOrEqual(45);
+		}
+	});
+
+	test('showDailyGameModal posts a modal callback and does not use interaction.showModal', async () => {
+		const posted: unknown[] = [];
+		const rest = {
+			post: async (route: string, options: unknown) => {
+				posted.push({ route, options });
+			}
+		};
+		const interaction = { id: 'itx-1', rawInteraction: { token: 'tok-1' }, showModal: undefined };
+		await showDailyGameModal(rest, interaction, wordleModalSpec());
+		expect(posted).toHaveLength(1);
+		const body = (posted[0] as { options: { body: { type: number; data: { title: string } } } }).options.body;
+		expect(body.type).toBe(9);
+		expect(body.data.title).toBe('Hard daily: Wordle');
+		expect(interaction.showModal).toBeUndefined();
+		const src = readFileSync(resolve('src/mahoji/lib/abstracted_commands/dailyCommand.ts'), 'utf8');
+		expect(src).toContain('showDailyGameModal(');
+		expect(src).not.toContain('button.showModal');
+	});
+
+	test('a modal that never opens on a fresh Hard game is treated as unstarted so it can be refunded', () => {
+		const wordle = createWordleState(mockRng([], ['CORGO']));
+		expect(isUnstartedTimedDaily(wordle)).toBe(true);
+		expect(isUnstartedTimedDaily(applyWordleAction(wordle, { kind: 'submit', guess: 'HYDRA' }))).toBe(false);
+		expect(isUnstartedTimedDaily(createTypingState(mockRng()))).toBe(true);
+		expect(isUnstartedTimedDaily(applyTypingGuess(createTypingState(mockRng()), 'nope'))).toBe(false);
 	});
 });

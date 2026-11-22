@@ -1,4 +1,4 @@
-import { ComponentType } from '@oldschoolgg/discord';
+import { ComponentType, InteractionResponseType, Routes } from '@oldschoolgg/discord';
 
 import { createCanvas } from '@/lib/canvas/canvasUtil.js';
 import '@/lib/canvas/OSRSCanvas.js';
@@ -462,6 +462,81 @@ export function isDailyTypingButton(customId: string): boolean {
 
 export function isDailyHardModalId(customId: string): boolean {
 	return customId === DAILY_WORDLE_MODAL_ID || customId === DAILY_TYPING_MODAL_ID;
+}
+
+export const DISCORD_MODAL_TITLE_LIMIT = 45;
+export const DISCORD_CUSTOM_ID_LIMIT = 100;
+export const DISCORD_TEXT_INPUT_LABEL_LIMIT = 45;
+export const DISCORD_TEXT_INPUT_STYLE_SHORT = 1;
+
+export type DailyModalSpec = {
+	customId: string;
+	title: string;
+	textInput: {
+		customId: string;
+		label: string;
+		placeholder?: string;
+		minLength?: number;
+		maxLength?: number;
+	};
+};
+
+export function dailyModalPayload(modal: DailyModalSpec) {
+	return {
+		custom_id: modal.customId,
+		title: modal.title.slice(0, DISCORD_MODAL_TITLE_LIMIT),
+		components: [
+			{
+				type: ComponentType.ActionRow,
+				components: [
+					{
+						type: ComponentType.TextInput,
+						custom_id: modal.textInput.customId,
+						style: DISCORD_TEXT_INPUT_STYLE_SHORT,
+						label: modal.textInput.label.slice(0, DISCORD_TEXT_INPUT_LABEL_LIMIT),
+						required: true,
+						placeholder: modal.textInput.placeholder?.slice(0, 100),
+						min_length: modal.textInput.minLength,
+						max_length: modal.textInput.maxLength
+					}
+				]
+			}
+		]
+	};
+}
+
+export function dailyModalIsValid(modal: DailyModalSpec): boolean {
+	if (modal.customId.length < 1 || modal.customId.length > DISCORD_CUSTOM_ID_LIMIT) return false;
+	if (modal.title.length < 1 || modal.title.length > DISCORD_MODAL_TITLE_LIMIT) return false;
+	if (modal.textInput.customId.length < 1 || modal.textInput.customId.length > DISCORD_CUSTOM_ID_LIMIT) return false;
+	if (modal.textInput.label.length < 1 || modal.textInput.label.length > DISCORD_TEXT_INPUT_LABEL_LIMIT) return false;
+	if (modal.textInput.placeholder && modal.textInput.placeholder.length > 100) return false;
+	return true;
+}
+
+/** Open a Hard daily modal without relying on Interaction.showModal (that method may be missing from a stale package build). */
+export async function showDailyGameModal(
+	rest: { post: (route: string, options: unknown) => Promise<unknown> },
+	interaction: { id: string; rawInteraction: { token: string } },
+	modal: DailyModalSpec
+): Promise<void> {
+	if (!dailyModalIsValid(modal)) {
+		throw new Error('Invalid daily modal');
+	}
+	await rest.post(Routes.interactionCallback(interaction.id, interaction.rawInteraction.token), {
+		auth: false,
+		body: {
+			type: InteractionResponseType.Modal,
+			data: dailyModalPayload(modal)
+		}
+	});
+}
+
+export function isUnstartedTimedDaily(game: HardGameState): boolean {
+	if (game.status !== 'playing') return false;
+	if (game.type === 'wordle') return game.rows.length === 0;
+	if (game.type === 'buttons') return game.progress === 0;
+	return true;
 }
 
 export function createHardGame(rng: RNGProvider): HardGameState {

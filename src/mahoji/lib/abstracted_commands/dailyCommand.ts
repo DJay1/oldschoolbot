@@ -29,8 +29,10 @@ import {
 	isDailyHardModalId,
 	isDailyTypingButton,
 	isDailyWordleGuessButton,
+	isUnstartedTimedDaily,
 	parseButtonAction,
 	renderTypingPromptImage,
+	showDailyGameModal,
 	typingGameRows,
 	typingModalSpec,
 	wordleGuessRows,
@@ -423,7 +425,21 @@ async function playHardGame(
 					(game.type === 'wordle' && isDailyWordleGuessButton(customId)) ||
 					(game.type === 'typing' && isDailyTypingButton(customId))
 				) {
-					await button.showModal(game.type === 'wordle' ? wordleModalSpec() : typingModalSpec());
+					try {
+						await showDailyGameModal(
+							globalClient.rest,
+							button,
+							game.type === 'wordle' ? wordleModalSpec() : typingModalSpec()
+						);
+					} catch {
+						if (isUnstartedTimedDaily(game)) {
+							cleanupModal();
+							collector.stop('error');
+							resolve(await restoreUnstartedHardDaily(user, pending.difficulty));
+							return;
+						}
+						throw new Error('Failed to open the daily typing box.');
+					}
 					return;
 				}
 				if (game.type !== 'buttons') {
@@ -445,6 +461,10 @@ async function playHardGame(
 			} catch (err) {
 				cleanupModal();
 				collector.stop('error');
+				if (isUnstartedTimedDaily(game)) {
+					resolve(await restoreUnstartedHardDaily(user, pending.difficulty));
+					return;
+				}
 				reject(err);
 			}
 		});
