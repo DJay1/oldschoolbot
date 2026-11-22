@@ -13,11 +13,8 @@ export const DAILY_TIER = {
 	},
 	medium: {
 		label: 'Medium',
-		questions: 3,
-		allCorrect: { coinMultiplier: 2, xpChance: 20, lootChance: 35 },
-		twoCorrect: { coinMultiplier: 1.5, xpChance: 25, lootChance: 40 },
-		oneCorrect: { coinMultiplier: 1, xpChance: 30, lootChance: 50 },
-		noneCorrect: { coinMultiplier: 0.4, xpChance: 60, lootChance: 100 }
+		success: { coinMultiplier: 2, xpChance: 20, lootChance: 35 },
+		fail: { coinMultiplier: 1, xpChance: 30, lootChance: 50 }
 	},
 	hard: {
 		label: 'Hard',
@@ -30,8 +27,8 @@ export type DailyRate = { coinMultiplier: number; xpChance: number; lootChance: 
 
 export type DailyOutcome =
 	| { difficulty: 'easy'; correct: boolean }
-	| { difficulty: 'medium'; correctCount: number; total: 3 }
-	| { difficulty: 'hard'; success: boolean; game: 'wordle' | 'buttons'; detail?: string };
+	| { difficulty: 'medium'; success: boolean; game: 'buttons'; detail?: string }
+	| { difficulty: 'hard'; success: boolean; game: 'wordle' | 'typing' | 'buttons'; detail?: string };
 
 export function parseDailyDifficulty(input?: string | null): DailyDifficulty {
 	const value = input?.trim().toLowerCase();
@@ -44,10 +41,7 @@ export function dailyRatesFor(outcome: DailyOutcome): DailyRate {
 		return outcome.correct ? DAILY_TIER.easy.correct : DAILY_TIER.easy.wrong;
 	}
 	if (outcome.difficulty === 'medium') {
-		if (outcome.correctCount >= 3) return DAILY_TIER.medium.allCorrect;
-		if (outcome.correctCount === 2) return DAILY_TIER.medium.twoCorrect;
-		if (outcome.correctCount === 1) return DAILY_TIER.medium.oneCorrect;
-		return DAILY_TIER.medium.noneCorrect;
+		return outcome.success ? DAILY_TIER.medium.success : DAILY_TIER.medium.fail;
 	}
 	return outcome.success ? DAILY_TIER.hard.success : DAILY_TIER.hard.fail;
 }
@@ -56,14 +50,12 @@ export function dailyOutcomeSummary(outcome: DailyOutcome): string {
 	if (outcome.difficulty === 'easy') {
 		return outcome.correct ? 'Easy daily' : 'Easy daily (wrong answer)';
 	}
-	if (outcome.difficulty === 'medium') {
-		return `Medium daily (${outcome.correctCount}/${outcome.total} correct)`;
-	}
-	const game = outcome.game === 'wordle' ? 'Wordle' : 'Speed click';
+	const label = outcome.difficulty === 'medium' ? 'Medium daily' : 'Hard daily';
+	const game = outcome.game === 'wordle' ? 'Wordle' : outcome.game === 'typing' ? 'Typing' : 'Speed click';
 	if (outcome.success) {
-		return outcome.detail ? `Hard daily: ${game} — ${outcome.detail}` : `Hard daily: ${game}`;
+		return outcome.detail ? `${label}: ${game} — ${outcome.detail}` : `${label}: ${game}`;
 	}
-	return outcome.detail ? `Hard daily: ${game} failed — ${outcome.detail}` : `Hard daily: ${game} failed`;
+	return outcome.detail ? `${label}: ${game} failed — ${outcome.detail}` : `${label}: ${game} failed`;
 }
 
 export const DOUBLE_XP_TOKEN = 'Double XP token';
@@ -93,13 +85,14 @@ export function dailyRewardBody(outcome: DailyOutcome): string {
 			? "I've picked you some random items as a reward..."
 			: "Even though you got it wrong, here's a little reward...";
 	}
-	if (outcome.difficulty === 'medium') {
-		return `${outcome.correctCount}/${outcome.total} correct. Here's your reward...`;
-	}
 	if (outcome.success) {
 		return outcome.detail ? `${outcome.detail} Here's your reward...` : "Here's your reward...";
 	}
-	return outcome.detail ? `${outcome.detail} Here's a smaller reward...` : "Here's a smaller reward...";
+	return outcome.detail
+		? `${outcome.detail} Here's ${outcome.difficulty === 'medium' ? 'the Easy-level' : 'a smaller'} reward...`
+		: outcome.difficulty === 'medium'
+			? "Here's the Easy-level reward..."
+			: "Here's a smaller reward...";
 }
 
 export function buildDailyRewardContent(opts: {

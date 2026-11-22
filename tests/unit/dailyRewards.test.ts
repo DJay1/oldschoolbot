@@ -7,30 +7,42 @@ import { describe, expect, test } from 'vitest';
 
 import {
 	applyButtonAction,
+	applyTypingGuess,
 	applyWordleAction,
 	buttonGameRows,
 	buttonGameSpec,
+	clusterForButtonName,
 	createButtonGameState,
 	createHardGame,
+	createTypingState,
 	createWordleState,
 	DAILY_BUTTON_DECOYS,
 	DAILY_BUTTON_GAME_MS,
 	DAILY_BUTTON_TARGETS,
+	DAILY_TYPING_MAX_CHARS,
+	DAILY_TYPING_MIN_CHARS,
+	DAILY_TYPING_MS,
+	DAILY_TYPING_PHRASES,
 	DAILY_WORDLE_GUESSES,
 	DAILY_WORDLE_LENGTH,
 	DAILY_WORDLE_MS,
 	DAILY_WORDLE_WORDS,
 	discordButtonRowsAreValid,
 	formatButtonGameMessage,
+	formatTypingMessage,
 	formatWordleMessage,
+	HARD_GAME_TYPES,
 	hardestDailyRewardPreview,
 	hardGameTimeoutMs,
 	isAllowedWordleGuess,
+	isTypingGuessCorrect,
+	normalizeTypingGuess,
 	normalizeWordleGuess,
 	parseButtonAction,
-	parseWordleAction,
+	renderTypingPromptImage,
 	scoreWordleGuess,
-	wordleKeyboardSpec,
+	typingGameRows,
+	wordleGuessRows,
 	wordleTiles
 } from '@/lib/bsc/dailyGames.js';
 import type { DailyPendingRow } from '@/lib/bsc/dailyPending.js';
@@ -65,7 +77,6 @@ import { DAILY_BONUS_COINS, DAILY_GUARANTEED_COINS } from '@/lib/simulation/dail
 const DISCORD_CONTENT_LIMIT = 2000;
 const DISCORD_LENGTH_MARGIN = 150;
 const DISCORD_BUTTON_LABEL_LIMIT = 80;
-const DISCORD_ACTION_ROW_LIMIT = 5;
 const DISCORD_BUTTONS_PER_ROW = 5;
 
 function mockRng(rolls: number[] = [], picks: unknown[] = []) {
@@ -111,16 +122,18 @@ describe('daily GP and token rates', () => {
 			lootChance: 50
 		});
 		expect(dailyRatesFor({ difficulty: 'easy', correct: false }).coinMultiplier).toBe(0.4);
-		expect(dailyRatesFor({ difficulty: 'medium', correctCount: 3, total: 3 })).toEqual(
-			DAILY_TIER.medium.allCorrect
+		expect(dailyRatesFor({ difficulty: 'medium', success: true, game: 'buttons' })).toEqual(
+			DAILY_TIER.medium.success
 		);
-		expect(dailyRatesFor({ difficulty: 'medium', correctCount: 2, total: 3 })).toEqual(
-			DAILY_TIER.medium.twoCorrect
+		expect(dailyRatesFor({ difficulty: 'medium', success: false, game: 'buttons' })).toEqual(
+			DAILY_TIER.easy.correct
 		);
 		expect(dailyRatesFor({ difficulty: 'hard', success: true, game: 'wordle' })).toEqual(DAILY_TIER.hard.success);
-		expect(dailyRatesFor({ difficulty: 'hard', success: false, game: 'buttons' })).toEqual(DAILY_TIER.hard.fail);
-		expect(DAILY_TIER.hard.success.coinMultiplier).toBeGreaterThan(DAILY_TIER.medium.allCorrect.coinMultiplier);
-		expect(DAILY_TIER.medium.allCorrect.coinMultiplier).toBeGreaterThan(DAILY_TIER.easy.correct.coinMultiplier);
+		expect(dailyRatesFor({ difficulty: 'hard', success: false, game: 'typing' })).toEqual(DAILY_TIER.hard.fail);
+		expect(DAILY_TIER.medium.success.coinMultiplier).toBe(2);
+		expect(DAILY_TIER.medium.fail).toEqual(DAILY_TIER.easy.correct);
+		expect(DAILY_TIER.hard.success.coinMultiplier).toBeGreaterThan(DAILY_TIER.medium.success.coinMultiplier);
+		expect(DAILY_TIER.medium.success.coinMultiplier).toBeGreaterThan(DAILY_TIER.easy.correct.coinMultiplier);
 		expect(DAILY_TIER.hard.fail.coinMultiplier).toBeLessThan(DAILY_TIER.easy.correct.coinMultiplier);
 		expect(DAILY_TIER.hard.success.xpChance).toBeLessThan(DAILY_TIER.easy.correct.xpChance);
 		expect(DAILY_TIER.hard.success.lootChance).toBeLessThan(DAILY_TIER.easy.correct.lootChance);
@@ -165,10 +178,40 @@ describe('daily claim lock', () => {
 });
 
 describe('Wordle game', () => {
-	test('the word list is curated 5-letter OSRS or BSC names', () => {
+	const commonEnglish = [
+		'SHARK',
+		'TROUT',
+		'DEMON',
+		'QUEST',
+		'CLOAK',
+		'BOOTS',
+		'ARROW',
+		'DEATH',
+		'BLOOD',
+		'STEEL',
+		'CHAOS',
+		'SMOKE',
+		'GIANT',
+		'TROLL',
+		'SEEDS',
+		'BLADE',
+		'TEARS',
+		'PATCH',
+		'BONES',
+		'STAFF',
+		'KNIFE',
+		'SPEAR'
+	];
+
+	test('the word list is 5-letter OSRS or BSC names, not common English', () => {
 		expect(DAILY_WORDLE_WORDS).toContain('CORGO');
-		expect(DAILY_WORDLE_WORDS).toContain('SHARK');
 		expect(DAILY_WORDLE_WORDS).toContain('HYDRA');
+		expect(DAILY_WORDLE_WORDS).toContain('AHRIM');
+		expect(DAILY_WORDLE_GUESSES).toBe(4);
+		expect(DAILY_WORDLE_MS).toBe(90_000);
+		for (const word of commonEnglish) {
+			expect(DAILY_WORDLE_WORDS).not.toContain(word);
+		}
 		for (const word of DAILY_WORDLE_WORDS) {
 			expect(word).toBe(word.toUpperCase());
 			expect(word).toHaveLength(DAILY_WORDLE_LENGTH);
@@ -178,71 +221,65 @@ describe('Wordle game', () => {
 
 	test('scoring handles greens, yellows, and double letters', () => {
 		expect(wordleTiles(scoreWordleGuess('CORGO', 'CORGO'))).toBe('🟩🟩🟩🟩🟩');
-		expect(scoreWordleGuess('SHARK', 'SHARK')).toEqual(Array(5).fill('correct'));
-		const marks = scoreWordleGuess('STEEL', 'TEARS');
-		expect(marks[0]).toBe('present'); // T
-		expect(scoreWordleGuess('BLOOD', 'BOOTS')[0]).toBe('correct');
-		const doubled = scoreWordleGuess('STEEL', 'EERIE');
-		expect(doubled.filter(m => m !== 'absent').length).toBeLessThanOrEqual(2);
+		expect(scoreWordleGuess('HYDRA', 'HYDRA')).toEqual(Array(5).fill('correct'));
+		expect(scoreWordleGuess('AHRIM', 'AKKHA')[0]).toBe('correct');
+		expect(scoreWordleGuess('AHRIM', 'AKKHA')[4]).toBe('absent');
+		const marks = scoreWordleGuess('TORAG', 'AHRIM');
+		expect(marks.some(mark => mark !== 'absent')).toBe(true);
 	});
 
-	test('invalid or short guesses do not consume a try', () => {
+	test('typed guesses are required, and invalid or short guesses do not consume a try', () => {
 		let state = createWordleState(mockRng([], ['CORGO']));
-		state = applyWordleAction(state, { kind: 'letter', letter: 'A' });
-		state = applyWordleAction(state, { kind: 'submit' });
+		state = applyWordleAction(state, { kind: 'submit', guess: 'A' });
 		expect(state.rows).toHaveLength(0);
 		expect(state.notice).toContain('5 letters');
-		for (const letter of 'MAGIC') state = applyWordleAction(state, { kind: 'letter', letter });
-		state = applyWordleAction(state, { kind: 'submit' });
+		state = applyWordleAction(state, { kind: 'submit', guess: 'MAGIC' });
 		expect(isAllowedWordleGuess('MAGIC')).toBe(false);
 		expect(state.rows).toHaveLength(0);
 		expect(state.notice).toContain('Not in the list');
 	});
 
-	test('a correct guess wins, and six misses lose without changing the answer', () => {
+	test('a correct typed guess wins, and four misses lose without changing the answer', () => {
 		let state = createWordleState(mockRng([], ['CORGO']));
 		expect(state.answer).toBe('CORGO');
-		for (const letter of 'CORGO') state = applyWordleAction(state, { kind: 'letter', letter });
-		state = applyWordleAction(state, { kind: 'submit' });
+		state = applyWordleAction(state, { kind: 'submit', guess: 'corgo' });
 		expect(state.status).toBe('won');
 		expect(state.rows).toHaveLength(1);
 
-		let lost = createWordleState(mockRng([], ['SHARK']));
+		let lost = createWordleState(mockRng([], ['HYDRA']));
 		for (let i = 0; i < DAILY_WORDLE_GUESSES; i++) {
-			lost.input = '';
-			for (const letter of 'CORGO') lost = applyWordleAction(lost, { kind: 'letter', letter });
-			lost = applyWordleAction(lost, { kind: 'submit' });
+			lost = applyWordleAction(lost, { kind: 'submit', guess: 'CORGO' });
 		}
 		expect(lost.status).toBe('lost');
 		expect(lost.rows).toHaveLength(DAILY_WORDLE_GUESSES);
-		expect(lost.answer).toBe('SHARK');
-		const after = applyWordleAction(lost, { kind: 'letter', letter: 'A' });
+		expect(lost.answer).toBe('HYDRA');
+		const after = applyWordleAction(lost, { kind: 'submit', guess: 'HYDRA' });
 		expect(after.rows).toHaveLength(DAILY_WORDLE_GUESSES);
-		expect(after.input).toBe('');
 	});
 
-	test('keyboard pages stay within Discord button limits', () => {
-		for (const page of [1, 2] as const) {
-			const rows = wordleKeyboardSpec(page);
-			expect(rows.length).toBeLessThanOrEqual(DISCORD_ACTION_ROW_LIMIT);
-			for (const row of rows) {
-				expect(row.length).toBeLessThanOrEqual(DISCORD_BUTTONS_PER_ROW);
-				for (const button of row) {
-					expect(button.label.length).toBeLessThanOrEqual(DISCORD_BUTTON_LABEL_LIMIT);
-					expect(parseWordleAction(button.id)).not.toBeNull();
-				}
-			}
-		}
+	test('Wordle uses a single Guess button and stays within Discord limits', () => {
+		const rows = wordleGuessRows();
+		expect(discordButtonRowsAreValid(rows)).toBe(true);
+		expect(rows).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
 		expect(hardGameTimeoutMs(createWordleState(mockRng([], ['CORGO'])))).toBe(DAILY_WORDLE_MS);
+		const text = formatWordleMessage(createWordleState(mockRng([], ['CORGO'])), DAILY_WORDLE_MS);
+		expect(text).toContain('4 tries');
+		expect(text).toContain('type your answer');
+		expect(text).not.toContain('6 tries');
 	});
 });
 
 describe('speed-click game', () => {
-	test('only the next target in order counts, and a wrong click fails', () => {
-		const rng = mockRng();
-		const state = createButtonGameState(rng);
+	test('Medium speed click is 5 names in 10 seconds, and a decoy click fails', () => {
+		const state = createButtonGameState(mockRng());
 		expect(state.targets).toHaveLength(DAILY_BUTTON_TARGETS);
 		expect(state.choices).toHaveLength(DAILY_BUTTON_TARGETS + DAILY_BUTTON_DECOYS);
+		expect(DAILY_BUTTON_GAME_MS).toBe(10_000);
+		for (const decoy of state.choices.filter(name => !state.targets.includes(name))) {
+			const cluster = clusterForButtonName(decoy);
+			expect(cluster).toBeTruthy();
+			expect(state.targets.some(target => cluster?.includes(target))).toBe(true);
+		}
 		const firstIndex = state.choices.indexOf(state.targets[0]);
 		const wrongIndex = state.choices.findIndex(name => name !== state.targets[0]);
 		const failed = applyButtonAction(state, wrongIndex);
@@ -257,14 +294,54 @@ describe('speed-click game', () => {
 		expect(hardGameTimeoutMs(state)).toBe(DAILY_BUTTON_GAME_MS);
 	});
 
-	test('speed-click buttons stay within Discord limits and parse back to an index', () => {
+	test('buttons are split into Discord rows of at most 5 and parse back to an index', () => {
 		const state = createButtonGameState(mockRng());
-		const spec = buttonGameSpec(state);
-		expect(spec.length).toBeLessThanOrEqual(DISCORD_ACTION_ROW_LIMIT * DISCORD_BUTTONS_PER_ROW);
-		for (const button of spec) {
+		const rows = buttonGameRows(state);
+		expect(discordButtonRowsAreValid(rows)).toBe(true);
+		expect(rows.every(row => row.length <= DISCORD_BUTTONS_PER_ROW)).toBe(true);
+		expect(rows.flat()).toHaveLength(DAILY_BUTTON_TARGETS + DAILY_BUTTON_DECOYS);
+		for (const button of buttonGameSpec(state)) {
 			expect(button.label.length).toBeLessThanOrEqual(DISCORD_BUTTON_LABEL_LIMIT);
 			expect(parseButtonAction(button.id)).toBeGreaterThanOrEqual(0);
 		}
+		const message = formatButtonGameMessage(state, DAILY_BUTTON_GAME_MS);
+		expect(message).toContain('Medium daily: Speed click');
+		expect(message).not.toContain('Hard daily: Speed click');
+	});
+});
+
+describe('typing challenge', () => {
+	test('the phrase list is medium-length OSRS or BSC names', () => {
+		expect(DAILY_TYPING_MS).toBe(20_000);
+		expect(DAILY_TYPING_PHRASES).toContain('Abyssal whip');
+		expect(DAILY_TYPING_PHRASES).toContain('Bountiful cornucopia');
+		for (const phrase of DAILY_TYPING_PHRASES) {
+			expect(phrase.length).toBeGreaterThanOrEqual(DAILY_TYPING_MIN_CHARS);
+			expect(phrase.length).toBeLessThanOrEqual(DAILY_TYPING_MAX_CHARS);
+		}
+	});
+
+	test('the typed answer is case-insensitive and trimmed, and a typo fails', () => {
+		const state = createTypingState(mockRng([], ['Abyssal whip']));
+		expect(state.phrase).toBe('Abyssal whip');
+		expect(isTypingGuessCorrect(state.phrase, '  ABYSSAL   WHIP  ')).toBe(true);
+		expect(normalizeTypingGuess('  ABYSSAL   WHIP  ')).toBe('abyssal whip');
+		expect(applyTypingGuess(state, 'abyssal whip').status).toBe('won');
+		expect(applyTypingGuess(state, 'Abyssal dagger').status).toBe('lost');
+		expect(hardGameTimeoutMs(state)).toBe(DAILY_TYPING_MS);
+	});
+
+	test('the Type it button is valid, and the prompt image does not include copyable text', async () => {
+		const rows = typingGameRows();
+		expect(discordButtonRowsAreValid(rows)).toBe(true);
+		expect(rows).toEqual([[{ id: 'dlyt:GO', label: 'Type it' }]]);
+		const hidden = formatTypingMessage(createTypingState(mockRng([], ['Abyssal whip'])), DAILY_TYPING_MS);
+		expect(hidden).toContain('shown in the image');
+		expect(hidden).not.toContain('Abyssal whip');
+		expect(hidden.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+		const image = await renderTypingPromptImage('Abyssal whip');
+		expect(image.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe(true);
+		expect(image.toString('utf8')).not.toContain('Abyssal whip');
 	});
 });
 
@@ -274,7 +351,7 @@ describe('daily messages', () => {
 			difficulty: 'hard',
 			success: true,
 			game: 'wordle',
-			detail: 'You got CORGO in 6 tries.'
+			detail: 'You got CORGO in 4 tries.'
 		};
 		const lootLine =
 			"10000000000x Coins, 1x Double XP token, 1x Double loot token, 20x Tradeable Mystery Box, 20x Untradeable Mystery Box, 20x Equippable mystery box, 20x Spinning plate, 1x Hornwood helm, 1x Disk of returning, 1x Diango's claws, 1x Rainbow scarf";
@@ -296,9 +373,10 @@ describe('daily messages', () => {
 		expect(messageHasUserPing(content)).toBe(false);
 		expect(dailyOutcomeSummary(outcome)).toContain('Wordle');
 
-		let wordle = createWordleState(mockRng([], ['CORGO']));
-		for (const letter of 'SHARK') wordle = applyWordleAction(wordle, { kind: 'letter', letter });
-		wordle = applyWordleAction(wordle, { kind: 'submit' });
+		const wordle = applyWordleAction(createWordleState(mockRng([], ['CORGO'])), {
+			kind: 'submit',
+			guess: 'HYDRA'
+		});
 		const wordleText = formatWordleMessage(wordle, DAILY_WORDLE_MS);
 		expect(wordleText.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
 		expect(messageHasUserPing(wordleText)).toBe(false);
@@ -307,6 +385,10 @@ describe('daily messages', () => {
 		const buttonText = formatButtonGameMessage(buttons, DAILY_BUTTON_GAME_MS);
 		expect(buttonText.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
 		expect(messageHasUserPing(buttonText)).toBe(false);
+
+		const typingText = formatTypingMessage(createTypingState(mockRng()), DAILY_TYPING_MS);
+		expect(typingText.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+		expect(messageHasUserPing(typingText)).toBe(false);
 		expect(hardestDailyRewardPreview(lootLine).length).toBeLessThanOrEqual(
 			DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN
 		);
@@ -332,11 +414,13 @@ describe('daily source safety', () => {
 		}
 	});
 
-	test('createHardGame can produce either mode without exposing a reroll hook', () => {
-		const wordle = createHardGame(mockRng([0], ['CORGO']));
-		const buttons = createHardGame(mockRng([1]));
-		expect(wordle.type === 'wordle' || wordle.type === 'buttons').toBe(true);
-		expect(buttons.type === 'wordle' || buttons.type === 'buttons').toBe(true);
+	test('createHardGame picks Wordle or typing, never speed click', () => {
+		expect([...HARD_GAME_TYPES]).toEqual(['wordle', 'typing']);
+		const wordle = createHardGame(mockRng([], ['wordle', 'CORGO']));
+		const typing = createHardGame(mockRng([], ['typing', 'Abyssal whip']));
+		expect(wordle.type).toBe('wordle');
+		expect(typing.type).toBe('typing');
+		expect(createHardGame(mockRng([], ['buttons', 'wordle', 'CORGO'])).type).not.toBe('buttons');
 		expect(normalizeWordleGuess(' corgo! ')).toBe('CORGO');
 	});
 });
@@ -364,20 +448,11 @@ describe('daily trivia difficulty', () => {
 	});
 });
 
-describe('speed-click button rows', () => {
-	test('buttons are split into Discord rows of at most 5', () => {
-		const rows = buttonGameRows(createButtonGameState(mockRng()));
-		expect(discordButtonRowsAreValid(rows)).toBe(true);
-		expect(rows.every(row => row.length <= DISCORD_BUTTONS_PER_ROW)).toBe(true);
-		expect(rows.flat()).toHaveLength(DAILY_BUTTON_TARGETS + DAILY_BUTTON_DECOYS);
-	});
-});
-
-describe('hard reward copy', () => {
+describe('reward copy', () => {
 	test('hard fail does not use trivia incorrect text, and bonuses sit on their own line', () => {
 		const content = buildDailyRewardContent({
 			bonuses: ['Skipper negotiated you 50% more coins!'],
-			outcome: { difficulty: 'hard', success: false, game: 'buttons', detail: 'You ran out of time.' },
+			outcome: { difficulty: 'hard', success: false, game: 'typing', detail: 'You ran out of time.' },
 			loot: { toString: () => '6.8m Coins, 1x Tradeable Mystery Box' } as never,
 			tokenLines: []
 		});
@@ -389,43 +464,61 @@ describe('hard reward copy', () => {
 		expect(messageHasUserPing(content)).toBe(false);
 		expect(content.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
 	});
+
+	test('medium fail pays the Easy-level reward text', () => {
+		const content = buildDailyRewardContent({
+			bonuses: [],
+			outcome: { difficulty: 'medium', success: false, game: 'buttons', detail: 'Wrong button.' },
+			loot: { toString: () => '6.8m Coins' } as never,
+			tokenLines: []
+		});
+		expect(content).toContain('Medium daily: Speed click failed');
+		expect(content).toContain('Easy-level reward');
+		expect(content).not.toContain("That's incorrect");
+	});
 });
 
-describe('hard daily button ratelimit exemption', () => {
+describe('daily button ratelimit exemption', () => {
 	const now = 1_700_000_000_000;
 	const owner = 'owner-1';
 
-	function pending(overrides: Partial<DailyPendingRow> & { game?: DailyPendingRow['game'] } = {}): DailyPendingRow {
-		const baseGame = createButtonGameState(mockRng());
+	function pending(overrides: Partial<DailyPendingRow> = {}): DailyPendingRow {
 		return {
 			userId: owner,
 			claimedAt: now - 1000,
 			difficulty: 'hard',
-			game: overrides.game ?? baseGame,
+			game: overrides.game ?? createWordleState(mockRng()),
 			expiresAt: now + 15_000,
 			paid: false,
 			...overrides
 		};
 	}
 
-	test('owner clicks on an active speed-click or Wordle game are exempt', () => {
-		const buttons = pending();
+	test('owner clicks on an active Wordle, typing, or Medium speed-click game are exempt', () => {
 		const wordle = pending({ game: createWordleState(mockRng()) });
-		expect(isDailyHardGameButtonId('dlyb:0')).toBe(true);
-		expect(isDailyHardGameButtonId('dlyw:A')).toBe(true);
+		const typing = pending({ game: createTypingState(mockRng()) });
+		const buttons = pending({ difficulty: 'medium', game: createButtonGameState(mockRng()) });
 		expect(
 			shouldExemptDailyGameButtonFromGlobalRatelimit({
-				customId: 'dlyb:0',
+				customId: 'dlyw:GO',
 				userId: owner,
-				pending: buttons,
+				pending: wordle,
 				now
 			})
 		).toBe(true);
 		expect(
 			shouldExemptDailyGameButtonFromGlobalRatelimit({
-				customId: 'dlyw:A',
+				customId: 'dlyt:GO',
 				userId: owner,
-				pending: wordle,
+				pending: typing,
+				now
+			})
+		).toBe(true);
+		expect(
+			shouldExemptDailyGameButtonFromGlobalRatelimit({
+				customId: 'dlyb:0',
+				userId: owner,
+				pending: buttons,
 				now
 			})
 		).toBe(true);
@@ -435,28 +528,24 @@ describe('hard daily button ratelimit exemption', () => {
 		const active = pending();
 		const cases = [
 			{ customId: 'REPEATTRIP', userId: owner, pending: active, now },
-			{ customId: 'dlyb:0', userId: 'someone-else', pending: active, now },
-			{ customId: 'dlyb:0', userId: owner, pending: null, now },
-			{ customId: 'dlyb:0', userId: owner, pending: pending({ paid: true }), now },
-			{ customId: 'dlyb:0', userId: owner, pending: pending({ expiresAt: now }), now },
+			{ customId: 'dlyw:GO', userId: 'someone-else', pending: active, now },
+			{ customId: 'dlyw:GO', userId: owner, pending: null, now },
+			{ customId: 'dlyw:GO', userId: owner, pending: pending({ paid: true }), now },
+			{ customId: 'dlyw:GO', userId: owner, pending: pending({ expiresAt: now }), now },
 			{
-				customId: 'dlyb:0',
+				customId: 'dlyw:GO',
 				userId: owner,
-				pending: pending({ game: { ...createButtonGameState(mockRng()), status: 'lost' } }),
+				pending: pending({ game: { ...createWordleState(mockRng()), status: 'lost' as const } }),
 				now
 			},
-			{ customId: 'dlyw:A', userId: owner, pending: active, now },
-			{
-				customId: 'dlyb:0',
-				userId: owner,
-				pending: pending({ game: createWordleState(mockRng()) }),
-				now
-			}
+			{ customId: 'dlyb:0', userId: owner, pending: active, now },
+			{ customId: 'dlyt:GO', userId: owner, pending: active, now }
 		];
 		for (const opts of cases) {
 			expect(shouldExemptDailyGameButtonFromGlobalRatelimit(opts)).toBe(false);
 		}
 		expect(isDailyHardGameButtonId('REPEATTRIP')).toBe(false);
+		expect(isDailyHardGameButtonId('dlyt:GO')).toBe(true);
 	});
 
 	test('the global button handler skips the ratelimit only through this exemption', () => {

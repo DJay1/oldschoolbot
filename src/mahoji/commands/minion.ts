@@ -407,13 +407,12 @@ export const minionCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'daily',
-			description:
-				'Claim your daily reward. Easy is quick trivia, Medium is three questions, Hard is a timed game.',
+			description: 'Claim your daily reward. Easy is trivia, Medium is speed click, Hard is Wordle or typing.',
 			options: [
 				{
 					type: 'String',
 					name: 'difficulty',
-					description: 'Easy trivia, Medium trivia streak, or a timed Hard game.',
+					description: 'Easy trivia, Medium speed click, or a timed Hard Wordle or typing game.',
 					required: false,
 					choices: [
 						{ name: 'Easy', value: 'easy' },

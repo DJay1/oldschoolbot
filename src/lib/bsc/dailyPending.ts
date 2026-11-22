@@ -1,5 +1,6 @@
 import {
 	DAILY_SPEED_CLICK_BUTTON_PREFIX,
+	DAILY_TYPING_BUTTON_PREFIX,
 	DAILY_WORDLE_BUTTON_PREFIX,
 	type HardGameState
 } from '@/lib/bsc/dailyGames.js';
@@ -7,7 +8,7 @@ import {
 export interface DailyPendingRow {
 	userId: string;
 	claimedAt: number;
-	difficulty: 'hard';
+	difficulty: 'medium' | 'hard';
 	game: HardGameState;
 	expiresAt: number;
 	paid: boolean;
@@ -43,13 +44,13 @@ function parseRow(row: {
 	expires_at: bigint | number | string;
 	paid: boolean;
 }): DailyPendingRow | null {
-	if (row.difficulty !== 'hard') return null;
+	if (row.difficulty !== 'hard' && row.difficulty !== 'medium') return null;
 	const game = typeof row.game_state === 'string' ? (JSON.parse(row.game_state) as HardGameState) : row.game_state;
-	if (!game || (game.type !== 'wordle' && game.type !== 'buttons')) return null;
+	if (!game || (game.type !== 'wordle' && game.type !== 'buttons' && game.type !== 'typing')) return null;
 	return {
 		userId: row.user_id,
 		claimedAt: asNumber(row.claimed_at),
-		difficulty: 'hard',
+		difficulty: row.difficulty === 'medium' ? 'medium' : 'hard',
 		game,
 		expiresAt: asNumber(row.expires_at),
 		paid: Boolean(row.paid)
@@ -134,7 +135,11 @@ export function isDailyPendingExpired(expiresAt: number, now = Date.now()): bool
 }
 
 export function isDailyHardGameButtonId(customId: string): boolean {
-	return customId.startsWith(DAILY_WORDLE_BUTTON_PREFIX) || customId.startsWith(DAILY_SPEED_CLICK_BUTTON_PREFIX);
+	return (
+		customId.startsWith(DAILY_WORDLE_BUTTON_PREFIX) ||
+		customId.startsWith(DAILY_SPEED_CLICK_BUTTON_PREFIX) ||
+		customId.startsWith(DAILY_TYPING_BUTTON_PREFIX)
+	);
 }
 
 /** Only the claim owner's clicks on an unpaid, unexpired, still-running Hard daily game skip the global button ratelimit. */
@@ -153,6 +158,7 @@ export function shouldExemptDailyGameButtonFromGlobalRatelimit(opts: {
 	if (pending.game.status !== 'playing') return false;
 	if (opts.customId.startsWith(DAILY_WORDLE_BUTTON_PREFIX) && pending.game.type !== 'wordle') return false;
 	if (opts.customId.startsWith(DAILY_SPEED_CLICK_BUTTON_PREFIX) && pending.game.type !== 'buttons') return false;
+	if (opts.customId.startsWith(DAILY_TYPING_BUTTON_PREFIX) && pending.game.type !== 'typing') return false;
 	return true;
 }
 
