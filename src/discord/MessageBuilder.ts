@@ -2,7 +2,7 @@ import type { ButtonBuilder, EmbedBuilder } from '@oldschoolgg/discord';
 import type { Bank } from 'oldschooljs';
 
 import chatHeadImage, { type HeadKey } from '@/lib/canvas/chatHeadImage.js';
-import { type DrawChestLootImageOptions, drawChestLootImage } from '@/lib/canvas/chestImage.js';
+import { chestLootImageSource, type DrawChestLootImageOptions, drawChestLootImage } from '@/lib/canvas/chestImage.js';
 import { bankImageSource, type MakeBankImageOptions, makeBankImage } from '@/lib/util/makeBankImage.js';
 
 export class MessageBuilderClass {
@@ -10,6 +10,7 @@ export class MessageBuilderClass {
 	private chatHeadImagePromise?: Promise<SendableFile>;
 	private bankImagePromise?: Promise<SendableFile>;
 	private chestLootImagePromise?: Promise<SendableFile>;
+	private chestLootImageOptions?: DrawChestLootImageOptions;
 	private _built = false;
 
 	constructor(startingMessage: BaseSendableMessage = {}) {
@@ -81,8 +82,56 @@ export class MessageBuilderClass {
 		return false;
 	}
 
+	/**
+	 * Redraws this message's chest loot image with extras added to the given user's
+	 * panel (or the only panel). Display only: it never touches anyone's bank. Returns
+	 * false when the message has no chest image to redraw.
+	 */
+	async addItemsToChestLootImage(
+		extras: Bank,
+		userId: string,
+		render: (opts: DrawChestLootImageOptions) => Promise<SendableFile> = drawChestLootImage
+	): Promise<boolean> {
+		if (extras.length === 0) return false;
+
+		const withExtras = (opts: DrawChestLootImageOptions): DrawChestLootImageOptions | null => {
+			const match = opts.entries.findIndex(entry => entry.user.id === userId);
+			const target = match >= 0 ? match : opts.entries.length === 1 ? 0 : -1;
+			if (target < 0) return null;
+			return {
+				type: opts.type,
+				entries: opts.entries.map((entry, i) =>
+					i === target ? { ...entry, loot: entry.loot.clone().add(extras) } : entry
+				)
+			};
+		};
+
+		if (this.chestLootImageOptions) {
+			const next = withExtras(this.chestLootImageOptions);
+			if (!next) return false;
+			this.chestLootImageOptions = next;
+			this.chestLootImagePromise = render(next);
+			return true;
+		}
+
+		const files = this._message.files ?? [];
+		for (let i = files.length - 1; i >= 0; i--) {
+			const source = chestLootImageSource(files[i]);
+			if (!source) continue;
+			const next = withExtras(source);
+			if (!next) return false;
+			files[i] = await render(next);
+			return true;
+		}
+		return false;
+	}
+
 	addChestLootImage(opts: DrawChestLootImageOptions): this {
-		this.chestLootImagePromise = drawChestLootImage(opts);
+		this.chestLootImageOptions = {
+			type: opts.type,
+			entries: opts.entries.map(entry => ({ ...entry, loot: entry.loot.clone() }))
+		};
+		this.chestLootImagePromise = drawChestLootImage(this.chestLootImageOptions);
 		return this;
 	}
 

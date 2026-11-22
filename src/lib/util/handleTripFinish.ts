@@ -24,6 +24,7 @@ import { getBscPatronAccount } from '@/lib/bsc/patronAccount.js';
 import { formatTripFlairLine } from '@/lib/bsc/patronFlair.js';
 import { announceThanksgivingPets } from '@/lib/bsc/rareAnnouncements.js';
 import { tryStartQueuedTrip } from '@/lib/bsc/tripQueue.js';
+import { type DrawChestLootImageOptions, drawChestLootImage } from '@/lib/canvas/chestImage.js';
 import { clueFinishLootImage } from '@/lib/clues/clueFinishLoot.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { buildClueButtons } from '@/lib/clues/clueUtils.js';
@@ -786,16 +787,17 @@ const tripFinishEffects: TripFinishEffect[] = [
 	}
 ];
 
-/** Redraws the trip's bank loot image with event items, or adds a small image of them if it has none. */
+/** Redraws the trip's existing loot image (bank or chest) with event items. Display only. If the trip has no loot image, the items stay in the message text only — no second image is added. */
 export async function showEventItemsInLootImage(
 	message: MessageBuilderClass,
 	items: Bank,
 	user: MUser,
-	render: typeof makeBankImage = makeBankImage
+	render: typeof makeBankImage = makeBankImage,
+	chestRender: (opts: DrawChestLootImageOptions) => Promise<SendableFile> = drawChestLootImage
 ): Promise<void> {
 	try {
 		if (await message.addItemsToBankImage(items, render)) return;
-		message.addFile(await render({ bank: items, title: 'The Straw Hat Harvest', user }));
+		if (await message.addItemsToChestLootImage(items, user.id, chestRender)) return;
 	} catch (err) {
 		Logging.logError(err as Error, { user_id: user.id, source: 'tripFinishEventLootImage' });
 	}
@@ -987,8 +989,9 @@ export async function handleTripFinish(
 		}
 	}
 
-	// Event drops rolled here (Straw Hat Harvest) go into the trip's loot image. Clue finishes
-	// already drew every extra above. Display only, the items were added once in the transaction.
+	// Event drops rolled here (Straw Hat Harvest) go into the trip's existing loot image when
+	// it has one. Otherwise they stay in the message text only. Clue finishes already drew
+	// every extra above. Display only, the items were added once in the transaction.
 	if (extrasAdded && lootImageItems.length > 0 && data.type !== 'ClueCompletion') {
 		await showEventItemsInLootImage(message, lootImageItems, user);
 	}

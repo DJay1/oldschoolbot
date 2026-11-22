@@ -251,6 +251,21 @@ export interface DrawChestLootImageOptions {
 	entries: ChestLootEntry[];
 	type: (typeof chestLootTypes)[number]['title'];
 }
+
+/** What each chest loot image was drawn from, so a trip finish can redraw it with extra items. */
+const chestLootImageSources = new WeakMap<SendableFile, DrawChestLootImageOptions>();
+
+export function rememberChestLootImageSource(file: SendableFile, opts: DrawChestLootImageOptions) {
+	chestLootImageSources.set(file, {
+		type: opts.type,
+		entries: opts.entries.map(entry => ({ ...entry, loot: entry.loot.clone() }))
+	});
+}
+
+export function chestLootImageSource(file: SendableFile | undefined): DrawChestLootImageOptions | undefined {
+	return file ? chestLootImageSources.get(file) : undefined;
+}
+
 export async function drawChestLootImage(options: DrawChestLootImageOptions): Promise<SendableFile> {
 	const type = chestLootTypes.find(t => t.title === options.type);
 	if (!type) {
@@ -267,14 +282,19 @@ export async function drawChestLootImage(options: DrawChestLootImageOptions): Pr
 	const anyoneGotPurple = canvasResults.some(result => result.isPurple);
 	const fileName = `${anyoneGotPurple ? 'SPOILER_' : ''}${type.title.toLowerCase().replace(/\s+/g, '')}-${Date.now()}.png`;
 
+	const remember = (file: SendableFile) => {
+		rememberChestLootImageSource(file, options);
+		return file;
+	};
+
 	if (canvasResults.length === 1) {
 		const imageBuffer = await canvasResults[0].canvas.toBuffer();
-		return { name: fileName, buffer: imageBuffer };
+		return remember({ name: fileName, buffer: imageBuffer });
 	}
 
 	const canvases = canvasResults.map(result => result.canvas);
 	const combinedCanvas = combineCanvases(canvases);
 	const combinedBuffer = await combinedCanvas.toBuffer();
 
-	return { name: fileName, buffer: combinedBuffer };
+	return remember({ name: fileName, buffer: combinedBuffer });
 }
