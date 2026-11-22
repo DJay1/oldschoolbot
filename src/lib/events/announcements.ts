@@ -1,13 +1,13 @@
 import { Time } from '@oldschoolgg/toolkit';
 
-import { Channel } from '@/lib/constants.js';
+import { ANNOUNCEMENTS_CHANNEL_ID } from '@/lib/constants.js';
 import { thanksgivingCodeEnabled } from '@/lib/events/thanksgiving/core.js';
 import { isEventActive, resolveSeasonalEvent } from './registry.js';
 import { type SeasonalEventId, seasonalEventIds } from './types.js';
 
 /**
  * Event-start announcements: when a scheduled seasonal event window opens, post its stored message
- * to the notifications channel once.
+ * to the BSC announcements channel once.
  *
  * - Only scheduled windows (an override with a start time) are announced, only while the event is
  *   active, and only within EVENT_ANNOUNCE_CATCH_UP_MS of the start (so a bot that was down at the
@@ -159,8 +159,8 @@ function safeLogError(err: unknown, context?: Record<string, unknown>) {
 	}
 }
 
-export const notificationsSender: EventAnnouncementSender = async content => {
-	await globalClient.sendMessage(Channel.Notifications, {
+export const announcementsChannelSender: EventAnnouncementSender = async content => {
+	await globalClient.sendMessage(ANNOUNCEMENTS_CHANNEL_ID, {
 		content,
 		allowedMentions: { parse: [], users: [], roles: [] }
 	});
@@ -173,7 +173,7 @@ export const notificationsSender: EventAnnouncementSender = async content => {
 export async function processEventStartAnnouncements(
 	now = Date.now(),
 	store: EventAnnouncementStore = dbEventAnnouncementStore,
-	send: EventAnnouncementSender = notificationsSender
+	send: EventAnnouncementSender = announcementsChannelSender
 ): Promise<SeasonalEventId[]> {
 	const posted: SeasonalEventId[] = [];
 	for (const id of seasonalEventIds) {

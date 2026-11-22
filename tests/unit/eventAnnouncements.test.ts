@@ -1,6 +1,7 @@
 import { Time } from '@oldschoolgg/toolkit';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 
+import { ANNOUNCEMENTS_CHANNEL_ID } from '@/lib/constants.js';
 import {
 	DISCORD_MESSAGE_LIMIT,
 	EVENT_ANNOUNCE_CATCH_UP_MS,
@@ -37,11 +38,17 @@ function memoryStore(failRelease = false) {
 }
 
 describe('event start announcements', () => {
+
 	beforeEach(() => {
 		clearSeasonalEventOverrides();
 	});
 	afterEach(() => {
 		clearSeasonalEventOverrides();
+	});
+
+	test('posts to the BSC announcements channel, not funziez-logs', () => {
+		expect(ANNOUNCEMENTS_CHANNEL_ID).toBe('1569407936537821259');
+		expect(ANNOUNCEMENTS_CHANNEL_ID).not.toBe('1569070774055080036');
 	});
 
 	test('thanksgiving messages fit Discord, use real names and never ping roles/everyone', () => {
