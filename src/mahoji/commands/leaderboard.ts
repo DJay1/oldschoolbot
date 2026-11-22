@@ -20,7 +20,16 @@ import Agility from '@/lib/skilling/skills/agility.js';
 import Hunter from '@/lib/skilling/skills/hunter/hunter.js';
 import { Skills } from '@/lib/skilling/skills/index.js';
 import { type SkillNameType, SkillsArray } from '@/lib/skilling/types.js';
-import { fetchTopRoleStandings, formatTopRoleStandings } from '@/lib/topRoleLeaders.js';
+import {
+	collectBreakdownUserIDs,
+	collectStandingUserIDs,
+	fetchTopRoleBreakdown,
+	fetchTopRoleStandings,
+	formatTopRoleBreakdown,
+	formatTopRoleStandings,
+	isTopRoleKey,
+	TOP_ROLE_CHOICES
+} from '@/lib/topRoleLeaders.js';
 import { fetchCLLeaderboard, fetchTameCLLeaderboard } from '@/lib/util/clLeaderboard.js';
 import { userEventsToMap } from '@/lib/util/userEvents.js';
 
@@ -916,7 +925,16 @@ export const leaderboardCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'top_roles',
-			description: 'See who is currently leading each Top role.'
+			description: 'See who is currently leading each Top role.',
+			options: [
+				{
+					type: 'String',
+					name: 'role',
+					description: 'Show the top 5 and how one Top role is scored.',
+					required: false,
+					choices: TOP_ROLE_CHOICES
+				}
+			]
 		}
 	],
 	run: async ({ options, interaction, user }) => {
@@ -1028,25 +1046,31 @@ export const leaderboardCommand = defineCommand({
 			if (wait > 0) {
 				return `Please wait ${Math.ceil(wait / 1000)}s before checking Top roles again.`;
 			}
-			const standings = await fetchTopRoleStandings();
-			const ids = [
-				...new Set(
-					standings.flatMap(row =>
-						[row.leader?.userID, row.runnerUp?.userID].filter((id): id is string => Boolean(id))
-					)
-				)
-			];
+			const roleKey = options.top_roles.role;
+			const noPings = { parse: [], users: [], roles: [] };
 			const names: Record<string, string> = {};
-			await Promise.all(
-				ids.map(async id => {
-					try {
-						names[id] = await Cache.getUsername(id);
-					} catch {
-						names[id] = 'Unknown';
-					}
-				})
-			);
-			return formatTopRoleStandings(standings, names);
+			const loadNames = async (ids: string[]) => {
+				await Promise.all(
+					ids.map(async id => {
+						try {
+							names[id] = await Cache.getUsername(id);
+						} catch {
+							names[id] = 'Unknown';
+						}
+					})
+				);
+			};
+			if (typeof roleKey === 'string' && roleKey.length > 0) {
+				if (!isTopRoleKey(roleKey)) {
+					return 'That is not a Top role.';
+				}
+				const breakdown = await fetchTopRoleBreakdown(roleKey);
+				await loadNames(collectBreakdownUserIDs(breakdown));
+				return { content: formatTopRoleBreakdown(breakdown, names), allowedMentions: noPings };
+			}
+			const standings = await fetchTopRoleStandings();
+			await loadNames(collectStandingUserIDs(standings));
+			return { content: formatTopRoleStandings(standings, names), allowedMentions: noPings };
 		}
 
 		return 'Invalid input.';
