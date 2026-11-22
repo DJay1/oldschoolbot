@@ -407,7 +407,21 @@ export const minionCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'daily',
-			description: 'Claim some daily free GP.'
+			description:
+				'Claim your daily reward. Easy is quick trivia, Medium is three questions, Hard is a timed game.',
+			options: [
+				{
+					type: 'String',
+					name: 'difficulty',
+					description: 'Easy trivia, Medium trivia streak, or a timed Hard game.',
+					required: false,
+					choices: [
+						{ name: 'Easy', value: 'easy' },
+						{ name: 'Medium', value: 'medium' },
+						{ name: 'Hard', value: 'hard' }
+					]
+				}
+			]
 		},
 		{
 			type: 'Subcommand',
@@ -623,7 +637,7 @@ export const minionCommand = defineCommand({
 			return tfaUnchargeCommand(interaction, user, options.uncharge.item);
 		}
 		if (options.daily) {
-			return dailyCommand(rng, interaction, user);
+			return dailyCommand(rng, interaction, user, options.daily.difficulty);
 		}
 		if (options.train) return trainCommand(user, options.train.style);
 		if (options.pat) return rng.pick(patMessages).replace('{name}', user.minionName);
