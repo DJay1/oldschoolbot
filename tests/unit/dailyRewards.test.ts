@@ -33,7 +33,13 @@ import {
 	wordleKeyboardSpec,
 	wordleTiles
 } from '@/lib/bsc/dailyGames.js';
-import { isDailyPendingExpired, remainingMs } from '@/lib/bsc/dailyPending.js';
+import type { DailyPendingRow } from '@/lib/bsc/dailyPending.js';
+import {
+	isDailyHardGameButtonId,
+	isDailyPendingExpired,
+	remainingMs,
+	shouldExemptDailyGameButtonFromGlobalRatelimit
+} from '@/lib/bsc/dailyPending.js';
 import {
 	buildDailyRewardContent,
 	DAILY_TIER,
@@ -382,5 +388,84 @@ describe('hard reward copy', () => {
 		expect(content).toContain('smaller reward');
 		expect(messageHasUserPing(content)).toBe(false);
 		expect(content.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+	});
+});
+
+describe('hard daily button ratelimit exemption', () => {
+	const now = 1_700_000_000_000;
+	const owner = 'owner-1';
+
+	function pending(overrides: Partial<DailyPendingRow> & { game?: DailyPendingRow['game'] } = {}): DailyPendingRow {
+		const baseGame = createButtonGameState(mockRng());
+		return {
+			userId: owner,
+			claimedAt: now - 1000,
+			difficulty: 'hard',
+			game: overrides.game ?? baseGame,
+			expiresAt: now + 15_000,
+			paid: false,
+			...overrides
+		};
+	}
+
+	test('owner clicks on an active speed-click or Wordle game are exempt', () => {
+		const buttons = pending();
+		const wordle = pending({ game: createWordleState(mockRng()) });
+		expect(isDailyHardGameButtonId('dlyb:0')).toBe(true);
+		expect(isDailyHardGameButtonId('dlyw:A')).toBe(true);
+		expect(
+			shouldExemptDailyGameButtonFromGlobalRatelimit({
+				customId: 'dlyb:0',
+				userId: owner,
+				pending: buttons,
+				now
+			})
+		).toBe(true);
+		expect(
+			shouldExemptDailyGameButtonFromGlobalRatelimit({
+				customId: 'dlyw:A',
+				userId: owner,
+				pending: wordle,
+				now
+			})
+		).toBe(true);
+	});
+
+	test('does not exempt other buttons, other users, or a game that is no longer active', () => {
+		const active = pending();
+		const cases = [
+			{ customId: 'REPEATTRIP', userId: owner, pending: active, now },
+			{ customId: 'dlyb:0', userId: 'someone-else', pending: active, now },
+			{ customId: 'dlyb:0', userId: owner, pending: null, now },
+			{ customId: 'dlyb:0', userId: owner, pending: pending({ paid: true }), now },
+			{ customId: 'dlyb:0', userId: owner, pending: pending({ expiresAt: now }), now },
+			{
+				customId: 'dlyb:0',
+				userId: owner,
+				pending: pending({ game: { ...createButtonGameState(mockRng()), status: 'lost' } }),
+				now
+			},
+			{ customId: 'dlyw:A', userId: owner, pending: active, now },
+			{
+				customId: 'dlyb:0',
+				userId: owner,
+				pending: pending({ game: createWordleState(mockRng()) }),
+				now
+			}
+		];
+		for (const opts of cases) {
+			expect(shouldExemptDailyGameButtonFromGlobalRatelimit(opts)).toBe(false);
+		}
+		expect(isDailyHardGameButtonId('REPEATTRIP')).toBe(false);
+	});
+
+	test('the global button handler skips the ratelimit only through this exemption', () => {
+		const src = readFileSync(resolve('src/lib/util/globalInteractions.ts'), 'utf8');
+		const exempt = src.indexOf('if (await shouldExemptUserDailyGameButton(interaction.userId, id)) return;');
+		const handle = src.indexOf(
+			'const response = await globalButtonInteractionHandler({ interaction, id, rng: cryptoRng })'
+		);
+		expect(exempt).toBeGreaterThan(-1);
+		expect(handle).toBeGreaterThan(exempt);
 	});
 });

@@ -8,6 +8,7 @@ import { Bank, type ItemBank } from 'oldschooljs';
 
 import { activity_type_enum } from '@/prisma/main/enums.js';
 import type { Giveaway } from '@/prisma/main.js';
+import { shouldExemptUserDailyGameButton } from '@/lib/bsc/dailyPending.js';
 import { formatBscPatronRequirement } from '@/lib/bsc/patronTiers.js';
 import { disableQueueRemindersFromButton } from '@/lib/bsc/tripQueue.js';
 import { giveawayCache } from '@/lib/cache.js';
@@ -580,6 +581,11 @@ export async function globalButtonInteractionHandlerWrapper(
 	if (!id) return;
 	if ((ignoredInteractionIDs as string[]).includes(id)) return;
 	if (['DYN_', 'LP_'].some(s => id.startsWith(s))) return;
+	// Hard daily Wordle/speed-click buttons are collected on the game message.
+	// Skip the 1-click-per-2s global button ratelimit only for the claim owner
+	// while that unpaid game is still running, so a fast click streak cannot
+	// consume the interaction or farm other button commands.
+	if (await shouldExemptUserDailyGameButton(interaction.userId, id)) return;
 	const response = await globalButtonInteractionHandler({ interaction, id, rng: cryptoRng });
 	if (
 		response === null ||

@@ -1,4 +1,8 @@
-import type { HardGameState } from '@/lib/bsc/dailyGames.js';
+import {
+	DAILY_SPEED_CLICK_BUTTON_PREFIX,
+	DAILY_WORDLE_BUTTON_PREFIX,
+	type HardGameState
+} from '@/lib/bsc/dailyGames.js';
 
 export interface DailyPendingRow {
 	userId: string;
@@ -127,4 +131,37 @@ export function remainingMs(expiresAt: number, now = Date.now()): number {
 
 export function isDailyPendingExpired(expiresAt: number, now = Date.now()): boolean {
 	return now >= expiresAt;
+}
+
+export function isDailyHardGameButtonId(customId: string): boolean {
+	return customId.startsWith(DAILY_WORDLE_BUTTON_PREFIX) || customId.startsWith(DAILY_SPEED_CLICK_BUTTON_PREFIX);
+}
+
+/** Only the claim owner's clicks on an unpaid, unexpired, still-running Hard daily game skip the global button ratelimit. */
+export function shouldExemptDailyGameButtonFromGlobalRatelimit(opts: {
+	customId: string;
+	userId: string;
+	pending: DailyPendingRow | null;
+	now?: number;
+}): boolean {
+	if (!isDailyHardGameButtonId(opts.customId)) return false;
+	const pending = opts.pending;
+	if (!pending) return false;
+	if (pending.userId !== opts.userId) return false;
+	if (pending.paid) return false;
+	if (isDailyPendingExpired(pending.expiresAt, opts.now ?? Date.now())) return false;
+	if (pending.game.status !== 'playing') return false;
+	if (opts.customId.startsWith(DAILY_WORDLE_BUTTON_PREFIX) && pending.game.type !== 'wordle') return false;
+	if (opts.customId.startsWith(DAILY_SPEED_CLICK_BUTTON_PREFIX) && pending.game.type !== 'buttons') return false;
+	return true;
+}
+
+export async function shouldExemptUserDailyGameButton(
+	userId: string,
+	customId: string,
+	now = Date.now()
+): Promise<boolean> {
+	if (!isDailyHardGameButtonId(customId)) return false;
+	const pending = await loadDailyPending(userId);
+	return shouldExemptDailyGameButtonFromGlobalRatelimit({ customId, userId, pending, now });
 }

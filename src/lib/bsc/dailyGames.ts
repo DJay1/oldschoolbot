@@ -4,6 +4,8 @@ export const DAILY_WORDLE_MS = 2 * 60 * 1000;
 export const DAILY_BUTTON_GAME_MS = 15 * 1000;
 export const DAILY_BUTTON_TARGETS = 3;
 export const DAILY_BUTTON_DECOYS = 5;
+export const DAILY_WORDLE_BUTTON_PREFIX = 'dlyw:';
+export const DAILY_SPEED_CLICK_BUTTON_PREFIX = 'dlyb:';
 
 /**
  * Curated 5-letter OSRS/BSC names players will actually know.
@@ -182,7 +184,7 @@ export type WordleAction =
 	| { kind: 'submit' };
 
 export function parseWordleAction(customId: string): WordleAction | null {
-	if (!customId.startsWith('dlyw:')) return null;
+	if (!customId.startsWith(DAILY_WORDLE_BUTTON_PREFIX)) return null;
 	const value = customId.slice(5);
 	if (value === 'CLR') return { kind: 'clear' };
 	if (value === 'GO') return { kind: 'submit' };
@@ -298,7 +300,7 @@ export function createButtonGameState(rng: RNGProvider): ButtonGameState {
 }
 
 export function parseButtonAction(customId: string): number | null {
-	if (!customId.startsWith('dlyb:')) return null;
+	if (!customId.startsWith(DAILY_SPEED_CLICK_BUTTON_PREFIX)) return null;
 	const index = Number(customId.slice(5));
 	return Number.isInteger(index) && index >= 0 ? index : null;
 }
