@@ -4,10 +4,14 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { ANNOUNCEMENTS_CHANNEL_ID } from '@/lib/constants.js';
 import {
 	DISCORD_MESSAGE_LIMIT,
+	DISCORD_SAFE_FILE_LIMIT,
 	EVENT_ANNOUNCE_CATCH_UP_MS,
+	EVENT_GUIDE_PDF_NAME,
 	EVENT_START_ANNOUNCEMENTS,
 	type EventAnnouncementStore,
 	eventAnnouncementDue,
+	filesForAnnouncement,
+	loadEventGuidePdf,
 	processEventStartAnnouncements
 } from '@/lib/events/announcements.js';
 import { clearSeasonalEventOverrides, setSeasonalEventOverride } from '@/lib/events/registry.js';
@@ -149,7 +153,7 @@ describe('event start announcements', () => {
 		const sent: string[] = [];
 		let n = 0;
 		const failSecond = async (c: string) => {
-			if (++n === 2) throw new Error('second failed');
+			if (++n >= 2) throw new Error('second failed');
 			sent.push(c);
 		};
 		expect(await processEventStartAnnouncements(START + Time.Minute, store, failSecond)).toEqual([]);
@@ -160,4 +164,45 @@ describe('event start announcements', () => {
 		expect(sent.length).toBe(1);
 		expect(calls).toBe(1);
 	});
+
+	test('event guide PDF is a real PDF under Discord size limits', async () => {
+		expect(EVENT_START_ANNOUNCEMENTS.thanksgiving?.guidePdfAt).toEqual([1]);
+		const file = await loadEventGuidePdf();
+		expect(file).not.toBeNull();
+		expect(file!.name).toBe(EVENT_GUIDE_PDF_NAME);
+		expect(file!.buffer.subarray(0, 5).toString('ascii')).toBe('%PDF-');
+		expect(file!.buffer.length).toBeGreaterThan(0);
+		expect(file!.buffer.length).toBeLessThan(DISCORD_SAFE_FILE_LIMIT);
+		expect(await filesForAnnouncement('thanksgiving', 0)).toBeUndefined();
+		const second = await filesForAnnouncement('thanksgiving', 1);
+		expect(second).toHaveLength(1);
+		expect(second![0].name).toBe(EVENT_GUIDE_PDF_NAME);
+	});
+
+	test('a failed PDF attach falls back to text-only without resending earlier messages', async () => {
+		setSeasonalEventOverride('thanksgiving', { enabled: true, start: START, end: END });
+		const store = memoryStore();
+		const sent: { content: string; files: number }[] = [];
+		const dummy = [{ name: 'guide.pdf', buffer: Buffer.from('%PDF-test') }];
+		const loadFiles = async (_id: SeasonalEventId, i: number) => (i === 1 ? dummy : undefined);
+		let attempts = 0;
+		const send = async (content: string, files?: readonly { name: string; buffer: Buffer }[]) => {
+			attempts++;
+			if (files?.length) throw new Error('attach failed');
+			sent.push({ content, files: files?.length ?? 0 });
+		};
+		expect(await processEventStartAnnouncements(START, store, send, loadFiles)).toEqual(['thanksgiving']);
+		expect(store.rows.size).toBe(1);
+		expect(attempts).toBe(3);
+		expect(sent).toEqual([
+			{ content: EVENT_START_ANNOUNCEMENTS.thanksgiving!.messages[0], files: 0 },
+			{ content: EVENT_START_ANNOUNCEMENTS.thanksgiving!.messages[1], files: 0 }
+		]);
+		expect(
+			await processEventStartAnnouncements(START + Time.Minute, store, async () => {
+				throw new Error('should not send again');
+			}, loadFiles)
+		).toEqual([]);
+	});
+
 });

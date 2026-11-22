@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+
 import { Time } from '@oldschoolgg/toolkit';
 
 import { ANNOUNCEMENTS_CHANNEL_ID } from '@/lib/constants.js';
@@ -16,6 +18,8 @@ import { type SeasonalEventId, seasonalEventIds } from './types.js';
  *   no Prisma schema change), so restarts never post twice. An event announced in the last
  *   EVENT_ANNOUNCE_REPEAT_GUARD_MS is not announced again if its start is moved.
  * - No pings: allowedMentions is empty, so <@id> mentions render as names without notifying anyone.
+ * - The second Thanksgiving message attaches the event guide PDF. If the attach fails, that
+ *   message is sent as text only; earlier messages are never resent.
  */
 
 export interface EventStartAnnouncement {
@@ -23,11 +27,18 @@ export interface EventStartAnnouncement {
 	messages: readonly string[];
 	/** Extra code gate for the event (e.g. the Thanksgiving master switch). */
 	codeEnabled?: () => boolean;
+	/** 0-based indexes of messages that should also attach the event guide PDF. */
+	guidePdfAt?: readonly number[];
 }
 
 export const DISCORD_MESSAGE_LIMIT = 2000;
 export const EVENT_ANNOUNCE_CATCH_UP_MS = 6 * Time.Hour;
 export const EVENT_ANNOUNCE_REPEAT_GUARD_MS = 30 * Time.Day;
+export const EVENT_GUIDE_PDF_PATH = './assets/events/straw-hat-harvest-guide.pdf';
+export const EVENT_GUIDE_PDF_NAME = 'The Straw Hat Harvest Event Guide.pdf';
+export const DISCORD_SAFE_FILE_LIMIT = 8 * 1024 * 1024;
+const DISCORD_HARD_FILE_LIMIT = 25 * 1024 * 1024;
+
 
 const THANKSGIVING_TESTERS = [
 	'611598764574114049',
@@ -86,7 +97,8 @@ export const EVENT_START_ANNOUNCEMENTS: Partial<Record<SeasonalEventId, EventSta
 				'',
 				'Happy Thanksgiving! 🦃'
 			].join('\n')
-		]
+		],
+		guidePdfAt: [1]
 	}
 };
 
@@ -112,7 +124,33 @@ export interface EventAnnouncementStore {
 	release(id: SeasonalEventId, start: number): Promise<void>;
 }
 
-export type EventAnnouncementSender = (content: string) => Promise<void>;
+export type EventAnnouncementFile = { name: string; buffer: Buffer };
+export type EventAnnouncementSender = (content: string, files?: readonly EventAnnouncementFile[]) => Promise<void>;
+export type EventAnnouncementFileLoader = (
+	id: SeasonalEventId,
+	messageIndex: number
+) => Promise<readonly EventAnnouncementFile[] | undefined>;
+
+export async function loadEventGuidePdf(): Promise<EventAnnouncementFile | null> {
+	try {
+		const buffer = await readFile(EVENT_GUIDE_PDF_PATH);
+		if (buffer.length === 0 || buffer.length > DISCORD_HARD_FILE_LIMIT) return null;
+		return { name: EVENT_GUIDE_PDF_NAME, buffer };
+	} catch {
+		return null;
+	}
+}
+
+export async function filesForAnnouncement(
+	id: SeasonalEventId,
+	messageIndex: number
+): Promise<readonly EventAnnouncementFile[] | undefined> {
+	const entry = EVENT_START_ANNOUNCEMENTS[id];
+	if (!entry?.guidePdfAt?.includes(messageIndex)) return undefined;
+	const file = await loadEventGuidePdf();
+	return file ? [file] : undefined;
+}
+
 
 async function ensureTable() {
 	await prisma.$executeRawUnsafe(`
@@ -159,9 +197,10 @@ function safeLogError(err: unknown, context?: Record<string, unknown>) {
 	}
 }
 
-export const announcementsChannelSender: EventAnnouncementSender = async content => {
+export const announcementsChannelSender: EventAnnouncementSender = async (content, files) => {
 	await globalClient.sendMessage(ANNOUNCEMENTS_CHANNEL_ID, {
 		content,
+		...(files?.length ? { files: files.map(f => ({ name: f.name, buffer: f.buffer })) } : {}),
 		allowedMentions: { parse: [], users: [], roles: [] }
 	});
 };
@@ -173,7 +212,8 @@ export const announcementsChannelSender: EventAnnouncementSender = async content
 export async function processEventStartAnnouncements(
 	now = Date.now(),
 	store: EventAnnouncementStore = dbEventAnnouncementStore,
-	send: EventAnnouncementSender = announcementsChannelSender
+	send: EventAnnouncementSender = announcementsChannelSender,
+	loadFiles: EventAnnouncementFileLoader = filesForAnnouncement
 ): Promise<SeasonalEventId[]> {
 	const posted: SeasonalEventId[] = [];
 	for (const id of seasonalEventIds) {
@@ -194,9 +234,22 @@ export async function processEventStartAnnouncements(
 		if (!(await store.claim(id, start))) continue;
 		let sent = 0;
 		try {
-			for (const content of entry.messages) {
-				await send(content);
-				sent++;
+			for (let i = 0; i < entry.messages.length; i++) {
+				const content = entry.messages[i];
+				const files = await loadFiles(id, i);
+				try {
+					await send(content, files);
+					sent++;
+				} catch (attachErr) {
+					if (!files?.length) throw attachErr;
+					await send(content);
+					sent++;
+					safeLogError(attachErr, {
+						source: 'eventStartAnnouncementAttach',
+						event_id: id,
+						messageIndex: i
+					});
+				}
 			}
 			posted.push(id);
 		} catch (err) {
