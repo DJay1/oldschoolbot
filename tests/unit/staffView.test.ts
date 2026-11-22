@@ -4,8 +4,8 @@ import { toTitleCase } from '@oldschoolgg/toolkit';
 import { toKMB } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
-import { fitBadgeLine } from '@/lib/badges/badgeEmojis.js';
 import { gifs } from '@/lib/bsc/corgoGifs.js';
+import { formatPlayTime } from '@/lib/bsc/playTime.js';
 import { STAFF_ACTIONS, staffActionsFor } from '@/lib/bsc/staffTiers.js';
 import {
 	DISCORD_CONTENT_LIMIT,
@@ -18,6 +18,7 @@ import {
 	STAFF_VIEW_TYPES,
 	staffDeniedReply,
 	staffViewHeading,
+	staffViewMinionTitle,
 	staffViewPlayerLabel,
 	staffViewSafeMessage
 } from '@/lib/bsc/staffView.js';
@@ -53,9 +54,9 @@ describe('/staff view permission gate', () => {
 });
 
 describe('/staff view help and registration', () => {
-	test('view is a private subcommand so the reply is ephemeral', () => {
-		expect(STAFF_PRIVATE_SUBCOMMANDS).toContain('view');
-		expect(STAFF_PRIVATE_SUBCOMMANDS).toContain('help');
+	test('view is public so everyone in the channel can see it', () => {
+		expect(STAFF_PRIVATE_SUBCOMMANDS).not.toContain('view');
+		expect([...STAFF_PRIVATE_SUBCOMMANDS]).toEqual(['help']);
 	});
 
 	test('mods see /staff view in /staff help', () => {
@@ -87,6 +88,47 @@ describe('/staff view never pings the target', () => {
 	});
 });
 
+describe('/staff view names the target minion', () => {
+	test('the stats title uses the player name, never Your minion', () => {
+		const unnamed = staffViewMinionTitle({ username: WORST_NAME });
+		const named = staffViewMinionTitle({ username: WORST_NAME, minionName: 'Z'.repeat(30) });
+		expect(unnamed).toContain(`${WORST_NAME}'s minion`);
+		expect(named).toContain(`${WORST_NAME}'s`);
+		expect(named).toContain('Z'.repeat(30));
+		expect(unnamed.includes('Your minion') || named.includes('Your minion')).toBe(false);
+		expect(unnamed.includes('<@') || named.includes('<@')).toBe(false);
+		expect(unnamed.length).toBeLessThanOrEqual(DISCORD_EMBED_TITLE_LIMIT);
+		expect(named.length).toBeLessThanOrEqual(DISCORD_EMBED_TITLE_LIMIT);
+	});
+});
+
+describe('/staff view play time', () => {
+	test('no trips is a short line', () => {
+		expect(formatPlayTime({ trips: 0, totalMs: 0, firstStart: null, firstType: null, activeDays: 0 })).toBe(
+			'No trips recorded yet.'
+		);
+	});
+
+	test('worst-case play time field stays at least 150 under the 1024 limit', () => {
+		const first = new Date('2000-01-01T00:00:00.000Z');
+		const text = formatPlayTime(
+			{
+				trips: 9_999_999_999,
+				totalMs: Number.MAX_SAFE_INTEGER,
+				firstStart: first,
+				firstType: 'MonsterKilling',
+				activeDays: 9_999_999
+			},
+			Date.UTC(2026, 10, 22)
+		);
+		underLimit(text.length, DISCORD_EMBED_FIELD_VALUE_LIMIT);
+		expect(text).toContain('Total trip time');
+		expect(text).toContain('Avg per day');
+		expect(text).toContain('Avg per active day');
+		expect(text).toContain('Days active');
+	});
+});
+
 describe('/staff view Discord length limits', () => {
 	test('worst-case heading stays at least 150 under the 2000 limit', () => {
 		const heading = staffViewHeading('Collection log', WORST_USER);
@@ -105,8 +147,21 @@ describe('/staff view Discord length limits', () => {
 		const clueScores = ClueTiers.map(t => `**${toTitleCase(t.name)}:** 999,999,999,999`).join('\n');
 		const minigames = Array.from({ length: 4 }, () => `**${'M'.repeat(80)}:** 999,999,999,999`).join('\n');
 		const other = Array.from({ length: 4 }, () => `**${'S'.repeat(40)}:** 999,999,999,999`).join('\n');
-		const title = fitBadgeLine(`${emoji} `.repeat(20), `${emoji} **${WORST_NAME}**`, DISCORD_EMBED_TITLE_LIMIT);
-		const fields = [col1, col2, col3, overall, clueScores, minigames, other];
+		const playTime = formatPlayTime({
+			trips: 9_999_999_999,
+			totalMs: Number.MAX_SAFE_INTEGER,
+			firstStart: new Date('2000-01-01T00:00:00.000Z'),
+			firstType: 'MonsterKilling',
+			activeDays: 9_999_999
+		});
+		const title = staffViewMinionTitle({
+			username: WORST_NAME,
+			minionName: 'Z'.repeat(30),
+			isIronman: true,
+			minionIcon: emoji,
+			badgesString: `${emoji} `.repeat(20)
+		});
+		const fields = [col1, col2, col3, overall, clueScores, minigames, other, playTime];
 		const total = title.length + fields.reduce((sum, field) => sum + field.length, 0);
 
 		expect(title.length).toBeLessThanOrEqual(DISCORD_EMBED_TITLE_LIMIT);

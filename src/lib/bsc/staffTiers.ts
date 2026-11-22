@@ -137,7 +137,7 @@ export const STAFF_ACTIONS: StaffActionInfo[] = [
 	{
 		command: '/staff view',
 		minTier: 'moderator',
-		help: "Look at a player's minion stats, /data stats, bank, collection log, or gear (read only, private)."
+		help: "Look at a player's minion stats (including play time), /data stats, bank, collection log, or gear (read only). Everyone in the channel can see the reply."
 	},
 	{ command: '/staff view_bank', minTier: 'moderator', help: "Look at a player's bank (read only)." },
 	{ command: '/staff view_gear', minTier: 'moderator', help: "Look at a player's gear (read only)." },

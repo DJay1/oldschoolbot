@@ -1,9 +1,12 @@
+import { escapeMarkdown } from '@oldschoolgg/discord';
 import { GearSetupTypes } from '@oldschoolgg/gear';
-import { stringMatches, toTitleCase } from '@oldschoolgg/toolkit';
+import { Emoji, stringMatches, toTitleCase } from '@oldschoolgg/toolkit';
 
 import type { StringAutoComplete } from '@/discord/commands/commandOptions.js';
 import { resolveBotSendableMessage } from '@/discord/utils.js';
+import { fitBadgeLine } from '@/lib/badges/badgeEmojis.js';
 import { gifs } from '@/lib/bsc/corgoGifs.js';
+import { fetchPlayTimeStats, formatPlayTime } from '@/lib/bsc/playTime.js';
 import { staffGuildAllowed } from '@/lib/bsc/staffAccess.js';
 import type { StaffTier } from '@/lib/bsc/staffTiers.js';
 import { clImageGenerator } from '@/lib/collectionLogTask.js';
@@ -22,7 +25,7 @@ export const STAFF_NO_MENTIONS: NonNullable<BaseSendableMessage['allowedMentions
 	roles: []
 };
 
-export const STAFF_PRIVATE_SUBCOMMANDS = ['help', 'view'] as const;
+export const STAFF_PRIVATE_SUBCOMMANDS = ['help'] as const;
 
 export const STAFF_VIEW_TYPES = ['stats', 'data', 'bank', 'cl', 'gear', 'info'] as const;
 export type StaffViewType = (typeof STAFF_VIEW_TYPES)[number];
@@ -55,6 +58,21 @@ export function staffDeniedReply(
 
 export function isStaffViewType(value: string): value is StaffViewType {
 	return (STAFF_VIEW_TYPES as readonly string[]).includes(value);
+}
+
+/** Embed title for staff stats: always names the target, never "Your minion". */
+export function staffViewMinionTitle(input: {
+	username: string;
+	minionName?: string | null;
+	isIronman?: boolean;
+	minionIcon?: string;
+	badgesString?: string;
+}): string {
+	const prefix = input.isIronman ? `${Emoji.Ironman} ` : '';
+	const icon = input.minionIcon ? `${input.minionIcon} ` : '';
+	const owned = input.minionName ? `**${escapeMarkdown(input.minionName)}**` : 'minion';
+	const label = `${prefix}${icon}${escapeMarkdown(input.username)}'s ${owned}`.replace(/\s+/g, ' ').trim();
+	return fitBadgeLine(input.badgesString ?? '', label, DISCORD_EMBED_TITLE_LIMIT);
 }
 
 /** Player label used in staff replies. Never a mention, so the target is not pinged. */
@@ -164,7 +182,20 @@ export async function runStaffView({
 
 	switch (type) {
 		case 'stats': {
-			const embed = await minionStatsEmbed({ user: target });
+			const [embed, play] = await Promise.all([
+				minionStatsEmbed({
+					user: target,
+					title: staffViewMinionTitle({
+						username: target.username,
+						minionName: target.user.minion_name,
+						isIronman: target.isIronman,
+						minionIcon: target.minionIcon,
+						badgesString: target.badgesString
+					})
+				}),
+				fetchPlayTimeStats(target.id)
+			]);
+			embed.addFields({ name: 'Play time', value: formatPlayTime(play), inline: true });
 			return staffViewSafeMessage({
 				content: staffViewHeading('Minion stats', target),
 				embeds: [embed]

@@ -19,10 +19,12 @@ import type { Skills } from '@/lib/types/index.js';
 
 export async function minionStatsEmbed({
 	user,
-	rng = MathRNG
+	rng = MathRNG,
+	title
 }: {
 	user: MUser;
 	rng?: RNGProvider;
+	title?: string;
 }): Promise<EmbedBuilder> {
 	const { QP } = user;
 
@@ -49,7 +51,7 @@ export async function minionStatsEmbed({
 		.sort((a, b) => b.score - a.score);
 
 	const embed = new EmbedBuilder()
-		.setTitle(fitBadgeLine(user.badgesString ?? '', user.minionName, DISCORD_EMBED_TITLE_MAX))
+		.setTitle(fitBadgeLine(user.badgesString ?? '', title ?? user.minionName, DISCORD_EMBED_TITLE_MAX))
 		.addFields(
 			{
 				name: '\u200b',
