@@ -54,7 +54,19 @@ setCustomItem(
 setCustomItem(6199, 'Tradeable Mystery Box', 'Mystery box', { tradeable_on_ge: true, tradeable: true }, 100_000);
 setCustomItem(3062, 'Pet Mystery Box', 'Mystery box', { tradeable_on_ge: true, tradeable: true }, 100_000);
 setCustomItem(3713, 'Holiday Mystery Box', 'Mystery box', { tradeable_on_ge: true, tradeable: true }, 100_000);
-setCustomItem(13_345, 'Tester Gift Box', 'Mystery box', {}, 100_000);
+setCustomItem(13_345, 'Tester Gift Box', 'Mystery box', { tradeable_on_ge: false, tradeable: true }, 100_000);
+setCustomItem(
+	73_415,
+	'Bug hunter',
+	'Herbi',
+	{
+		customItemData: {
+			isSuperUntradeable: true,
+			cantDropFromMysteryBoxes: true
+		}
+	},
+	1_000_000
+);
 setCustomItem(12_592, 'Divine sigil', 'Elysian sigil', {}, 930_000_000);
 setCustomItem(3454, 'Divine spirit shield', 'Elysian spirit shield', {}, 900_000_000);
 

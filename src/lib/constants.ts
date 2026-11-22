@@ -278,7 +278,9 @@ export enum BitField {
 	UsedFragmentOfLivingEarth = 245,
 	UsedFragmentOfBurningFire = 246,
 	/** Prefer the best compost that covers a full Auto Farm / farm patch group. Set via /farming default_compost. */
-	UseBestAvailableCompost = 247
+	UseBestAvailableCompost = 247,
+	HasTesterLabBackground = 248,
+	HasBugHunterTitle = 249
 }
 
 export interface IBitFieldData {
@@ -622,6 +624,16 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 		name: 'Disable Glow Effects',
 		protected: false,
 		userConfigurable: true
+	},
+	[BitField.HasTesterLabBackground]: {
+		name: 'Tester Lab background',
+		protected: false,
+		userConfigurable: false
+	},
+	[BitField.HasBugHunterTitle]: {
+		name: 'Bug Hunter title',
+		protected: false,
+		userConfigurable: false
 	}
 } as const;
 

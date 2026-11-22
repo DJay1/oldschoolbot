@@ -50,6 +50,7 @@ import {
 } from '@/lib/bitFieldUtils.js';
 import { runAnnouncementBackfill } from '@/lib/bsc/announcementBackfill.js';
 import { gifs } from '@/lib/bsc/corgoGifs.js';
+import { getDeveloperPoints, giveDeveloperPoints, removeDeveloperPoints } from '@/lib/bsc/developerPoints.js';
 import { assignBscCustomBackground } from '@/lib/bsc/patronPerks.js';
 import { setBscPatronOverride } from '@/lib/bsc/patronSync.js';
 import { parseBscPatronTierInput } from '@/lib/bsc/patronTiers.js';
@@ -1268,6 +1269,16 @@ export const adminCommand = defineCommand({
 							name: 'reason',
 							description: 'Why they are getting them (shown to the player).',
 							required: true
+						},
+						{
+							type: 'String',
+							name: 'kind',
+							description: 'Tester or developer points. Defaults to tester.',
+							required: false,
+							choices: [
+								{ name: 'Tester points', value: 'tester' },
+								{ name: 'Developer points', value: 'developer' }
+							]
 						}
 					]
 				},
@@ -1295,6 +1306,16 @@ export const adminCommand = defineCommand({
 							name: 'reason',
 							description: 'Why they are being taken.',
 							required: true
+						},
+						{
+							type: 'String',
+							name: 'kind',
+							description: 'Tester or developer points. Defaults to tester.',
+							required: false,
+							choices: [
+								{ name: 'Tester points', value: 'tester' },
+								{ name: 'Developer points', value: 'developer' }
+							]
 						}
 					]
 				}
@@ -1375,28 +1396,34 @@ export const adminCommand = defineCommand({
 			if (!action) return 'Invalid subcommand.';
 			const target = await mUserFetch(action.user.user.id);
 			const { amount, reason } = action;
+			const kind = action.kind === 'developer' ? 'developer' : 'tester';
+			const label = kind === 'developer' ? 'developer points' : 'tester points';
 			if (options.testerpoints.give) {
-				const result = await giveTesterPoints(target.id, amount, reason, adminUser.id);
+				const result =
+					kind === 'developer'
+						? await giveDeveloperPoints(target.id, amount, reason, adminUser.id)
+						: await giveTesterPoints(target.id, amount, reason, adminUser.id);
 				await globalClient
-					.sendDm(
-						target.id,
-						`You received **${amount}** tester points: ${reason}. Spend them with /testershop.`
-					)
+					.sendDm(target.id, `You received **${amount}** ${label}: ${reason}. Spend them with /testershop.`)
 					.catch(noOp);
 				await globalClient.sendMessage(Channel.BotLogs, {
-					content: `${adminUser.logName} gave ${amount} tester points to ${target.logName} for ${reason} (balance now ${result.balance})`
+					content: `${adminUser.logName} gave ${amount} ${label} to ${target.logName} for ${reason} (balance now ${result.balance})`
 				});
-				return `Gave ${amount} tester points to ${target.mention}. They now have ${result.balance}.`;
+				return `Gave ${amount} ${label} to ${target.mention}. They now have ${result.balance}.`;
 			}
-			const result = await removeTesterPoints(target.id, amount, reason, adminUser.id);
+			const result =
+				kind === 'developer'
+					? await removeDeveloperPoints(target.id, amount, reason, adminUser.id)
+					: await removeTesterPoints(target.id, amount, reason, adminUser.id);
 			if (!result) {
-				const { balance } = await getTesterPoints(target.id);
-				return `${target.mention} only has ${balance} tester points.`;
+				const { balance } =
+					kind === 'developer' ? await getDeveloperPoints(target.id) : await getTesterPoints(target.id);
+				return `${target.mention} only has ${balance} ${label}.`;
 			}
 			await globalClient.sendMessage(Channel.BotLogs, {
-				content: `${adminUser.logName} took ${amount} tester points from ${target.logName} for ${reason} (balance now ${result.balance})`
+				content: `${adminUser.logName} took ${amount} ${label} from ${target.logName} for ${reason} (balance now ${result.balance})`
 			});
-			return `Took ${amount} tester points from ${target.mention}. They now have ${result.balance}.`;
+			return `Took ${amount} ${label} from ${target.mention}. They now have ${result.balance}.`;
 		}
 
 		/**

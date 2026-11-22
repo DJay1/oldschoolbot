@@ -5,6 +5,7 @@ export function userCanAccessBankBg(user: MUser, bg: BankBackground, linkedAccou
 	if (user.isModOrAdmin()) return true;
 	if (bg.owners?.some(id => linkedAccountIDs.includes(id) || id === user.id)) return true;
 	if (bg.storeBitField && user.user.store_bitfield.includes(bg.storeBitField)) return true;
+	if (bg.bitfield) return user.bitfield.includes(bg.bitfield);
 	if (!bg.available) return false;
 	return true;
 }
