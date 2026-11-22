@@ -7,6 +7,11 @@ import { Items } from 'oldschooljs';
 
 import { getSimilarItems } from '@/lib/data/similarItems.js';
 import { quests } from '@/lib/minions/data/quests.js';
+import {
+	dosesInConsumableCost,
+	dosesNeededForConsumable,
+	totalDosesInBank
+} from '@/lib/minions/functions/consumePotionDoses.js';
 import type { Consumable, KillableMonster } from '@/lib/minions/types.js';
 import { addStatsOfItemsTogether } from '@/lib/structures/Gear.js';
 import { formatItemReqs, formatList, hasSkillReqs, readableStatName } from '@/lib/util/smallUtils.js';
@@ -168,6 +173,17 @@ export async function hasMonsterRequirements(user: MUser, monster: KillableMonst
 			const messages: string[] = [];
 			for (const group of items) {
 				if (group.optional) continue;
+				const doseOptions = [group, ...(group.alternativeConsumables ?? [])].filter(c => c.consumeByDose);
+				if (doseOptions.length > 0) {
+					const canAffordDose = doseOptions.some(c => {
+						const info = dosesInConsumableCost(c.itemCost);
+						const needed = dosesNeededForConsumable(c, 1, timeToFinish);
+						return Boolean(info && needed !== null && totalDosesInBank(user.bank, info.family) >= needed);
+					});
+					if (canAffordDose) continue;
+					messages.push(formatItemCosts(group, timeToFinish));
+					continue;
+				}
 				if (user.owns(consumablesCost.itemCost.filter(i => group.itemCost.has(i)))) {
 					continue;
 				}

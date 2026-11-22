@@ -504,6 +504,12 @@ export const quests: Quest[] = [
 		},
 		combatLevelReq: 85,
 		qpReq: 60,
+		skillsRewards: {
+			slayer: 80_000,
+			agility: 60_000,
+			thieving: 50_000,
+			hunter: 50_000
+		},
 		calcTime: (user: MUser) => {
 			let duration = Time.Minute * 90;
 			if (user.combatLevel < 100) {
@@ -527,6 +533,10 @@ export const quests: Quest[] = [
 		},
 		combatLevelReq: 70,
 		qpReq: 40,
+		skillsRewards: {
+			magic: 5000,
+			runecraft: 5000
+		},
 		calcTime: (user: MUser) => {
 			let duration = Time.Minute * 60;
 			if (user.combatLevel < 80) {

@@ -57,6 +57,11 @@ describe('getItemCostFromConsumables', () => {
 			maxTripLength: Time.Hour,
 			slayerKillsRemaining: null
 		});
-		expect(consumablesCost2!.itemCost!.amount('Anti-venom+(4)')).toBeGreaterThan(0);
+		const antiVenomDoses =
+			consumablesCost2!.itemCost!.amount('Anti-venom+(4)') * 4 +
+			consumablesCost2!.itemCost!.amount('Anti-venom+(3)') * 3 +
+			consumablesCost2!.itemCost!.amount('Anti-venom+(2)') * 2 +
+			consumablesCost2!.itemCost!.amount('Anti-venom+(1)');
+		expect(antiVenomDoses).toBeGreaterThan(0);
 	});
 });

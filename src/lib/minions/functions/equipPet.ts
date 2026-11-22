@@ -2,6 +2,7 @@ import { Bank, Items } from 'oldschooljs';
 import type { Item } from 'oldschooljs/src/index.js';
 
 import { allPetIDs } from '@/lib/data/CollectionsExport.js';
+import { busyBlocksUnequipOrSwap } from '@/lib/minions/functions/petActivityGuards.js';
 import { unequipPet } from '@/lib/minions/functions/unequipPet.js';
 
 export function isPet(item: Item) {
@@ -27,6 +28,8 @@ export async function equipPet(user: MUser, itemName: string) {
 	let unequipMsg = '';
 	const currentlyEquippedPet = user.user.minion_equippedPet;
 	if (currentlyEquippedPet) {
+		const swapBlocked = busyBlocksUnequipOrSwap(await user.minionIsBusy(), currentlyEquippedPet);
+		if (swapBlocked) return swapBlocked;
 		unequipMsg = await unequipPet(user);
 	}
 

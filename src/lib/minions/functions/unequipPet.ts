@@ -1,9 +1,12 @@
 import { Bank, Items, itemID } from 'oldschooljs';
 
+import { busyBlocksUnequipOrSwap } from '@/lib/minions/functions/petActivityGuards.js';
+
 export async function unequipPet(user: MUser) {
 	const equippedPet = user.user.minion_equippedPet;
 	if (!equippedPet) return "You don't have a pet equipped.";
-	if (await user.minionIsBusy()) return 'You cant unequip your pet while your minion is busy.';
+	const busyReason = busyBlocksUnequipOrSwap(await user.minionIsBusy(), equippedPet);
+	if (busyReason) return busyReason;
 
 	const loot = new Bank().add(equippedPet);
 

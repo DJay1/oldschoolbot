@@ -156,6 +156,9 @@ export function speedCalculations(args: Omit<BoostArgs, 'currentTaskOptions'>) {
 	if (consumablesCost.itemCost) {
 		updateBank.itemCostBank.add(consumablesCost.itemCost);
 	}
+	if (consumablesCost.itemRefund) {
+		updateBank.itemLootBankNoCL.add(consumablesCost.itemRefund);
+	}
 
 	if (consumablesCost?.boosts) {
 		messages.push(...consumablesCost.boosts.map(m => m.message));

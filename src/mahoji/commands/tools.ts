@@ -1270,8 +1270,6 @@ export const toolsCommand = defineCommand({
 				};
 			}
 			if (patron.minion_stats) {
-				await interaction.defer();
-				if ((await user.fetchPerkTier()) < PerkTier.Four) return patronMsg(PerkTier.Four);
 				return minionStats(user);
 			}
 			if (patron.give_box) {
