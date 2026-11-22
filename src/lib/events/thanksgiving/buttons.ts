@@ -34,11 +34,11 @@ export function thanksgivingMakeButtons(
 	return buttons;
 }
 
-export function withThanksgivingMakeButtons(
+export function withThanksgivingMakeButtons<T extends { content?: string; components?: ButtonBuilder[] }>(
 	user: MUser,
-	result: string | { content?: string; files?: unknown; components?: ButtonBuilder[] },
+	result: string | T,
 	options: { includeOffer: boolean }
-): string | { content: string; files?: unknown; components: ButtonBuilder[] } {
+): string | T | { content: string; components: ButtonBuilder[] } {
 	const buttons = thanksgivingMakeButtons(user.id, user.bank, options);
 	if (buttons.length === 0) {
 		return result;

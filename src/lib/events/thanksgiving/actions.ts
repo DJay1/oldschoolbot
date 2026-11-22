@@ -76,7 +76,7 @@ export async function handleThanksgivingMakeButton({
 			if (typeof offerResult === 'string') return `${made.message}\n${offerResult}`;
 			return {
 				content: `${made.message}\n${offerResult.content}`,
-				files: offerResult.files,
+				files: 'files' in offerResult ? offerResult.files : undefined,
 				components: thanksgivingMakeButtons(user.id, user.bank, { includeOffer: true })
 			};
 		});
