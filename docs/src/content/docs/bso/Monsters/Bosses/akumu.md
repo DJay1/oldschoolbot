@@ -27,5 +27,5 @@ Akumu guarantees 5–10 Nightmarish ashes per kill, alongside mystery boxes, bat
 | ------------------ | --------- |
 | Cursed onyx        | 1/4       |
 | Elder scroll piece | 1/85      |
-| Demon statuette    | 1/122     |
+| Demon statuette    | 1/50      |
 | Mini akumu         | 1/1000    |
