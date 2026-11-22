@@ -1,10 +1,17 @@
 import { Bank } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
-import { GOBBLE_STREAK_OFFERS, GOBBLES_PITY_OFFERS, OFFER_RATES } from '@/lib/events/thanksgiving/core.js';
+import { clearSeasonalEventOverrides, setSeasonalEventOverride } from '@/lib/events/registry.js';
+import {
+	GOBBLE_STREAK_OFFERS,
+	GOBBLES_PITY_OFFERS,
+	OFFER_RATES,
+	THANKSGIVING_MIN_TRIP_MS
+} from '@/lib/events/thanksgiving/core.js';
 import { harvestFeastStatusLine } from '@/lib/events/thanksgiving/feast.js';
 import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import {
+	appendThanksgivingTripStartLine,
 	CORNUCOPIA_CREATE_ITEM,
 	cornucopiaMaxMakeable,
 	cornucopiaQuantityChoices,
@@ -17,11 +24,21 @@ import {
 	formatCornucopiaMakeConfirm,
 	formatCornucopiaMakeSuccess,
 	formatCornucopiaOfferEmpty,
+	formatMakeAndOfferConfirm,
+	formatThanksgivingShortOnLine,
 	formatThanksgivingWindowLine,
 	isBountifulCornucopiaName,
+	isThanksgivingMakeAndOfferButton,
+	isThanksgivingMakeButton,
+	markThanksgivingTripStarted,
 	previewCornucopiaMake,
-	resolveCornucopiaMakeAfterConfirm
+	resolveCornucopiaMakeAfterConfirm,
+	takeThanksgivingTripStartLine,
+	thanksgivingButtonOwnerId,
+	thanksgivingMakeAndOfferButtonCustomId,
+	thanksgivingMakeButtonCustomId
 } from '@/lib/events/thanksgiving/make.js';
+import { createAllConfirmLabel, createQuantityStaysOne } from '@/lib/util/maxCreatableQuantity.js';
 
 const DISCORD_CONTENT_SOFT_LIMIT = DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_BUFFER;
 
@@ -219,5 +236,69 @@ describe('Bountiful cornucopia /create all QoL', () => {
 		expect(formatThanksgivingWindowLine(false, start, end, end)).toBe(
 			'**The Straw Hat Harvest** is not running right now.'
 		);
+	});
+});
+
+describe('Thanksgiving follow-up QoL', () => {
+	test('short-on trip start line names the missing parts and stays under Discord limits', () => {
+		expect(formatThanksgivingShortOnLine(parts(3, 0))).toBe(
+			'You need 2x Harvest bundle and 1x Wicker basket more for your next Bountiful cornucopia.'
+		);
+		expect(formatThanksgivingShortOnLine(parts(23, 4))).toBe(
+			'You have enough parts for 4x Bountiful cornucopia; need 2x Harvest bundle and 1x Wicker basket more for another.'
+		);
+		expect(formatThanksgivingShortOnLine(parts(20, 4))).toBe(
+			'You have enough parts for 4x Bountiful cornucopia; that uses all your parts.'
+		);
+		const huge = Number.MAX_SAFE_INTEGER;
+		underLimit(formatThanksgivingShortOnLine(parts(huge, huge)));
+		underLimit(
+			`🌾 ${'W'.repeat(32)}'s minion is now fishing, it'll take around 24 hours, 59 minutes to finish (back at 12:59 PM).\n${formatThanksgivingShortOnLine(parts(huge, 0))}`
+		);
+	});
+
+	test('trip start hint is marked only for long enough trips during the event, and consumed once', () => {
+		clearSeasonalEventOverrides();
+		const start = Date.parse('2026-11-22T16:46:19.332Z');
+		const end = Date.parse('2026-12-07T16:46:19.332Z');
+		setSeasonalEventOverride('thanksgiving', { enabled: true, start, end });
+		markThanksgivingTripStarted('hint-user', THANKSGIVING_MIN_TRIP_MS - 1, start);
+		expect(takeThanksgivingTripStartLine(parts(3, 0), 'hint-user')).toBeNull();
+		markThanksgivingTripStarted('hint-user', THANKSGIVING_MIN_TRIP_MS, start);
+		const line = takeThanksgivingTripStartLine(parts(3, 0), 'hint-user');
+		expect(line).toContain('You need 2x Harvest bundle');
+		expect(takeThanksgivingTripStartLine(parts(3, 0), 'hint-user')).toBeNull();
+		markThanksgivingTripStarted('hint-user', THANKSGIVING_MIN_TRIP_MS, start);
+		const appended = appendThanksgivingTripStartLine('hint-user', parts(3, 0), 'Trip started.');
+		expect(appended).toBe(`Trip started.\n${formatThanksgivingShortOnLine(parts(3, 0))}`);
+		clearSeasonalEventOverrides();
+	});
+
+	test('make and offer confirm shows both steps and a Make & offer all button label', () => {
+		const preview = previewCornucopiaMake(parts(23, 4));
+		expect(preview.ok).toBe(true);
+		if (!preview.ok) return;
+		const confirm = formatMakeAndOfferConfirm(preview, 10);
+		expect(confirm.confirmLabel).toBe('Make & offer all (4)');
+		expect(confirm.confirmLabel.length).toBeLessThanOrEqual(DISCORD_BUTTON_LABEL_LIMIT);
+		expect(confirm.content).toContain(
+			'Then offer all 14x Bountiful cornucopia (4x Bountiful cornucopia new + 10x Bountiful cornucopia you already have)?'
+		);
+		underLimit(confirm.content);
+		usesExactItemNames(confirm.content);
+		const noneOwned = formatMakeAndOfferConfirm(preview, 0);
+		expect(noneOwned.content).toContain('Then offer all 4x Bountiful cornucopia?');
+		expect(isThanksgivingMakeButton(thanksgivingMakeButtonCustomId('123'))).toBe(true);
+		expect(isThanksgivingMakeAndOfferButton(thanksgivingMakeAndOfferButtonCustomId('123'))).toBe(true);
+		expect(isThanksgivingMakeButton(thanksgivingMakeAndOfferButtonCustomId('123'))).toBe(false);
+		expect(thanksgivingButtonOwnerId(thanksgivingMakeButtonCustomId('123'))).toBe('123');
+	});
+
+	test('/create all button labels and unique-item rule', () => {
+		expect(createAllConfirmLabel(true, 12)).toBe('Make all (12)');
+		expect(createAllConfirmLabel(false, 2)).toBe('Make (2)');
+		expect(createAllConfirmLabel(true, Number.MAX_SAFE_INTEGER).length).toBeLessThanOrEqual(80);
+		expect(createQuantityStaysOne({ cantHaveItems: { 1: 1 } } as never)).toBe(true);
+		expect(createQuantityStaysOne({ name: 'Bountiful cornucopia' } as never)).toBe(false);
 	});
 });

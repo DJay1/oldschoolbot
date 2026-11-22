@@ -36,6 +36,10 @@ export const InteractionID = {
 		ElderCasket: 'OPEN_ELDER_CASKET',
 		SeedPack: 'OPEN_SEED_PACK'
 	},
+	Thanksgiving: {
+		MakeAll: 'THANKS_MAKE:',
+		MakeAndOffer: 'THANKS_MAKE_OFFER:'
+	},
 	Commands: {
 		BuyMinion: 'BUY_MINION',
 		CancelTrip: 'CANCEL_TRIP',

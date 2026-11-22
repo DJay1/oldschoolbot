@@ -6,6 +6,7 @@ import { resolveSeasonalEvent } from '@/lib/events/registry.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
 import { userQueueFn } from '@/lib/util/userQueues.js';
+import { withThanksgivingMakeButtons } from './buttons.js';
 import {
 	ctDayKey,
 	formatOfferReply,
@@ -78,7 +79,8 @@ function hasHadGobbles(user: MUser): boolean {
 export async function thanksgivingOffer(
 	user: MUser,
 	quantityInput: string | number | null | undefined,
-	rng: ThanksgivingRng
+	rng: ThanksgivingRng,
+	opts?: { alreadyQueued?: boolean }
 ) {
 	if (!isThanksgivingActive()) return 'The Straw Hat Harvest is not running right now.';
 	// No per-command cap: you can offer as many as you own. Rolls are a simple loop (a few hundred ms
@@ -86,12 +88,12 @@ export async function thanksgivingOffer(
 	const requested = parseOfferQuantity(quantityInput);
 	if (requested === null) return "Quantity must be a whole number of at least 1, or 'all'.";
 
-	return userQueueFn(user.id, async () => {
+	const run = async () => {
 		await user.sync();
 		// 'all' is resolved inside the queue after sync, so it is exactly what the bank holds right now.
 		const owned = user.bank.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA);
 		if (owned === 0) {
-			return formatCornucopiaOfferEmpty(user.bank);
+			return withThanksgivingMakeButtons(user, formatCornucopiaOfferEmpty(user.bank), { includeOffer: true });
 		}
 		const quantity = requested === 'all' ? owned : requested;
 		if (owned < quantity) {
@@ -158,8 +160,10 @@ export async function thanksgivingOffer(
 			user,
 			previousCL
 		});
-		return { content, files: [image] };
-	});
+		return withThanksgivingMakeButtons(user, { content, files: [image] }, { includeOffer: true });
+	};
+	if (opts?.alreadyQueued) return run();
+	return userQueueFn(user.id, run);
 }
 
 /**
@@ -216,7 +220,7 @@ export async function thanksgivingFeast(user: MUser, rng: ThanksgivingRng) {
 	});
 }
 
-export async function thanksgivingStatus(user: MUser): Promise<string> {
+export async function thanksgivingStatus(user: MUser) {
 	const active = isThanksgivingActive();
 	const stats = await user.fetchStats();
 	const offers = offersFromScores((stats.openable_scores ?? {}) as ItemBank);
@@ -240,5 +244,5 @@ export async function thanksgivingStatus(user: MUser): Promise<string> {
 		harvestFeastStatusLine(user.id),
 		`Rates per offer: Paint box 1/${OFFER_RATES.paintBox}, Cornucopia 1/${OFFER_RATES.cornucopia}, Harvest turkey 1/${OFFER_RATES.turkey}, Pilgrim hat 1/${OFFER_RATES.pilgrimHat}, Straw hat 1/${OFFER_RATES.strawHat}, Gobbles 1/${OFFER_RATES.gobbles}.`
 	];
-	return lines.join('\n');
+	return withThanksgivingMakeButtons(user, lines.join('\n'), { includeOffer: active });
 }

@@ -6,6 +6,7 @@ import { convertAPIOptionsToCommandOptions } from '@/discord/index.js';
 import { preCommand } from '@/discord/preCommand.js';
 import { userErrorResponse } from '@/discord/userErrorResponse.js';
 import { busyImmuneCommands, SILENT_ERROR } from '@/lib/constants.js';
+import { appendThanksgivingTripStartLine, clearThanksgivingTripStartMark } from '@/lib/events/thanksgiving/make.js';
 import { RawSQL } from '@/lib/rawSql.js';
 
 export async function rawCommandHandlerInner({
@@ -93,7 +94,7 @@ export async function rawCommandHandlerInner({
 		const response: Awaited<CommandResponse> = requiresLock
 			? await user.withLock(command.name, runClosure)
 			: await runClosure();
-		return response;
+		return appendThanksgivingTripStartLine(user.id, user.bank, response);
 	} catch (err) {
 		if ((err as Error).message === SILENT_ERROR) return SpecialResponse.SilentErrorResponse;
 		const date = new Date();
@@ -115,6 +116,7 @@ export async function rawCommandHandlerInner({
 			content: `An error occurred while running this command.`
 		};
 	} finally {
+		clearThanksgivingTripStartMark(user.id);
 		if (!shouldIgnoreBusy) {
 			user.modifyBusy('unlock', `Finished running command: ${command.name}`);
 		}

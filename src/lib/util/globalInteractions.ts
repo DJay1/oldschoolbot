@@ -13,6 +13,8 @@ import { disableQueueRemindersFromButton } from '@/lib/bsc/tripQueue.js';
 import { giveawayCache } from '@/lib/cache.js';
 import type { ClueTier } from '@/lib/clues/clueTiers.js';
 import { BitField } from '@/lib/constants.js';
+import { handleThanksgivingMakeButton } from '@/lib/events/thanksgiving/actions.js';
+import { isThanksgivingMakeAndOfferButton, isThanksgivingMakeButton } from '@/lib/events/thanksgiving/make.js';
 import { InteractionID } from '@/lib/InteractionID.js';
 import { toggleAutoRummage } from '@/lib/minions/data/valeTotems.js';
 import { withPatreonLink } from '@/lib/patreonLink.js';
@@ -272,6 +274,10 @@ async function globalButtonInteractionHandler({
 
 	if (await user.getIsLocked()) {
 		return { content: 'You cannot use a command right now.', ephemeral: true };
+	}
+
+	if (isThanksgivingMakeButton(id) || isThanksgivingMakeAndOfferButton(id)) {
+		return handleThanksgivingMakeButton({ user, interaction, id, rng });
 	}
 
 	if (id.startsWith(MORTIMER_PICK_PREFIX)) {
