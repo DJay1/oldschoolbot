@@ -23,6 +23,14 @@ export function formatMissingCropProtectionPayment(): string {
 	return 'You did not have enough payment to automatically pay for crop protection.';
 }
 
+export function formatCompostFallback(requestedName: string, usedName: string, quantity: number): string {
+	return `You did not have enough ${requestedName} to treat ${quantity} patches, so they were planted with ${usedName}.`;
+}
+
+export function formatMissingCompost(quantity: number): string {
+	return `You did not have enough compost to treat ${quantity} patches, so they were planted without compost.`;
+}
+
 export function formatPatchTreatment(compostCost: Bank): string {
 	return `You are treating your patches with ${compostCost}.`;
 }

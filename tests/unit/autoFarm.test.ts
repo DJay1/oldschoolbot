@@ -436,6 +436,52 @@ describe('auto farm helpers', () => {
 		expect(addSubTaskToActivityTask).toHaveBeenCalledTimes(1);
 	});
 
+	it('autoFarm shows a note when default compost is short and a lower tier is used', async () => {
+		const bank = new Bank().add('Guam seed', 4).add('Supercompost', 2).add('Compost', 4);
+		const user = mockMUser({
+			bank,
+			skills_farming: convertLVLtoXP(50)
+		});
+		const mutableUser = user.user as MutableUser;
+		mutableUser.auto_farm_filter = AutoFarmFilterEnum.AllFarm;
+		mutableUser.minion_defaultCompostToUse = CropUpgradeType.supercompost;
+
+		const transactResult = {
+			newUser: user,
+			itemsAdded: new Bank(),
+			itemsRemoved: new Bank(),
+			newBank: user.bank.clone(),
+			newCL: user.cl.clone(),
+			previousCL: new Bank(),
+			clLootBank: null
+		} satisfies Awaited<ReturnType<typeof user.transactItems>>;
+		const transactSpy = vi.spyOn(user, 'transactItems').mockResolvedValue(transactResult);
+		vi.spyOn(user, 'statsBankUpdate').mockResolvedValue(undefined);
+		vi.spyOn(global.ClientSettings, 'updateBankSetting').mockResolvedValue();
+
+		calcMaxTripLengthSpy.mockReturnValue(300 * 1000);
+
+		const response = await autoFarm(
+			user,
+			[herbPatchDetailed],
+			herbPatches as Record<FarmingPatchName, IPatchData>,
+			baseInteraction as MInteraction
+		);
+
+		expect(typeof response).toBe('string');
+		expect(response).toContain(
+			'Herb patch: You did not have enough Supercompost to treat 4 patches, so they were planted with Compost.'
+		);
+		expect(response).toContain('**Compost:** 4x Compost.');
+		expect(transactSpy).toHaveBeenCalledTimes(1);
+		const itemsToRemove = transactSpy.mock.calls[0]?.[0].itemsToRemove;
+		expect(itemsToRemove?.amount('Compost')).toBe(4);
+		expect(itemsToRemove?.amount('Supercompost')).toBe(0);
+		expect(addSubTaskToActivityTask).toHaveBeenCalledTimes(1);
+		const task = vi.mocked(addSubTaskToActivityTask).mock.calls[0]?.[0] as FarmingActivityTaskOptions;
+		expect(task.upgradeType).toBe(CropUpgradeType.compost);
+	});
+
 	it('autoFarm names patch groups skipped due to trip length', async () => {
 		const treeEmptyPatch: IPatchData = {
 			lastPlanted: null,
@@ -970,6 +1016,16 @@ describe('auto farm planning helpers', () => {
 		expect(shouldHideInfoLine('You are treating your patches with supercompost.')).toBe(true);
 		expect(shouldHideInfoLine('You may need to pay a nearby farmer later.')).toBe(true);
 		expect(shouldHideInfoLine('Your minion will harvest the patch.')).toBe(false);
+		expect(
+			shouldHideInfoLine(
+				'You did not have enough Supercompost to treat 4 patches, so they were planted with Compost.'
+			)
+		).toBe(false);
+		expect(
+			shouldHideInfoLine(
+				'You did not have enough compost to treat 4 patches, so they were planted without compost.'
+			)
+		).toBe(false);
 	});
 
 	it('buildSummaryForStep hides payment info but keeps other patch details', () => {
@@ -994,6 +1050,32 @@ describe('auto farm planning helpers', () => {
 
 		expect(summary.summaryLine).toBe('1. Herb patch: 4x Guam');
 		expect(summary.extraInfoLines).toEqual(['Herb patch: Your minion will use compost on every patch.']);
+	});
+
+	it('buildSummaryForStep keeps compost fallback and missing-compost notes', () => {
+		const step: PlannedAutoFarmStep = {
+			plant: herbPlant,
+			quantity: 4,
+			duration: 60_000,
+			upgradeType: CropUpgradeType.compost,
+			didPay: false,
+			treeChopFee: 0,
+			patch: herbPatch,
+			patchName: herbPlant.seedType,
+			friendlyName: 'Herb patch',
+			info: [
+				'You are treating your patches with 4x Compost.',
+				'You did not have enough Supercompost to treat 4 patches, so they were planted with Compost.'
+			],
+			boosts: []
+		};
+
+		const summary = buildSummaryForStep(0, step);
+
+		expect(summary.summaryLine).toBe('1. Herb patch: 4x Guam');
+		expect(summary.extraInfoLines).toEqual([
+			'Herb patch: You did not have enough Supercompost to treat 4 patches, so they were planted with Compost.'
+		]);
 	});
 
 	it('buildPlanRequests puts contract patch requests first', () => {
