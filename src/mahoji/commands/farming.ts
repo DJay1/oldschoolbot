@@ -1,9 +1,10 @@
 import { EmbedBuilder } from '@oldschoolgg/discord';
-import { stringMatches, toTitleCase } from '@oldschoolgg/toolkit';
+import { stringMatches, toTitleCase, uniqueArr } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
 
 import { AutoFarmFilterEnum } from '@/prisma/main/enums.js';
 import { choicesOf } from '@/discord/index.js';
+import { BitField } from '@/lib/constants.js';
 import { autoFarm } from '@/lib/minions/functions/autoFarm.js';
 import {
 	compostBinPlantNameAutoComplete,
@@ -227,9 +228,12 @@ export const farmingCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'compost',
-					description: 'The compost you want to use by default.',
+					description: 'The compost you want to use by default, or Best available.',
 					required: true,
-					choices: CompostTiers.map(i => ({ name: i.item.name, value: i.item.name }))
+					choices: [
+						...CompostTiers.map(i => ({ name: i.item.name, value: i.item.name })),
+						{ name: 'Best available', value: 'Best available' }
+					]
 				}
 			]
 		},
@@ -331,10 +335,18 @@ export const farmingCommand = defineCommand({
 			return `'Always pay farmers' is now ${!isEnabled ? 'enabled' : 'disabled'}.`;
 		}
 		if (options.default_compost) {
-			const tier = CompostTiers.find(i => stringMatches(i.name, options.default_compost?.compost));
+			const selected = options.default_compost?.compost;
+			if (stringMatches(selected, 'Best available')) {
+				await user.update({
+					bitfield: uniqueArr([...user.bitfield, BitField.UseBestAvailableCompost])
+				});
+				return 'You will now use the best compost you have enough of for each patch group (Ultracompost, then Supercompost, then Compost).';
+			}
+			const tier = CompostTiers.find(i => stringMatches(i.name, selected));
 			if (!tier) return 'Invalid tier.';
 			await user.update({
-				minion_defaultCompostToUse: tier.name
+				minion_defaultCompostToUse: tier.name,
+				bitfield: user.bitfield.filter(bit => bit !== BitField.UseBestAvailableCompost)
 			});
 			return `You will now use ${tier.item.name} by default.`;
 		}

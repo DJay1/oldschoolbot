@@ -2,12 +2,14 @@ import { formatDuration, reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
 import { percentChance } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
-import type { CropUpgradeType } from '@/prisma/main/enums.js';
+import { CropUpgradeType } from '@/prisma/main/enums.js';
 import { BitField } from '@/lib/constants.js';
 import { calcNumOfPatches } from '@/lib/skilling/skills/farming/utils/calcsFarming.js';
 import {
 	farmingBoostMessages,
+	formatCompostFallback,
 	formatCropProtectionPayment,
+	formatMissingCompost,
 	formatMissingCropProtectionPayment,
 	formatPatchTreatment,
 	formatTreeRemovalPreparation
@@ -36,6 +38,51 @@ export interface PreparedFarmingStep {
 	infoStr: string[];
 	boostStr: string[];
 	treeChopFee: number;
+}
+
+export const COMPOST_TIER_ORDER = [
+	CropUpgradeType.ultracompost,
+	CropUpgradeType.supercompost,
+	CropUpgradeType.compost
+] as const;
+
+export function compostItemName(tier: CropUpgradeType): string {
+	switch (tier) {
+		case CropUpgradeType.ultracompost:
+			return 'Ultracompost';
+		case CropUpgradeType.supercompost:
+			return 'Supercompost';
+		default:
+			return 'Compost';
+	}
+}
+
+export function resolveCompostUpgrade({
+	compostTier,
+	useBestAvailable,
+	availableBank,
+	quantityToDo
+}: {
+	compostTier: CropUpgradeType;
+	useBestAvailable: boolean;
+	availableBank: Bank;
+	quantityToDo: number;
+}):
+	| { upgradeType: CropUpgradeType; compostCost: Bank; fallbackFrom: CropUpgradeType | null }
+	| { upgradeType: null; compostCost: null; fallbackFrom: null } {
+	const requestedIndex = COMPOST_TIER_ORDER.indexOf(compostTier as (typeof COMPOST_TIER_ORDER)[number]);
+	const startIndex = useBestAvailable ? 0 : requestedIndex >= 0 ? requestedIndex : COMPOST_TIER_ORDER.length - 1;
+
+	for (let i = startIndex; i < COMPOST_TIER_ORDER.length; i++) {
+		const tier = COMPOST_TIER_ORDER[i];
+		const compostCost = new Bank().add(tier, quantityToDo);
+		if (availableBank.has(compostCost)) {
+			const fallbackFrom = !useBestAvailable && tier !== compostTier ? compostTier : null;
+			return { upgradeType: tier, compostCost, fallbackFrom };
+		}
+	}
+
+	return { upgradeType: null, compostCost: null, fallbackFrom: null };
 }
 
 export function treeCheck(
@@ -176,11 +223,27 @@ export async function prepareFarmingStep({
 
 	let upgradeType: CropUpgradeType | null = null;
 	if ((didPay && plant.canCompostandPay) || (!didPay && plant.canCompostPatch && compostTier)) {
-		const compostCost = new Bank().add(compostTier, quantityToDo);
-		if (availableBank.has(compostCost)) {
-			infoStr.push(formatPatchTreatment(compostCost));
-			cost.add(compostCost);
-			upgradeType = compostTier;
+		const resolved = resolveCompostUpgrade({
+			compostTier,
+			useBestAvailable: user.bitfield.includes(BitField.UseBestAvailableCompost),
+			availableBank,
+			quantityToDo
+		});
+		if (resolved.upgradeType && resolved.compostCost) {
+			infoStr.push(formatPatchTreatment(resolved.compostCost));
+			if (resolved.fallbackFrom) {
+				infoStr.push(
+					formatCompostFallback(
+						compostItemName(resolved.fallbackFrom),
+						compostItemName(resolved.upgradeType),
+						quantityToDo
+					)
+				);
+			}
+			cost.add(resolved.compostCost);
+			upgradeType = resolved.upgradeType;
+		} else {
+			infoStr.push(formatMissingCompost(quantityToDo));
 		}
 	}
 

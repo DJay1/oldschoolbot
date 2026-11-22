@@ -276,7 +276,9 @@ export enum BitField {
 	UsedFragmentOfWhisperingWind = 243,
 	UsedFragmentOfDeepWater = 244,
 	UsedFragmentOfLivingEarth = 245,
-	UsedFragmentOfBurningFire = 246
+	UsedFragmentOfBurningFire = 246,
+	/** Prefer the best compost that covers a full Auto Farm / farm patch group. Set via /farming default_compost. */
+	UseBestAvailableCompost = 247
 }
 
 export interface IBitFieldData {
@@ -608,6 +610,11 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 	},
 	[BitField.UsedFragmentOfBurningFire]: {
 		name: 'Used Fragment of burning fire',
+		protected: false,
+		userConfigurable: false
+	},
+	[BitField.UseBestAvailableCompost]: {
+		name: 'Use Best Available Compost',
 		protected: false,
 		userConfigurable: false
 	},
