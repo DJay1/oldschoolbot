@@ -49,6 +49,10 @@ import {
 	harvestFeastBonusLoot,
 	harvestFeastFraction
 } from '@/lib/events/thanksgiving/feast.js';
+import {
+	creditHarvestPartsToExtraMembers,
+	type HarvestPartyImageItems
+} from '@/lib/events/thanksgiving/harvestParty.js';
 import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import { handleGrowablePetGrowth } from '@/lib/growablePets.js';
 import { handlePassiveImplings } from '@/lib/implings.js';
@@ -106,6 +110,8 @@ type TripEffectReturn = {
 	contentAppendix?: string;
 	/** Items (already in itemsToAddWithCL) to also show in the trip's loot image. Display only. */
 	lootImageItems?: Bank;
+	/** Other party members' event items, already credited to them, to show on their chest panel. */
+	partyLootImageItems?: HarvestPartyImageItems[];
 };
 
 export interface TripFinishEffect {
@@ -172,15 +178,30 @@ const tripFinishEffects: TripFinishEffect[] = [
 			if (!isThanksgivingActive()) return;
 			// The focused /thanksgiving harvest trip pays its own parts and never also rolls these.
 			if (data.type === THANKSGIVING_HARVEST_ACTIVITY) return;
+			const doubleLoot = isDoubleLootActive(data.duration);
+			const party = await creditHarvestPartsToExtraMembers({
+				data,
+				leaderID: user.id,
+				durationMs: data.duration,
+				doubleLoot,
+				rng
+			});
+			messages.push(...party.messages);
 			const parts = rollThanksgivingTripParts({
 				durationMs: data.duration,
-				doubleLoot: isDoubleLootActive(data.duration),
+				doubleLoot,
 				blessing: hasHarvestBlessing(user),
 				rng
 			});
-			if (parts.length === 0) return;
-			messages.push(`🌽 You gathered ${parts} for The Straw Hat Harvest.`);
-			return { itemsToAddWithCL: parts, lootImageItems: parts };
+			if (parts.length > 0) {
+				messages.push(`🌽 You gathered ${parts} for The Straw Hat Harvest.`);
+			}
+			if (parts.length === 0 && party.imageItems.length === 0) return;
+			return {
+				itemsToAddWithCL: parts.length > 0 ? parts : undefined,
+				lootImageItems: parts.length > 0 ? parts : undefined,
+				partyLootImageItems: party.imageItems.length > 0 ? party.imageItems : undefined
+			};
 		}
 	},
 	{
@@ -787,17 +808,24 @@ const tripFinishEffects: TripFinishEffect[] = [
 	}
 ];
 
-/** Redraws the trip's existing loot image (bank or chest) with event items. Display only. If the trip has no loot image, the items stay in the message text only — no second image is added. */
+/** Redraws the trip's existing loot image (bank or chest) with event items. Display only. If the trip has no loot image, the items stay in the message text only -- no second image is added. */
 export async function showEventItemsInLootImage(
 	message: MessageBuilderClass,
 	items: Bank,
 	user: MUser,
 	render: typeof makeBankImage = makeBankImage,
-	chestRender: (opts: DrawChestLootImageOptions) => Promise<SendableFile> = drawChestLootImage
+	chestRender: (opts: DrawChestLootImageOptions) => Promise<SendableFile> = drawChestLootImage,
+	partyImageItems: HarvestPartyImageItems[] = []
 ): Promise<void> {
 	try {
 		if (await message.addItemsToBankImage(items, render)) return;
-		if (await message.addItemsToChestLootImage(items, user.id, chestRender)) return;
+		const chestEntries: HarvestPartyImageItems[] = [
+			...(items.length > 0 ? [{ userId: user.id, items }] : []),
+			...partyImageItems
+		];
+		if (chestEntries.length > 0) {
+			await message.addItemsToChestLootImageForUsers(chestEntries, chestRender);
+		}
 	} catch (err) {
 		Logging.logError(err as Error, { user_id: user.id, source: 'tripFinishEventLootImage' });
 	}
@@ -902,6 +930,7 @@ export async function handleTripFinish(
 	const itemsToRemove = new Bank();
 	const contentAppendices: string[] = [];
 	const lootImageItems = new Bank();
+	const partyLootImageItems: HarvestPartyImageItems[] = [];
 	for (const effect of tripFinishEffects) {
 		if (effect.requiredPerkTier && perkTier < effect.requiredPerkTier) continue;
 		const start = performance.now();
@@ -921,6 +950,7 @@ export async function handleTripFinish(
 		if (res?.itemsToRemove) itemsToRemove.add(res.itemsToRemove);
 		if (res?.contentAppendix) contentAppendices.push(res.contentAppendix);
 		if (res?.lootImageItems) lootImageItems.add(res.lootImageItems);
+		if (res?.partyLootImageItems) partyLootImageItems.push(...res.partyLootImageItems);
 		const end = performance.now();
 		const duration = end - start;
 		Logging.logPerf({
@@ -992,8 +1022,18 @@ export async function handleTripFinish(
 	// Event drops rolled here (Straw Hat Harvest) go into the trip's existing loot image when
 	// it has one. Otherwise they stay in the message text only. Clue finishes already drew
 	// every extra above. Display only, the items were added once in the transaction.
-	if (extrasAdded && lootImageItems.length > 0 && data.type !== 'ClueCompletion') {
-		await showEventItemsInLootImage(message, lootImageItems, user);
+	if (data.type !== 'ClueCompletion') {
+		const leaderImageItems = extrasAdded ? lootImageItems : new Bank();
+		if (leaderImageItems.length > 0 || partyLootImageItems.length > 0) {
+			await showEventItemsInLootImage(
+				message,
+				leaderImageItems,
+				user,
+				makeBankImage,
+				drawChestLootImage,
+				partyLootImageItems
+			);
+		}
 	}
 
 	try {

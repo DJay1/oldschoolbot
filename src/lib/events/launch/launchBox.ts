@@ -2,6 +2,7 @@ import { Time } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank, Items, itemID } from 'oldschooljs';
 
 import type { UnifiedOpenable } from '@/lib/openables.js';
+import { groupTripExtraMemberIDs } from '@/lib/util/groupTripMembers.js';
 import { launchBoxCL } from './collectionLog.js';
 import { LaunchItem } from './items.js';
 
@@ -135,10 +136,7 @@ export function rollLaunchBoxFromTrip({
  * (the leader) already rolls, so they're left out, and nobody rolls twice. Only used while the Launch event is active.
  */
 export function launchBoxExtraMemberIDs(data: object, rollerID: string): string[] {
-	const users = 'users' in data ? data.users : undefined;
-	if (!Array.isArray(users)) return [];
-	const ids = users.filter((id): id is string => typeof id === 'string' && id !== rollerID);
-	return [...new Set(ids)];
+	return groupTripExtraMemberIDs(data, rollerID);
 }
 
 export function buildFounderLaunchExtras(rng: LaunchBoxRng): Bank {

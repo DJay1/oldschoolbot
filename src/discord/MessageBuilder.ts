@@ -87,23 +87,28 @@ export class MessageBuilderClass {
 	 * panel (or the only panel). Display only: it never touches anyone's bank. Returns
 	 * false when the message has no chest image to redraw.
 	 */
-	async addItemsToChestLootImage(
-		extras: Bank,
-		userId: string,
+	async addItemsToChestLootImageForUsers(
+		extrasByUser: { userId: string; items: Bank }[],
 		render: (opts: DrawChestLootImageOptions) => Promise<SendableFile> = drawChestLootImage
 	): Promise<boolean> {
-		if (extras.length === 0) return false;
+		const added = new Map<string, Bank>();
+		for (const { userId, items } of extrasByUser) {
+			if (items.length === 0) continue;
+			const current = added.get(userId);
+			added.set(userId, current ? current.add(items) : items.clone());
+		}
+		if (added.size === 0) return false;
 
 		const withExtras = (opts: DrawChestLootImageOptions): DrawChestLootImageOptions | null => {
-			const match = opts.entries.findIndex(entry => entry.user.id === userId);
-			const target = match >= 0 ? match : opts.entries.length === 1 ? 0 : -1;
-			if (target < 0) return null;
-			return {
-				type: opts.type,
-				entries: opts.entries.map((entry, i) =>
-					i === target ? { ...entry, loot: entry.loot.clone().add(extras) } : entry
-				)
-			};
+			let changed = false;
+			const entries = opts.entries.map(entry => {
+				const extra = added.get(entry.user.id);
+				if (!extra || extra.length === 0) return entry;
+				changed = true;
+				return { ...entry, loot: entry.loot.clone().add(extra) };
+			});
+			if (!changed) return null;
+			return { type: opts.type, entries };
 		};
 
 		if (this.chestLootImageOptions) {
@@ -124,6 +129,14 @@ export class MessageBuilderClass {
 			return true;
 		}
 		return false;
+	}
+
+	async addItemsToChestLootImage(
+		extras: Bank,
+		userId: string,
+		render: (opts: DrawChestLootImageOptions) => Promise<SendableFile> = drawChestLootImage
+	): Promise<boolean> {
+		return this.addItemsToChestLootImageForUsers([{ userId, items: extras }], render);
 	}
 
 	addChestLootImage(opts: DrawChestLootImageOptions): this {
