@@ -2,7 +2,7 @@ import { RuneTable } from '@/lib/bso/tables/seedTable.js';
 import { ExoticSeedsTable } from '@/lib/bso/tables/sharedTables.js';
 import { LampTable } from '@/lib/bso/xpLamps.js';
 
-import { LootTable, TreeHerbSeedTable } from 'oldschooljs';
+import { LootTable } from 'oldschooljs';
 
 export const MysteryBoxes = new LootTable()
 	.oneIn(55, 'Pet Mystery Box')
@@ -17,43 +17,37 @@ export const NestBoxes = new LootTable()
 	.add('Nest box (ring)', 1, 5)
 	.add('Nest box (empty)', 1, 3);
 
-const baseTGBTable = new LootTable()
-	.add('Tradeable mystery box', [1, 3])
-	.add('Reward casket (master)', [3, 6])
-	.add('Reward casket (beginner)', [3, 9])
-	.add('Reward casket (hard)', [3, 7])
-	.add('Dwarven crate', 2)
-	.add(NestBoxes, 100)
-	.add('Holiday Mystery box')
-	.add('Pet Mystery box')
-	.add('Untradeable Mystery box')
-	.add('Abyssal dragon bones', [100, 500], 2)
-	.add('Coins', [20_000_000, 100_000_000], 2)
-	.add(LampTable, [1, 3])
-	.add('Clue scroll (beginner)', [5, 10], 2)
-	.add('Clue scroll (easy)', [4, 9], 2)
-	.add('Clue scroll (medium)', [4, 9], 2)
-	.add('Clue scroll (hard)', [3, 6], 2)
-	.add('Clue scroll (elite)', [4, 9], 2)
-	.add('Clue scroll (master)', [2, 5], 2)
-	.add('Manta ray', [100, 600], 2)
-	.add(TreeHerbSeedTable, [1, 15])
-	.add('Prayer potion(4)', [5, 40])
-	.add('Saradomin brew(4)', [5, 40])
-	.add('Super restore(4)', [5, 20])
-	.add('Monkey nuts', 2)
-	.add('Shark', [100, 200], 2)
-	.add('Beer', [500, 5000])
-	.add('Tchiki monkey nuts')
-	.add('Magic seed', [20, 50]);
+const testerGiftLampTable = new LootTable()
+	.add('Small lamp', 1, 50)
+	.add('Average lamp', 1, 30)
+	.add('Large lamp', 1, 15)
+	.add('Huge lamp', 1, 5);
+
+// Weights sum to 170 so the rates match the staff proposal (1/5.6, 1/7, 1/8, 1/10, 1/12.5, 1/17).
+const testerGiftMainPrize = new LootTable()
+	.add('Tradeable mystery box', [2, 4], 30)
+	.add('Untradeable Mystery box', [1, 2], 24)
+	.add('Reward casket (master)', [3, 6], 21)
+	.add('Equippable mystery box', [1, 2], 17)
+	.add('Clothing Mystery Box', [1, 2], 17)
+	.add('Reward casket (elite)', [2, 4], 17)
+	.add('Large lamp', [1, 2], 14)
+	.add('Magic seed', [5, 15], 10)
+	.add('Nest box (seeds)', [8, 15], 10)
+	.add('Dwarven crate', 1, 10);
 
 export const testerGiftTable = new LootTable()
-	.every(baseTGBTable, [3, 7])
+	.every('Coins', [15_000_000, 25_000_000])
 	.every('Clue scroll (grandmaster)', [1, 3])
-	.every(LampTable, [1, 2])
-	.add('Rocktail', [30, 60])
-	.add('Tradeable mystery box', [1, 3])
-	.add(baseTGBTable);
+	.every('Clue scroll (master)')
+	.every(testerGiftLampTable, [1, 2])
+	.every('Prayer potion(4)', [10, 20])
+	.every('Super restore(4)', [10, 20])
+	.every('Saradomin brew(4)', [10, 20])
+	.every('Tradeable mystery box', [1, 2])
+	.every(testerGiftMainPrize)
+	.tertiary(6, 'Pet Mystery box')
+	.tertiary(6, 'Holiday Mystery box');
 
 export const MonkeyCrateTable = new LootTable()
 	.add('Avocado seed', [2, 5], 2)

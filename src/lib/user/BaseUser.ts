@@ -9,6 +9,7 @@ import { Bank, convertXPtoLVL, type Item, type ItemBank, Items, resolveItems } f
 import { clone } from 'remeda';
 
 import type { User, xp_gains_skill_enum } from '@/prisma/main.js';
+import { nameWithTesterTitle } from '@/lib/bsc/testerRewards.js';
 import { modifyUserBusy } from '@/lib/cache.js';
 import type { IconPackID } from '@/lib/canvas/iconPacks.js';
 import { type CATier, CombatAchievements } from '@/lib/combat_achievements/combatAchievements.js';
@@ -235,7 +236,7 @@ export class BaseUser {
 	}
 
 	get badgedUsername() {
-		return `${this.badgesString} ${this.usernameOrMention}`.trim();
+		return `${this.badgesString} ${nameWithTesterTitle(this.usernameOrMention, this.bitfield)}`.trim();
 	}
 
 	get notificationName() {

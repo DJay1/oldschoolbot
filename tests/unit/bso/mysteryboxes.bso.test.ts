@@ -10,6 +10,7 @@ test("Items that shouldn't be dropped in mystery boxes", () => {
 	const shouldntBeIn = resolveItems([
 		'Coins',
 		'Tester gift box',
+		'Bug hunter',
 		'Abyssal pouch',
 		'Cob',
 		'Runite stone spirit',

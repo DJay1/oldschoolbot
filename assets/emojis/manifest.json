@@ -3624,6 +3624,21 @@
 			"usedIn": [
 				"src/lib/constants.ts"
 			]
+		},
+		{
+			"name": "tester",
+			"uploadName": "tester",
+			"aliases": [],
+			"fallback": "🔍",
+			"animated": false,
+			"source": null,
+			"image": "tester.png",
+			"status": "bsc",
+			"wiki": null,
+			"notes": "Tester badge (magnifying glass). Unlock is a boxes-opened milestone, not a drop.",
+			"usedIn": [
+				"src/lib/badges/badgeEmojis.ts"
+			]
 		}
 	]
 }

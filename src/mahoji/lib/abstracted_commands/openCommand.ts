@@ -7,6 +7,8 @@ import { cryptoRng } from 'node-rng/crypto';
 import { Bank, Items, itemID, resolveItems } from 'oldschooljs';
 
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import { getTesterPoints } from '@/lib/bsc/testerPoints.js';
+import { applyTesterMilestones, testerGiftBoxId } from '@/lib/bsc/testerRewards.js';
 import { ClueTiers } from '@/lib/clues/clueTiers.js';
 import { buildClueButtons } from '@/lib/clues/clueUtils.js';
 import { BitField } from '@/lib/constants.js';
@@ -267,6 +269,14 @@ async function finalizeOpening({
 			loot.add(graceful.items);
 			messages.push(launchGracefulMessage(graceful.sets, opened));
 		}
+	}
+
+	const testerBoxesOpened = cost.amount(testerGiftBoxId());
+	if (testerBoxesOpened > 0) {
+		const { earnedTotal } = await getTesterPoints(user.id);
+		const totalOpened = newOpenableScores.amount(testerGiftBoxId());
+		const unlocked = await applyTesterMilestones(user, totalOpened, earnedTotal);
+		messages.push(...unlocked);
 	}
 
 	const openedStr = openables

@@ -2,6 +2,12 @@ import { time } from '@oldschoolgg/discord';
 import { formatDuration, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
+import {
+	getDeveloperPoints,
+	recentDeveloperPointsLog,
+	refundDeveloperPoints,
+	removeDeveloperPoints
+} from '@/lib/bsc/developerPoints.js';
 import { getBscPatronOverride, updateBscPatronOverride } from '@/lib/bsc/patronStore.js';
 import { bscPatronTierByLevel } from '@/lib/bsc/patronTiers.js';
 import {
@@ -10,6 +16,13 @@ import {
 	refundTesterPoints,
 	removeTesterPoints
 } from '@/lib/bsc/testerPoints.js';
+import {
+	applyTesterMilestones,
+	formatTesterUnlockProgress,
+	getTesterGiftBoxesOpened,
+	planShopSpend,
+	readTesterProgress
+} from '@/lib/bsc/testerRewards.js';
 import { LaunchItem } from '@/lib/events/launch/items.js';
 import { getUsersPerkTier } from '@/lib/perkTiers.js';
 import { requirePositiveQuantity, safePositiveProduct } from '@/lib/util/validateQuantity.js';
@@ -38,14 +51,63 @@ const shop = [
 
 type ShopItemName = (typeof shop)[number]['name'];
 
+type ShopSpend = { testerSpend: number; developerSpend: number; testerBalance: number; developerBalance: number };
+
+async function chargeShopPoints(userId: string, cost: number, reason: string): Promise<ShopSpend | null> {
+	const [tester, developer] = await Promise.all([getTesterPoints(userId), getDeveloperPoints(userId)]);
+	const plan = planShopSpend(tester.balance, developer.balance, cost);
+	if (!plan.ok) return null;
+
+	let testerBalance = tester.balance;
+	let developerBalance = developer.balance;
+
+	if (plan.testerSpend > 0) {
+		const charged = await removeTesterPoints(userId, plan.testerSpend, reason, null);
+		if (!charged) return null;
+		testerBalance = charged.balance;
+	}
+	if (plan.developerSpend > 0) {
+		const charged = await removeDeveloperPoints(userId, plan.developerSpend, reason, null);
+		if (!charged) {
+			if (plan.testerSpend > 0) {
+				await refundTesterPoints(userId, plan.testerSpend, `Refund: ${reason} (developer points failed)`);
+			}
+			return null;
+		}
+		developerBalance = charged.balance;
+	}
+
+	return {
+		testerSpend: plan.testerSpend,
+		developerSpend: plan.developerSpend,
+		testerBalance,
+		developerBalance
+	};
+}
+
+async function refundShopSpend(userId: string, spend: ShopSpend, reason: string) {
+	if (spend.testerSpend > 0) await refundTesterPoints(userId, spend.testerSpend, reason);
+	if (spend.developerSpend > 0) await refundDeveloperPoints(userId, spend.developerSpend, reason);
+}
+
+function remainingPointsMessage(spend: ShopSpend): string {
+	if (spend.developerSpend > 0 && spend.testerSpend > 0) {
+		return `You have ${spend.testerBalance} tester points and ${spend.developerBalance} developer points left.`;
+	}
+	if (spend.developerSpend > 0) {
+		return `You have ${spend.developerBalance} developer points left.`;
+	}
+	return `You have ${spend.testerBalance} tester points left.`;
+}
+
 export const testerShopCommand = defineCommand({
 	name: 'testershop',
-	description: 'Spend your tester points.',
+	description: 'Spend your tester or developer points.',
 	options: [
 		{
 			type: 'Subcommand',
 			name: 'buy',
-			description: 'Buy something with your tester points.',
+			description: 'Buy something with your tester or developer points.',
 			options: [
 				{
 					type: 'String',
@@ -70,7 +132,7 @@ export const testerShopCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'balance',
-			description: 'See your tester points and recent awards.',
+			description: 'See your points, unlocks, and recent awards.',
 			options: []
 		}
 	],
@@ -89,34 +151,65 @@ export const testerShopCommand = defineCommand({
 		if (!parsedCost.ok) return parsedCost.error;
 		const cost = parsedCost.value;
 
-		const charged = await removeTesterPoints(user.id, cost, `Bought ${quantity}x ${item.name}`, null);
+		const charged = await chargeShopPoints(user.id, cost, `Bought ${quantity}x ${item.name}`);
 		if (!charged) {
-			const { balance } = await getTesterPoints(user.id);
-			return `You need ${cost} tester points to buy ${quantity}x ${item.name}, you have ${balance}.`;
+			const [tester, developer] = await Promise.all([getTesterPoints(user.id), getDeveloperPoints(user.id)]);
+			return `You need ${cost} points to buy ${quantity}x ${item.name}. You have ${tester.balance} tester points and ${developer.balance} developer points.`;
 		}
 
-		Logging.logDebug(`Tester shop: ${user.id} bought ${quantity}x ${item.name} for ${cost} points.`);
+		Logging.logDebug(
+			`Tester shop: ${user.id} bought ${quantity}x ${item.name} for ${cost} points (${charged.testerSpend} tester, ${charged.developerSpend} developer).`
+		);
 		try {
 			const result = await grantTesterShopItem(user, item.name, quantity, rng);
-			return `${result} You have ${charged.balance} tester points left.`;
+			return `${result} ${remainingPointsMessage(charged)}`;
 		} catch (error) {
-			await refundTesterPoints(user.id, cost, `Refund: ${quantity}x ${item.name} failed`);
+			await refundShopSpend(user.id, charged, `Refund: ${quantity}x ${item.name} failed`);
 			throw error;
 		}
 	}
 });
 
+function clipReason(reason: string, max = 80) {
+	return reason.length <= max ? reason : `${reason.slice(0, max - 1)}…`;
+}
+
 async function testerPointsBalanceMessage(user: MUser) {
-	const [{ balance, earnedTotal }, log] = await Promise.all([
+	const [{ balance, earnedTotal }, dev, testerLog, devLog, boxesOpened] = await Promise.all([
 		getTesterPoints(user.id),
-		recentTesterPointsLog(user.id)
+		getDeveloperPoints(user.id),
+		recentTesterPointsLog(user.id),
+		recentDeveloperPointsLog(user.id),
+		getTesterGiftBoxesOpened(user)
 	]);
-	const lines = [`You have **${balance}** tester points (${earnedTotal} earned in total).`];
+
+	const unlocked = await applyTesterMilestones(user, boxesOpened, earnedTotal);
+	const progress = readTesterProgress(user, boxesOpened, earnedTotal);
+
+	const lines = [
+		`You have **${balance}** tester points (${earnedTotal} earned in total) and **${dev.balance}** developer points.`,
+		'',
+		formatTesterUnlockProgress(progress)
+	];
+	if (unlocked.length > 0) {
+		lines.push('', ...unlocked);
+	}
+
+	const log = [
+		...testerLog.map(entry => ({ ...entry, source: 'tester' as const })),
+		...devLog.map(entry => ({ ...entry, source: 'developer' as const }))
+	]
+		.sort((a, b) => b.createdAt - a.createdAt)
+		.slice(0, 5);
+
 	if (log.length > 0) {
 		lines.push('', '**Recent:**');
 		for (const entry of log) {
 			const sign = entry.amount > 0 ? '+' : '';
-			lines.push(`${sign}${entry.amount} - ${entry.reason} (${time(Math.floor(entry.createdAt / 1000), 'R')})`);
+			const kind = entry.source === 'developer' ? 'dev' : 'tester';
+			lines.push(
+				`${sign}${entry.amount} ${kind} - ${clipReason(entry.reason)} (${time(Math.floor(entry.createdAt / 1000), 'R')})`
+			);
 		}
 	}
 	return lines.join('\n');

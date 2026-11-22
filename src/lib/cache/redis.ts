@@ -21,6 +21,7 @@ import { Redis } from 'ioredis';
 import type { Guild, Prisma } from '@/prisma/main.js';
 import { badgeRenderVersion } from '@/lib/badges/badgeEmojis.js';
 import type { PollRecord } from '@/lib/bsc/polls.js';
+import { nameWithTesterTitle } from '@/lib/bsc/testerRewards.js';
 import { BitField, BOT_TYPE, globalConfig } from '@/lib/constants.js';
 import { type BuyDailyReserveResult, buyDailyLimitKeyType } from '@/lib/data/buyables/skillingSupplyLimits.js';
 import type { RobochimpUser } from '@/lib/roboChimp.js';
@@ -465,7 +466,8 @@ class CacheManager {
 					user.bitfield
 				)
 			: '';
-		const badgedUsername = `${badgesString} ${username}`.trim();
+		const titledName = nameWithTesterTitle(username, user?.bitfield ?? []);
+		const badgedUsername = `${badgesString} ${titledName}`.trim();
 		if (username !== 'Unknown') {
 			await this.setExpiringString(key, badgedUsername);
 		}

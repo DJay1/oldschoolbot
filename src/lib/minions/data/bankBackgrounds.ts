@@ -770,6 +770,13 @@ const backgroundImages: BankBackground[] = [
 		owners: ['304309559068196867'],
 		purpleImage: null,
 		hasPurple: true
+	},
+	{
+		id: 1032,
+		name: 'Tester Lab',
+		image: null,
+		available: true,
+		bitfield: BitField.HasTesterLabBackground
 	}
 ];
 

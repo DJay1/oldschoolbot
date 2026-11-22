@@ -276,7 +276,9 @@ export enum BitField {
 	UsedFragmentOfWhisperingWind = 243,
 	UsedFragmentOfDeepWater = 244,
 	UsedFragmentOfLivingEarth = 245,
-	UsedFragmentOfBurningFire = 246
+	UsedFragmentOfBurningFire = 246,
+	HasTesterLabBackground = 247,
+	HasBugHunterTitle = 248
 }
 
 export interface IBitFieldData {
@@ -615,6 +617,16 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 		name: 'Disable Glow Effects',
 		protected: false,
 		userConfigurable: true
+	},
+	[BitField.HasTesterLabBackground]: {
+		name: 'Tester Lab background',
+		protected: false,
+		userConfigurable: false
+	},
+	[BitField.HasBugHunterTitle]: {
+		name: 'Bug Hunter title',
+		protected: false,
+		userConfigurable: false
 	}
 } as const;
 

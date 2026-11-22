@@ -34,7 +34,8 @@ export const BadgesEnum = {
 	Farmer: 15,
 	Hacktoberfest: 16,
 	// Badge id 17 is reserved and retired.
-	TopClueHunter: 18
+	TopClueHunter: 18,
+	Tester: 19
 } as const;
 
 /** DB badge id (users.badges) -> application emoji name in assets/emojis/manifest.json. */
@@ -56,7 +57,8 @@ export const BADGE_EMOJI_NAMES: Readonly<Record<number, string>> = {
 	[BadgesEnum.TopGiveawayer]: 'top_giveawayer',
 	[BadgesEnum.Farmer]: 'top_farmer',
 	[BadgesEnum.Hacktoberfest]: 'hacktoberfest',
-	[BadgesEnum.TopClueHunter]: 'top_clue_hunter'
+	[BadgesEnum.TopClueHunter]: 'top_clue_hunter',
+	[BadgesEnum.Tester]: 'tester'
 };
 
 /** Badges that come from bits/flags instead of users.badges. */
