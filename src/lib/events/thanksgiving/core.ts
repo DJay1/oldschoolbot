@@ -44,6 +44,45 @@ export const OFFER_RATES = {
 export const GOBBLES_PITY_OFFERS = 150;
 export const LABOON_FISHING_RATE_PER_MINUTE = 3000;
 export const LABOON_FISHING_MIN_TRIP_MS = 5 * Time.Minute;
+export const LABOON_FISHING_MESSAGE =
+	'🐋 A huge whale with a scar surfaces beside you... **Laboon** wants to join your crew!';
+
+/** Activity types that can roll Laboon at the per-minute fishing rate. Barbarian fishing uses the Fishing activity. */
+export const LABOON_FISHING_ACTIVITY_TYPES = [
+	'Fishing',
+	'Tempoross',
+	'FishingTrawler',
+	'DriftNet',
+	'AerialFishing',
+	'CamdozaalFishing',
+	'FishingContest'
+] as const;
+
+export function isLaboonFishingActivity(type: string): boolean {
+	return (LABOON_FISHING_ACTIVITY_TYPES as readonly string[]).includes(type);
+}
+
+/**
+ * Roll Laboon once per full minute of a fishing trip, at 1/LABOON_FISHING_RATE_PER_MINUTE,
+ * only during The Straw Hat Harvest and only if the trip is at least LABOON_FISHING_MIN_TRIP_MS.
+ * Stops at the first success. Adds Laboon to `loot` and returns the trip-finish message, or null.
+ */
+export function rollLaboonFromFishingTrip(
+	rng: ThanksgivingRng,
+	durationMs: number,
+	loot: { add(id: number, quantity?: number): unknown },
+	now = Date.now()
+): string | null {
+	if (!isThanksgivingActive(now) || durationMs < LABOON_FISHING_MIN_TRIP_MS) return null;
+	const minutesInTrip = Math.floor(durationMs / Time.Minute);
+	for (let i = 0; i < minutesInTrip; i++) {
+		if (rng.randInt(1, LABOON_FISHING_RATE_PER_MINUTE) === 1) {
+			loot.add(ThanksgivingItem.LABOON);
+			return LABOON_FISHING_MESSAGE;
+		}
+	}
+	return null;
+}
 
 /** Offers in one CT day before the streak kicks in (the 4th offer and later get the boost). */
 export const GOBBLE_STREAK_OFFERS = 4;

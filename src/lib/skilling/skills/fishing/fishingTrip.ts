@@ -7,13 +7,10 @@ import { roll } from 'node-rng';
 import { type Bank, EItem, toKMB } from 'oldschooljs';
 
 import {
-	isThanksgivingActive,
-	LABOON_FISHING_MIN_TRIP_MS,
-	LABOON_FISHING_RATE_PER_MINUTE,
+	rollLaboonFromFishingTrip,
 	rollPercentOfQuantity,
 	thanksgivingFishingBoosts
 } from '@/lib/events/thanksgiving/core.js';
-import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import addSkillingClueToLoot from '@/lib/minions/functions/addSkillingClueToLoot.js';
 import { Cookables } from '@/lib/skilling/skills/cooking/cooking.js';
 import type { Fish, SkillNameType } from '@/lib/skilling/types.js';
@@ -278,16 +275,8 @@ export function calcFishingTripResult({
 		}
 	}
 
-	if (isThanksgivingActive() && duration >= LABOON_FISHING_MIN_TRIP_MS) {
-		const minutesInTrip = Math.floor(duration / Time.Minute);
-		for (let i = 0; i < minutesInTrip; i++) {
-			if (rng.randInt(1, LABOON_FISHING_RATE_PER_MINUTE) === 1) {
-				updateBank.itemLootBank.add(ThanksgivingItem.LABOON);
-				messages.push('🐋 A huge whale with a scar surfaces beside you... **Laboon** wants to join your crew!');
-				break;
-			}
-		}
-	}
+	const laboonMsg = rollLaboonFromFishingTrip(rng, duration, updateBank.itemLootBank);
+	if (laboonMsg) messages.push(laboonMsg);
 
 	return {
 		updateBank,

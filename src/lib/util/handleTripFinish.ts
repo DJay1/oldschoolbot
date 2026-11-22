@@ -36,6 +36,7 @@ import { isEventActive } from '@/lib/events/registry.js';
 import { handleCrateSpawns } from '@/lib/events/summer/crateSpawns.js';
 import {
 	hasHarvestBlessing,
+	isLaboonFishingActivity,
 	isThanksgivingActive,
 	rollFarmingCornucopias,
 	rollThanksgivingTripParts,
@@ -264,7 +265,12 @@ const tripFinishEffects: TripFinishEffect[] = [
 		name: 'Straw Hat Harvest pet announcements',
 		fn: async ({ data, user, loot }) => {
 			if (!loot) return;
-			void announceThanksgivingPets(user, loot, user.cl, data.type === 'Fishing' ? 'while fishing' : 'on a trip');
+			void announceThanksgivingPets(
+				user,
+				loot,
+				user.cl,
+				isLaboonFishingActivity(data.type) ? 'while fishing' : 'on a trip'
+			);
 		}
 	},
 	{

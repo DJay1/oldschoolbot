@@ -1,6 +1,10 @@
 import { Bank } from 'oldschooljs';
 
-import { rollPercentOfQuantity, thanksgivingFishingBoosts } from '@/lib/events/thanksgiving/core.js';
+import {
+	rollLaboonFromFishingTrip,
+	rollPercentOfQuantity,
+	thanksgivingFishingBoosts
+} from '@/lib/events/thanksgiving/core.js';
 import addSkillingClueToLoot from '@/lib/minions/functions/addSkillingClueToLoot.js';
 import aerialFishingCreatures from '@/lib/skilling/skills/hunter/aerialFishing.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
@@ -120,11 +124,13 @@ export const aerialFishingTask: MinionTask = {
 			loot.add('Heron');
 		}
 
+		const laboonMsg = rollLaboonFromFishingTrip(rng, data.duration, loot);
 		await user.transactItems({
 			collectionLog: true,
 			itemsToAdd: loot
 		});
 		str += `\n\nYou received: ${loot}.`;
+		if (laboonMsg) str += `\n${laboonMsg}`;
 
 		if (loot.has('Golden tench')) {
 			str += '\n\n**The cormorant has brought you a very strange tench.**';

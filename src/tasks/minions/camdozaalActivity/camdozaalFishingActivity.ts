@@ -1,5 +1,6 @@
 import { LootTable } from 'oldschooljs';
 
+import { rollLaboonFromFishingTrip } from '@/lib/events/thanksgiving/core.js';
 import addSkillingClueToLoot from '@/lib/minions/functions/addSkillingClueToLoot.js';
 import { Fishing } from '@/lib/skilling/skills/fishing/fishing.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
@@ -55,7 +56,7 @@ export const camdozaalFishingTask: MinionTask = {
 		});
 
 		// Trip finish message
-		const str = `${user}, ${user.minionName} finished fishing in Camdozaal! ${xpRes}`;
+		let str = `${user}, ${user.minionName} finished fishing in Camdozaal! ${xpRes}`;
 
 		// Add clue scrolls
 		const clueScrollChance = guppy.clueScrollChance!;
@@ -66,6 +67,9 @@ export const camdozaalFishingTask: MinionTask = {
 		if (rng.roll(Math.ceil(petDropRate / quantity))) {
 			loot.add('Heron');
 		}
+
+		const laboonMsg = rollLaboonFromFishingTrip(rng, duration, loot);
+		if (laboonMsg) str += `\n${laboonMsg}`;
 
 		// Give the user the items from the trip
 		const { previousCL, itemsAdded } = await user.transactItems({

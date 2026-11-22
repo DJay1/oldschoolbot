@@ -1,6 +1,10 @@
 import { resolveItems } from 'oldschooljs';
 
-import { LABOON_EXTRA_FISH_MULTIPLIER, usingLaboonPet } from '@/lib/events/thanksgiving/core.js';
+import {
+	LABOON_EXTRA_FISH_MULTIPLIER,
+	rollLaboonFromFishingTrip,
+	usingLaboonPet
+} from '@/lib/events/thanksgiving/core.js';
 import driftNetCreatures from '@/lib/skilling/skills/hunter/driftNet.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
 
@@ -41,7 +45,7 @@ const shelldonFish = resolveItems([
 
 export const driftNetTask: MinionTask = {
 	type: 'DriftNet',
-	async run(data: ActivityTaskOptionsWithQuantity, { user, handleTripFinish }) {
+	async run(data: ActivityTaskOptionsWithQuantity, { user, handleTripFinish, rng }) {
 		const { quantity, channelId, duration } = data;
 		const currentHuntLevel = user.skillsAsLevels.hunter;
 		const currentFishLevel = user.skillsAsLevels.fishing;
@@ -95,11 +99,13 @@ export const driftNetTask: MinionTask = {
 
 		let str = `${user}, ${user.minionName} finished drift net fishing and caught ${quantity}x ${fishShoal.name}.${xpRes}${shelldonStr}`;
 
+		const laboonMsg = rollLaboonFromFishingTrip(rng, duration, loot);
 		await user.transactItems({
 			collectionLog: true,
 			itemsToAdd: loot
 		});
 		str += `\n\nYou received: ${loot}.`;
+		if (laboonMsg) str += `\n${laboonMsg}`;
 
 		handleTripFinish({ user, channelId, message: str, data, loot });
 	}

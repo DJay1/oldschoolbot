@@ -3,7 +3,11 @@ import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { roll } from 'node-rng';
 import { Bank } from 'oldschooljs';
 
-import { LABOON_EXTRA_FISH_MULTIPLIER, usingLaboonPet } from '@/lib/events/thanksgiving/core.js';
+import {
+	LABOON_EXTRA_FISH_MULTIPLIER,
+	rollLaboonFromFishingTrip,
+	usingLaboonPet
+} from '@/lib/events/thanksgiving/core.js';
 import { fishingTrawlerLoot } from '@/lib/simulation/fishingTrawler.js';
 import type { ActivityTaskOptionsWithQuantity } from '@/lib/types/minions.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
@@ -62,6 +66,9 @@ export const trawlerTask: MinionTask = {
 			}
 			str += '\n\nYou received **4x** extra fish because you are a master at Fishing.';
 		}
+
+		const laboonMsg = rollLaboonFromFishingTrip(rng, data.duration, loot);
+		if (laboonMsg) str += `\n${laboonMsg}`;
 
 		const { previousCL, itemsAdded } = await user.transactItems({
 			collectionLog: true,

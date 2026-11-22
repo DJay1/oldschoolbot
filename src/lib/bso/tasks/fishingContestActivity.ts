@@ -7,6 +7,7 @@ import { calcPercentOfNum } from '@oldschoolgg/toolkit';
 import { roll } from 'node-rng';
 import { Bank, Items } from 'oldschooljs';
 
+import { rollLaboonFromFishingTrip } from '@/lib/events/thanksgiving/core.js';
 import { trackLoot } from '@/lib/lootTrack.js';
 
 export function calculateFishingContestXP({ fishingLevel, fishSizeCM }: { fishSizeCM: number; fishingLevel: number }) {
@@ -18,7 +19,7 @@ export function calculateFishingContestXP({ fishingLevel, fishSizeCM }: { fishSi
 
 export const fishingContestTask: MinionTask = {
 	type: 'FishingContest',
-	async run(data: FishingContestOptions, { user, handleTripFinish }) {
+	async run(data: FishingContestOptions, { user, handleTripFinish, rng }) {
 		const { channelId, quantity, location, duration } = data;
 
 		const { newScore } = await user.incrementMinigameScore('fishing_contest', 1);
@@ -79,6 +80,7 @@ export const fishingContestTask: MinionTask = {
 
 		loot.add(roll(2) ? ClueTable.roll() : MysteryBoxes.roll());
 
+		const laboonMsg = rollLaboonFromFishingTrip(rng, duration, loot);
 		await user.addItemsToBank({ items: loot, collectionLog: true });
 
 		const fishingXP = calculateFishingContestXP({
@@ -110,11 +112,12 @@ export const fishingContestTask: MinionTask = {
 			]
 		});
 
-		const message = `${user}, ${user.minionName} finished fishing at ${fishLocation.name}, you caught: ${caughtFish
+		let message = `${user}, ${user.minionName} finished fishing at ${fishLocation.name}, you caught: ${caughtFish
 			.map(i => `${i.name}(${i.lengthMetres}m, ${i.weightKG.toFixed(1)}KG)`)
 			.join(', ')}. You received: ${loot}.
 ${caughtFish[0].boosts.length > 0 ? `**Boosts:** ${caughtFish[0].boosts.join(', ')}` : ''}
 ${xpStr}`;
+		if (laboonMsg) message += `\n${laboonMsg}`;
 		return handleTripFinish({
 			user,
 			channelId,
