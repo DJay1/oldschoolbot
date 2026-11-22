@@ -246,6 +246,12 @@ export function formatCornucopiaMakeSuccess(preview: CornucopiaMakeOk, confirmed
 	return `You received ${preview.outItems}.${reduced}`;
 }
 
+export function formatThanksgivingPartsLine(bank: Bank): string {
+	const { bundles, baskets } = cornucopiaPartsHeld(bank);
+	const cornucopias = bank.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA);
+	return `**Parts:** ${qty('Harvest bundle', bundles)} · ${qty('Wicker basket', baskets)} · ${qty('Bountiful cornucopia', cornucopias)}`;
+}
+
 export function formatCornucopiaCanMakeLine(bank: Bank): string {
 	const { bundles, baskets } = cornucopiaPartsHeld(bank);
 	const maxMakeable = cornucopiaMaxMakeable(bundles, baskets);

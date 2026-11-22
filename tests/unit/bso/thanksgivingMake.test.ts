@@ -28,6 +28,7 @@ import {
 	formatCornucopiaMakeSuccess,
 	formatCornucopiaOfferEmpty,
 	formatMakeAndOfferConfirm,
+	formatThanksgivingPartsLine,
 	formatThanksgivingShortOnLine,
 	formatThanksgivingWindowLine,
 	isBountifulCornucopiaName,
@@ -207,13 +208,13 @@ describe('Bountiful cornucopia /create all QoL', () => {
 		const canMake = formatCornucopiaCanMakeLine(hugeBank);
 		const status = [
 			windowLine,
-			`Harvest bundles: ${huge.toLocaleString()}, Wicker baskets: ${huge.toLocaleString()}, Bountiful cornucopias: ${huge.toLocaleString()}`,
-			canMake,
-			`Offers made: ${huge.toLocaleString()}`,
+			formatThanksgivingPartsLine(hugeBank),
+			`-# ${canMake}`,
+			`**Offers:** ${huge.toLocaleString()}`,
 			formatGobbleStreakStatusLine(huge),
-			`Gobbles guarantee: ${GOBBLES_PITY_OFFERS}/${GOBBLES_PITY_OFFERS} offers.`,
+			`**Gobbles guarantee:** ${GOBBLES_PITY_OFFERS}/${GOBBLES_PITY_OFFERS} offers`,
 			formatHarvestBlessingStatusLine(true),
-			`Harvest turkeys: ${huge.toLocaleString()}`,
+			`**Harvest turkey:** ${huge.toLocaleString()}`,
 			harvestFeastStatusLine('length-user', Date.parse('2026-11-22T20:00:00Z')),
 			formatThanksgivingBaseRatesLine(),
 			formatLaboonFishingRateLine()

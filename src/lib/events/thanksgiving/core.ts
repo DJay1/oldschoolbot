@@ -450,42 +450,56 @@ export function offerOddsDenominator(key: OfferRareKey, { streak, blessing }: { 
 
 /** Base 1/N rates for every Bountiful cornucopia offer drop. */
 export function formatThanksgivingBaseRatesLine(): string {
-	return `Rates per offer: Paint box 1/${OFFER_RATES.paintBox}, Cornucopia 1/${OFFER_RATES.cornucopia}, Harvest turkey 1/${OFFER_RATES.turkey}, Pilgrim hat 1/${OFFER_RATES.pilgrimHat}, Straw hat 1/${OFFER_RATES.strawHat}, Gobbles 1/${OFFER_RATES.gobbles}, Laboon 1/${OFFER_RATES.laboon}.`;
+	return [
+		'**Rates per offer**',
+		`-# Paint box 1/${OFFER_RATES.paintBox} · Cornucopia 1/${OFFER_RATES.cornucopia} · Harvest turkey 1/${OFFER_RATES.turkey}`,
+		`-# Pilgrim hat 1/${OFFER_RATES.pilgrimHat} · Straw hat 1/${OFFER_RATES.strawHat} · Gobbles 1/${OFFER_RATES.gobbles} · Laboon 1/${OFFER_RATES.laboon}`
+	].join('\n');
 }
 
-export function formatGobbleStreakBoostDetail(): string {
+export function formatGobbleStreakRatesSubtext(): string {
 	const hatsAndGobbles = offerOddsDenominator('pilgrimHat', { streak: true, blessing: false });
 	const laboon = offerOddsDenominator('laboon', { streak: true, blessing: false });
-	return `+15% rare chances (Pilgrim hat, Straw hat, and Gobbles 1/${hatsAndGobbles}, Laboon 1/${laboon})`;
+	return `-# Pilgrim hat, Straw hat, Gobbles 1/${hatsAndGobbles} · Laboon 1/${laboon}`;
 }
 
-export function formatHarvestBlessingBoostDetail(): string {
+export function formatHarvestBlessingRatesSubtext(): string {
 	const paint = offerOddsDenominator('paintBox', { streak: false, blessing: true });
 	const cornucopia = offerOddsDenominator('cornucopia', { streak: false, blessing: true });
 	const turkey = offerOddsDenominator('turkey', { streak: false, blessing: true });
-	return `+15% supplies, Paint box 1/${paint}, Cornucopia 1/${cornucopia}, Harvest turkey 1/${turkey}`;
+	return `-# Paint box 1/${paint} · Cornucopia 1/${cornucopia} · Harvest turkey 1/${turkey}`;
 }
 
 export function formatGobbleStreakStatusLine(offersToday: number): string {
-	const boost = `${formatGobbleStreakBoostDetail()} until midnight CT`;
 	if (offersToday >= GOBBLE_STREAK_OFFERS) {
-		return `Gobble Streak: active today (${offersToday.toLocaleString()} offers). ${boost}.`;
+		return [
+			`🦃 **Gobble Streak**: active today (${offersToday.toLocaleString()} offers)`,
+			'-# +15% rare chance until midnight CT',
+			formatGobbleStreakRatesSubtext()
+		].join('\n');
 	}
-	return `Gobble Streak: ${offersToday.toLocaleString()}/${GOBBLE_STREAK_OFFERS} offers today (CT). At ${GOBBLE_STREAK_OFFERS}, ${boost}.`;
+	return [
+		`🦃 **Gobble Streak**: ${offersToday.toLocaleString()}/${GOBBLE_STREAK_OFFERS} offers today (CT)`,
+		`-# At ${GOBBLE_STREAK_OFFERS}: +15% rare chance until midnight CT`,
+		formatGobbleStreakRatesSubtext()
+	].join('\n');
 }
 
 export function formatHarvestBlessingStatusLine(hasBlessing: boolean): string {
-	return `Harvest Blessing (Cornucopia in bank): ${hasBlessing ? 'yes' : 'no'}. ${formatHarvestBlessingBoostDetail()}.`;
+	return [
+		`🌾 **Harvest Blessing**: ${hasBlessing ? 'yes' : 'no'} (Cornucopia in bank)`,
+		'-# +15% supplies',
+		formatHarvestBlessingRatesSubtext()
+	].join('\n');
 }
 
 export function formatLaboonFishingRateLine(): string {
 	const minutes = LABOON_FISHING_MIN_TRIP_MS / Time.Minute;
-	return `Laboon can also come from fishing trips of ${minutes} minutes or more (1/${LABOON_FISHING_RATE_PER_MINUTE} per minute).`;
+	return `-# Laboon can also come from fishing trips of ${minutes} minutes or more (1/${LABOON_FISHING_RATE_PER_MINUTE} per minute).`;
 }
 
 /**
- * Offer reply text (the loot itself is shown as a bank image). Buff lines and offer totals;
- * the loot itself is the bank image.
+ * Offer reply text (the loot itself is shown as a bank image). Short labeled lines, rates in subtext.
  */
 export function formatOfferReply({
 	result,
@@ -502,23 +516,26 @@ export function formatOfferReply({
 	offersAfter: number;
 	offersTodayAfter: number;
 }): string {
-	const lines: string[] = [];
+	const lines: string[] = [
+		`**Offered:** ${quantity.toLocaleString()}x Bountiful cornucopia (Total offers: ${offersAfter.toLocaleString()})`
+	];
 	if (result.streakOffers > 0) {
-		lines.push(
-			`🦃 Gobble Streak: ${result.streakOffers}/${quantity} offers had ${formatGobbleStreakBoostDetail()}.`
-		);
+		lines.push(`🦃 **Gobble Streak** (${result.streakOffers}/${quantity} offers): +15% rare chance`);
+		lines.push(formatGobbleStreakRatesSubtext());
 	} else if (offersTodayAfter < GOBBLE_STREAK_OFFERS) {
-		lines.push(`Gobble Streak: ${offersTodayAfter}/${GOBBLE_STREAK_OFFERS} offers today (CT).`);
+		lines.push(`🦃 **Gobble Streak**: ${offersTodayAfter}/${GOBBLE_STREAK_OFFERS} offers today (CT)`);
 	}
 	if (blessing) {
-		lines.push(`Harvest Blessing: ${formatHarvestBlessingBoostDetail()}.`);
+		lines.push('🌾 **Harvest Blessing**: +15% supplies');
+		lines.push(formatHarvestBlessingRatesSubtext());
 	}
 	if (result.gotPityGobbles) {
-		lines.push(`You reached ${GOBBLES_PITY_OFFERS} offers and Gobbles joined you!`);
+		lines.push(`**Gobbles** joined you at ${GOBBLES_PITY_OFFERS} offers!`);
 	} else if (!hadGobblesBefore && result.rares.gobbles.got === 0) {
-		lines.push(`Gobbles guarantee: ${Math.min(offersAfter, GOBBLES_PITY_OFFERS)}/${GOBBLES_PITY_OFFERS} offers.`);
+		lines.push(
+			`**Gobbles guarantee:** ${Math.min(offersAfter, GOBBLES_PITY_OFFERS)}/${GOBBLES_PITY_OFFERS} offers`
+		);
 	}
-	lines.push(`Total offers: ${offersAfter.toLocaleString()}.`);
 	return lines.join('\n');
 }
 

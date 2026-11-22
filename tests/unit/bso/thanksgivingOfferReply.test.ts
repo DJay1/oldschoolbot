@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
 import {
-	formatHarvestBlessingBoostDetail,
+	formatHarvestBlessingRatesSubtext,
 	formatOfferReply,
 	formatThanksgivingBaseRatesLine,
 	GOBBLES_PITY_OFFERS,
@@ -36,11 +36,11 @@ describe('Thanksgiving offer reply', () => {
 		expect(text).not.toContain('Your best rolls');
 		expect(text).not.toContain('best roll');
 		expect(text).not.toContain('Got it!');
-		expect(text).toContain(
-			'🦃 Gobble Streak: 2/5 offers had +15% rare chances (Pilgrim hat, Straw hat, and Gobbles 1/196, Laboon 1/652).'
-		);
-		expect(text).toContain(`Gobbles guarantee: 15/${GOBBLES_PITY_OFFERS} offers.`);
-		expect(text).toContain('Total offers: 15.');
+		expect(text).toContain('**Offered:** 5x Bountiful cornucopia (Total offers: 15)');
+		expect(text).toContain('🦃 **Gobble Streak** (2/5 offers): +15% rare chance');
+		expect(text).toContain('-# Pilgrim hat, Straw hat, Gobbles 1/196 · Laboon 1/652');
+		expect(text).toContain(`**Gobbles guarantee:** 15/${GOBBLES_PITY_OFFERS} offers`);
+		expect(text).not.toContain('Your best rolls');
 	});
 
 	test('offer rolls still track closeness internally without changing odds', () => {
@@ -79,9 +79,8 @@ describe('Thanksgiving offer reply', () => {
 		expect(text).not.toContain('best roll');
 		expect(lucky.loot.amount(ThanksgivingItem.LABOON)).toBe(2);
 		expect(lucky.loot.amount(ThanksgivingItem.HARVEST_TURKEY)).toBe(2);
-		expect(text).toContain(
-			'Harvest Blessing: +15% supplies, Paint box 1/39, Cornucopia 1/52, Harvest turkey 1/43.'
-		);
+		expect(text).toContain('🌾 **Harvest Blessing**: +15% supplies');
+		expect(text).toContain('-# Paint box 1/39 · Cornucopia 1/52 · Harvest turkey 1/43');
 		expect(text).not.toContain('Gobbles guarantee');
 
 		const pity = rollThanksgivingOffers({
@@ -102,7 +101,36 @@ describe('Thanksgiving offer reply', () => {
 			offersTodayAfter: 1
 		});
 		expect(pityText).not.toContain('Got it!');
-		expect(pityText).toContain(`You reached ${GOBBLES_PITY_OFFERS} offers and Gobbles joined you!`);
+		expect(pityText).toContain(`**Gobbles** joined you at ${GOBBLES_PITY_OFFERS} offers!`);
+	});
+
+	test('the offer reply uses short labeled lines with rate subtext', () => {
+		const result = rollThanksgivingOffers({
+			quantity: 20,
+			offersBefore: 40,
+			offersTodayBefore: 4,
+			hasHadGobbles: true,
+			blessing: true,
+			rng: neverRng
+		});
+		expect(result.streakOffers).toBe(20);
+		const text = formatOfferReply({
+			result,
+			quantity: 20,
+			blessing: true,
+			hadGobblesBefore: true,
+			offersAfter: 60,
+			offersTodayAfter: 24
+		});
+		expect(text).toBe(
+			[
+				'**Offered:** 20x Bountiful cornucopia (Total offers: 60)',
+				'🦃 **Gobble Streak** (20/20 offers): +15% rare chance',
+				'-# Pilgrim hat, Straw hat, Gobbles 1/196 · Laboon 1/652',
+				'🌾 **Harvest Blessing**: +15% supplies',
+				'-# Paint box 1/39 · Cornucopia 1/52 · Harvest turkey 1/43'
+			].join('\n')
+		);
 	});
 
 	test('Thanksgiving info lists every offer rate and how buffs change them', () => {
@@ -114,8 +142,6 @@ describe('Thanksgiving offer reply', () => {
 		expect(rates).toContain('Straw hat 1/225');
 		expect(rates).toContain('Gobbles 1/225');
 		expect(rates).toContain('Laboon 1/750');
-		expect(formatHarvestBlessingBoostDetail()).toBe(
-			'+15% supplies, Paint box 1/39, Cornucopia 1/52, Harvest turkey 1/43'
-		);
+		expect(formatHarvestBlessingRatesSubtext()).toBe('-# Paint box 1/39 · Cornucopia 1/52 · Harvest turkey 1/43');
 	});
 });

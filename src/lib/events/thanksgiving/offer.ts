@@ -35,7 +35,12 @@ import {
 	saveHarvestFeast
 } from './feast.js';
 import { ThanksgivingItem } from './items.js';
-import { formatCornucopiaCanMakeLine, formatCornucopiaOfferEmpty, formatThanksgivingWindowLine } from './make.js';
+import {
+	formatCornucopiaCanMakeLine,
+	formatCornucopiaOfferEmpty,
+	formatThanksgivingPartsLine,
+	formatThanksgivingWindowLine
+} from './make.js';
 
 const ready = { done: false };
 
@@ -232,15 +237,15 @@ export async function thanksgivingStatus(user: MUser) {
 	const window = resolveSeasonalEvent('thanksgiving');
 	const lines = [
 		formatThanksgivingWindowLine(active, window.start, window.end),
-		`Harvest bundles: ${bank.amount(ThanksgivingItem.HARVEST_BUNDLE)}, Wicker baskets: ${bank.amount(ThanksgivingItem.WICKER_BASKET)}, Bountiful cornucopias: ${bank.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA)}`,
-		formatCornucopiaCanMakeLine(bank),
-		`Offers made: ${offers.toLocaleString()}`,
+		formatThanksgivingPartsLine(bank),
+		`-# ${formatCornucopiaCanMakeLine(bank)}`,
+		`**Offers:** ${offers.toLocaleString()}`,
 		formatGobbleStreakStatusLine(today),
 		hadGobbles
-			? 'Gobbles: ✅ you have had Gobbles.'
-			: `Gobbles guarantee: ${Math.min(offers, GOBBLES_PITY_OFFERS)}/${GOBBLES_PITY_OFFERS} offers.`,
+			? '**Gobbles:** ✅ you have had Gobbles'
+			: `**Gobbles guarantee:** ${Math.min(offers, GOBBLES_PITY_OFFERS)}/${GOBBLES_PITY_OFFERS} offers`,
 		formatHarvestBlessingStatusLine(hasHarvestBlessing(user)),
-		`Harvest turkeys: ${bank.amount(ThanksgivingItem.HARVEST_TURKEY)}`,
+		`**Harvest turkey:** ${bank.amount(ThanksgivingItem.HARVEST_TURKEY).toLocaleString()}`,
 		harvestFeastStatusLine(user.id),
 		formatThanksgivingBaseRatesLine(),
 		formatLaboonFishingRateLine()
