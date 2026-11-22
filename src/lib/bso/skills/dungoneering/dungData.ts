@@ -2,8 +2,11 @@ import { Items } from 'oldschooljs';
 
 export type Floor = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
+export const DG_FLOORS: Floor[] = [1, 2, 3, 4, 5, 6, 7];
+export const MAX_DG_FLOOR: Floor = 7;
+
 export function isValidFloor(floor: number | string): floor is Floor {
-	return [1, 2, 3, 4, 5, 6, 7].includes(floor as number);
+	return DG_FLOORS.includes(floor as Floor);
 }
 
 export const dungBuyables = [

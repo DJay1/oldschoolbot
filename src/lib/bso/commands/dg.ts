@@ -11,15 +11,9 @@ import {
 	hasRequiredLevels,
 	numberOfGorajanOutfitsEquipped
 } from '@/lib/bso/skills/dungoneering/dungDbFunctions.js';
+import { formatDgStatsMessage } from '@/lib/bso/skills/dungoneering/dungInfo.js';
 
-import {
-	customEmoji,
-	formatDuration,
-	formatOrdinal,
-	reduceNumByPercent,
-	stringMatches,
-	Time
-} from '@oldschoolgg/toolkit';
+import { formatDuration, formatOrdinal, reduceNumByPercent, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import type { MakePartyOptions } from '@/lib/types/index.js';
@@ -31,6 +25,19 @@ const maxTeamSize = 20;
 // Limit party size boost to maxBoostSize * boostPerPlayer:
 const maxBoostSize = 5;
 const boostPerPlayer = 5;
+
+function dgStatsText(user: MUser, requestedFloor?: number) {
+	const maxFloor = calcMaxFloorUserCanDo(user);
+	const { boosts } = calcUserGorajanShardChance(user);
+	return formatDgStatsMessage({
+		tokens: user.user.dungeoneering_tokens,
+		maxFloor,
+		meetsMaxFloorReqs: hasRequiredLevels(user, maxFloor),
+		skills: user.skillsAsRequirements,
+		gorajanBoosts: boosts,
+		requestedFloor
+	});
+}
 
 async function startCommand(
 	interaction: MInteraction,
@@ -240,7 +247,17 @@ export const dgCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'stats',
-			description: 'See your Dungeoneering stats.'
+			description: 'See your Dungeoneering stats and next-floor requirements.',
+			options: [
+				{
+					type: 'Integer',
+					name: 'floor',
+					description: 'A floor to check requirements for. (Optional)',
+					required: false,
+					min_value: 1,
+					max_value: 7
+				}
+			]
 		},
 		{
 			type: 'Subcommand',
@@ -273,12 +290,6 @@ export const dgCommand = defineCommand({
 		if (interaction) await interaction.defer();
 		if (options.start) return startCommand(interaction, channelId, user, options.start.floor, options.start.solo);
 		if (options.buy) return buyCommand(user, options.buy.item, options.buy.quantity);
-		let str = `${customEmoji('dungeoneeringToken')} **Dungeoneering Tokens:** ${user.user.dungeoneering_tokens.toLocaleString()}
-**Max floor:** ${calcMaxFloorUserCanDo(user)}`;
-		const { boosts } = calcUserGorajanShardChance(user);
-		if (boosts.length > 0) {
-			str += `\n**Gorajan shard boosts:** ${boosts.join(', ')}`;
-		}
-		return str;
+		return dgStatsText(user, options.stats?.floor);
 	}
 });
