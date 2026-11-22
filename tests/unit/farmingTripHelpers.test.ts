@@ -10,8 +10,12 @@ import {
 	resolveCompostUpgrade
 } from '../../src/lib/minions/functions/farmingTripHelpers.js';
 import { plants } from '../../src/lib/skilling/skills/farming/index.js';
+import { farmingPatchNames } from '../../src/lib/skilling/skills/farming/utils/farming.shared.js';
 import {
+	condenseCompostInfoLines,
 	formatCompostFallback,
+	formatCondensedCompostFallback,
+	formatCondensedMissingCompost,
 	formatMissingCompost
 } from '../../src/lib/skilling/skills/farming/utils/farmingFormatters.js';
 import type { IPatchData, IPatchDataDetailed } from '../../src/lib/skilling/skills/farming/utils/types.js';
@@ -244,5 +248,100 @@ describe('compost message length', () => {
 		}
 		expect('Best available'.length).toBeLessThanOrEqual(100);
 		expect('The compost you want to use by default, or Best available.'.length).toBeLessThanOrEqual(100);
+	});
+});
+
+describe('condenseCompostInfoLines', () => {
+	const friendlyNames = farmingPatchNames.map(name =>
+		name.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase())
+	);
+
+	it('leaves a single missing-compost or fallback line unchanged', () => {
+		const missing = [
+			'Fruit Tree: You did not have enough compost to treat 9 patches, so they were planted without compost.'
+		];
+		const fallback = [
+			'Herb: You did not have enough Supercompost to treat 4 patches, so they were planted with Compost.'
+		];
+		expect(condenseCompostInfoLines(missing)).toEqual(missing);
+		expect(condenseCompostInfoLines(fallback)).toEqual(fallback);
+	});
+
+	it('leaves unrelated info lines in place and unchanged', () => {
+		const lines = [
+			'Allotment: You did not have enough payment to automatically pay for crop protection.',
+			'Tree: You did not have the woodcutting level required, so you paid a nearby farmer 50,000 GP to remove the previous trees.'
+		];
+		expect(condenseCompostInfoLines(lines)).toEqual(lines);
+	});
+
+	it('condenses Zootr-style autofarm missing-compost spam into one total line', () => {
+		const lines = [
+			'Fruit Tree: You did not have enough compost to treat 9 patches, so they were planted without compost.',
+			'Tree: You did not have enough compost to treat 10 patches, so they were planted without compost.',
+			'Allotment: You did not have enough compost to treat 5 patches, so they were planted without compost.',
+			'Cactus: You did not have enough compost to treat 2 patches, so they were planted without compost.',
+			'Flower: You did not have enough compost to treat 10 patches, so they were planted without compost.',
+			'Belladonna: You did not have enough compost to treat 5 patches, so they were planted without compost.'
+		];
+		expect(condenseCompostInfoLines(lines)).toEqual([
+			'You did not have enough compost to treat 41 patches (Fruit Tree, Tree, Allotment, Cactus, Flower, Belladonna), so they were planted without compost.'
+		]);
+	});
+
+	it('keeps other notes and condenses only the compost shortage lines', () => {
+		const lines = [
+			'Herb: You did not have enough payment to automatically pay for crop protection.',
+			'Fruit Tree: You did not have enough compost to treat 9 patches, so they were planted without compost.',
+			'Tree: You did not have enough compost to treat 10 patches, so they were planted without compost.',
+			'Bush: Your minion will harvest the patch.'
+		];
+		expect(condenseCompostInfoLines(lines)).toEqual([
+			'Herb: You did not have enough payment to automatically pay for crop protection.',
+			'You did not have enough compost to treat 19 patches (Fruit Tree, Tree), so they were planted without compost.',
+			'Bush: Your minion will harvest the patch.'
+		]);
+	});
+
+	it('condenses matching compost fallback lines and leaves a single different fallback intact', () => {
+		const lines = [
+			'Herb: You did not have enough Supercompost to treat 6 patches, so they were planted with Compost.',
+			'Allotment: You did not have enough Supercompost to treat 5 patches, so they were planted with Compost.',
+			'Flower: You did not have enough Ultracompost to treat 10 patches, so they were planted with Supercompost.'
+		];
+		expect(condenseCompostInfoLines(lines)).toEqual([
+			'You did not have enough Supercompost to treat 11 patches (Herb, Allotment), so they were planted with Compost.',
+			'Flower: You did not have enough Ultracompost to treat 10 patches, so they were planted with Supercompost.'
+		]);
+	});
+
+	it('condensed compost notes stay at least 150 under the Discord limit in the worst case', () => {
+		const missingLines = friendlyNames.map(name => `${name}: ${formatMissingCompost(MAX_PATCH_QUANTITY)}`);
+		const fallbackLines = friendlyNames.map(
+			name => `${name}: ${formatCompostFallback('Ultracompost', 'Supercompost', MAX_PATCH_QUANTITY)}`
+		);
+		const mixed = [
+			...missingLines,
+			'Allotment: You did not have enough payment to automatically pay for crop protection.',
+			...fallbackLines
+		];
+		const condensed = condenseCompostInfoLines(mixed);
+		const expectedMissing = formatCondensedMissingCompost(MAX_PATCH_QUANTITY * friendlyNames.length, friendlyNames);
+		const expectedFallback = formatCondensedCompostFallback(
+			'Ultracompost',
+			'Supercompost',
+			MAX_PATCH_QUANTITY * friendlyNames.length,
+			friendlyNames
+		);
+		expect(condensed).toEqual([
+			expectedMissing,
+			'Allotment: You did not have enough payment to automatically pay for crop protection.',
+			expectedFallback
+		]);
+		for (const text of condensed) {
+			expect(text.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - LENGTH_BUFFER);
+			expect(text.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT);
+		}
+		expect(condensed.join('\n').length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - LENGTH_BUFFER);
 	});
 });
