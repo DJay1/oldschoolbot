@@ -1,14 +1,14 @@
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 
 import { ButtonBuilder, ButtonStyle, createInteractionCollector } from '@oldschoolgg/discord';
-import { Emoji, formatDuration, isWeekend, Time, uniqueArr } from '@oldschoolgg/toolkit';
+import { Emoji, formatDuration, isWeekend, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
 import {
 	applyButtonAction,
 	applyWordleAction,
-	buttonGameSpec,
+	buttonGameRows,
 	createHardGame,
 	formatButtonGameMessage,
 	formatWordleMessage,
@@ -19,6 +19,7 @@ import {
 	wordleKeyboardSpec
 } from '@/lib/bsc/dailyGames.js';
 import {
+	clearDailyPending,
 	type DailyPendingRow,
 	isDailyPendingExpired,
 	loadDailyPending,
@@ -37,10 +38,10 @@ import {
 	parseDailyDifficulty,
 	rollDailyRewardTokens
 } from '@/lib/bsc/dailyRewards.js';
+import { isDailyTriviaAnswerCorrect, pickDailyTrivia } from '@/lib/bsc/dailyTrivia.js';
 import { bscDailyCooldownMs } from '@/lib/bsc/patronTiers.js';
 import { CONSTANTS } from '@/lib/constants.js';
 import { isEventActive } from '@/lib/events/registry.js';
-import { getRandomTriviaQuestions } from '@/lib/roboChimp.js';
 import dailyRoll from '@/lib/simulation/dailyTable.js';
 
 /** 1 in this many dailies hits the rare roll. Half of those rolls pay the jackpot. */
@@ -215,17 +216,7 @@ function hardGameContent(game: HardGameState, expiresAt: number): { content: str
 	}
 	return {
 		content: formatButtonGameMessage(game, left),
-		components:
-			game.status === 'playing'
-				? [
-						buttonGameSpec(game).map(spec =>
-							new ButtonBuilder()
-								.setCustomId(spec.id)
-								.setStyle(ButtonStyle.Secondary)
-								.setLabel(spec.label.slice(0, 80))
-						)
-					]
-				: []
+		components: game.status === 'playing' ? buttonsFromSpec(buttonGameRows(game)) : []
 	};
 }
 
@@ -250,6 +241,12 @@ async function payHardOutcome(
 	});
 }
 
+async function restoreUnstartedHardDaily(user: MUser): Promise<string> {
+	await clearDailyPending(user.id);
+	await user.statsUpdate({ last_daily_timestamp: 0 });
+	return "The Hard daily didn't start, so you weren't charged a daily. Try `/minion daily difficulty:Hard` again.";
+}
+
 async function playHardGame(
 	rng: RNGProvider,
 	interaction: MInteraction,
@@ -265,11 +262,18 @@ async function playHardGame(
 
 	await interaction.defer();
 	const first = hardGameContent(game, expiresAt);
+	const rowsValid = first.components.length === 0 || first.components.every(row => row.length > 0 && row.length <= 5);
+	if (!rowsValid) {
+		return restoreUnstartedHardDaily(user);
+	}
 	const msg = await interaction.replyWithResponse({
 		content: first.content,
 		components: first.components,
 		withResponse: true
 	});
+	if (!msg?.message_id) {
+		return restoreUnstartedHardDaily(user);
+	}
 
 	if (game.status !== 'playing') {
 		return payHardOutcome(rng, user, pending, game);
@@ -361,21 +365,18 @@ async function playTrivia(
 	user: MUser,
 	questionsNeeded: number
 ): Promise<CommandResponse> {
+	const difficulty = questionsNeeded === 1 ? 'easy' : 'medium';
+	const questions = pickDailyTrivia(rng, difficulty, questionsNeeded);
 	let correctCount = 0;
-	for (let i = 0; i < questionsNeeded; i++) {
-		const [question, ...fakeQuestions] = await getRandomTriviaQuestions();
-		if (!question) {
-			correctCount += 1;
-			continue;
-		}
-		const allAnswers = uniqueArr(rng.shuffle([question, ...fakeQuestions].map(q => q.answers[0])));
-		const prefix = questionsNeeded > 1 ? `Question ${i + 1}/${questionsNeeded}. ` : '';
+	for (let i = 0; i < questions.length; i++) {
+		const question = questions[i];
+		const prefix = questions.length > 1 ? `Question ${i + 1}/${questions.length}. ` : '';
 		const choice = await globalClient.pickStringWithButtons({
 			interaction,
-			options: allAnswers.map(answer => ({ label: String(answer).slice(0, 80), id: String(answer) })),
+			options: question.choices.map(answer => ({ label: String(answer).slice(0, 80), id: String(answer) })),
 			content: `**${Emoji.Diango} Diango asks...** ${prefix}${question.question}`
 		});
-		if (choice && question.answers.includes(choice.choice.label!)) {
+		if (isDailyTriviaAnswerCorrect(question, choice?.choice.id ?? choice?.choice.label)) {
 			correctCount += 1;
 		}
 	}

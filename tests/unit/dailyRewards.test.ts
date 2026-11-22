@@ -8,6 +8,7 @@ import { describe, expect, test } from 'vitest';
 import {
 	applyButtonAction,
 	applyWordleAction,
+	buttonGameRows,
 	buttonGameSpec,
 	createButtonGameState,
 	createHardGame,
@@ -19,6 +20,7 @@ import {
 	DAILY_WORDLE_LENGTH,
 	DAILY_WORDLE_MS,
 	DAILY_WORDLE_WORDS,
+	discordButtonRowsAreValid,
 	formatButtonGameMessage,
 	formatWordleMessage,
 	hardestDailyRewardPreview,
@@ -46,6 +48,12 @@ import {
 	parseDailyDifficulty,
 	rollDailyRewardTokens
 } from '@/lib/bsc/dailyRewards.js';
+import {
+	DAILY_EASY_TRIVIA,
+	DAILY_MEDIUM_TRIVIA,
+	isDailyTriviaAnswerCorrect,
+	pickDailyTrivia
+} from '@/lib/bsc/dailyTrivia.js';
 import { DAILY_BONUS_COINS, DAILY_GUARANTEED_COINS } from '@/lib/simulation/dailyTable.js';
 
 const DISCORD_CONTENT_LIMIT = 2000;
@@ -324,5 +332,55 @@ describe('daily source safety', () => {
 		expect(wordle.type === 'wordle' || wordle.type === 'buttons').toBe(true);
 		expect(buttons.type === 'wordle' || buttons.type === 'buttons').toBe(true);
 		expect(normalizeWordleGuess(' corgo! ')).toBe('CORGO');
+	});
+});
+
+describe('daily trivia difficulty', () => {
+	test('Easy and Medium use OSRS questions, not the test-bot 1+1 shortcuts', () => {
+		expect(DAILY_EASY_TRIVIA.some(q => q.question.includes('1+1') || q.question.includes('2+2'))).toBe(false);
+		expect(DAILY_MEDIUM_TRIVIA.some(q => q.question.includes('1+1') || q.question.includes('2+2'))).toBe(false);
+		expect(DAILY_EASY_TRIVIA.some(q => q.question.includes('Fight Caves'))).toBe(true);
+		expect(DAILY_MEDIUM_TRIVIA.some(q => q.question.includes('Abyssal demons'))).toBe(true);
+		const easy = pickDailyTrivia(mockRng(), 'easy', 1);
+		expect(easy[0].question).not.toBe('What is 1+1?');
+		expect(isDailyTriviaAnswerCorrect(easy[0], easy[0].answers[0])).toBe(true);
+	});
+
+	test('every question has short multiple-choice answers and one correct choice', () => {
+		for (const question of [...DAILY_EASY_TRIVIA, ...DAILY_MEDIUM_TRIVIA]) {
+			expect(question.choices.length).toBeGreaterThanOrEqual(2);
+			expect(question.choices.some(choice => question.answers.includes(choice))).toBe(true);
+			expect(question.question.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+			for (const choice of question.choices) {
+				expect(choice.length).toBeLessThanOrEqual(DISCORD_BUTTON_LABEL_LIMIT);
+			}
+		}
+	});
+});
+
+describe('speed-click button rows', () => {
+	test('buttons are split into Discord rows of at most 5', () => {
+		const rows = buttonGameRows(createButtonGameState(mockRng()));
+		expect(discordButtonRowsAreValid(rows)).toBe(true);
+		expect(rows.every(row => row.length <= DISCORD_BUTTONS_PER_ROW)).toBe(true);
+		expect(rows.flat()).toHaveLength(DAILY_BUTTON_TARGETS + DAILY_BUTTON_DECOYS);
+	});
+});
+
+describe('hard reward copy', () => {
+	test('hard fail does not use trivia incorrect text, and bonuses sit on their own line', () => {
+		const content = buildDailyRewardContent({
+			bonuses: ['Skipper negotiated you 50% more coins!'],
+			outcome: { difficulty: 'hard', success: false, game: 'buttons', detail: 'You ran out of time.' },
+			loot: { toString: () => '6.8m Coins, 1x Tradeable Mystery Box' } as never,
+			tokenLines: []
+		});
+		expect(content).not.toContain("That's incorrect");
+		expect(content).not.toContain('Even though you got it wrong');
+		expect(content.includes('Skipper negotiated you 50% more coins!\n**Hard daily')).toBe(true);
+		expect(content).toContain('You ran out of time.');
+		expect(content).toContain('smaller reward');
+		expect(messageHasUserPing(content)).toBe(false);
+		expect(content.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
 	});
 });

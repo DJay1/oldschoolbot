@@ -87,20 +87,33 @@ export function dailyTokenWinLines(tokens: Bank): string[] {
 	return lines;
 }
 
+export function dailyRewardBody(outcome: DailyOutcome): string {
+	if (outcome.difficulty === 'easy') {
+		return outcome.correct
+			? "I've picked you some random items as a reward..."
+			: "Even though you got it wrong, here's a little reward...";
+	}
+	if (outcome.difficulty === 'medium') {
+		return `${outcome.correctCount}/${outcome.total} correct. Here's your reward...`;
+	}
+	if (outcome.success) {
+		return outcome.detail ? `${outcome.detail} Here's your reward...` : "Here's your reward...";
+	}
+	return outcome.detail ? `${outcome.detail} Here's a smaller reward...` : "Here's a smaller reward...";
+}
+
 export function buildDailyRewardContent(opts: {
 	bonuses: string[];
 	outcome: DailyOutcome;
 	loot: Bank;
 	tokenLines: string[];
-	triviaCorrect: boolean;
+	triviaCorrect?: boolean;
 }): string {
 	const tokenBlock = opts.tokenLines.length > 0 ? `${opts.tokenLines.join('\n')}\n` : '';
-	const correct = opts.triviaCorrect ? 'correct' : 'incorrect';
-	const reward = opts.triviaCorrect
-		? "I've picked you some random items as a reward..."
-		: "Even though you got it wrong, here's a little reward...";
+	const bonusBlock = opts.bonuses.length > 0 ? `${opts.bonuses.join('\n')}\n` : '';
 	const summary = dailyOutcomeSummary(opts.outcome);
-	return `${tokenBlock}${opts.bonuses.join('')}**${summary}**\nThat's ${correct}! ${reward}\n\nYou received ${opts.loot}`;
+	const body = dailyRewardBody(opts.outcome);
+	return `${tokenBlock}${bonusBlock}**${summary}**\n${body}\n\nYou received ${opts.loot}`;
 }
 
 export function dailyClaimLockWhere(userId: string, previousTimestamp: bigint | number) {

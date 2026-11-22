@@ -329,6 +329,33 @@ export function buttonGameSpec(state: ButtonGameState): { id: string; label: str
 	return state.choices.map((name, index) => ({ id: `dlyb:${index}`, label: name }));
 }
 
+export const DISCORD_BUTTONS_PER_ROW = 5;
+export const DISCORD_ACTION_ROW_LIMIT = 5;
+export const DISCORD_BUTTON_LABEL_LIMIT = 80;
+
+export function chunkIntoRows<T>(items: readonly T[], size = DISCORD_BUTTONS_PER_ROW): T[][] {
+	const rows: T[][] = [];
+	for (let i = 0; i < items.length; i += size) {
+		rows.push([...items.slice(i, i + size)]);
+	}
+	return rows;
+}
+
+export function buttonGameRows(state: ButtonGameState): { id: string; label: string }[][] {
+	return chunkIntoRows(buttonGameSpec(state));
+}
+
+export function discordButtonRowsAreValid(rows: { id: string; label: string }[][]): boolean {
+	if (rows.length > DISCORD_ACTION_ROW_LIMIT) return false;
+	for (const row of rows) {
+		if (row.length === 0 || row.length > DISCORD_BUTTONS_PER_ROW) return false;
+		if (row.some(button => button.label.length === 0 || button.label.length > DISCORD_BUTTON_LABEL_LIMIT)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 export function formatButtonGameMessage(state: ButtonGameState, remainingMs: number): string {
 	const path = state.targets.map((name, i) => (i < state.progress ? `${name} ✓` : name)).join(' → ');
 	const lines = ['**Hard daily: Speed click**', `Click these in order: **${path}**`];
