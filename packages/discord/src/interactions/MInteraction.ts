@@ -164,7 +164,7 @@ export class MInteraction<T extends AnyInteraction = AnyInteraction> extends Bas
 	async confirmation(
 		message:
 			| string
-			| ({ content: string; timeout?: number } & (
+			| ({ content: string; timeout?: number; confirmLabel?: string } & (
 					| { ephemeral?: false; users?: string[] }
 					| { ephemeral?: boolean; users?: undefined }
 			  ))

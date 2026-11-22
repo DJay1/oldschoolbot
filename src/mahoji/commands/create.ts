@@ -4,8 +4,73 @@ import { isFunction, reduceNumByPercent, stringMatches } from '@oldschoolgg/tool
 import { Bank } from 'oldschooljs';
 
 import Createables from '@/lib/data/createables.js';
+import { thanksgivingCodeEnabled } from '@/lib/events/thanksgiving/core.js';
+import {
+	formatCornucopiaCreateAutocompleteName,
+	formatCornucopiaMakeConfirm,
+	formatCornucopiaMakeSuccess,
+	formatCornucopiaPartsChanged,
+	isBountifulCornucopiaName,
+	previewCornucopiaMake,
+	resolveCornucopiaMakeAfterConfirm
+} from '@/lib/events/thanksgiving/make.js';
 import type { SkillNameType } from '@/lib/skilling/types.js';
+import {
+	createActionOf,
+	createAllConfirmLabel,
+	createQuantityStaysOne,
+	maxCreatableQuantity,
+	scaledCreateRecipe,
+	unitCreateRecipe
+} from '@/lib/util/maxCreatableQuantity.js';
+import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
+import { userQueueFn } from '@/lib/util/userQueues.js';
 import { MAX_QUANTITY, safePositiveProduct, validateQuantity } from '@/lib/util/validateQuantity.js';
+
+function createItemOptionValue(rawOptions: { name: string; value?: unknown }[] | undefined): string | null {
+	for (const option of rawOptions ?? []) {
+		if (option.name === 'item' && typeof option.value === 'string') return option.value;
+	}
+	return null;
+}
+
+async function createBountifulCornucopia({
+	user,
+	interaction,
+	quantity
+}: {
+	user: MUser;
+	interaction: { confirmation: (message: { content: string; confirmLabel?: string }) => Promise<void> };
+	quantity: number | undefined;
+}) {
+	if (!thanksgivingCodeEnabled()) return 'You cannot make this right now.';
+
+	await user.sync();
+	const preview = previewCornucopiaMake(user.bank, quantity);
+	if (!preview.ok) return preview.error;
+
+	const { content, confirmLabel } = formatCornucopiaMakeConfirm(preview);
+	await interaction.confirmation({ content, confirmLabel });
+
+	return userQueueFn(user.id, async () => {
+		await user.sync();
+		const next = resolveCornucopiaMakeAfterConfirm(user.bank, quantity, preview.quantity);
+		if (!next.ok) return next.error;
+		if (!user.owns(next.inItems)) return formatCornucopiaPartsChanged(user.bank);
+
+		await unqueuedTransactItems({
+			user,
+			collectionLog: true,
+			itemsToAdd: next.outItems,
+			itemsToRemove: next.inItems
+		});
+		await ClientSettings.updateBankSetting('create_cost', next.inItems);
+		await ClientSettings.updateBankSetting('create_loot', next.outItems);
+		await user.statsBankUpdate('create_cost_bank', next.inItems);
+		await user.statsBankUpdate('create_loot_bank', next.outItems);
+		return formatCornucopiaMakeSuccess(next, preview.quantity);
+	});
+}
 
 export const createCommand = defineCommand({
 	name: 'create',
@@ -16,11 +81,13 @@ export const createCommand = defineCommand({
 			name: 'item',
 			description: 'The item you want to create/revert.',
 			required: true,
-			autocomplete: async ({ value }: StringAutoComplete) => {
+			autocomplete: async ({ value, user }: StringAutoComplete) => {
 				return Createables.filter(i =>
 					!value ? true : i.name.toLowerCase().includes(value.toLowerCase())
 				).map(i => ({
-					name: i.name,
+					name: isBountifulCornucopiaName(i.name)
+						? formatCornucopiaCreateAutocompleteName(user.bank)
+						: i.name,
 					value: i.name
 				}));
 			}
@@ -28,10 +95,23 @@ export const createCommand = defineCommand({
 		{
 			type: 'Integer',
 			name: 'quantity',
-			description: 'The amount you want to create.',
+			description: 'The amount you want to create. Leave blank to make as many as you can.',
 			required: false,
 			min_value: 1,
-			max_value: 1_000_000_000
+			max_value: 1_000_000_000,
+			autocomplete: async ({ value, user, rawOptions }: NumberAutoComplete) => {
+				const itemName = createItemOptionValue(rawOptions);
+				if (!itemName) return [];
+				const item = Createables.find(i => stringMatches(i.name, itemName));
+				if (!item) return [];
+				const max = maxCreatableQuantity(user, item);
+				const choices: { name: string; value: number }[] = [];
+				if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value !== max) {
+					choices.push({ name: value.toLocaleString(), value });
+				}
+				if (max >= 1) choices.push({ name: `All (${max.toLocaleString()})`, value: max });
+				return choices.slice(0, 25);
+			}
 		},
 		{
 			type: 'Boolean',
@@ -56,15 +136,14 @@ export const createCommand = defineCommand({
 			quantity = parsedQuantity.value;
 		}
 
-		if (!quantity || createableItem.cantHaveItems) {
-			quantity = 1;
+		if (createableItem.name === 'Bountiful cornucopia') {
+			return createBountifulCornucopia({ user, interaction, quantity });
 		}
 
-		let action: 'create' | 'revert' | 'fix' | 'unpack' = 'create';
-		for (const act of ['revert', 'fix', 'unpack'] as const) {
-			if (createableItem.name.toLowerCase().startsWith(act)) {
-				action = act;
-			}
+		const action = createActionOf(createableItem.name);
+		const makingAll = quantity === undefined && !createQuantityStaysOne(createableItem);
+		if (createQuantityStaysOne(createableItem)) {
+			quantity = quantity ?? 1;
 		}
 
 		if (createableItem.QPRequired && user.QP < createableItem.QPRequired) {
@@ -91,8 +170,25 @@ export const createCommand = defineCommand({
 			if (amountOwned >= createableItem.maxCanOwn) {
 				return `You already have ${amountOwned}x ${createableItem.name}, you can't create another.`;
 			}
-			quantity = createableItem.maxCanOwn - amountOwned;
 		}
+
+		const maxMakeable = maxCreatableQuantity(user, createableItem);
+		if (makingAll) {
+			if (maxMakeable < 1) {
+				const unit = unitCreateRecipe(user, createableItem);
+				return `You don't have the required items to ${action} this item. You need: ${unit.inItems}${
+					unit.gpCost > 0 ? `, ${unit.gpCost.toLocaleString()} coins` : ''
+				}${unit.materialCost ? `, and ${unit.materialCost} materials` : ''}.`;
+			}
+			quantity = maxMakeable;
+		} else if (!createQuantityStaysOne(createableItem) && quantity !== undefined && quantity > maxMakeable) {
+			if (maxMakeable < 1) {
+				const unit = unitCreateRecipe(user, createableItem);
+				return `You don't have the required items to ${action} this item. You need: ${unit.inItems}.`;
+			}
+			return `You only have enough to ${action} ${maxMakeable.toLocaleString()}x ${createableItem.name}. Leave quantity blank to make all ${maxMakeable.toLocaleString()}, or pick a smaller number.`;
+		}
+		if (quantity === undefined) quantity = 1;
 
 		const gpCost = createableItem.GPCost
 			? safePositiveProduct(createableItem.GPCost, quantity, Number.MAX_SAFE_INTEGER)
@@ -180,7 +276,50 @@ export const createCommand = defineCommand({
 			}
 		}
 
-		await interaction.confirmation(str);
+		await interaction.confirmation({ content: str, confirmLabel: createAllConfirmLabel(makingAll, quantity) });
+
+		if (makingAll) {
+			return userQueueFn(user.id, async () => {
+				await user.sync();
+				const currentMax = maxCreatableQuantity(user, createableItem);
+				const nextQty = Math.min(quantity!, currentMax);
+				if (nextQty < 1) {
+					return `Your items changed, so this make was cancelled. You can no longer ${action} ${createableItem.name}.`;
+				}
+				const next = scaledCreateRecipe(user, createableItem, nextQty);
+				if (!user.owns(next.inItems)) {
+					return `You don't have the required items to ${action} this item. You need: ${next.inItems}.`;
+				}
+				if (next.materialCost) {
+					await transactMaterialsFromUser({ user, remove: next.materialCost });
+				}
+				let extraMessage = '';
+				if (createableItem.onCreate) {
+					const onCreateResult = await createableItem.onCreate(nextQty, user);
+					if (!onCreateResult.result) return onCreateResult.message;
+					if (onCreateResult.message) extraMessage += `\n\n${onCreateResult.message}`;
+				}
+				let addToCl = !createableItem.noCl && action === 'create';
+				if (createableItem.forceAddToCl) addToCl = true;
+				await unqueuedTransactItems({
+					user,
+					collectionLog: addToCl,
+					itemsToAdd: next.outItems,
+					itemsToRemove: next.inItems
+				});
+				await ClientSettings.updateBankSetting('create_cost', next.inItems);
+				await ClientSettings.updateBankSetting('create_loot', next.outItems);
+				await user.statsBankUpdate('create_cost_bank', next.inItems);
+				await user.statsBankUpdate('create_loot_bank', next.outItems);
+				const reduced =
+					nextQty < quantity!
+						? ` You had fewer parts than when you confirmed, so ${nextQty.toLocaleString()} were made instead of ${quantity!.toLocaleString()}.`
+						: '';
+				if (action === 'revert')
+					return `You reverted ${next.inItems} into ${next.outItems}.${extraMessage}${reduced}`;
+				return `You received ${next.outItems}.${extraMessage}${reduced}`;
+			});
+		}
 
 		// Ensure they have the required items to create the item.
 		if (!user.owns(inItems)) {

@@ -2,18 +2,22 @@ import { Time } from '@oldschoolgg/toolkit';
 import { Bank, type ItemBank } from 'oldschooljs';
 
 import { announceThanksgivingPets, announceToRareChannel } from '@/lib/bsc/rareAnnouncements.js';
+import { resolveSeasonalEvent } from '@/lib/events/registry.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
 import { userQueueFn } from '@/lib/util/userQueues.js';
+import { withThanksgivingMakeButtons } from './buttons.js';
 import {
 	ctDayKey,
+	formatGobbleStreakStatusLine,
+	formatHarvestBlessingStatusLine,
+	formatLaboonFishingRateLine,
 	formatOfferReply,
-	GOBBLE_STREAK_OFFERS,
+	formatThanksgivingBaseRatesLine,
 	GOBBLES_IDS,
 	GOBBLES_PITY_OFFERS,
 	hasHarvestBlessing,
 	isThanksgivingActive,
-	OFFER_RATES,
 	offersFromScores,
 	parseOfferQuantity,
 	rollThanksgivingOffers,
@@ -31,6 +35,12 @@ import {
 	saveHarvestFeast
 } from './feast.js';
 import { ThanksgivingItem } from './items.js';
+import {
+	formatCornucopiaCanMakeLine,
+	formatCornucopiaOfferEmpty,
+	formatThanksgivingPartsLine,
+	formatThanksgivingWindowLine
+} from './make.js';
 
 const ready = { done: false };
 
@@ -76,7 +86,8 @@ function hasHadGobbles(user: MUser): boolean {
 export async function thanksgivingOffer(
 	user: MUser,
 	quantityInput: string | number | null | undefined,
-	rng: ThanksgivingRng
+	rng: ThanksgivingRng,
+	opts?: { alreadyQueued?: boolean }
 ) {
 	if (!isThanksgivingActive()) return 'The Straw Hat Harvest is not running right now.';
 	// No per-command cap: you can offer as many as you own. Rolls are a simple loop (a few hundred ms
@@ -84,12 +95,12 @@ export async function thanksgivingOffer(
 	const requested = parseOfferQuantity(quantityInput);
 	if (requested === null) return "Quantity must be a whole number of at least 1, or 'all'.";
 
-	return userQueueFn(user.id, async () => {
+	const run = async () => {
 		await user.sync();
 		// 'all' is resolved inside the queue after sync, so it is exactly what the bank holds right now.
 		const owned = user.bank.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA);
 		if (owned === 0) {
-			return "You don't have any Bountiful cornucopias. Make one with `/create item:Bountiful cornucopia` (5 Harvest bundles + 1 Wicker basket).";
+			return withThanksgivingMakeButtons(user, formatCornucopiaOfferEmpty(user.bank), { includeOffer: true });
 		}
 		const quantity = requested === 'all' ? owned : requested;
 		if (owned < quantity) {
@@ -156,8 +167,10 @@ export async function thanksgivingOffer(
 			user,
 			previousCL
 		});
-		return { content, files: [image] };
-	});
+		return withThanksgivingMakeButtons(user, { content, files: [image] }, { includeOffer: true });
+	};
+	if (opts?.alreadyQueued) return run();
+	return userQueueFn(user.id, run);
 }
 
 /**
@@ -214,27 +227,28 @@ export async function thanksgivingFeast(user: MUser, rng: ThanksgivingRng) {
 	});
 }
 
-export async function thanksgivingStatus(user: MUser): Promise<string> {
+export async function thanksgivingStatus(user: MUser) {
 	const active = isThanksgivingActive();
 	const stats = await user.fetchStats();
 	const offers = offersFromScores((stats.openable_scores ?? {}) as ItemBank);
 	const today = await offersToday(user.id, ctDayKey()).catch(() => 0);
 	const bank = user.bank;
 	const hadGobbles = hasHadGobbles(user);
+	const window = resolveSeasonalEvent('thanksgiving');
 	const lines = [
-		`**The Straw Hat Harvest** is ${active ? 'running' : 'not running right now'}.`,
-		`Harvest bundles: ${bank.amount(ThanksgivingItem.HARVEST_BUNDLE)}, Wicker baskets: ${bank.amount(ThanksgivingItem.WICKER_BASKET)}, Bountiful cornucopias: ${bank.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA)}`,
-		`Offers made: ${offers.toLocaleString()}`,
-		today >= GOBBLE_STREAK_OFFERS
-			? `Gobble Streak: active today (${today} offers). Rare chances are 15% better until midnight CT.`
-			: `Gobble Streak: ${today}/${GOBBLE_STREAK_OFFERS} offers today (CT).`,
+		formatThanksgivingWindowLine(active, window.start, window.end),
+		formatThanksgivingPartsLine(bank),
+		`-# ${formatCornucopiaCanMakeLine(bank)}`,
+		`**Offers:** ${offers.toLocaleString()}`,
+		formatGobbleStreakStatusLine(today),
 		hadGobbles
-			? 'Gobbles: ✅ you have had Gobbles.'
-			: `Gobbles guarantee: ${Math.min(offers, GOBBLES_PITY_OFFERS)}/${GOBBLES_PITY_OFFERS} offers.`,
-		`Harvest Blessing (Cornucopia in bank): ${hasHarvestBlessing(user) ? 'yes' : 'no'}`,
-		`Harvest turkeys: ${bank.amount(ThanksgivingItem.HARVEST_TURKEY)}`,
+			? '**Gobbles:** ✅ you have had Gobbles'
+			: `**Gobbles guarantee:** ${Math.min(offers, GOBBLES_PITY_OFFERS)}/${GOBBLES_PITY_OFFERS} offers`,
+		formatHarvestBlessingStatusLine(hasHarvestBlessing(user)),
+		`**Harvest turkey:** ${bank.amount(ThanksgivingItem.HARVEST_TURKEY).toLocaleString()}`,
 		harvestFeastStatusLine(user.id),
-		`Rates per offer: Paint box 1/${OFFER_RATES.paintBox}, Cornucopia 1/${OFFER_RATES.cornucopia}, Harvest turkey 1/${OFFER_RATES.turkey}, Pilgrim hat 1/${OFFER_RATES.pilgrimHat}, Straw hat 1/${OFFER_RATES.strawHat}, Gobbles 1/${OFFER_RATES.gobbles}.`
+		formatThanksgivingBaseRatesLine(),
+		formatLaboonFishingRateLine()
 	];
-	return lines.join('\n');
+	return withThanksgivingMakeButtons(user, lines.join('\n'), { includeOffer: active });
 }

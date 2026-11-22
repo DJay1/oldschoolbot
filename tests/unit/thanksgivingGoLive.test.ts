@@ -22,6 +22,7 @@ import {
 	harvestFeastStatusLine
 } from '@/lib/events/thanksgiving/feast.js';
 import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
+import { formatCornucopiaCanMakeLine, formatThanksgivingWindowLine } from '@/lib/events/thanksgiving/make.js';
 
 const DISCORD_CONTENT_LIMIT = 2000;
 const LENGTH_BUFFER = 150;
@@ -91,8 +92,14 @@ describe('Straw Hat Harvest production go-live', () => {
 			endMs: THANKS_START + 3 * 60 * 60 * 1000
 		});
 		const status = [
-			'**The Straw Hat Harvest** is not running right now.',
+			formatThanksgivingWindowLine(false, THANKS_START, THANKS_END, THANKS_START - 1),
 			`Harvest bundles: ${huge.toLocaleString()}, Wicker baskets: ${huge.toLocaleString()}, Bountiful cornucopias: ${huge.toLocaleString()}`,
+			formatCornucopiaCanMakeLine(
+				new Bank()
+					.add(ThanksgivingItem.HARVEST_BUNDLE, huge)
+					.add(ThanksgivingItem.WICKER_BASKET, huge)
+					.add(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA, huge)
+			),
 			`Offers made: ${huge.toLocaleString()}`,
 			`Gobble Streak: active today (${huge.toLocaleString()} offers). Rare chances are 15% better until midnight CT.`,
 			`Gobbles guarantee: ${GOBBLES_PITY_OFFERS}/${GOBBLES_PITY_OFFERS} offers.`,
@@ -102,7 +109,7 @@ describe('Straw Hat Harvest production go-live', () => {
 			`Rates per offer: Paint box 1/${OFFER_RATES.paintBox}, Cornucopia 1/${OFFER_RATES.cornucopia}, Harvest turkey 1/${OFFER_RATES.turkey}, Pilgrim hat 1/${OFFER_RATES.pilgrimHat}, Straw hat 1/${OFFER_RATES.strawHat}, Gobbles 1/${OFFER_RATES.gobbles}.`
 		].join('\n');
 		underLimit(status);
-		expect(status.startsWith('**The Straw Hat Harvest** is not running right now.')).toBe(true);
+		expect(status.startsWith(`**The Straw Hat Harvest** is not running right now (starts <t:`)).toBe(true);
 
 		const harvestStart = `?? ${LONG_MINION} is now gathering **${thanksgivingHarvestPartName('bundles')}** for The Straw Hat Harvest, it'll take around 24 hours, 59 minutes to finish (back at 12:59 PM).\nExpected: about **${'9'.repeat(20)}** ${thanksgivingHarvestPartName('bundles')} (random amount; ${Math.round(THANKSGIVING_HARVEST_DISCOUNT * 100)}% of a normal trip's event value, counting 1 Wicker basket as 5 Harvest bundles, all in this part; Double Loot doubles it). Harvest trips don't also roll the normal trip drops of Harvest bundles and Wicker baskets.`;
 		underLimit(harvestStart);
