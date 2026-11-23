@@ -47,6 +47,7 @@ import {
 	loadDailyPending,
 	markDailyPendingPaid,
 	remainingMs,
+	resolveDailyPendingPayout,
 	saveDailyPending,
 	updateDailyPendingGame
 } from '@/lib/bsc/dailyPending.js';
@@ -315,9 +316,12 @@ async function playHardGame(
 ): Promise<CommandResponse> {
 	let game = pending.game;
 	let expiresAt = pending.expiresAt;
-	if (isDailyPendingExpired(expiresAt) && game.status === 'playing') {
-		game = { ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
-		return (await payHardOutcome(rng, user, pending, game, true)) ?? 'You already finished this daily.';
+	const alreadyFinished = resolveDailyPendingPayout({ ...pending, game, expiresAt });
+	if (alreadyFinished.game.status !== 'playing') {
+		return (
+			(await payHardOutcome(rng, user, pending, alreadyFinished.game, alreadyFinished.timedOut)) ??
+			'You already finished this daily.'
+		);
 	}
 
 	await interaction.defer();
@@ -421,10 +425,20 @@ async function playHardGame(
 
 		globalClient.addListener('interactionCreate', onModalSubmit);
 
-		collector.on('collect', async button => {
+		let clickQueue: Promise<void> = Promise.resolve();
+		collector.on('collect', button => {
+			const run = clickQueue.then(() => handleSpeedClick(button));
+			clickQueue = run.then(
+				() => undefined,
+				() => undefined
+			);
+			return run;
+		});
+
+		async function handleSpeedClick(button: MInteraction) {
 			try {
 				if (isDailyPendingExpired(expiresAt)) {
-					await button.silentButtonAck();
+					await button.silentButtonAck().catch(() => undefined);
 					return finish({ ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE }, true);
 				}
 				const customId = button.customId ?? '';
@@ -450,31 +464,48 @@ async function playHardGame(
 					return;
 				}
 				if (game.type !== 'buttons') {
-					await button.silentButtonAck();
+					await button.silentButtonAck().catch(() => undefined);
 					return;
 				}
 				const index = parseButtonAction(customId);
 				if (index === null) {
-					await button.silentButtonAck();
+					await button.silentButtonAck().catch(() => undefined);
 					return;
+				}
+				// Ack first so a later database write cannot miss Discord's 3s window.
+				try {
+					await button.baseDeferUpdate();
+				} catch {
+					// Already acknowledged; still apply the click and edit if we can.
 				}
 				game = applyButtonAction(game, index);
 				await updateDailyPendingGame(user.id, game, expiresAt);
 				const view = await hardGameContent(game, expiresAt);
-				await button.update({ content: view.content, components: view.components });
+				try {
+					if (button.deferred || button.replied) {
+						await button.baseEditReply({ content: view.content, components: view.components });
+					} else {
+						await button.update({ content: view.content, components: view.components });
+					}
+				} catch {
+					// The click is already saved. Don't fail the command over a stale token.
+				}
 				if (game.status !== 'playing') {
 					return finish(game);
 				}
 			} catch (err) {
 				cleanupModal();
+				if (game.status !== 'playing') {
+					return finish(game);
+				}
 				collector.stop('error');
 				if (isUnstartedTimedDaily(game)) {
 					resolve(await restoreUnstartedHardDaily(user, pending.difficulty));
 					return;
 				}
-				reject(err);
+				resolve(DAILY_GAME_UPDATE_FAILED);
 			}
-		});
+		}
 
 		collector.on('end', async (_collected, reason) => {
 			if (reason === 'finished' || reason === 'error') {
@@ -506,16 +537,13 @@ async function playTrivia(rng: RNGProvider, interaction: MInteraction, user: MUs
 
 export const DAILY_DIFFICULTY_PROMPT = `**${Emoji.Diango} Diango says...** Pick a daily: Easy is trivia, Medium is a 20-second speed click, and Hard is a typed Wordle or an item-sprite typing challenge.`;
 export const DAILY_DIFFICULTY_CANCELLED = `**${Emoji.Diango} Diango says...** You didn't pick a daily, so you weren't charged.`;
+export const DAILY_GAME_UPDATE_FAILED = `**${Emoji.Diango} Diango says...** Something went wrong updating the game. Use \`/minion daily\` to keep going. You weren't charged twice.`;
 
 export function shouldShowDailyDifficultyPicker(input?: string | null): boolean {
 	return input === undefined || input === null || input.trim() === '';
 }
 
-async function pickDailyDifficultyThenPlay(
-	rng: RNGProvider,
-	interaction: MInteraction,
-	user: MUser
-): CommandResponse {
+async function pickDailyDifficultyThenPlay(rng: RNGProvider, interaction: MInteraction, user: MUser): CommandResponse {
 	const choice = await globalClient.pickStringWithButtons({
 		interaction,
 		options: [
@@ -537,14 +565,12 @@ export async function dailyCommand(
 ): CommandResponse {
 	const pending = await loadDailyPending(user.id);
 	if (pending && !pending.paid) {
-		if (!isDailyPendingExpired(pending.expiresAt) && pending.game.status === 'playing') {
+		const payout = resolveDailyPendingPayout(pending);
+		if (payout.game.status === 'playing') {
 			return playHardGame(rng, interaction, user, pending);
 		}
-		if (pending.game.status === 'playing') {
-			pending.game = { ...pending.game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
-		}
 		return (
-			(await payHardOutcome(rng, user, pending, pending.game, isDailyPendingExpired(pending.expiresAt))) ??
+			(await payHardOutcome(rng, user, pending, payout.game, payout.timedOut)) ??
 			'You already finished this daily.'
 		);
 	}

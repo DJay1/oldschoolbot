@@ -1,5 +1,6 @@
 import {
 	DAILY_SPEED_CLICK_BUTTON_PREFIX,
+	DAILY_TIMEOUT_NOTICE,
 	DAILY_TYPING_BUTTON_PREFIX,
 	DAILY_WORDLE_BUTTON_PREFIX,
 	type HardGameState
@@ -132,6 +133,20 @@ export function remainingMs(expiresAt: number, now = Date.now()): number {
 
 export function isDailyPendingExpired(expiresAt: number, now = Date.now()): boolean {
 	return now >= expiresAt;
+}
+
+/** Pay a leftover pending game using its stored result. Only a still-playing expired game counts as a timeout. */
+export function resolveDailyPendingPayout(
+	pending: DailyPendingRow,
+	now = Date.now()
+): {
+	game: HardGameState;
+	timedOut: boolean;
+} {
+	if (pending.game.status === 'playing' && isDailyPendingExpired(pending.expiresAt, now)) {
+		return { game: { ...pending.game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE }, timedOut: true };
+	}
+	return { game: pending.game, timedOut: false };
 }
 
 export function isDailyHardGameButtonId(customId: string): boolean {

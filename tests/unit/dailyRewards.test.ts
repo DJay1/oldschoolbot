@@ -59,6 +59,7 @@ import {
 	isDailyHardGameButtonId,
 	isDailyPendingExpired,
 	remainingMs,
+	resolveDailyPendingPayout,
 	shouldExemptDailyGameButtonFromGlobalRatelimit
 } from '@/lib/bsc/dailyPending.js';
 import {
@@ -85,6 +86,7 @@ import { DAILY_BONUS_COINS, DAILY_GUARANTEED_COINS } from '@/lib/simulation/dail
 import {
 	DAILY_DIFFICULTY_CANCELLED,
 	DAILY_DIFFICULTY_PROMPT,
+	DAILY_GAME_UPDATE_FAILED,
 	shouldShowDailyDifficultyPicker
 } from '@/mahoji/lib/abstracted_commands/dailyCommand.js';
 
@@ -623,14 +625,15 @@ describe('daily button ratelimit exemption', () => {
 		expect(isDailyHardGameButtonId('dlyt:GO')).toBe(true);
 	});
 
-	test('the global button handler skips the ratelimit only through this exemption', () => {
+	test('the global button handler ignores every daily game button before other handlers', () => {
 		const src = readFileSync(resolve('src/lib/util/globalInteractions.ts'), 'utf8');
-		const exempt = src.indexOf('if (await shouldExemptUserDailyGameButton(interaction.userId, id)) return;');
+		const skip = src.indexOf('if (isDailyHardGameButtonId(id)) return;');
 		const handle = src.indexOf(
 			'const response = await globalButtonInteractionHandler({ interaction, id, rng: cryptoRng })'
 		);
-		expect(exempt).toBeGreaterThan(-1);
-		expect(handle).toBeGreaterThan(exempt);
+		expect(skip).toBeGreaterThan(-1);
+		expect(handle).toBeGreaterThan(skip);
+		expect(src).not.toContain('shouldExemptUserDailyGameButton');
 	});
 });
 
@@ -709,5 +712,79 @@ describe('daily difficulty picker', () => {
 		const claim = dailySrc.indexOf('const claim = await tryClaimDaily(user)');
 		expect(pickerCheck).toBeGreaterThan(-1);
 		expect(claim).toBeGreaterThan(pickerCheck);
+	});
+});
+
+describe('daily pending payout after an interrupted game', () => {
+	const now = 1_700_000_000_000;
+	const base = {
+		userId: 'player-1',
+		claimedAt: now - 20_000,
+		difficulty: 'medium' as const,
+		expiresAt: now - 1,
+		paid: false
+	};
+
+	test('a still-playing expired game times out', () => {
+		const game = createButtonGameState(mockRng());
+		const payout = resolveDailyPendingPayout({ ...base, game }, now);
+		expect(payout.timedOut).toBe(true);
+		expect(payout.game.status).toBe('lost');
+		expect(payout.game.notice).toBe(DAILY_TIMEOUT_NOTICE);
+	});
+
+	test('a saved win paid after expiry is still a win, not a timeout', () => {
+		const game = {
+			...createButtonGameState(mockRng()),
+			status: 'won' as const,
+			progress: 5,
+			notice: 'You hit every button in time.'
+		};
+		const payout = resolveDailyPendingPayout({ ...base, game }, now);
+		expect(payout.timedOut).toBe(false);
+		expect(payout.game.status).toBe('won');
+		expect(payout.game.notice).toBe('You hit every button in time.');
+		expect(dailyRatesFor({ difficulty: 'medium', success: true, game: 'buttons' })).toEqual(
+			DAILY_TIER.medium.success
+		);
+	});
+
+	test('a wrong-button loss paid after expiry keeps Wrong button, not Time ran out', () => {
+		const game = {
+			...createButtonGameState(mockRng()),
+			status: 'lost' as const,
+			progress: 0,
+			notice: 'Wrong button.'
+		};
+		const payout = resolveDailyPendingPayout({ ...base, game }, now);
+		expect(payout.timedOut).toBe(false);
+		expect(payout.game.status).toBe('lost');
+		expect(payout.game.notice).toBe('Wrong button.');
+	});
+});
+
+describe('interrupted daily game command path', () => {
+	test('speed-click clicks are acked before the database write and a finished game is still paid', () => {
+		const src = readFileSync(resolve('src/mahoji/lib/abstracted_commands/dailyCommand.ts'), 'utf8');
+		const clickFn = src.slice(src.indexOf('async function handleSpeedClick'), src.indexOf("collector.on('end'"));
+		const defer = clickFn.indexOf('await button.baseDeferUpdate();');
+		const save = clickFn.indexOf('await updateDailyPendingGame(user.id, game, expiresAt);');
+		const edit = clickFn.indexOf(
+			'await button.baseEditReply({ content: view.content, components: view.components });'
+		);
+		expect(defer).toBeGreaterThan(-1);
+		expect(save).toBeGreaterThan(defer);
+		expect(edit).toBeGreaterThan(save);
+		expect(src).toContain('resolveDailyPendingPayout(pending)');
+		expect(clickFn).toContain("if (game.status !== 'playing') {");
+		expect(clickFn).toContain('return finish(game);');
+		expect(clickFn).not.toContain('reject(err)');
+	});
+
+	test('a mid-game update failure tells the player to resume and does not ping or exceed Discord limits', () => {
+		expect(DAILY_GAME_UPDATE_FAILED.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+		expect(messageHasUserPing(DAILY_GAME_UPDATE_FAILED)).toBe(false);
+		expect(DAILY_GAME_UPDATE_FAILED).toContain('/minion daily');
+		expect(DAILY_GAME_UPDATE_FAILED).toContain("weren't charged twice");
 	});
 });
