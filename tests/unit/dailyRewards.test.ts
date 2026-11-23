@@ -19,6 +19,7 @@ import {
 	DAILY_BUTTON_DECOYS,
 	DAILY_BUTTON_GAME_MS,
 	DAILY_BUTTON_TARGETS,
+	DAILY_TIMEOUT_NOTICE,
 	DAILY_TYPING_ITEMS,
 	DAILY_TYPING_MAX_CHARS,
 	DAILY_TYPING_MIN_CHARS,
@@ -54,6 +55,7 @@ import {
 } from '@/lib/bsc/dailyGames.js';
 import type { DailyPendingRow } from '@/lib/bsc/dailyPending.js';
 import {
+	createDailySettle,
 	isDailyHardGameButtonId,
 	isDailyPendingExpired,
 	remainingMs,
@@ -284,11 +286,11 @@ describe('Wordle game', () => {
 });
 
 describe('speed-click game', () => {
-	test('Medium speed click is 5 names in 10 seconds, and a decoy click fails', () => {
+	test('Medium speed click is 5 names in 20 seconds, and a decoy click fails', () => {
 		const state = createButtonGameState(mockRng());
 		expect(state.targets).toHaveLength(DAILY_BUTTON_TARGETS);
 		expect(state.choices).toHaveLength(DAILY_BUTTON_TARGETS + DAILY_BUTTON_DECOYS);
-		expect(DAILY_BUTTON_GAME_MS).toBe(10_000);
+		expect(DAILY_BUTTON_GAME_MS).toBe(20_000);
 		for (const decoy of state.choices.filter(name => !state.targets.includes(name))) {
 			const cluster = clusterForButtonName(decoy);
 			expect(cluster).toBeTruthy();
@@ -450,6 +452,16 @@ describe('daily source safety', () => {
 		}
 	});
 
+	test('only the first timeout or click settles the daily reward', () => {
+		const settle = createDailySettle();
+		expect(settle.tryBegin()).toBe(true);
+		expect(settle.tryBegin()).toBe(false);
+		expect(settle.tryBegin()).toBe(false);
+		const other = createDailySettle();
+		expect(other.tryBegin()).toBe(true);
+		expect(DAILY_TIMEOUT_NOTICE).toBe('Time ran out.');
+	});
+
 	test('createHardGame picks Wordle or typing, never speed click', () => {
 		expect([...HARD_GAME_TYPES]).toEqual(['wordle', 'typing']);
 		const wordle = createHardGame(mockRng([], ['wordle', 'CORGO']));
@@ -488,15 +500,30 @@ describe('reward copy', () => {
 	test('hard fail does not use trivia incorrect text, and bonuses sit on their own line', () => {
 		const content = buildDailyRewardContent({
 			bonuses: ['Skipper negotiated you 50% more coins!'],
-			outcome: { difficulty: 'hard', success: false, game: 'typing', detail: 'You ran out of time.' },
+			outcome: { difficulty: 'hard', success: false, game: 'typing', detail: DAILY_TIMEOUT_NOTICE },
 			loot: { toString: () => '6.8m Coins, 1x Tradeable Mystery Box' } as never,
 			tokenLines: []
 		});
 		expect(content).not.toContain("That's incorrect");
 		expect(content).not.toContain('Even though you got it wrong');
 		expect(content.includes('Skipper negotiated you 50% more coins!\n**Hard daily')).toBe(true);
-		expect(content).toContain('You ran out of time.');
+		expect(content).toContain('Time ran out.');
 		expect(content).toContain('smaller reward');
+		expect(messageHasUserPing(content)).toBe(false);
+		expect(content.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+	});
+
+	test('a speed-click timeout names Time ran out and keeps the Easy-level reward, not already finished', () => {
+		const content = buildDailyRewardContent({
+			bonuses: [],
+			outcome: { difficulty: 'medium', success: false, game: 'buttons', detail: DAILY_TIMEOUT_NOTICE },
+			loot: { toString: () => '6.8m Coins, 1x Tradeable Mystery Box' } as never,
+			tokenLines: []
+		});
+		expect(content).toContain('Time ran out.');
+		expect(content).toContain('Easy-level reward');
+		expect(content).toContain('6.8m Coins, 1x Tradeable Mystery Box');
+		expect(content).not.toContain('already finished');
 		expect(messageHasUserPing(content)).toBe(false);
 		expect(content.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
 	});

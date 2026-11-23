@@ -171,3 +171,15 @@ export async function shouldExemptUserDailyGameButton(
 	const pending = await loadDailyPending(userId);
 	return shouldExemptDailyGameButtonFromGlobalRatelimit({ customId, userId, pending, now });
 }
+
+/** First call wins; later calls are no-ops so a timeout and a late click cannot both settle. */
+export function createDailySettle() {
+	let settled = false;
+	return {
+		tryBegin(): boolean {
+			if (settled) return false;
+			settled = true;
+			return true;
+		}
+	};
+}

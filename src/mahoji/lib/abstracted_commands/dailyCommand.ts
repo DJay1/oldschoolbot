@@ -20,6 +20,7 @@ import {
 	buttonGameRows,
 	createButtonGameState,
 	createHardGame,
+	DAILY_TIMEOUT_NOTICE,
 	extractModalText,
 	formatButtonGameMessage,
 	formatTypingMessage,
@@ -40,6 +41,7 @@ import {
 } from '@/lib/bsc/dailyGames.js';
 import {
 	clearDailyPending,
+	createDailySettle,
 	type DailyPendingRow,
 	isDailyPendingExpired,
 	loadDailyPending,
@@ -282,13 +284,11 @@ async function payHardOutcome(
 	_pending: DailyPendingRow,
 	game: HardGameState,
 	timedOut = false
-): Promise<MessageBuilderClass> {
+): Promise<MessageBuilderClass | null> {
 	const allowed = await markDailyPendingPaid(user.id);
-	if (!allowed) {
-		return new MessageBuilder().setContent('You already finished this daily.');
-	}
+	if (!allowed) return null;
 	const success = game.status === 'won' && !timedOut;
-	const detail = timedOut ? 'You ran out of time.' : game.notice;
+	const detail = timedOut ? DAILY_TIMEOUT_NOTICE : game.notice;
 	if (_pending.difficulty === 'medium') {
 		return giveDailyReward(rng, user, { difficulty: 'medium', success, game: 'buttons', detail });
 	}
@@ -316,7 +316,7 @@ async function playHardGame(
 	let game = pending.game;
 	let expiresAt = pending.expiresAt;
 	if (isDailyPendingExpired(expiresAt) && game.status === 'playing') {
-		game = { ...game, status: 'lost', notice: 'You ran out of time.' };
+		game = { ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
 		return payHardOutcome(rng, user, pending, game, true);
 	}
 
@@ -372,11 +372,14 @@ async function playHardGame(
 			globalClient.removeListener('interactionCreate', onModalSubmit);
 		};
 
+		const settle = createDailySettle();
 		const finish = async (finalGame: HardGameState, timedOut = false) => {
+			if (!settle.tryBegin()) return;
 			cleanupModal();
 			collector.stop('finished');
 			try {
-				resolve(await payHardOutcome(rng, user, pending, finalGame, timedOut));
+				const result = await payHardOutcome(rng, user, pending, finalGame, timedOut);
+				if (result) resolve(result);
 			} catch (err) {
 				reject(err);
 			}
@@ -390,7 +393,7 @@ async function playHardGame(
 				if (submitter !== user.id) return;
 				if (itx.message?.id && msg?.message_id && itx.message.id !== msg.message_id) return;
 				if (isDailyPendingExpired(expiresAt) || game.status !== 'playing') {
-					game = { ...game, status: 'lost', notice: 'You ran out of time.' };
+					game = { ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
 					const view = await hardGameContent(game, expiresAt);
 					await respondModalUpdate(itx, view);
 					return finish(game, true);
@@ -422,7 +425,7 @@ async function playHardGame(
 			try {
 				if (isDailyPendingExpired(expiresAt)) {
 					await button.silentButtonAck();
-					return finish({ ...game, status: 'lost', notice: 'You ran out of time.' }, true);
+					return finish({ ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE }, true);
 				}
 				const customId = button.customId ?? '';
 				if (
@@ -479,13 +482,9 @@ async function playHardGame(
 				return;
 			}
 			cleanupModal();
-			try {
-				if (game.status === 'playing') {
-					game = { ...game, status: 'lost', notice: 'You ran out of time.' };
-					resolve(await payHardOutcome(rng, user, pending, game, true));
-				}
-			} catch (err) {
-				reject(err);
+			if (game.status === 'playing') {
+				game = { ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
+				await finish(game, true);
 			}
 		});
 	});
@@ -519,9 +518,12 @@ export async function dailyCommand(
 			return playHardGame(rng, interaction, user, pending);
 		}
 		if (pending.game.status === 'playing') {
-			pending.game = { ...pending.game, status: 'lost', notice: 'You ran out of time.' };
+			pending.game = { ...pending.game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
 		}
-		return payHardOutcome(rng, user, pending, pending.game, isDailyPendingExpired(pending.expiresAt));
+		return (
+			(await payHardOutcome(rng, user, pending, pending.game, isDailyPendingExpired(pending.expiresAt))) ??
+			'You already finished this daily.'
+		);
 	}
 
 	const claim = await tryClaimDaily(user);
