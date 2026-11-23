@@ -82,6 +82,11 @@ import {
 	pickDailyTrivia
 } from '@/lib/bsc/dailyTrivia.js';
 import { DAILY_BONUS_COINS, DAILY_GUARANTEED_COINS } from '@/lib/simulation/dailyTable.js';
+import {
+	DAILY_DIFFICULTY_CANCELLED,
+	DAILY_DIFFICULTY_PROMPT,
+	shouldShowDailyDifficultyPicker
+} from '@/mahoji/lib/abstracted_commands/dailyCommand.js';
 
 const DISCORD_CONTENT_LIMIT = 2000;
 const DISCORD_LENGTH_MARGIN = 150;
@@ -669,5 +674,40 @@ describe('hard daily modals', () => {
 		expect(isUnstartedTimedDaily(applyWordleAction(wordle, { kind: 'submit', guess: 'HYDRA' }))).toBe(false);
 		expect(isUnstartedTimedDaily(createTypingState(mockRng()))).toBe(true);
 		expect(isUnstartedTimedDaily(applyTypingGuess(createTypingState(mockRng()), 'nope'))).toBe(false);
+	});
+});
+
+describe('daily difficulty picker', () => {
+	test('shows the picker only when no difficulty was chosen', () => {
+		expect(shouldShowDailyDifficultyPicker(undefined)).toBe(true);
+		expect(shouldShowDailyDifficultyPicker(null)).toBe(true);
+		expect(shouldShowDailyDifficultyPicker('')).toBe(true);
+		expect(shouldShowDailyDifficultyPicker('   ')).toBe(true);
+		expect(shouldShowDailyDifficultyPicker('easy')).toBe(false);
+		expect(shouldShowDailyDifficultyPicker('medium')).toBe(false);
+		expect(shouldShowDailyDifficultyPicker('hard')).toBe(false);
+	});
+
+	test('picker prompt and cancel reply stay under Discord limits and do not ping', () => {
+		expect(DAILY_DIFFICULTY_PROMPT.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+		expect(DAILY_DIFFICULTY_CANCELLED.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+		expect(messageHasUserPing(DAILY_DIFFICULTY_PROMPT)).toBe(false);
+		expect(messageHasUserPing(DAILY_DIFFICULTY_CANCELLED)).toBe(false);
+		for (const label of ['Easy', 'Medium', 'Hard']) {
+			expect(label.length).toBeLessThanOrEqual(80);
+		}
+	});
+
+	test('Minion Daily button and /minion daily with no difficulty show the picker before claiming', () => {
+		const dailySrc = readFileSync(resolve('src/mahoji/lib/abstracted_commands/dailyCommand.ts'), 'utf8');
+		const globalSrc = readFileSync(resolve('src/lib/util/globalInteractions.ts'), 'utf8');
+		expect(globalSrc).toContain('args: { daily: {} }');
+		expect(dailySrc).toContain('shouldShowDailyDifficultyPicker(difficultyInput)');
+		expect(dailySrc).toContain('pickDailyDifficultyThenPlay(');
+		expect(dailySrc).toContain('pickStringWithButtons({');
+		const pickerCheck = dailySrc.indexOf('shouldShowDailyDifficultyPicker(difficultyInput)');
+		const claim = dailySrc.indexOf('const claim = await tryClaimDaily(user)');
+		expect(pickerCheck).toBeGreaterThan(-1);
+		expect(claim).toBeGreaterThan(pickerCheck);
 	});
 });

@@ -1,7 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { Bank } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
-import { clearSeasonalEventOverrides, setSeasonalEventOverride } from '@/lib/events/registry.js';
 import {
 	formatGobbleStreakStatusLine,
 	formatHarvestBlessingStatusLine,
@@ -9,13 +10,11 @@ import {
 	formatThanksgivingBaseRatesLine,
 	formatThanksgivingTripPartsRateLine,
 	GOBBLE_STREAK_OFFERS,
-	GOBBLES_PITY_OFFERS,
-	THANKSGIVING_MIN_TRIP_MS
+	GOBBLES_PITY_OFFERS
 } from '@/lib/events/thanksgiving/core.js';
 import { harvestFeastStatusLine } from '@/lib/events/thanksgiving/feast.js';
 import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
 import {
-	appendThanksgivingTripStartLine,
 	CORNUCOPIA_CREATE_ITEM,
 	cornucopiaMaxMakeable,
 	cornucopiaQuantityChoices,
@@ -30,15 +29,12 @@ import {
 	formatCornucopiaOfferEmpty,
 	formatMakeAndOfferConfirm,
 	formatThanksgivingPartsLine,
-	formatThanksgivingShortOnLine,
 	formatThanksgivingWindowLine,
 	isBountifulCornucopiaName,
 	isThanksgivingMakeAndOfferButton,
 	isThanksgivingMakeButton,
-	markThanksgivingTripStarted,
 	previewCornucopiaMake,
 	resolveCornucopiaMakeAfterConfirm,
-	takeThanksgivingTripStartLine,
 	thanksgivingButtonOwnerId,
 	thanksgivingMakeAndOfferButtonCustomId,
 	thanksgivingMakeButtonCustomId
@@ -256,38 +252,16 @@ describe('Bountiful cornucopia /create all QoL', () => {
 });
 
 describe('Thanksgiving follow-up QoL', () => {
-	test('short-on trip start line names the missing parts and stays under Discord limits', () => {
-		expect(formatThanksgivingShortOnLine(parts(3, 0))).toBe(
-			'You need 2x Harvest bundle and 1x Wicker basket more for your next Bountiful cornucopia.'
-		);
-		expect(formatThanksgivingShortOnLine(parts(23, 4))).toBe(
-			'You have enough parts for 4x Bountiful cornucopia; need 2x Harvest bundle and 1x Wicker basket more for another.'
-		);
-		expect(formatThanksgivingShortOnLine(parts(20, 4))).toBe(
-			'You have enough parts for 4x Bountiful cornucopia; that uses all your parts.'
-		);
-		const huge = Number.MAX_SAFE_INTEGER;
-		underLimit(formatThanksgivingShortOnLine(parts(huge, huge)));
-		underLimit(
-			`🌾 ${'W'.repeat(32)}'s minion is now fishing, it'll take around 24 hours, 59 minutes to finish (back at 12:59 PM).\n${formatThanksgivingShortOnLine(parts(huge, 0))}`
-		);
-	});
-
-	test('trip start hint is marked only for long enough trips during the event, and consumed once', () => {
-		clearSeasonalEventOverrides();
-		const start = Date.parse('2026-11-22T16:46:19.332Z');
-		const end = Date.parse('2026-12-07T16:46:19.332Z');
-		setSeasonalEventOverride('thanksgiving', { enabled: true, start, end });
-		markThanksgivingTripStarted('hint-user', THANKSGIVING_MIN_TRIP_MS - 1, start);
-		expect(takeThanksgivingTripStartLine(parts(3, 0), 'hint-user')).toBeNull();
-		markThanksgivingTripStarted('hint-user', THANKSGIVING_MIN_TRIP_MS, start);
-		const line = takeThanksgivingTripStartLine(parts(3, 0), 'hint-user');
-		expect(line).toContain('You need 2x Harvest bundle');
-		expect(takeThanksgivingTripStartLine(parts(3, 0), 'hint-user')).toBeNull();
-		markThanksgivingTripStarted('hint-user', THANKSGIVING_MIN_TRIP_MS, start);
-		const appended = appendThanksgivingTripStartLine('hint-user', parts(3, 0), 'Trip started.');
-		expect(appended).toBe(`Trip started.\n${formatThanksgivingShortOnLine(parts(3, 0))}`);
-		clearSeasonalEventOverrides();
+	test('trip start messages no longer append a Thanksgiving parts hint', () => {
+		const makeSrc = readFileSync(resolve('src/lib/events/thanksgiving/make.ts'), 'utf8');
+		const commandSrc = readFileSync(resolve('src/discord/commandHandler.ts'), 'utf8');
+		const tripSrc = readFileSync(resolve('src/lib/util/addSubTaskToActivityTask.ts'), 'utf8');
+		expect(makeSrc).not.toContain('appendThanksgivingTripStartLine');
+		expect(makeSrc).not.toContain('formatThanksgivingShortOnLine');
+		expect(makeSrc).not.toContain('markThanksgivingTripStarted');
+		expect(commandSrc).not.toContain('appendThanksgivingTripStartLine');
+		expect(commandSrc).not.toContain('clearThanksgivingTripStartMark');
+		expect(tripSrc).not.toContain('markThanksgivingTripStarted');
 	});
 
 	test('make and offer confirm shows both steps and a Make & offer all button label', () => {

@@ -185,11 +185,20 @@ function bestFarmingContractUserCanDo(user: MUser) {
 		.find(a => user.skillLevel('farming') >= a[1])?.[0] as ContractOption | undefined;
 }
 
+/** True when Auto Farming Contract should request a new contract instead of replanting the last crop. */
+export function autoContractNeedsNewContract(contract: IFarmingContract | null | undefined): boolean {
+	return !contract?.hasContract;
+}
+
 export async function autoContract(interaction: OSInteraction): Promise<string | MessageBuilderClass> {
 	const { user, rng } = interaction;
 	const contract = user.farmingContract();
-	const plant = contract.contract ? Farming.findPlant(contract.contract.plantToGrow) : null;
-	const patch = contract.farmingInfo.patchesDetailed.find(p => p.plant === plant);
+	const hasActiveContract = !autoContractNeedsNewContract(contract.contract);
+	const plant =
+		hasActiveContract && contract.contract?.plantToGrow
+			? Farming.findPlant(contract.contract.plantToGrow)
+			: null;
+	const patch = plant ? contract.farmingInfo.patchesDetailed.find(p => p.plant === plant) : undefined;
 	const bestContractTierCanDo = bestFarmingContractUserCanDo(user);
 
 	if (user.owns('Seed pack')) {
@@ -210,7 +219,7 @@ export async function autoContract(interaction: OSInteraction): Promise<string |
 	}
 
 	// If they have no contract, get them a contract, recurse.
-	if (!contract.contract) {
+	if (!hasActiveContract) {
 		const contractResult = await farmingContractCommand(user, bestContractTierCanDo);
 		const newContract: IFarmingContract = user.fetchFarmingContract();
 		if (!newContract.hasContract || !newContract.plantToGrow) return contractResult;

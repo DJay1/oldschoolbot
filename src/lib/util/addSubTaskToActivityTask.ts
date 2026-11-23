@@ -2,7 +2,6 @@ import { UserError } from '@oldschoolgg/toolkit';
 import { omit } from 'remeda';
 
 import type { Prisma } from '@/prisma/main.js';
-import { markThanksgivingTripStarted } from '@/lib/events/thanksgiving/make.js';
 import type { ActivityTaskData, ActivityTaskOptions } from '@/lib/types/minions.js';
 import { isGroupActivity } from '@/lib/util/activityTypeCheck.js';
 import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
@@ -66,7 +65,6 @@ export default async function addSubTaskToActivityTask(taskToAdd: Omit<ActivityT
 		const createdActivity = await prisma.activity.create({
 			data
 		});
-		markThanksgivingTripStarted(taskToAdd.userID, duration);
 		return createdActivity;
 	} catch (err: unknown) {
 		Logging.logError(err as Error, {
