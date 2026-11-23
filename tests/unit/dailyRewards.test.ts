@@ -19,6 +19,7 @@ import {
 	DAILY_BUTTON_DECOYS,
 	DAILY_BUTTON_GAME_MS,
 	DAILY_BUTTON_TARGETS,
+	DAILY_TYPING_ITEMS,
 	DAILY_TYPING_MAX_CHARS,
 	DAILY_TYPING_MIN_CHARS,
 	DAILY_TYPING_MS,
@@ -317,13 +318,18 @@ describe('speed-click game', () => {
 });
 
 describe('typing challenge', () => {
-	test('the phrase list is medium-length OSRS or BSC names', () => {
-		expect(DAILY_TYPING_MS).toBe(20_000);
+	test('the item pool is well-known OSRS gear with local sprites', async () => {
+		expect(DAILY_TYPING_MS).toBe(30_000);
+		expect(DAILY_TYPING_ITEMS.length).toBeGreaterThanOrEqual(20);
 		expect(DAILY_TYPING_PHRASES).toContain('Abyssal whip');
-		expect(DAILY_TYPING_PHRASES).toContain('Bountiful cornucopia');
-		for (const phrase of DAILY_TYPING_PHRASES) {
-			expect(phrase.length).toBeGreaterThanOrEqual(DAILY_TYPING_MIN_CHARS);
-			expect(phrase.length).toBeLessThanOrEqual(DAILY_TYPING_MAX_CHARS);
+		expect(DAILY_TYPING_PHRASES).toContain('Twisted bow');
+		expect(DAILY_TYPING_PHRASES).not.toContain('Chambers of Xeric');
+		const { OSRSCanvas } = await import('@/lib/canvas/OSRSCanvas.js');
+		for (const item of DAILY_TYPING_ITEMS) {
+			expect(item.name.length).toBeGreaterThanOrEqual(DAILY_TYPING_MIN_CHARS);
+			expect(item.name.length).toBeLessThanOrEqual(DAILY_TYPING_MAX_CHARS);
+			expect(item.id).toBeGreaterThan(0);
+			expect(await OSRSCanvas.itemHasLocalIcon(item.id)).toBe(true);
 		}
 	});
 
@@ -335,19 +341,36 @@ describe('typing challenge', () => {
 		expect(applyTypingGuess(state, 'abyssal whip').status).toBe('won');
 		expect(applyTypingGuess(state, 'Abyssal dagger').status).toBe('lost');
 		expect(hardGameTimeoutMs(state)).toBe(DAILY_TYPING_MS);
+		expect(isTypingGuessCorrect('Twisted bow', 'tbow')).toBe(true);
+		expect(isTypingGuessCorrect('Twisted bow', 'T Bow')).toBe(true);
+		expect(isTypingGuessCorrect("Tumeken's shadow", 'tumekens shadow')).toBe(true);
+		expect(isTypingGuessCorrect('Dragon warhammer', 'dwh')).toBe(true);
+		expect(isTypingGuessCorrect('Twisted bow', 'magic shortbow')).toBe(false);
 	});
 
-	test('the Type it button is valid, and the prompt image does not include copyable text', async () => {
+	test('the Type it button is valid, and the prompt image does not include the item name', async () => {
 		const rows = typingGameRows();
 		expect(discordButtonRowsAreValid(rows)).toBe(true);
 		expect(rows).toEqual([[{ id: 'dlyt:GO', label: 'Type it' }]]);
 		const hidden = formatTypingMessage(createTypingState(mockRng([], ['Abyssal whip'])), DAILY_TYPING_MS);
-		expect(hidden).toContain('shown in the image');
+		expect(hidden).toContain('Name the OSRS item shown.');
 		expect(hidden).not.toContain('Abyssal whip');
 		expect(hidden.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
 		const image = await renderTypingPromptImage('Abyssal whip');
 		expect(image.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe(true);
-		expect(image.toString('utf8')).not.toContain('Abyssal whip');
+		const imageText = image.toString('utf8');
+		expect(imageText).not.toContain('Abyssal whip');
+		expect(imageText).not.toContain('abyssal whip');
+		const rapier = await renderTypingPromptImage('Ghrazi rapier');
+		expect(rapier.toString('utf8')).not.toContain('Ghrazi rapier');
+		expect(rapier.toString('utf8')).not.toContain('ghrazi rapier');
+		const src = readFileSync(resolve('src/lib/bsc/dailyGames.ts'), 'utf8');
+		const renderFn = src.slice(
+			src.indexOf('export async function renderTypingPromptImage'),
+			src.indexOf('export function wordleModalSpec')
+		);
+		expect(renderFn).not.toContain('fillText');
+		expect(renderFn).toContain('drawImage');
 	});
 });
 

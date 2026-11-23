@@ -1,7 +1,8 @@
 import { ComponentType, InteractionResponseType, Routes } from '@oldschoolgg/discord';
+import { Items, itemID } from 'oldschooljs';
 
 import { createCanvas } from '@/lib/canvas/canvasUtil.js';
-import '@/lib/canvas/OSRSCanvas.js';
+import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
 
 export const DAILY_WORDLE_LENGTH = 5;
 export const DAILY_WORDLE_GUESSES = 4;
@@ -9,9 +10,10 @@ export const DAILY_WORDLE_MS = 90 * 1000;
 export const DAILY_BUTTON_GAME_MS = 10 * 1000;
 export const DAILY_BUTTON_TARGETS = 5;
 export const DAILY_BUTTON_DECOYS = 5;
-export const DAILY_TYPING_MS = 20 * 1000;
-export const DAILY_TYPING_MIN_CHARS = 11;
-export const DAILY_TYPING_MAX_CHARS = 24;
+export const DAILY_TYPING_MS = 30 * 1000;
+export const DAILY_TYPING_MIN_CHARS = 8;
+export const DAILY_TYPING_MAX_CHARS = 32;
+export const DAILY_TYPING_ICON_SCALE = 5;
 export const DAILY_WORDLE_BUTTON_PREFIX = 'dlyw:';
 export const DAILY_SPEED_CLICK_BUTTON_PREFIX = 'dlyb:';
 export const DAILY_TYPING_BUTTON_PREFIX = 'dlyt:';
@@ -81,35 +83,61 @@ export const DAILY_BUTTON_CLUSTERS: readonly (readonly string[])[] = [
 	['Skipper', 'Shelldon', 'Laboon']
 ];
 
-/** Medium-length OSRS or BSC item and activity names to type exactly. */
-export const DAILY_TYPING_PHRASES = [
-	'Abyssal whip',
-	'Twisted bow',
-	'Dragon warhammer',
-	'Scythe of vitur',
-	"Tumeken's shadow",
-	'Sanguinesti staff',
-	'Ghrazi rapier',
-	'Avernic defender',
-	'Infernal cape',
-	'Barrows gloves',
-	'Dragon hunter lance',
-	'Alchemical hydra',
-	'Chambers of Xeric',
-	'Theatre of Blood',
-	'Tombs of Amascut',
-	'Bountiful cornucopia',
-	'Tradeable Mystery Box',
-	'Abyssal bludgeon',
-	'Heavy ballista',
-	'Armadyl godsword',
-	'Bandos chestplate',
-	'Ancestral robe top',
-	"Osmumten's fang",
-	'Zaryte crossbow',
-	'Pegasian boots',
-	'Primordial boots'
-] as const;
+/** Well-known, visually distinctive OSRS items with local bank sprites. */
+export type DailyTypingItem = {
+	name: string;
+	id: number;
+	aliases: readonly string[];
+};
+
+export const DAILY_TYPING_ITEMS: readonly DailyTypingItem[] = [
+	{ name: 'Abyssal whip', id: itemID('Abyssal whip'), aliases: ['whip', 'abby whip'] },
+	{ name: 'Twisted bow', id: itemID('Twisted bow'), aliases: ['tbow', 't bow'] },
+	{ name: 'Dragon warhammer', id: itemID('Dragon warhammer'), aliases: ['dwh'] },
+	{ name: 'Scythe of vitur', id: itemID('Scythe of vitur'), aliases: ['scythe'] },
+	{ name: "Tumeken's shadow", id: itemID("Tumeken's shadow"), aliases: ['shadow', 'tumeken shadow'] },
+	{ name: 'Sanguinesti staff', id: itemID('Sanguinesti staff'), aliases: ['sang', 'sang staff'] },
+	{ name: 'Ghrazi rapier', id: itemID('Ghrazi rapier'), aliases: ['rapier', 'ghrazi'] },
+	{ name: 'Avernic defender', id: itemID('Avernic defender'), aliases: ['avernic'] },
+	{ name: 'Infernal cape', id: itemID('Infernal cape'), aliases: [] },
+	{ name: 'Barrows gloves', id: itemID('Barrows gloves'), aliases: ['barrows glove'] },
+	{ name: 'Dragon hunter lance', id: itemID('Dragon hunter lance'), aliases: ['dhl'] },
+	{ name: 'Abyssal bludgeon', id: itemID('Abyssal bludgeon'), aliases: ['bludgeon'] },
+	{ name: 'Heavy ballista', id: itemID('Heavy ballista'), aliases: ['ballista'] },
+	{ name: 'Armadyl godsword', id: itemID('Armadyl godsword'), aliases: ['ags'] },
+	{ name: 'Bandos chestplate', id: itemID('Bandos chestplate'), aliases: ['bcp'] },
+	{ name: 'Ancestral robe top', id: itemID('Ancestral robe top'), aliases: ['ancestral top', 'anc top'] },
+	{ name: "Osmumten's fang", id: itemID("Osmumten's fang"), aliases: ['fang', 'osmumten fang'] },
+	{ name: 'Zaryte crossbow', id: itemID('Zaryte crossbow'), aliases: ['zcb'] },
+	{ name: 'Pegasian boots', id: itemID('Pegasian boots'), aliases: ['pegs', 'pegasians'] },
+	{ name: 'Primordial boots', id: itemID('Primordial boots'), aliases: ['prims', 'primordials'] },
+	{ name: 'Dragon claws', id: itemID('Dragon claws'), aliases: ['claws', 'dclaws', 'd claws'] },
+	{ name: 'Toxic blowpipe', id: itemID('Toxic blowpipe'), aliases: ['blowpipe', 'tbp', 'bp'] },
+	{ name: 'Elder maul', id: itemID('Elder maul'), aliases: [] },
+	{ name: 'Elysian spirit shield', id: itemID('Elysian spirit shield'), aliases: ['ely', 'elysian'] },
+	{ name: 'Voidwaker', id: itemID('Voidwaker'), aliases: [] },
+	{ name: 'Bow of faerdhinen', id: itemID('Bow of faerdhinen'), aliases: ['bofa', 'bowfa'] },
+	{ name: 'Dragon hunter crossbow', id: itemID('Dragon hunter crossbow'), aliases: ['dhcb'] },
+	{ name: 'Armadyl crossbow', id: itemID('Armadyl crossbow'), aliases: ['acb'] },
+	{ name: 'Bandos tassets', id: itemID('Bandos tassets'), aliases: ['tassets'] },
+	{ name: 'Dragonfire shield', id: itemID('Dragonfire shield'), aliases: ['dfs'] },
+	{ name: 'Serpentine helm', id: itemID('Serpentine helm'), aliases: ['serp helm'] },
+	{ name: 'Granite maul', id: itemID('Granite maul'), aliases: ['gmaul', 'g maul'] },
+	{ name: 'Abyssal tentacle', id: itemID('Abyssal tentacle'), aliases: ['tentacle'] },
+	{ name: 'Kodai wand', id: itemID('Kodai wand'), aliases: ['kodai'] },
+	{ name: "Dinh's bulwark", id: itemID("Dinh's bulwark"), aliases: ['dinhs', 'bulwark'] },
+	{ name: 'Fire cape', id: itemID('Fire cape'), aliases: [] },
+	{ name: 'Lightbearer', id: itemID('Lightbearer'), aliases: [] },
+	{ name: 'Torva full helm', id: itemID('Torva full helm'), aliases: ['torva helm'] },
+	{ name: 'Amulet of torture', id: itemID('Amulet of torture'), aliases: ['torture'] },
+	{ name: 'Necklace of anguish', id: itemID('Necklace of anguish'), aliases: ['anguish'] },
+	{ name: "Inquisitor's mace", id: itemID("Inquisitor's mace"), aliases: ['inq mace', 'inquisitor mace'] },
+	{ name: 'Nightmare staff', id: itemID('Nightmare staff'), aliases: [] },
+	{ name: 'Crystal halberd', id: itemID('Crystal halberd'), aliases: ['crystal hally'] },
+	{ name: 'Soulreaper axe', id: itemID('Soulreaper axe'), aliases: ['soulreaper'] }
+];
+
+export const DAILY_TYPING_PHRASES = DAILY_TYPING_ITEMS.map(item => item.name);
 
 export type WordleMark = 'correct' | 'present' | 'absent';
 
@@ -138,6 +166,7 @@ export interface ButtonGameState {
 export interface TypingGameState {
 	type: 'typing';
 	phrase: string;
+	itemID?: number;
 	status: 'playing' | 'won' | 'lost';
 	notice?: string;
 }
@@ -341,17 +370,45 @@ export function formatButtonGameMessage(state: ButtonGameState, remainingMs: num
 }
 
 export function normalizeTypingGuess(raw: string): string {
-	return raw.trim().replace(/\s+/g, ' ').toLowerCase();
+	return raw
+		.trim()
+		.replace(/['\u2019]/g, '')
+		.replace(/\s+/g, ' ')
+		.toLowerCase();
+}
+
+export function typingItemByName(name: string): DailyTypingItem | undefined {
+	const key = normalizeTypingGuess(name);
+	return DAILY_TYPING_ITEMS.find(item => normalizeTypingGuess(item.name) === key);
+}
+
+export function typingAcceptedAnswers(phrase: string): string[] {
+	const item = typingItemByName(phrase);
+	const names = item ? [item.name, ...item.aliases] : [phrase];
+	return names.map(normalizeTypingGuess);
 }
 
 export function isTypingGuessCorrect(phrase: string, raw: string): boolean {
-	return normalizeTypingGuess(raw) === normalizeTypingGuess(phrase);
+	return typingAcceptedAnswers(phrase).includes(normalizeTypingGuess(raw));
+}
+
+export function resolveTypingItem(picked: DailyTypingItem | string): DailyTypingItem {
+	if (typeof picked !== 'string') return picked;
+	return (
+		DAILY_TYPING_ITEMS.find(item => item.name === picked) ?? {
+			name: picked,
+			id: Items.get(picked)?.id ?? 0,
+			aliases: []
+		}
+	);
 }
 
 export function createTypingState(rng: RNGProvider): TypingGameState {
+	const item = resolveTypingItem(rng.pick(DAILY_TYPING_ITEMS as unknown as DailyTypingItem[]));
 	return {
 		type: 'typing',
-		phrase: rng.pick(DAILY_TYPING_PHRASES as unknown as string[]),
+		phrase: item.name,
+		itemID: item.id || Items.get(item.name)?.id,
 		status: 'playing'
 	};
 }
@@ -359,26 +416,23 @@ export function createTypingState(rng: RNGProvider): TypingGameState {
 export function applyTypingGuess(state: TypingGameState, raw: string): TypingGameState {
 	if (state.status !== 'playing') return state;
 	if (isTypingGuessCorrect(state.phrase, raw)) {
-		return { ...state, status: 'won', notice: 'You typed it in time.' };
+		return { ...state, status: 'won', notice: 'You named it in time.' };
 	}
-	return { ...state, status: 'lost', notice: 'That was not the right name.' };
+	return { ...state, status: 'lost', notice: `That was not the right name. It was ${state.phrase}.` };
+}
+
+export function typingItemId(state: string | TypingGameState): number | undefined {
+	if (typeof state !== 'string' && state.itemID) return state.itemID;
+	const name = typeof state === 'string' ? state : state.phrase;
+	return typingItemByName(name)?.id ?? Items.get(name)?.id;
 }
 
 export function typingGameRows(): { id: string; label: string }[][] {
 	return [[{ id: DAILY_TYPING_BUTTON_ID, label: 'Type it' }]];
 }
 
-export function formatTypingMessage(
-	state: TypingGameState,
-	remainingMs: number,
-	opts: { revealText?: boolean } = {}
-): string {
-	const lines = [
-		'**Hard daily: Typing**',
-		opts.revealText
-			? `Type this OSRS name exactly: **${state.phrase}**`
-			: 'Type the OSRS name shown in the image. Press Type it and enter it exactly.'
-	];
+export function formatTypingMessage(state: TypingGameState, remainingMs: number): string {
+	const lines = ['**Hard daily: Typing**', 'Name the OSRS item shown. Press Type it and enter the name.'];
 	if (state.status === 'playing') {
 		lines.push(`Time left: ${formatSeconds(remainingMs)}`);
 	}
@@ -386,14 +440,25 @@ export function formatTypingMessage(
 	return lines.join('\n');
 }
 
-export async function renderTypingPromptImage(phrase: string): Promise<Buffer> {
-	const font = '32px RuneScape Bold 12';
-	const probe = createCanvas(10, 10);
-	const pctx = probe.getContext('2d');
-	pctx.font = font;
-	const textWidth = pctx.measureText(phrase).width;
-	const width = Math.max(Math.ceil(textWidth) + 56, 240);
-	const height = 80;
+export async function loadDailyTypingIcon(itemId: number) {
+	const icon = await OSRSCanvas.getItemImage({ itemID: itemId, networkTimeoutMs: 0 });
+	if (OSRSCanvas.isGeneratedPlaceholderIcon(icon)) {
+		throw new Error('Missing daily typing item icon');
+	}
+	if (icon.width < 8 || icon.height < 8) {
+		throw new Error('Invalid daily typing item icon');
+	}
+	return icon;
+}
+
+export async function renderTypingPromptImage(phraseOrState: string | TypingGameState): Promise<Buffer> {
+	const itemId = typingItemId(phraseOrState);
+	if (!itemId) throw new Error('Unknown daily typing item');
+	const icon = await loadDailyTypingIcon(itemId);
+	const scale = DAILY_TYPING_ICON_SCALE;
+	const pad = 36;
+	const width = Math.max(icon.width * scale + pad * 2, 200);
+	const height = Math.max(icon.height * scale + pad * 2, 200);
 	const canvas = createCanvas(width, height);
 	const ctx = canvas.getContext('2d');
 	ctx.fillStyle = '#3e3229';
@@ -401,13 +466,10 @@ export async function renderTypingPromptImage(phrase: string): Promise<Buffer> {
 	ctx.strokeStyle = '#2a2118';
 	ctx.lineWidth = 4;
 	ctx.strokeRect(2, 2, width - 4, height - 4);
-	ctx.font = font;
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
-	ctx.fillStyle = '#000000';
-	ctx.fillText(phrase, width / 2 + 2, height / 2 + 2);
-	ctx.fillStyle = '#FF981F';
-	ctx.fillText(phrase, width / 2, height / 2);
+	ctx.imageSmoothingEnabled = false;
+	const destW = icon.width * scale;
+	const destH = icon.height * scale;
+	ctx.drawImage(icon, Math.floor((width - destW) / 2), Math.floor((height - destH) / 2), destW, destH);
 	return Buffer.from(await canvas.png);
 }
 
@@ -431,8 +493,8 @@ export function typingModalSpec() {
 		title: 'Hard daily: Typing',
 		textInput: {
 			customId: DAILY_TYPING_MODAL_INPUT_ID,
-			label: 'Type the name exactly',
-			placeholder: 'Type what you see',
+			label: 'Item name',
+			placeholder: 'Item name',
 			minLength: 1,
 			maxLength: 80
 		}

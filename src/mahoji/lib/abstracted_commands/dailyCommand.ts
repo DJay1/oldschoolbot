@@ -242,19 +242,17 @@ async function hardGameContent(
 			components: game.status === 'playing' ? buttonsFromSpec(buttonGameRows(game)) : []
 		};
 	}
-	let files: { buffer: Buffer; name: string }[] | undefined;
-	let revealText = false;
 	if (game.status === 'playing') {
-		try {
-			files = [{ buffer: await renderTypingPromptImage(game.phrase), name: 'prompt.png' }];
-		} catch {
-			revealText = true;
-		}
+		const buffer = await renderTypingPromptImage(game);
+		return {
+			content: formatTypingMessage(game, left),
+			components: buttonsFromSpec(typingGameRows()),
+			files: [{ buffer, name: 'prompt.png' }]
+		};
 	}
 	return {
-		content: formatTypingMessage(game, left, { revealText }),
-		components: game.status === 'playing' ? buttonsFromSpec(typingGameRows()) : [],
-		files
+		content: formatTypingMessage(game, left),
+		components: []
 	};
 }
 
@@ -323,9 +321,15 @@ async function playHardGame(
 	}
 
 	await interaction.defer();
-	const first = await hardGameContent(game, expiresAt);
+	let first: Awaited<ReturnType<typeof hardGameContent>>;
+	try {
+		first = await hardGameContent(game, expiresAt);
+	} catch {
+		return restoreUnstartedHardDaily(user, pending.difficulty);
+	}
 	const rowsValid = first.components.length === 0 || first.components.every(row => row.length > 0 && row.length <= 5);
-	if (!rowsValid) {
+	const typingImageMissing = game.type === 'typing' && game.status === 'playing' && !first.files?.length;
+	if (!rowsValid || typingImageMissing) {
 		return restoreUnstartedHardDaily(user, pending.difficulty);
 	}
 	const msg = await interaction.replyWithResponse({
