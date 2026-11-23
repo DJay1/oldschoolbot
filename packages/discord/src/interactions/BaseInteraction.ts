@@ -6,10 +6,12 @@ import {
 	type APIChatInputApplicationCommandInteraction,
 	type APIMessage,
 	type APIMessageComponentInteraction,
+	ComponentType,
 	InteractionResponseType,
 	MessageFlags,
 	type RESTPostAPIInteractionCallbackWithResponseResult,
-	Routes
+	Routes,
+	TextInputStyle
 } from 'discord-api-types/v10';
 
 import { userIdsMentionedInContent } from '../client/allowedMentions.js';
@@ -353,5 +355,47 @@ export class BaseInteraction {
 				type: InteractionResponseType.DeferredMessageUpdate
 			}
 		});
+	}
+
+	async showModal(modal: {
+		customId: string;
+		title: string;
+		textInput: {
+			customId: string;
+			label: string;
+			placeholder?: string;
+			minLength?: number;
+			maxLength?: number;
+		};
+	}): Promise<void> {
+		if (this._deferred || this._replied) throw new Error('showModal: InteractionAlreadyReplied');
+		await this.rest.post(Routes.interactionCallback(this.id, this.token), {
+			auth: false,
+			body: {
+				type: InteractionResponseType.Modal,
+				data: {
+					custom_id: modal.customId,
+					title: modal.title.slice(0, 45),
+					components: [
+						{
+							type: ComponentType.ActionRow,
+							components: [
+								{
+									type: ComponentType.TextInput,
+									custom_id: modal.textInput.customId,
+									style: TextInputStyle.Short,
+									label: modal.textInput.label.slice(0, 45),
+									required: true,
+									placeholder: modal.textInput.placeholder?.slice(0, 100),
+									min_length: modal.textInput.minLength,
+									max_length: modal.textInput.maxLength
+								}
+							]
+						}
+					]
+				}
+			}
+		});
+		this._replied = true;
 	}
 }

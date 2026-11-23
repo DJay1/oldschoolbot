@@ -25,6 +25,7 @@ import {
 	listBitFields
 } from '@/lib/bitFieldUtils.js';
 import { gifs } from '@/lib/bsc/corgoGifs.js';
+import { clearDailyPending } from '@/lib/bsc/dailyPending.js';
 import { setTestStaffTierOverride, staffTierOf } from '@/lib/bsc/staffAccess.js';
 import { STAFF_TIER_NAMES, type StaffTier } from '@/lib/bsc/staffTiers.js';
 import { isTestPotatoOpenForEveryone, testPotatoAccess } from '@/lib/bsc/testPotatoAccess.js';
@@ -1029,6 +1030,7 @@ export const testPotatoCommand = defineCommand({
 						user_id: BigInt(user.id)
 					}
 				});
+				await clearDailyPending(user.id);
 				return 'Reset all your daily/TOG/item contract cooldowns, gambling lockout.';
 			}
 			if (thing === 'kc') {

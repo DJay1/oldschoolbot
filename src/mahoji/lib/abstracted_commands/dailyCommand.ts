@@ -1,13 +1,69 @@
 import { BSOEmoji } from '@/lib/bso/bsoEmoji.js';
 
-import { Emoji, formatDuration, isWeekend, Time, uniqueArr } from '@oldschoolgg/toolkit';
+import {
+	type APIInteraction,
+	ButtonBuilder,
+	ButtonStyle,
+	createInteractionCollector,
+	InteractionResponseType,
+	InteractionType,
+	Routes
+} from '@oldschoolgg/discord';
+import { Emoji, formatDuration, isWeekend, Time } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import type { MessageBuilderClass } from '@/discord/MessageBuilder.js';
+import {
+	applyButtonAction,
+	applyTypingGuess,
+	applyWordleAction,
+	buttonGameRows,
+	createButtonGameState,
+	createHardGame,
+	DAILY_TIMEOUT_NOTICE,
+	extractModalText,
+	formatButtonGameMessage,
+	formatTypingMessage,
+	formatWordleMessage,
+	type HardGameState,
+	hardGameTimeoutMs,
+	isDailyHardModalId,
+	isDailyTypingButton,
+	isDailyWordleGuessButton,
+	isUnstartedTimedDaily,
+	parseButtonAction,
+	renderTypingPromptImage,
+	showDailyGameModal,
+	typingGameRows,
+	typingModalSpec,
+	wordleGuessRows,
+	wordleModalSpec
+} from '@/lib/bsc/dailyGames.js';
+import {
+	clearDailyPending,
+	createDailySettle,
+	type DailyPendingRow,
+	isDailyPendingExpired,
+	loadDailyPending,
+	markDailyPendingPaid,
+	remainingMs,
+	saveDailyPending,
+	updateDailyPendingGame
+} from '@/lib/bsc/dailyPending.js';
+import {
+	buildDailyRewardContent,
+	type DailyDifficulty,
+	type DailyOutcome,
+	dailyClaimLockWhere,
+	dailyRatesFor,
+	dailyTokenWinLines,
+	parseDailyDifficulty,
+	rollDailyRewardTokens
+} from '@/lib/bsc/dailyRewards.js';
+import { isDailyTriviaAnswerCorrect, pickDailyTrivia } from '@/lib/bsc/dailyTrivia.js';
 import { bscDailyCooldownMs } from '@/lib/bsc/patronTiers.js';
 import { CONSTANTS } from '@/lib/constants.js';
 import { isEventActive } from '@/lib/events/registry.js';
-import { getRandomTriviaQuestions } from '@/lib/roboChimp.js';
 import dailyRoll from '@/lib/simulation/dailyTable.js';
 
 /** 1 in this many dailies hits the rare roll. Half of those rolls pay the jackpot. */
@@ -22,6 +78,12 @@ export const DAILY_CONSOLATION_ITEMS = new Bank()
 	.freeze();
 export const DAILY_CONSOLATION_LINE = '✨ The sparkle fizzled, so Diango stuffed a smaller prize in the bag.';
 
+function dailyCooldownMs(user: MUser): number {
+	const baseCooldown = bscDailyCooldownMs(user.bitfield, CONSTANTS.DAILY_COOLDOWN);
+	// Launch event: dailies every 12 hours at most.
+	return isEventActive('launch') ? Math.min(baseCooldown, Time.Hour * 12) : baseCooldown;
+}
+
 export async function isUsersDailyReady(
 	user: MUser
 ): Promise<{ isReady: true } | { isReady: false; durationUntilReady: number }> {
@@ -29,26 +91,46 @@ export async function isUsersDailyReady(
 	const currentDate = Date.now();
 	const lastVoteDate = Number(stats.last_daily_timestamp);
 	const difference = currentDate - lastVoteDate;
-
-	const baseCooldown = bscDailyCooldownMs(user.bitfield, CONSTANTS.DAILY_COOLDOWN);
-	// Launch event: dailies every 12 hours at most.
-	const dailyCooldown = isEventActive('launch') ? Math.min(baseCooldown, Time.Hour * 12) : baseCooldown;
-	if (difference < dailyCooldown) {
-		const duration = Date.now() - (lastVoteDate + dailyCooldown);
+	const cooldown = dailyCooldownMs(user);
+	if (difference < cooldown) {
+		const duration = Date.now() - (lastVoteDate + cooldown);
 		return { isReady: false, durationUntilReady: duration };
 	}
-
 	return { isReady: true };
 }
 
-async function reward(rng: RNGProvider, user: MUser, triviaCorrect: boolean): Promise<MessageBuilderClass> {
+export async function tryClaimDaily(user: MUser): Promise<{ ok: true } | { ok: false; durationUntilReady: number }> {
+	const stats = await user.fetchStats();
+	const lastVoteDate = Number(stats.last_daily_timestamp);
+	const cooldown = dailyCooldownMs(user);
+	if (Date.now() - lastVoteDate < cooldown) {
+		return { ok: false, durationUntilReady: Date.now() - (lastVoteDate + cooldown) };
+	}
+
+	const result = await prisma.userStats.updateMany({
+		where: dailyClaimLockWhere(user.id, stats.last_daily_timestamp),
+		data: { last_daily_timestamp: Date.now() }
+	});
+	if (result.count !== 1) {
+		const retry = await isUsersDailyReady(user);
+		if (!retry.isReady) return { ok: false, durationUntilReady: retry.durationUntilReady };
+		return { ok: false, durationUntilReady: 0 };
+	}
+	return { ok: true };
+}
+
+function cooldownReply(durationUntilReady: number): string {
+	return `**${Emoji.Diango} Diango says...** You can claim your next daily in ${formatDuration(durationUntilReady)}.`;
+}
+
+async function giveDailyReward(rng: RNGProvider, user: MUser, outcome: DailyOutcome): Promise<MessageBuilderClass> {
 	const member = await globalClient.fetchMainServerMember(user.id);
-
-	const loot = dailyRoll(1, triviaCorrect);
-
-	const bonuses = [];
+	const loot = dailyRoll(1, triviaSucceeded(outcome));
+	const rates = dailyRatesFor(outcome);
+	const bonuses: string[] = [];
 
 	let coinsToGive = loot.amount('Coins');
+	coinsToGive = Math.floor(coinsToGive * rates.coinMultiplier);
 
 	if (isWeekend()) {
 		coinsToGive *= 2;
@@ -80,10 +162,6 @@ async function reward(rng: RNGProvider, user: MUser, triviaCorrect: boolean): Pr
 		}
 	}
 
-	if (!triviaCorrect) {
-		coinsToGive = Math.floor(coinsToGive * 0.4);
-	}
-
 	const hasSkipper = user.usingPet('Skipper') || user.bank.has('Skipper');
 	if (hasSkipper && coinsToGive > 0) {
 		coinsToGive = Math.floor(coinsToGive * 1.5);
@@ -107,12 +185,8 @@ async function reward(rng: RNGProvider, user: MUser, triviaCorrect: boolean): Pr
 
 	loot.set('Coins', Math.floor(coinsToGive));
 
-	const correct = triviaCorrect ? 'correct' : 'incorrect';
-	const reward = triviaCorrect
-		? "I've picked you some random items as a reward..."
-		: "Even though you got it wrong, here's a little reward...";
-
-	const dmStr = `${bonuses.join('')} **${Emoji.Diango} Diango says..** That's ${correct}! ${reward}\n`;
+	const tokens = rollDailyRewardTokens(rng, rates);
+	if (tokens.items().length > 0) loot.add(tokens);
 
 	if (coinsToGive) {
 		ClientSettings.updateClientGPTrackSetting('gp_daily', coinsToGive);
@@ -123,36 +197,355 @@ async function reward(rng: RNGProvider, user: MUser, triviaCorrect: boolean): Pr
 		itemsToAdd: loot
 	});
 
-	return new MessageBuilder().setContent(`${dmStr}\nYou received ${loot}`).addBankImage({
+	const content = buildDailyRewardContent({
+		bonuses,
+		outcome,
+		loot,
+		tokenLines: dailyTokenWinLines(tokens),
+		triviaCorrect: triviaSucceeded(outcome)
+	});
+
+	return new MessageBuilder().setContent(`**${Emoji.Diango} Diango says..** ${content}`).addBankImage({
 		bank: itemsAdded,
-		title: `Daily Loot`,
+		title: 'Daily Loot',
 		previousCL,
 		showNewCL: true,
 		user
 	});
 }
 
-export async function dailyCommand(rng: RNGProvider, interaction: MInteraction, user: MUser): CommandResponse {
-	const check = await isUsersDailyReady(user);
-	if (!check.isReady) {
-		return `**${Emoji.Diango} Diango says...** You can claim your next daily in ${formatDuration(
-			check.durationUntilReady
-		)}.`;
+function triviaSucceeded(outcome: DailyOutcome): boolean {
+	if (outcome.difficulty === 'easy') return outcome.correct;
+	return outcome.success;
+}
+
+function buttonsFromSpec(rows: { id: string; label: string }[][]): ButtonBuilder[][] {
+	return rows.map(row =>
+		row.map(spec =>
+			new ButtonBuilder().setCustomId(spec.id).setStyle(ButtonStyle.Secondary).setLabel(spec.label.slice(0, 80))
+		)
+	);
+}
+
+async function hardGameContent(
+	game: HardGameState,
+	expiresAt: number
+): Promise<{ content: string; components: ButtonBuilder[][]; files?: { buffer: Buffer; name: string }[] }> {
+	const left = remainingMs(expiresAt);
+	if (game.type === 'wordle') {
+		return {
+			content: formatWordleMessage(game, left),
+			components: game.status === 'playing' ? buttonsFromSpec(wordleGuessRows()) : []
+		};
+	}
+	if (game.type === 'buttons') {
+		return {
+			content: formatButtonGameMessage(game, left),
+			components: game.status === 'playing' ? buttonsFromSpec(buttonGameRows(game)) : []
+		};
+	}
+	if (game.status === 'playing') {
+		const buffer = await renderTypingPromptImage(game);
+		return {
+			content: formatTypingMessage(game, left),
+			components: buttonsFromSpec(typingGameRows()),
+			files: [{ buffer, name: 'prompt.png' }]
+		};
+	}
+	return {
+		content: formatTypingMessage(game, left),
+		components: []
+	};
+}
+
+async function respondModalUpdate(
+	itx: APIInteraction,
+	view: { content: string; components: ButtonBuilder[][] }
+): Promise<void> {
+	await globalClient.rest.post(Routes.interactionCallback(itx.id, itx.token), {
+		auth: false,
+		body: {
+			type: InteractionResponseType.UpdateMessage,
+			data: {
+				content: view.content,
+				components: view.components.map(row => ({
+					type: 1,
+					components: row.map(button => button.toJSON())
+				})),
+				attachments: []
+			}
+		}
+	});
+}
+
+async function payHardOutcome(
+	rng: RNGProvider,
+	user: MUser,
+	_pending: DailyPendingRow,
+	game: HardGameState,
+	timedOut = false
+): Promise<MessageBuilderClass | null> {
+	const allowed = await markDailyPendingPaid(user.id);
+	if (!allowed) return null;
+	const success = game.status === 'won' && !timedOut;
+	const detail = timedOut ? DAILY_TIMEOUT_NOTICE : game.notice;
+	if (_pending.difficulty === 'medium') {
+		return giveDailyReward(rng, user, { difficulty: 'medium', success, game: 'buttons', detail });
+	}
+	return giveDailyReward(rng, user, {
+		difficulty: 'hard',
+		success,
+		game: game.type === 'typing' ? 'typing' : 'wordle',
+		detail
+	});
+}
+
+async function restoreUnstartedHardDaily(user: MUser, difficulty: 'medium' | 'hard' = 'hard'): Promise<string> {
+	await clearDailyPending(user.id);
+	await user.statsUpdate({ last_daily_timestamp: 0 });
+	const label = difficulty === 'medium' ? 'Medium' : 'Hard';
+	return `The ${label} daily didn't start, so you weren't charged a daily. Try \`/minion daily difficulty:${label}\` again.`;
+}
+
+async function playHardGame(
+	rng: RNGProvider,
+	interaction: MInteraction,
+	user: MUser,
+	pending: DailyPendingRow
+): Promise<CommandResponse> {
+	let game = pending.game;
+	let expiresAt = pending.expiresAt;
+	if (isDailyPendingExpired(expiresAt) && game.status === 'playing') {
+		game = { ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
+		return payHardOutcome(rng, user, pending, game, true);
 	}
 
-	await user.statsUpdate({
-		last_daily_timestamp: Date.now()
+	await interaction.defer();
+	let first: Awaited<ReturnType<typeof hardGameContent>>;
+	try {
+		first = await hardGameContent(game, expiresAt);
+	} catch {
+		return restoreUnstartedHardDaily(user, pending.difficulty);
+	}
+	const rowsValid = first.components.length === 0 || first.components.every(row => row.length > 0 && row.length <= 5);
+	const typingImageMissing = game.type === 'typing' && game.status === 'playing' && !first.files?.length;
+	if (!rowsValid || typingImageMissing) {
+		return restoreUnstartedHardDaily(user, pending.difficulty);
+	}
+	const msg = await interaction.replyWithResponse({
+		content: first.content,
+		components: first.components,
+		files: first.files,
+		withResponse: true
 	});
+	if (!msg?.message_id) {
+		return restoreUnstartedHardDaily(user, pending.difficulty);
+	}
 
-	const [question, ...fakeQuestions] = await getRandomTriviaQuestions();
-	if (!question) return reward(rng, user, true);
-	const allAnswers = uniqueArr(rng.shuffle([question, ...fakeQuestions].map(q => q.answers[0])));
+	if (game.status !== 'playing') {
+		return payHardOutcome(rng, user, pending, game);
+	}
 
+	const freshStart =
+		game.status === 'playing' &&
+		remainingMs(expiresAt) >= hardGameTimeoutMs(game) - 2000 &&
+		((game.type === 'wordle' && game.rows.length === 0) ||
+			(game.type === 'buttons' && game.progress === 0) ||
+			game.type === 'typing');
+	if (freshStart) {
+		// Timer starts when the game message is shown, not when the claim was written.
+		expiresAt = Date.now() + hardGameTimeoutMs(game);
+		await updateDailyPendingGame(user.id, game, expiresAt);
+	}
+
+	return new Promise((resolve, reject) => {
+		const collector = createInteractionCollector({
+			interaction,
+			messageId: msg?.message_id,
+			channelId: interaction.channelId,
+			users: [user.id],
+			maxCollected: 80,
+			timeoutMs: remainingMs(expiresAt)
+		});
+
+		const cleanupModal = () => {
+			globalClient.removeListener('interactionCreate', onModalSubmit);
+		};
+
+		const settle = createDailySettle();
+		const finish = async (finalGame: HardGameState, timedOut = false) => {
+			if (!settle.tryBegin()) return;
+			cleanupModal();
+			collector.stop('finished');
+			try {
+				const result = await payHardOutcome(rng, user, pending, finalGame, timedOut);
+				if (result) resolve(result);
+			} catch (err) {
+				reject(err);
+			}
+		};
+
+		const onModalSubmit = async (itx: APIInteraction) => {
+			try {
+				if (itx.type !== InteractionType.ModalSubmit) return;
+				if (!isDailyHardModalId(itx.data.custom_id)) return;
+				const submitter = itx.member?.user.id ?? itx.user?.id;
+				if (submitter !== user.id) return;
+				if (itx.message?.id && msg?.message_id && itx.message.id !== msg.message_id) return;
+				if (isDailyPendingExpired(expiresAt) || game.status !== 'playing') {
+					game = { ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
+					const view = await hardGameContent(game, expiresAt);
+					await respondModalUpdate(itx, view);
+					return finish(game, true);
+				}
+				const typed = extractModalText(itx);
+				if (game.type === 'wordle' && itx.data.custom_id === wordleModalSpec().customId) {
+					game = applyWordleAction(game, { kind: 'submit', guess: typed });
+				} else if (game.type === 'typing' && itx.data.custom_id === typingModalSpec().customId) {
+					game = applyTypingGuess(game, typed);
+				} else {
+					return;
+				}
+				await updateDailyPendingGame(user.id, game, expiresAt);
+				const view = await hardGameContent(game, expiresAt);
+				await respondModalUpdate(itx, view);
+				if (game.status !== 'playing') {
+					return finish(game);
+				}
+			} catch (err) {
+				cleanupModal();
+				collector.stop('error');
+				reject(err);
+			}
+		};
+
+		globalClient.addListener('interactionCreate', onModalSubmit);
+
+		collector.on('collect', async button => {
+			try {
+				if (isDailyPendingExpired(expiresAt)) {
+					await button.silentButtonAck();
+					return finish({ ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE }, true);
+				}
+				const customId = button.customId ?? '';
+				if (
+					(game.type === 'wordle' && isDailyWordleGuessButton(customId)) ||
+					(game.type === 'typing' && isDailyTypingButton(customId))
+				) {
+					try {
+						await showDailyGameModal(
+							globalClient.rest,
+							button,
+							game.type === 'wordle' ? wordleModalSpec() : typingModalSpec()
+						);
+					} catch {
+						if (isUnstartedTimedDaily(game)) {
+							cleanupModal();
+							collector.stop('error');
+							resolve(await restoreUnstartedHardDaily(user, pending.difficulty));
+							return;
+						}
+						throw new Error('Failed to open the daily typing box.');
+					}
+					return;
+				}
+				if (game.type !== 'buttons') {
+					await button.silentButtonAck();
+					return;
+				}
+				const index = parseButtonAction(customId);
+				if (index === null) {
+					await button.silentButtonAck();
+					return;
+				}
+				game = applyButtonAction(game, index);
+				await updateDailyPendingGame(user.id, game, expiresAt);
+				const view = await hardGameContent(game, expiresAt);
+				await button.update({ content: view.content, components: view.components });
+				if (game.status !== 'playing') {
+					return finish(game);
+				}
+			} catch (err) {
+				cleanupModal();
+				collector.stop('error');
+				if (isUnstartedTimedDaily(game)) {
+					resolve(await restoreUnstartedHardDaily(user, pending.difficulty));
+					return;
+				}
+				reject(err);
+			}
+		});
+
+		collector.on('end', async (_collected, reason) => {
+			if (reason === 'finished' || reason === 'error') {
+				cleanupModal();
+				return;
+			}
+			cleanupModal();
+			if (game.status === 'playing') {
+				game = { ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
+				await finish(game, true);
+			}
+		});
+	});
+}
+
+async function playTrivia(rng: RNGProvider, interaction: MInteraction, user: MUser): Promise<CommandResponse> {
+	const questions = pickDailyTrivia(rng, 'easy', 1);
+	const question = questions[0];
 	const choice = await globalClient.pickStringWithButtons({
 		interaction,
-		options: allAnswers.map(answer => ({ label: answer, id: answer })),
-		content: `**${Emoji.Diango} Diango asks ${user.badgedUsername}...** ${question.question}`
+		options: question.choices.map(answer => ({ label: String(answer).slice(0, 80), id: String(answer) })),
+		content: `**${Emoji.Diango} Diango asks...** ${question.question}`
 	});
-	if (!choice) return reward(rng, user, false);
-	return reward(rng, user, question.answers.includes(choice.choice.label!));
+	return giveDailyReward(rng, user, {
+		difficulty: 'easy',
+		correct: isDailyTriviaAnswerCorrect(question, choice?.choice.id ?? choice?.choice.label)
+	});
 }
+
+export async function dailyCommand(
+	rng: RNGProvider,
+	interaction: MInteraction,
+	user: MUser,
+	difficultyInput?: string
+): CommandResponse {
+	const difficulty: DailyDifficulty = parseDailyDifficulty(difficultyInput);
+
+	const pending = await loadDailyPending(user.id);
+	if (pending && !pending.paid) {
+		if (!isDailyPendingExpired(pending.expiresAt) && pending.game.status === 'playing') {
+			return playHardGame(rng, interaction, user, pending);
+		}
+		if (pending.game.status === 'playing') {
+			pending.game = { ...pending.game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
+		}
+		return (
+			(await payHardOutcome(rng, user, pending, pending.game, isDailyPendingExpired(pending.expiresAt))) ??
+			'You already finished this daily.'
+		);
+	}
+
+	const claim = await tryClaimDaily(user);
+	if (!claim.ok) {
+		return cooldownReply(claim.durationUntilReady);
+	}
+
+	if (difficulty === 'easy') return playTrivia(rng, interaction, user);
+
+	const timedDifficulty = difficulty === 'medium' ? 'medium' : 'hard';
+	const game = timedDifficulty === 'medium' ? createButtonGameState(rng) : createHardGame(rng);
+	const claimedAt = Date.now();
+	const pendingRow: DailyPendingRow = {
+		userId: user.id,
+		claimedAt,
+		difficulty: timedDifficulty,
+		game,
+		expiresAt: claimedAt + hardGameTimeoutMs(game),
+		paid: false
+	};
+	await saveDailyPending(pendingRow);
+	return playHardGame(rng, interaction, user, pendingRow);
+}
+
+export { parseDailyDifficulty };

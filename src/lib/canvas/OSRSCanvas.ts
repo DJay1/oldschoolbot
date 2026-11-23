@@ -2,7 +2,7 @@ import { isPlaceholderItem, PLACEHOLDER_FIRST_ID } from '@/lib/bso/bankPlacehold
 import { applyCustomItemEffects } from '@/lib/bso/canvas/customItemEffects.js';
 import { handleSlayerMaskGlow } from '@/lib/bso/skills/slayer/slayerMaskHelms.js';
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { formatItemStackQuantity, generateHexColorForCashStack } from '@oldschoolgg/toolkit';
 import {
@@ -480,6 +480,29 @@ export class OSRSCanvas {
 		}
 
 		return OSRSCanvas.loadLocalIcon(itemID, networkTimeoutMs);
+	}
+
+	public static isGeneratedPlaceholderIcon(image: Canvas | CanvasImage): boolean {
+		return OSRSCanvas.placeholderIcon !== null && image === OSRSCanvas.placeholderIcon;
+	}
+
+	/** True when the item icon is already on the spritesheet or a local disk file (no network fetch). */
+	public static async itemHasLocalIcon(itemID: number): Promise<boolean> {
+		await CanvasModule.waitTillReady();
+		if (OSRSCanvas.getItemSpriteData(itemID)) return true;
+		const paths = [
+			path.join(OSRSCanvas.ITEM_ICON_CACHE_DIR, `${itemID}.png`),
+			path.join(OSRSCanvas.ITEM_BSO_ICON_DIR, `${itemID}.png`)
+		];
+		const hits = await Promise.all(
+			paths.map(file =>
+				access(file).then(
+					() => true,
+					() => false
+				)
+			)
+		);
+		return hits.some(Boolean);
 	}
 
 	// If the image isnt in the spritesheet, use a local image instead.
