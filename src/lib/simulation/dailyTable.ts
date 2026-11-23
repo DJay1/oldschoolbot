@@ -3,9 +3,9 @@ import { MysteryBoxes } from '@/lib/bso/openables/tables.js';
 import { Bank, LootTable } from 'oldschooljs';
 
 /** Guaranteed coins on every daily table roll. 5x the old 100k-1m range. */
-export const DAILY_GUARANTEED_COINS = [500_000, 5_000_000] as const;
+export const DAILY_GUARANTEED_COINS: [number, number] = [500_000, 5_000_000];
 /** Extra coins if the daily table hits the coins slot. 5x the old 100k-500k range. */
-export const DAILY_BONUS_COINS = [500_000, 2_500_000] as const;
+export const DAILY_BONUS_COINS: [number, number] = [500_000, 2_500_000];
 
 const RareTable = new LootTable()
 	.add('Hornwood helm')

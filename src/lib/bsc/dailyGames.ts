@@ -1,3 +1,4 @@
+import type { REST } from '@discordjs/rest';
 import { ComponentType, InteractionResponseType, Routes } from '@oldschoolgg/discord';
 import { Items, itemID } from 'oldschooljs';
 
@@ -392,7 +393,7 @@ export function resolveTypingItem(picked: DailyTypingItem | string): DailyTyping
 	return (
 		DAILY_TYPING_ITEMS.find(item => item.name === picked) ?? {
 			name: picked,
-			id: Items.get(picked)?.id ?? 0,
+			id: Items.getItem(picked)?.id ?? 0,
 			aliases: []
 		}
 	);
@@ -403,7 +404,7 @@ export function createTypingState(rng: RNGProvider): TypingGameState {
 	return {
 		type: 'typing',
 		phrase: item.name,
-		itemID: item.id || Items.get(item.name)?.id,
+		itemID: item.id || Items.getItem(item.name)?.id,
 		status: 'playing'
 	};
 }
@@ -419,7 +420,7 @@ export function applyTypingGuess(state: TypingGameState, raw: string): TypingGam
 export function typingItemId(state: string | TypingGameState): number | undefined {
 	if (typeof state !== 'string' && state.itemID) return state.itemID;
 	const name = typeof state === 'string' ? state : state.phrase;
-	return typingItemByName(name)?.id ?? Items.get(name)?.id;
+	return typingItemByName(name)?.id ?? Items.getItem(name)?.id;
 }
 
 export function typingGameRows(): { id: string; label: string }[][] {
@@ -496,13 +497,18 @@ export function typingModalSpec() {
 	};
 }
 
-export function extractModalText(itx: {
-	data?: { components?: readonly { components?: readonly { type: number; value?: string }[] }[] };
-}): string {
+export function extractModalText(itx: { data?: { components?: readonly unknown[] } }): string {
 	for (const row of itx.data?.components ?? []) {
-		for (const comp of row.components ?? []) {
-			if (comp.type === ComponentType.TextInput && typeof comp.value === 'string') {
-				return comp.value;
+		if (!row || typeof row !== 'object') continue;
+		const nested =
+			'components' in row && Array.isArray((row as { components?: unknown }).components)
+				? (row as { components: unknown[] }).components
+				: [row];
+		for (const comp of nested) {
+			if (!comp || typeof comp !== 'object') continue;
+			const typed = comp as { type?: number; value?: string };
+			if (typed.type === ComponentType.TextInput && typeof typed.value === 'string') {
+				return typed.value;
 			}
 		}
 	}
@@ -573,7 +579,7 @@ export function dailyModalIsValid(modal: DailyModalSpec): boolean {
 
 /** Open a Hard daily modal without relying on Interaction.showModal (that method may be missing from a stale package build). */
 export async function showDailyGameModal(
-	rest: { post: (route: string, options: unknown) => Promise<unknown> },
+	rest: Pick<REST, 'post'>,
 	interaction: { id: string; rawInteraction: { token: string } },
 	modal: DailyModalSpec
 ): Promise<void> {

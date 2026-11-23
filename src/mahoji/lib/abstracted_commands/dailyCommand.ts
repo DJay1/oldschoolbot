@@ -317,7 +317,7 @@ async function playHardGame(
 	let expiresAt = pending.expiresAt;
 	if (isDailyPendingExpired(expiresAt) && game.status === 'playing') {
 		game = { ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE };
-		return payHardOutcome(rng, user, pending, game, true);
+		return (await payHardOutcome(rng, user, pending, game, true)) ?? 'You already finished this daily.';
 	}
 
 	await interaction.defer();
@@ -343,7 +343,7 @@ async function playHardGame(
 	}
 
 	if (game.status !== 'playing') {
-		return payHardOutcome(rng, user, pending, game);
+		return (await payHardOutcome(rng, user, pending, game)) ?? 'You already finished this daily.';
 	}
 
 	const freshStart =
