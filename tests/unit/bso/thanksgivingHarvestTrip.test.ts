@@ -27,6 +27,9 @@ describe('/thanksgiving harvest focused trip', () => {
 		// But less total value than a normal trip (10 bundle-equivalents per offer-worth).
 		expect(thanksgivingHarvestExpectedParts(hour, 'bundles', plain)).toBeLessThan(offers * 10);
 		expect(thanksgivingHarvestExpectedParts(9 * Time.Minute, 'bundles', plain)).toBe(0);
+		// Pace 3 is 2x the post-halving 1.5, and the 70% harvest trip scales with it.
+		expect(offers).toBeCloseTo(1.7548, 3);
+		expect(thanksgivingHarvestExpectedParts(hour, 'baskets', plain)).toBeCloseTo(1.7548 * 0.7 * 2, 3);
 	});
 
 	test('double loot doubles it and Harvest Blessing adds 15%, like normal trips', () => {

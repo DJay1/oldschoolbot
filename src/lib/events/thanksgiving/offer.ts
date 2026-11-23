@@ -14,6 +14,7 @@ import {
 	formatLaboonFishingRateLine,
 	formatOfferReply,
 	formatThanksgivingBaseRatesLine,
+	formatThanksgivingTripPartsRateLine,
 	GOBBLES_IDS,
 	GOBBLES_PITY_OFFERS,
 	hasHarvestBlessing,
@@ -247,6 +248,7 @@ export async function thanksgivingStatus(user: MUser) {
 		formatHarvestBlessingStatusLine(hasHarvestBlessing(user)),
 		`**Harvest turkey:** ${bank.amount(ThanksgivingItem.HARVEST_TURKEY).toLocaleString()}`,
 		harvestFeastStatusLine(user.id),
+		formatThanksgivingTripPartsRateLine(),
 		formatThanksgivingBaseRatesLine(),
 		formatLaboonFishingRateLine()
 	];

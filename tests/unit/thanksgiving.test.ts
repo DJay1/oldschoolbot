@@ -48,10 +48,10 @@ describe('The Straw Hat Harvest', () => {
 		expect(isThanksgivingActive()).toBe(false);
 	});
 
-	test('trip parts follow ~1.5x Launch pace (halved in round 3)', () => {
+	test('trip parts follow ~3x Launch pace (restored 2x from the post-halving 1.5)', () => {
 		const perHour = thanksgivingExpectedOffersFromTrip(60 * 60_000, { doubleLoot: false, blessing: false });
-		expect(perHour).toBeGreaterThan(0.75);
-		expect(perHour).toBeLessThan(1.25);
+		expect(perHour).toBeGreaterThan(1.5);
+		expect(perHour).toBeLessThan(2);
 		expect(thanksgivingExpectedOffersFromTrip(9 * 60_000, { doubleLoot: false, blessing: false })).toBe(0);
 		const doubled = thanksgivingExpectedOffersFromTrip(60 * 60_000, { doubleLoot: true, blessing: false });
 		expect(doubled).toBeCloseTo(perHour * 2);

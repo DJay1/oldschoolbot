@@ -40,7 +40,7 @@ export const OFFER_RATES = {
 	turkey: 50
 } as const;
 
-/** Lowered from 300 with the halved trip drops (round 3), so a steady player still reaches it. */
+/** Kept at 150 when trip drops were restored to pace 3, so a 10-hour day can still reach it during the event. */
 export const GOBBLES_PITY_OFFERS = 150;
 export const LABOON_FISHING_RATE_PER_MINUTE = 3000;
 export const LABOON_FISHING_MIN_TRIP_MS = 5 * Time.Minute;
@@ -111,8 +111,8 @@ export const THANKSGIVING_MIN_TRIP_MS = 10 * Time.Minute;
 const LAUNCH_BASE_MINUTES = 20;
 const LAUNCH_BASELINE_RATE_MINUTES = 112;
 const LAUNCH_TRIP_EXPONENT = 1.08;
-/** Round 3: halved from 3 (Bountiful cornucopia recipe stays 5 bundles + 1 basket). */
-export const THANKSGIVING_PACE_MULTIPLIER = 1.5;
+/** Restored to 3 (2x the post-halving 1.5). Bountiful cornucopia recipe stays 5 bundles + 1 basket. */
+export const THANKSGIVING_PACE_MULTIPLIER = 3;
 export const BUNDLES_PER_OFFER = 5;
 export const BASKETS_PER_OFFER = 1;
 
@@ -446,6 +446,20 @@ export function offerOddsDenominator(key: OfferRareKey, { streak, blessing }: { 
 	if (streak && STREAK_KEYS.includes(key)) return Math.round(base / GOBBLE_STREAK_RARE_MULTIPLIER);
 	if (blessing && BLESSING_KEYS.includes(key)) return Math.round(base / HARVEST_BLESSING_EVENT_MULTIPLIER);
 	return base;
+}
+
+/** Typical trip part rates for `/thanksgiving status` (no Double Loot, no Harvest Blessing). */
+export function formatThanksgivingTripPartsRateLine(): string {
+	const offers = thanksgivingExpectedOffersFromTrip(60 * Time.Minute, { doubleLoot: false, blessing: false });
+	const bundles = offers * BUNDLES_PER_OFFER;
+	const baskets = offers * BASKETS_PER_OFFER;
+	const minutesPerCornucopia = offers > 0 ? 60 / offers : 0;
+	const minTrip = THANKSGIVING_MIN_TRIP_MS / Time.Minute;
+	const harvestPercent = Math.round(THANKSGIVING_HARVEST_DISCOUNT * 100);
+	return [
+		`**Trip drops:** trips of ${minTrip} minutes or more can drop Harvest bundles and Wicker baskets.`,
+		`-# A 60-minute trip typically gives about ${bundles.toFixed(1)} Harvest bundles and ${baskets.toFixed(1)} Wicker baskets (about ${Math.round(minutesPerCornucopia)} minutes per Bountiful cornucopia). \`/thanksgiving harvest\` pays ${harvestPercent}% of that value in one part.`
+	].join('\n');
 }
 
 /** Base 1/N rates for every Bountiful cornucopia offer drop. */
