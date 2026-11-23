@@ -83,9 +83,23 @@ test('the highest Discord role wins and a blank role is skipped', () => {
 	expect(bscPatronLevelFromRoles(['999'])).toBe(0);
 	expect(bscPatronLevelFromRoles(['biggest-unconfigured'])).toBe(0);
 	expect(bscPatronTiersMissingRoles().map(tier => tier.key)).toEqual(['biggestofdogs']);
-	expect(bscPatronRoleChanges(['111', '444', '555'], 5)).toEqual({ add: null, remove: ['111', '444'] });
-	expect(bscPatronRoleChanges(['222'], 4)).toEqual({ add: '444', remove: ['222'] });
+	expect(bscPatronRoleChanges(['111', '444', '555'], 5)).toEqual({ add: null, remove: [] });
+	expect(bscPatronRoleChanges(['222'], 4)).toEqual({ add: '444', remove: [] });
 	expect(bscPatronRoleChanges(['444'], 0)).toEqual({ add: null, remove: ['444'] });
+});
+
+test('role sync keeps lower patron roles and only removes ones above the new level', () => {
+	process.env.PATRON_ROLE_PUP = '111';
+	process.env.PATRON_ROLE_GOODBOY = '222';
+	process.env.PATRON_ROLE_TOPDOG = '333';
+	process.env.PATRON_ROLE_ALPHA = '444';
+	process.env.PATRON_ROLE_PACKLEADER = '555';
+	process.env.PATRON_ROLE_BIGGESTOFDOGS = '666';
+
+	expect(bscPatronRoleChanges(['444', '555', '666'], 6)).toEqual({ add: null, remove: [] });
+	expect(bscPatronRoleChanges(['444', '555'], 6)).toEqual({ add: '666', remove: [] });
+	expect(bscPatronRoleChanges(['444', '555', '666'], 4)).toEqual({ add: null, remove: ['555', '666'] });
+	expect(bscPatronRoleChanges(['222', '666'], 4)).toEqual({ add: '444', remove: ['666'] });
 });
 
 test('trip length and grand exchange slots follow the ladder totals', () => {

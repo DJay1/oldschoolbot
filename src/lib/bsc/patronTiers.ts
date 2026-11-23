@@ -341,7 +341,7 @@ export interface BscPatronRoleChange {
 	remove: string[];
 }
 
-/** Keep the highest tier role and drop the other configured tier roles. */
+/** Keep the decided tier role and any lower configured tier roles. Remove only roles above the decided level. */
 export function bscPatronRoleChanges(currentRoleIds: readonly string[], level: number): BscPatronRoleChange {
 	const target = bscPatronTierByLevel(level);
 	const addId = target ? bscPatronRoleId(target) : null;
@@ -350,6 +350,7 @@ export function bscPatronRoleChanges(currentRoleIds: readonly string[], level: n
 		const roleId = bscPatronRoleId(tier);
 		if (!roleId || !currentRoleIds.includes(roleId)) continue;
 		if (roleId === addId) continue;
+		if (level > 0 && tier.level <= level) continue;
 		remove.push(roleId);
 	}
 	const add = addId && !currentRoleIds.includes(addId) ? addId : null;
