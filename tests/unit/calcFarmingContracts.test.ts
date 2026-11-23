@@ -190,4 +190,38 @@ describe('calcFarmingContracts', () => {
 		expect(medium).toBe(6);
 		expect(high).toBe(3);
 	});
+
+	it('Hard contracts roll a variety of plants, not only Whiteberry', () => {
+		const user = mockMUser({
+			skills_farming: convertLVLtoXP(99)
+		});
+		const counts = new Map<string, number>();
+		for (let i = 0; i < 400; i++) {
+			const [plant] = getPlantToGrow({
+				user,
+				contractLevel: 'hard',
+				ignorePlant: null
+			});
+			counts.set(plant, (counts.get(plant) ?? 0) + 1);
+		}
+		const unique = [...counts.keys()];
+		expect(unique.length).toBeGreaterThan(8);
+		expect(counts.get('Whiteberry') ?? 0).toBeLessThan(80);
+		expect(unique.some(name => name !== 'Whiteberry')).toBe(true);
+	});
+
+	it('Hard contracts never reroll the ignored plant', () => {
+		const user = mockMUser({
+			skills_farming: convertLVLtoXP(99)
+		});
+		for (let i = 0; i < 200; i++) {
+			const [plant] = getPlantToGrow({
+				user,
+				contractLevel: 'hard',
+				ignorePlant: 'Whiteberry'
+			});
+			expect(plant).not.toBe('Whiteberry');
+		}
+	});
+
 });
