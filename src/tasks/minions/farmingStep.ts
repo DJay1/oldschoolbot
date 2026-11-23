@@ -120,7 +120,13 @@ interface AwardHarvestXPResult {
 
 interface ContractCompletionResult {
 	completed: boolean;
-	message?: string;
+	contractsCompleted?: number;
+}
+
+export function formatFarmingContractRewardMessage(contractsCompleted: number, seedPackCount: number): string {
+	const packWord = seedPackCount === 1 ? 'Seed pack' : 'Seed packs';
+	const openWord = seedPackCount === 1 ? 'this Seed pack' : 'these Seed packs';
+	return `You've completed your contract and I have rewarded you with ${seedPackCount} ${packWord}. Please open ${openWord} before asking for a new contract!\nYou have completed ${contractsCompleted} farming contracts.`;
 }
 
 function getCompostXp(upgradeType: CropUpgradeType | null): number {
@@ -132,7 +138,7 @@ function getCompostXp(upgradeType: CropUpgradeType | null): number {
 
 const plopperBoostPercent = 100;
 
-async function applyFarmingLootBoosts({
+export async function applyFarmingLootBoosts({
 	user,
 	method,
 	plant,
@@ -763,7 +769,7 @@ async function applySpecialFarmingLoot(options: {
 	return loot;
 }
 
-async function applyBSOPostHarvestLoot(options: {
+export async function applyBSOPostHarvestLoot(options: {
 	user: MUser;
 	rng: RNGProvider;
 	loot: Bank;
@@ -826,7 +832,7 @@ async function applyBSOPostHarvestLoot(options: {
 	}
 }
 
-async function completeFarmingContractIfEligible(options: {
+export async function completeFarmingContractIfEligible(options: {
 	user: MUser;
 	loot: Bank;
 	plantToHarvest: FarmingPlant;
@@ -836,9 +842,6 @@ async function completeFarmingContractIfEligible(options: {
 	const { contract: currentContract } = user.farmingContract();
 	const { contractsCompleted } = currentContract;
 
-	const message = `You've completed your contract and I have rewarded you with 1 Seed pack. Please open this Seed pack before asking for a new contract!\nYou have completed ${
-		contractsCompleted + 1
-	} farming contracts.`;
 	if (currentContract.hasContract && plantToHarvest.name === currentContract.plantToGrow && alivePlants > 0) {
 		const farmingContractUpdate: IFarmingContract = {
 			hasContract: false,
@@ -851,7 +854,7 @@ async function completeFarmingContractIfEligible(options: {
 		await user.updateFarmingContract(farmingContractUpdate);
 		loot.add('Seed pack');
 
-		return { completed: true, message };
+		return { completed: true, contractsCompleted: contractsCompleted + 1 };
 	}
 
 	return { completed: false };
@@ -1077,6 +1080,8 @@ export async function executeFarmingStep({
 		[getFarmingKeyFromName(plant.seedType)]: newPatch
 	});
 
+	const contractCompletion = await completeFarmingContractIfEligible({ user, loot, plantToHarvest, alivePlants });
+
 	const lootBoosts: string[] = [];
 	await applyFarmingLootBoosts({
 		user,
@@ -1087,8 +1092,6 @@ export async function executeFarmingStep({
 		boosts: lootBoosts
 	});
 	boosts.push(...lootBoosts);
-
-	const contractCompletion = await completeFarmingContractIfEligible({ user, loot, plantToHarvest, alivePlants });
 
 	await applyBSOPostHarvestLoot({
 		user,
@@ -1111,6 +1114,10 @@ export async function executeFarmingStep({
 		? 'The patches have been cleared. They are ready to have new seeds planted.'
 		: `${user.minionName} tells you to come back after your plants have finished growing!`;
 	infoStr.push(`\n${reminder}`);
+
+	const janeMessage = contractCompletion.completed
+		? formatFarmingContractRewardMessage(contractCompletion.contractsCompleted ?? 0, loot.amount('Seed pack'))
+		: undefined;
 
 	const summary: FarmingStepSummary = {
 		planted: planting ? { itemName: plant.name, quantity } : undefined,
@@ -1140,14 +1147,14 @@ export async function executeFarmingStep({
 		xpMessages,
 		boosts: boosts.length > 0 ? [...boosts] : undefined,
 		contractCompleted: contractCompletion.completed,
-		attachmentMessage: contractCompletion.message ? `Jane: ${contractCompletion.message}` : undefined
+		attachmentMessage: janeMessage ? `Jane: ${janeMessage}` : undefined
 	};
 
 	await persistHarvestResult({ user, loot, harvestedPid });
 
-	const attachment = contractCompletion.message
+	const attachment = janeMessage
 		? await chatHeadImage({
-				content: contractCompletion.message,
+				content: janeMessage,
 				head: 'jane'
 			})
 		: undefined;
