@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest';
 import {
 	FARMING_CORNUCOPIA_MIN_GROWTH_MINUTES,
 	FARMING_CORNUCOPIA_ONE_IN,
+	FARMING_CORNUCOPIA_SUCCESSES,
 	type FarmingHarvestedPatch,
 	farmingCornucopiaChance,
 	farmingPatchQualifies,
@@ -14,11 +15,12 @@ const lose = { randInt: (_min: number, max: number) => max };
 const herb: FarmingHarvestedPatch = { itemName: 'Torstol', alive: 9, growthMinutes: 80, fullyGrown: true };
 
 describe('Straw Hat Harvest farming cornucopia (per patch)', () => {
-	test('1 in 15 per patch, Harvest Blessing x1.15', () => {
+	test('2 in 15 per patch, Harvest Blessing x1.15', () => {
 		expect(FARMING_CORNUCOPIA_ONE_IN).toBe(15);
+		expect(FARMING_CORNUCOPIA_SUCCESSES).toBe(2);
 		expect(FARMING_CORNUCOPIA_MIN_GROWTH_MINUTES).toBe(60);
-		expect(farmingCornucopiaChance(false)).toBeCloseTo(1 / 15);
-		expect(farmingCornucopiaChance(true)).toBeCloseTo(1.15 / 15);
+		expect(farmingCornucopiaChance(false)).toBeCloseTo(2 / 15);
+		expect(farmingCornucopiaChance(true)).toBeCloseTo((2 / 15) * 1.15);
 	});
 
 	test('only fully grown, live, 60+ minute crops qualify', () => {
@@ -40,7 +42,7 @@ describe('Straw Hat Harvest farming cornucopia (per patch)', () => {
 		});
 	});
 
-	test('drop rate matches 1/15 over many patches', () => {
+	test('drop rate matches 2/15 over many patches', () => {
 		let seed = 99;
 		const rng = {
 			randInt: (min: number, max: number) => {
@@ -51,7 +53,7 @@ describe('Straw Hat Harvest farming cornucopia (per patch)', () => {
 		const patches = Array.from({ length: 30000 }, () => herb);
 		const { rolls, cornucopias } = rollFarmingCornucopias({ patches, blessing: false, rng });
 		expect(rolls).toBe(30000);
-		expect(cornucopias / rolls).toBeGreaterThan((1 / 15) * 0.9);
-		expect(cornucopias / rolls).toBeLessThan((1 / 15) * 1.1);
+		expect(cornucopias / rolls).toBeGreaterThan((2 / 15) * 0.9);
+		expect(cornucopias / rolls).toBeLessThan((2 / 15) * 1.1);
 	});
 });

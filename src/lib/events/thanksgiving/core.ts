@@ -233,8 +233,10 @@ export function rollThanksgivingHarvestParts({
 
 /* ---------- Farming: whole Bountiful cornucopias from harvested patches ---------- */
 
-/** Each qualifying harvested patch has a 1 in 15 roll. Harvest Blessing applies, Double Loot does not. */
+/** Each qualifying harvested patch rolls at SUCCESSES / ONE_IN. Harvest Blessing applies, Double Loot does not. */
 export const FARMING_CORNUCOPIA_ONE_IN = 15;
+/** Doubled with trip parts (was 1, i.e. 1 in 15). */
+export const FARMING_CORNUCOPIA_SUCCESSES = 2;
 /** Only crops whose base grow time (farming data) is at least this long qualify, so quick crops cannot be spammed. */
 export const FARMING_CORNUCOPIA_MIN_GROWTH_MINUTES = 60;
 
@@ -246,7 +248,7 @@ export interface FarmingHarvestedPatch {
 }
 
 export function farmingCornucopiaChance(blessing: boolean): number {
-	return (1 / FARMING_CORNUCOPIA_ONE_IN) * (blessing ? HARVEST_BLESSING_EVENT_MULTIPLIER : 1);
+	return (FARMING_CORNUCOPIA_SUCCESSES / FARMING_CORNUCOPIA_ONE_IN) * (blessing ? HARVEST_BLESSING_EVENT_MULTIPLIER : 1);
 }
 
 /** A real harvest of a fully grown, long crop with at least one live plant. Dead, cleared or early patches never count. */
@@ -458,7 +460,8 @@ export function formatThanksgivingTripPartsRateLine(): string {
 	const harvestPercent = Math.round(THANKSGIVING_HARVEST_DISCOUNT * 100);
 	return [
 		`**Trip drops:** trips of ${minTrip} minutes or more can drop Harvest bundles and Wicker baskets.`,
-		`-# A 60-minute trip typically gives about ${bundles.toFixed(1)} Harvest bundles and ${baskets.toFixed(1)} Wicker baskets (about ${Math.round(minutesPerCornucopia)} minutes per Bountiful cornucopia). \`/thanksgiving harvest\` pays ${harvestPercent}% of that value in one part.`
+		`-# A 60-minute trip typically gives about ${bundles.toFixed(1)} Harvest bundles and ${baskets.toFixed(1)} Wicker baskets (about ${Math.round(minutesPerCornucopia)} minutes per Bountiful cornucopia). \`/thanksgiving harvest\` pays ${harvestPercent}% of that value in one part.`,
+		`-# Harvested patches of crops that take 60+ minutes to grow have a ${FARMING_CORNUCOPIA_SUCCESSES} in ${FARMING_CORNUCOPIA_ONE_IN} chance at a whole Bountiful cornucopia (Harvest Blessing applies, Double Loot does not).`
 	].join('\n');
 }
 

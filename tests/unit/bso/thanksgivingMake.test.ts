@@ -227,6 +227,9 @@ describe('Bountiful cornucopia /create all QoL', () => {
 		expect(status).toContain('Trip drops');
 		expect(status).toContain('Harvest bundles and Wicker baskets');
 		expect(formatThanksgivingTripPartsRateLine()).toContain('70%');
+		expect(formatThanksgivingTripPartsRateLine()).toContain('2 in 15');
+		expect(formatThanksgivingTripPartsRateLine()).toContain('Bountiful cornucopia');
+		expect(status).toContain('2 in 15');
 		expect(status).toContain('Harvest Blessing');
 		expect(formatLaboonFishingRateLine()).toContain('Laboon');
 		expect(canMake).toContain('Can make: ');
