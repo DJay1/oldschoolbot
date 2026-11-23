@@ -223,7 +223,7 @@ describe('Wordle game', () => {
 		expect(DAILY_WORDLE_WORDS).toContain('CORGO');
 		expect(DAILY_WORDLE_WORDS).toContain('HYDRA');
 		expect(DAILY_WORDLE_WORDS).toContain('AHRIM');
-		expect(DAILY_WORDLE_GUESSES).toBe(4);
+		expect(DAILY_WORDLE_GUESSES).toBe(5);
 		expect(DAILY_WORDLE_MS).toBe(90_000);
 		for (const word of commonEnglish) {
 			expect(DAILY_WORDLE_WORDS).not.toContain(word);
@@ -244,18 +244,23 @@ describe('Wordle game', () => {
 		expect(marks.some(mark => mark !== 'absent')).toBe(true);
 	});
 
-	test('typed guesses are required, and invalid or short guesses do not consume a try', () => {
+	test('typed guesses are required, and wrong length or non-letters do not consume a try', () => {
 		let state = createWordleState(mockRng([], ['CORGO']));
 		state = applyWordleAction(state, { kind: 'submit', guess: 'A' });
 		expect(state.rows).toHaveLength(0);
 		expect(state.notice).toContain('5 letters');
-		state = applyWordleAction(state, { kind: 'submit', guess: 'MAGIC' });
-		expect(isAllowedWordleGuess('MAGIC')).toBe(false);
+		state = applyWordleAction(state, { kind: 'submit', guess: 'ABCDEF' });
 		expect(state.rows).toHaveLength(0);
-		expect(state.notice).toContain('Not in the list');
+		expect(isAllowedWordleGuess('ABCDEF')).toBe(false);
+		expect(isAllowedWordleGuess('MAGIC')).toBe(true);
+		expect(isAllowedWordleGuess('SHARK')).toBe(true);
+		state = applyWordleAction(state, { kind: 'submit', guess: 'MAGIC' });
+		expect(state.rows).toHaveLength(1);
+		expect(state.status).toBe('playing');
+		expect(state.notice).toBeUndefined();
 	});
 
-	test('a correct typed guess wins, and four misses lose without changing the answer', () => {
+	test('a correct typed guess wins, and five misses lose without changing the answer', () => {
 		let state = createWordleState(mockRng([], ['CORGO']));
 		expect(state.answer).toBe('CORGO');
 		state = applyWordleAction(state, { kind: 'submit', guess: 'corgo' });
@@ -279,9 +284,11 @@ describe('Wordle game', () => {
 		expect(rows).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
 		expect(hardGameTimeoutMs(createWordleState(mockRng([], ['CORGO'])))).toBe(DAILY_WORDLE_MS);
 		const text = formatWordleMessage(createWordleState(mockRng([], ['CORGO'])), DAILY_WORDLE_MS);
-		expect(text).toContain('4 tries');
-		expect(text).toContain('type your answer');
+		expect(text).toContain('5 tries');
+		expect(text).toContain('Any 5-letter word counts as a guess.');
+		expect(text).not.toContain('4 tries');
 		expect(text).not.toContain('6 tries');
+		expect(text).not.toContain('Not in the list');
 	});
 });
 
@@ -389,7 +396,7 @@ describe('daily messages', () => {
 			difficulty: 'hard',
 			success: true,
 			game: 'wordle',
-			detail: 'You got CORGO in 4 tries.'
+			detail: 'You got CORGO in 5 tries.'
 		};
 		const lootLine =
 			"10000000000x Coins, 1x Double XP token, 1x Double loot token, 20x Tradeable Mystery Box, 20x Untradeable Mystery Box, 20x Equippable mystery box, 20x Spinning plate, 1x Hornwood helm, 1x Disk of returning, 1x Diango's claws, 1x Rainbow scarf";

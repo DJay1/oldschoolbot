@@ -5,7 +5,7 @@ import { createCanvas } from '@/lib/canvas/canvasUtil.js';
 import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
 
 export const DAILY_WORDLE_LENGTH = 5;
-export const DAILY_WORDLE_GUESSES = 4;
+export const DAILY_WORDLE_GUESSES = 5;
 export const DAILY_WORDLE_MS = 90 * 1000;
 export const DAILY_BUTTON_GAME_MS = 20 * 1000;
 export const DAILY_TIMEOUT_NOTICE = 'Time ran out.';
@@ -62,8 +62,6 @@ export const DAILY_WORDLE_WORDS = [
 	'AKUMU',
 	'ARRAV'
 ] as const;
-
-const WORDLE_WORD_SET = new Set<string>(DAILY_WORDLE_WORDS);
 
 /** Clusters of similar-looking OSRS names. Decoys are taken from the same cluster as a target. */
 export const DAILY_BUTTON_CLUSTERS: readonly (readonly string[])[] = [
@@ -180,7 +178,7 @@ export function normalizeWordleGuess(raw: string): string {
 }
 
 export function isAllowedWordleGuess(guess: string): boolean {
-	return guess.length === DAILY_WORDLE_LENGTH && WORDLE_WORD_SET.has(guess);
+	return normalizeWordleGuess(guess).length === DAILY_WORDLE_LENGTH;
 }
 
 export function scoreWordleGuess(answer: string, guess: string): WordleMark[] {
@@ -231,11 +229,7 @@ export function applyWordleAction(state: WordleState, action: WordleAction): Wor
 	const next: WordleState = { ...state, rows: [...state.rows], notice: undefined };
 	const guess = normalizeWordleGuess(action.guess);
 	if (guess.length !== DAILY_WORDLE_LENGTH) {
-		next.notice = 'Type all 5 letters, then press Guess.';
-		return next;
-	}
-	if (!isAllowedWordleGuess(guess)) {
-		next.notice = 'Not in the list. Try a 5-letter OSRS name.';
+		next.notice = 'Type exactly 5 letters.';
 		return next;
 	}
 	const marks = scoreWordleGuess(next.answer, guess);
@@ -260,7 +254,7 @@ export function wordleGuessRows(): { id: string; label: string }[][] {
 export function formatWordleMessage(state: WordleState, remainingMs: number): string {
 	const lines = [
 		'**Hard daily: Wordle**',
-		`Guess the 5-letter OSRS name in ${DAILY_WORDLE_GUESSES} tries. Press Guess and type your answer.`
+		`Guess the 5-letter OSRS name in ${DAILY_WORDLE_GUESSES} tries. Any 5-letter word counts as a guess.`
 	];
 	if (state.status === 'playing') {
 		lines.push(`Time left: ${formatSeconds(remainingMs)}`);
@@ -480,7 +474,7 @@ export function wordleModalSpec() {
 		title: 'Hard daily: Wordle',
 		textInput: {
 			customId: DAILY_WORDLE_MODAL_INPUT_ID,
-			label: '5-letter OSRS name',
+			label: '5-letter word',
 			placeholder: 'Type your guess',
 			minLength: 5,
 			maxLength: 5
@@ -634,5 +628,5 @@ export function hardestDailyRewardPreview(maxLootLine: string): string {
 		'🐧 Skipper negotiated you 50% more coins!',
 		'🎉 Launch event: your mystery boxes were tripled!'
 	];
-	return `${tokenLines.join('\n')}\n${bonuses.join('')}**Hard daily: Wordle — You got CORGO in 4 tries.**\nThat's correct! I've picked you some random items as a reward...\n\nYou received ${maxLootLine}`;
+	return `${tokenLines.join('\n')}\n${bonuses.join('')}**Hard daily: Wordle — You got CORGO in 5 tries.**\nThat's correct! I've picked you some random items as a reward...\n\nYou received ${maxLootLine}`;
 }
