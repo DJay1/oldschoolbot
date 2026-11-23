@@ -1,6 +1,6 @@
 import { Bank } from 'oldschooljs';
 
-import { BASKETS_PER_OFFER, BUNDLES_PER_OFFER, isThanksgivingActive, THANKSGIVING_MIN_TRIP_MS } from './core.js';
+import { BASKETS_PER_OFFER, BUNDLES_PER_OFFER } from './core.js';
 import { ThanksgivingItem } from './items.js';
 
 export const CORNUCOPIA_CREATE_ITEM = 'Bountiful cornucopia';
@@ -315,40 +315,6 @@ export function cornucopiaQuantityChoices(bank: Bank, typed?: number): { name: s
 export const THANKS_MAKE_PREFIX = 'THANKS_MAKE:';
 export const THANKS_MAKE_OFFER_PREFIX = 'THANKS_MAKE_OFFER:';
 
-const pendingTripStarts = new Map<string, true>();
-
-export function markThanksgivingTripStarted(userId: string, durationMs: number, now = Date.now()): void {
-	if (!isThanksgivingActive(now) || durationMs < THANKSGIVING_MIN_TRIP_MS) return;
-	pendingTripStarts.set(userId, true);
-}
-
-export function takeThanksgivingTripStartLine(bank: Bank, userId: string): string | null {
-	if (!pendingTripStarts.delete(userId)) return null;
-	return formatThanksgivingShortOnLine(bank);
-}
-
-export function clearThanksgivingTripStartMark(userId: string): void {
-	pendingTripStarts.delete(userId);
-}
-
-export function formatThanksgivingShortOnLine(bank: Bank): string {
-	const { bundles, baskets } = cornucopiaPartsHeld(bank);
-	const maxMakeable = cornucopiaMaxMakeable(bundles, baskets);
-	const leftoverBundles = bundles - maxMakeable * BUNDLES_PER_OFFER;
-	const leftoverBaskets = baskets - maxMakeable * BASKETS_PER_OFFER;
-	const missingBundles = Math.max(0, BUNDLES_PER_OFFER - leftoverBundles);
-	const missingBaskets = Math.max(0, BASKETS_PER_OFFER - leftoverBaskets);
-	const needBits: string[] = [];
-	if (missingBundles > 0) needBits.push(qty('Harvest bundle', missingBundles));
-	if (missingBaskets > 0) needBits.push(qty('Wicker basket', missingBaskets));
-	if (maxMakeable >= 1) {
-		const usesAll = leftoverBundles === 0 && leftoverBaskets === 0;
-		const need = usesAll ? 'that uses all your parts' : `need ${needBits.join(' and ')} more for another`;
-		return `You have enough parts for ${qty('Bountiful cornucopia', maxMakeable)}; ${need}.`;
-	}
-	return `You need ${needBits.join(' and ')} more for your next Bountiful cornucopia.`;
-}
-
 export function thanksgivingMakeButtonCustomId(userId: string): string {
 	return `${THANKS_MAKE_PREFIX}${userId}`;
 }
@@ -384,16 +350,4 @@ export function formatMakeAndOfferConfirm(
 	const content = `${makeConfirm.content}\nThen offer all ${qty('Bountiful cornucopia', offerQty)}${already}?`;
 	const confirmLabel = `Make & offer all (${preview.quantity.toLocaleString()})`.slice(0, DISCORD_BUTTON_LABEL_LIMIT);
 	return { content, confirmLabel };
-}
-
-export function appendThanksgivingTripStartLine<T>(userId: string, bank: Bank, response: T): T {
-	const line = takeThanksgivingTripStartLine(bank, userId);
-	if (!line) return response;
-	if (typeof response === 'string') return `${response}\n${line}` as T;
-	if (response && typeof response === 'object' && 'content' in (response as object)) {
-		const msg = response as { content?: string };
-		const content = msg.content ? `${msg.content}\n${line}` : line;
-		return { ...(response as object), content } as T;
-	}
-	return response;
 }
