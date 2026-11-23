@@ -125,10 +125,17 @@ describe('daily GP and token rates', () => {
 	test('Easy, Medium, and Hard pay and token rates scale as designed', () => {
 		expect(dailyRatesFor({ difficulty: 'easy', correct: true })).toEqual({
 			coinMultiplier: 1,
-			xpChance: 30,
-			lootChance: 50
+			xpChance: 20,
+			lootChance: 35
 		});
-		expect(dailyRatesFor({ difficulty: 'easy', correct: false }).coinMultiplier).toBe(0.4);
+		expect(dailyRatesFor({ difficulty: 'easy', correct: false })).toEqual({
+			coinMultiplier: 0.4,
+			xpChance: 40,
+			lootChance: 65
+		});
+		expect(DAILY_TIER.medium.success).toEqual({ coinMultiplier: 2, xpChance: 13, lootChance: 23 });
+		expect(DAILY_TIER.hard.success).toEqual({ coinMultiplier: 3, xpChance: 8, lootChance: 13 });
+		expect(DAILY_TIER.hard.fail).toEqual({ coinMultiplier: 0.5, xpChance: 55, lootChance: 80 });
 		expect(dailyRatesFor({ difficulty: 'medium', success: true, game: 'buttons' })).toEqual(
 			DAILY_TIER.medium.success
 		);

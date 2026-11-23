@@ -8,18 +8,18 @@ export const DAILY_TIER = {
 	easy: {
 		label: 'Easy',
 		questions: 1,
-		correct: { coinMultiplier: 1, xpChance: 30, lootChance: 50 },
-		wrong: { coinMultiplier: 0.4, xpChance: 60, lootChance: 100 }
+		correct: { coinMultiplier: 1, xpChance: 20, lootChance: 35 },
+		wrong: { coinMultiplier: 0.4, xpChance: 40, lootChance: 65 }
 	},
 	medium: {
 		label: 'Medium',
-		success: { coinMultiplier: 2, xpChance: 20, lootChance: 35 },
-		fail: { coinMultiplier: 1, xpChance: 30, lootChance: 50 }
+		success: { coinMultiplier: 2, xpChance: 13, lootChance: 23 },
+		fail: { coinMultiplier: 1, xpChance: 20, lootChance: 35 }
 	},
 	hard: {
 		label: 'Hard',
-		success: { coinMultiplier: 3, xpChance: 12, lootChance: 20 },
-		fail: { coinMultiplier: 0.5, xpChance: 80, lootChance: 120 }
+		success: { coinMultiplier: 3, xpChance: 8, lootChance: 13 },
+		fail: { coinMultiplier: 0.5, xpChance: 55, lootChance: 80 }
 	}
 } as const;
 
