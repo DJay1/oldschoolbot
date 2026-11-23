@@ -67,7 +67,7 @@ export const EVENT_START_ANNOUNCEMENTS: Partial<Record<SeasonalEventId, EventSta
 				"• Less overall than a normal trip, and a random amount: it's a catch-up tool, not a shortcut",
 				'',
 				'**Farming**',
-				'• Every harvested patch type whose crop takes 1 hour or more to grow has a 1 in 15 chance at a whole **Bountiful cornucopia**',
+				'• Every harvested patch type whose crop takes 1 hour or more to grow has a 2 in 15 chance at a whole **Bountiful cornucopia**',
 				'',
 				'**Harvest turkey**',
 				'• A rare offer reward. Offer it with `/thanksgiving offer` (pick Harvest turkey) for a 1 in 3 chance at a **Harvest feast**: 2x loot or 2x XP',

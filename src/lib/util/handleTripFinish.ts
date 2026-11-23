@@ -268,7 +268,7 @@ const tripFinishEffects: TripFinishEffect[] = [
 	},
 	{
 		// Straw Hat Harvest: each harvested patch of a fully grown crop with a base grow time of 60+ minutes
-		// has a 1/15 roll for a whole Bountiful cornucopia (Blessing applies, Double Loot does not).
+		// has a 2/15 roll for a whole Bountiful cornucopia (Blessing applies, Double Loot does not).
 		name: 'Straw Hat Harvest farming cornucopia',
 		fn: async ({ data, messages, user, rng }) => {
 			if (!isThanksgivingActive() || data.type !== 'Farming') return;

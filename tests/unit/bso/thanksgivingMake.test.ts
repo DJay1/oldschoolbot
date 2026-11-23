@@ -7,6 +7,7 @@ import {
 	formatHarvestBlessingStatusLine,
 	formatLaboonFishingRateLine,
 	formatThanksgivingBaseRatesLine,
+	formatThanksgivingTripPartsRateLine,
 	GOBBLE_STREAK_OFFERS,
 	GOBBLES_PITY_OFFERS,
 	THANKSGIVING_MIN_TRIP_MS
@@ -216,12 +217,19 @@ describe('Bountiful cornucopia /create all QoL', () => {
 			formatHarvestBlessingStatusLine(true),
 			`**Harvest turkey:** ${huge.toLocaleString()}`,
 			harvestFeastStatusLine('length-user', Date.parse('2026-11-22T20:00:00Z')),
+			formatThanksgivingTripPartsRateLine(),
 			formatThanksgivingBaseRatesLine(),
 			formatLaboonFishingRateLine()
 		].join('\n');
 		underLimit(status);
 		expect(status.startsWith('**The Straw Hat Harvest** is running (ends <t:')).toBe(true);
 		expect(status).toContain('Laboon 1/750');
+		expect(status).toContain('Trip drops');
+		expect(status).toContain('Harvest bundles and Wicker baskets');
+		expect(formatThanksgivingTripPartsRateLine()).toContain('70%');
+		expect(formatThanksgivingTripPartsRateLine()).toContain('2 in 15');
+		expect(formatThanksgivingTripPartsRateLine()).toContain('Bountiful cornucopia');
+		expect(status).toContain('2 in 15');
 		expect(status).toContain('Harvest Blessing');
 		expect(formatLaboonFishingRateLine()).toContain('Laboon');
 		expect(canMake).toContain('Can make: ');
