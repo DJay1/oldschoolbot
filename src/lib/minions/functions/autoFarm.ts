@@ -23,7 +23,11 @@ import {
 	serializePreferredSeeds
 } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
 import { plants } from '@/lib/skilling/skills/farming/index.js';
-import { formatFarmingBoosts, formatItemsUsed } from '@/lib/skilling/skills/farming/utils/farmingFormatters.js';
+import {
+	condenseCompostInfoLines,
+	formatFarmingBoosts,
+	formatItemsUsed
+} from '@/lib/skilling/skills/farming/utils/farmingFormatters.js';
 import type { FarmingPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import type { IPatchData, IPatchDataDetailed } from '@/lib/skilling/skills/farming/utils/types.js';
 import type { AutoFarmStepData, FarmingActivityTaskOptions } from '@/lib/types/minions.js';
@@ -304,7 +308,7 @@ export async function autoFarm(
 	if (infoDetails.length > 0) {
 		response += `
 
-${infoDetails.join('\n')}`;
+${condenseCompostInfoLines(infoDetails).join('\n')}`;
 	}
 
 	response += formatFarmingBoosts(uniqueBoosts, { label: '**Boosts**:', suffix: '' });

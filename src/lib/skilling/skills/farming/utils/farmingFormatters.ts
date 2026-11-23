@@ -31,6 +31,120 @@ export function formatMissingCompost(quantity: number): string {
 	return `You did not have enough compost to treat ${quantity} patches, so they were planted without compost.`;
 }
 
+const missingCompostLinePattern =
+	/^(.+): You did not have enough compost to treat ([\d,]+) patches, so they were planted without compost\.$/;
+const compostFallbackLinePattern =
+	/^(.+): You did not have enough (.+) to treat ([\d,]+) patches, so they were planted with (.+)\.$/;
+
+function parsePatchQuantity(value: string): number {
+	return Number(value.replaceAll(',', ''));
+}
+
+export function formatCondensedMissingCompost(quantity: number, patchNames: string[]): string {
+	return `You did not have enough compost to treat ${quantity} patches (${patchNames.join(', ')}), so they were planted without compost.`;
+}
+
+export function formatCondensedCompostFallback(
+	requestedName: string,
+	usedName: string,
+	quantity: number,
+	patchNames: string[]
+): string {
+	return `You did not have enough ${requestedName} to treat ${quantity} patches (${patchNames.join(', ')}), so they were planted with ${usedName}.`;
+}
+
+type ParsedCompostInfoLine =
+	| { kind: 'missing'; line: string; patchName: string; quantity: number }
+	| { kind: 'fallback'; line: string; patchName: string; quantity: number; requestedName: string; usedName: string }
+	| { kind: 'other'; line: string };
+
+function parseCompostInfoLine(line: string): ParsedCompostInfoLine {
+	const missing = missingCompostLinePattern.exec(line);
+	if (missing) {
+		return {
+			kind: 'missing',
+			line,
+			patchName: missing[1] ?? 'Unknown',
+			quantity: parsePatchQuantity(missing[2] ?? '0')
+		};
+	}
+	const fallback = compostFallbackLinePattern.exec(line);
+	if (fallback) {
+		return {
+			kind: 'fallback',
+			line,
+			patchName: fallback[1] ?? 'Unknown',
+			quantity: parsePatchQuantity(fallback[3] ?? '0'),
+			requestedName: fallback[2] ?? 'Compost',
+			usedName: fallback[4] ?? 'Compost'
+		};
+	}
+	return { kind: 'other', line };
+}
+
+export function condenseCompostInfoLines(lines: string[]): string[] {
+	const parsed = lines.map(parseCompostInfoLine);
+	const missing = parsed.filter(item => item.kind === 'missing');
+	const fallbacksByKey = new Map<string, Extract<ParsedCompostInfoLine, { kind: 'fallback' }>[]>();
+	for (const item of parsed) {
+		if (item.kind !== 'fallback') continue;
+		const key = `${item.requestedName}\0${item.usedName}`;
+		const group = fallbacksByKey.get(key) ?? [];
+		group.push(item);
+		fallbacksByKey.set(key, group);
+	}
+
+	const shouldCondenseMissing = missing.length > 1;
+	const condenseFallbackKeys = new Set(
+		[...fallbacksByKey.entries()].filter(([, group]) => group.length > 1).map(([key]) => key)
+	);
+	if (!shouldCondenseMissing && condenseFallbackKeys.size === 0) {
+		return lines;
+	}
+
+	const result: string[] = [];
+	let missingEmitted = false;
+	const fallbackEmitted = new Set<string>();
+
+	for (const item of parsed) {
+		if (item.kind === 'missing' && shouldCondenseMissing) {
+			if (!missingEmitted) {
+				const total = missing.reduce((sum, row) => sum + row.quantity, 0);
+				result.push(
+					formatCondensedMissingCompost(
+						total,
+						missing.map(row => row.patchName)
+					)
+				);
+				missingEmitted = true;
+			}
+			continue;
+		}
+		if (item.kind === 'fallback') {
+			const key = `${item.requestedName}\0${item.usedName}`;
+			if (condenseFallbackKeys.has(key)) {
+				if (!fallbackEmitted.has(key)) {
+					const group = fallbacksByKey.get(key) ?? [];
+					const total = group.reduce((sum, row) => sum + row.quantity, 0);
+					result.push(
+						formatCondensedCompostFallback(
+							item.requestedName,
+							item.usedName,
+							total,
+							group.map(row => row.patchName)
+						)
+					);
+					fallbackEmitted.add(key);
+				}
+				continue;
+			}
+		}
+		result.push(item.line);
+	}
+
+	return result;
+}
+
 export function formatPatchTreatment(compostCost: Bank): string {
 	return `You are treating your patches with ${compostCost}.`;
 }
