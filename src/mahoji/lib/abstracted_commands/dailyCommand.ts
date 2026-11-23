@@ -504,14 +504,37 @@ async function playTrivia(rng: RNGProvider, interaction: MInteraction, user: MUs
 	});
 }
 
+export const DAILY_DIFFICULTY_PROMPT = `**${Emoji.Diango} Diango says...** Pick a daily: Easy is trivia, Medium is a 20-second speed click, and Hard is a typed Wordle or an item-sprite typing challenge.`;
+export const DAILY_DIFFICULTY_CANCELLED = `**${Emoji.Diango} Diango says...** You didn't pick a daily, so you weren't charged.`;
+
+export function shouldShowDailyDifficultyPicker(input?: string | null): boolean {
+	return input === undefined || input === null || input.trim() === '';
+}
+
+async function pickDailyDifficultyThenPlay(
+	rng: RNGProvider,
+	interaction: MInteraction,
+	user: MUser
+): CommandResponse {
+	const choice = await globalClient.pickStringWithButtons({
+		interaction,
+		options: [
+			{ label: 'Easy', id: 'easy' },
+			{ label: 'Medium', id: 'medium' },
+			{ label: 'Hard', id: 'hard' }
+		],
+		content: DAILY_DIFFICULTY_PROMPT
+	});
+	if (!choice) return DAILY_DIFFICULTY_CANCELLED;
+	return dailyCommand(rng, interaction, user, choice.choice.id);
+}
+
 export async function dailyCommand(
 	rng: RNGProvider,
 	interaction: MInteraction,
 	user: MUser,
 	difficultyInput?: string
 ): CommandResponse {
-	const difficulty: DailyDifficulty = parseDailyDifficulty(difficultyInput);
-
 	const pending = await loadDailyPending(user.id);
 	if (pending && !pending.paid) {
 		if (!isDailyPendingExpired(pending.expiresAt) && pending.game.status === 'playing') {
@@ -526,6 +549,13 @@ export async function dailyCommand(
 		);
 	}
 
+	if (shouldShowDailyDifficultyPicker(difficultyInput)) {
+		const ready = await isUsersDailyReady(user);
+		if (!ready.isReady) return cooldownReply(ready.durationUntilReady);
+		return pickDailyDifficultyThenPlay(rng, interaction, user);
+	}
+
+	const difficulty: DailyDifficulty = parseDailyDifficulty(difficultyInput);
 	const claim = await tryClaimDaily(user);
 	if (!claim.ok) {
 		return cooldownReply(claim.durationUntilReady);
