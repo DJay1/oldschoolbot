@@ -4,9 +4,11 @@ import { describe, expect, test } from 'vitest';
 
 import {
 	CAPTAIN_LABOON_YIELD_PERCENT,
+	LABOON_SPEED_MULTIPLIER,
 	OFFER_RATES,
 	offerOddsDenominator,
 	parseOfferQuantity,
+	STRAW_HAT_SPEED_PERCENT,
 	STRAW_HAT_YIELD_PERCENT,
 	thanksgivingFishingBoosts
 } from '@/lib/events/thanksgiving/core.js';
@@ -34,11 +36,74 @@ describe('Straw Hat Harvest round 3', () => {
 		const captain = thanksgivingFishingBoosts(gear(ThanksgivingItem.LABOON_STRAW_HAT));
 		expect(captain.yieldPercent).toBe(STRAW_HAT_YIELD_PERCENT + CAPTAIN_LABOON_YIELD_PERCENT);
 		expect(captain.yieldPercent).toBe(10);
-		expect(captain.lines).toContain('+7% fishing yield (Captain Laboon)');
+		expect(captain.speedMultiplier).toBeCloseTo(LABOON_SPEED_MULTIPLIER * (1 + STRAW_HAT_SPEED_PERCENT / 100));
+		expect(captain.usingLaboon).toBe(true);
+		expect(captain.yieldLabel).toBe('Captain Laboon and the Straw hat');
+		expect(captain.lines).toEqual([
+			`${LABOON_SPEED_MULTIPLIER}x faster, +${STRAW_HAT_SPEED_PERCENT}% fishing speed and +${STRAW_HAT_YIELD_PERCENT + CAPTAIN_LABOON_YIELD_PERCENT}% fishing yield (Captain Laboon)`
+		]);
 		// Plain Laboon with a worn Straw hat keeps the old 3%.
 		const plain = thanksgivingFishingBoosts(gear(ThanksgivingItem.LABOON, [ThanksgivingItem.STRAW_HAT]));
 		expect(plain.yieldPercent).toBe(STRAW_HAT_YIELD_PERCENT);
 		expect(plain.speedMultiplier).toBeCloseTo(captain.speedMultiplier);
+		expect(plain.usingLaboon).toBe(true);
+		expect(plain.yieldLabel).toBe('the Straw hat');
+		expect(plain.lines).toEqual([
+			`${LABOON_SPEED_MULTIPLIER}x faster for Laboon`,
+			`+${STRAW_HAT_SPEED_PERCENT}% fishing speed and +${STRAW_HAT_YIELD_PERCENT}% fishing yield (Straw hat)`
+		]);
+	});
+
+	test('Captain Laboon fishing boost lines and numbers for every combination', () => {
+		const none = thanksgivingFishingBoosts(gear(null));
+		expect(none.speedMultiplier).toBe(1);
+		expect(none.yieldPercent).toBe(0);
+		expect(none.usingLaboon).toBe(false);
+		expect(none.yieldLabel).toBe('the Straw hat');
+		expect(none.lines).toEqual([]);
+
+		const laboon = thanksgivingFishingBoosts(gear(ThanksgivingItem.LABOON));
+		expect(laboon.speedMultiplier).toBe(LABOON_SPEED_MULTIPLIER);
+		expect(laboon.yieldPercent).toBe(0);
+		expect(laboon.usingLaboon).toBe(true);
+		expect(laboon.yieldLabel).toBe('the Straw hat');
+		expect(laboon.lines).toEqual([`${LABOON_SPEED_MULTIPLIER}x faster for Laboon`]);
+
+		const hat = thanksgivingFishingBoosts(gear(null, [ThanksgivingItem.STRAW_HAT]));
+		expect(hat.speedMultiplier).toBeCloseTo(1 + STRAW_HAT_SPEED_PERCENT / 100);
+		expect(hat.yieldPercent).toBe(STRAW_HAT_YIELD_PERCENT);
+		expect(hat.usingLaboon).toBe(false);
+		expect(hat.yieldLabel).toBe('the Straw hat');
+		expect(hat.lines).toEqual([
+			`+${STRAW_HAT_SPEED_PERCENT}% fishing speed and +${STRAW_HAT_YIELD_PERCENT}% fishing yield (Straw hat)`
+		]);
+
+		const captain = thanksgivingFishingBoosts(gear(ThanksgivingItem.LABOON_STRAW_HAT));
+		expect(captain.speedMultiplier).toBeCloseTo(LABOON_SPEED_MULTIPLIER * (1 + STRAW_HAT_SPEED_PERCENT / 100));
+		expect(captain.yieldPercent).toBe(STRAW_HAT_YIELD_PERCENT + CAPTAIN_LABOON_YIELD_PERCENT);
+		expect(captain.usingLaboon).toBe(true);
+		expect(captain.yieldLabel).toBe('Captain Laboon and the Straw hat');
+		expect(captain.lines).toEqual([
+			`${LABOON_SPEED_MULTIPLIER}x faster, +${STRAW_HAT_SPEED_PERCENT}% fishing speed and +${STRAW_HAT_YIELD_PERCENT + CAPTAIN_LABOON_YIELD_PERCENT}% fishing yield (Captain Laboon)`
+		]);
+
+		const captainAndHat = thanksgivingFishingBoosts(
+			gear(ThanksgivingItem.LABOON_STRAW_HAT, [ThanksgivingItem.STRAW_HAT])
+		);
+		expect(captainAndHat.speedMultiplier).toBeCloseTo(
+			LABOON_SPEED_MULTIPLIER * (1 + (STRAW_HAT_SPEED_PERCENT / 100) * 2)
+		);
+		expect(captainAndHat.yieldPercent).toBe(STRAW_HAT_YIELD_PERCENT * 2 + CAPTAIN_LABOON_YIELD_PERCENT);
+		expect(captainAndHat.usingLaboon).toBe(true);
+		expect(captainAndHat.yieldLabel).toBe('Captain Laboon and the Straw hat');
+		expect(captainAndHat.lines).toEqual([
+			`${LABOON_SPEED_MULTIPLIER}x faster, +${STRAW_HAT_SPEED_PERCENT}% fishing speed and +${STRAW_HAT_YIELD_PERCENT + CAPTAIN_LABOON_YIELD_PERCENT}% fishing yield (Captain Laboon)`,
+			`+${STRAW_HAT_SPEED_PERCENT}% fishing speed and +${STRAW_HAT_YIELD_PERCENT}% fishing yield (Straw hat)`
+		]);
+
+		// Fishing and aerial fishing both print these lines in a **Boosts:** join.
+		const boostsText = `**Boosts:** ${captainAndHat.lines.join(', ')}.`;
+		expect(boostsText.length).toBeLessThanOrEqual(2000 - 150);
 	});
 
 	test('Harvest turkey odds: 1/50, Gobble Streak and Harvest Blessing both apply', () => {

@@ -679,23 +679,35 @@ export function thanksgivingFishingBoosts(g: PetAndGear): FishingBoosts {
 		yieldLabel: 'the Straw hat'
 	};
 	if (!thanksgivingCodeEnabled()) return out;
+	const usingCaptain = Boolean(g.usingPet(ThanksgivingItem.LABOON_STRAW_HAT, { ignoreSimilar: true }));
 	if (usingLaboonPet(g)) {
 		out.usingLaboon = true;
 		out.speedMultiplier *= LABOON_SPEED_MULTIPLIER;
-		out.lines.push(`${LABOON_SPEED_MULTIPLIER}x faster for Laboon`);
+		if (!usingCaptain) {
+			out.lines.push(`${LABOON_SPEED_MULTIPLIER}x faster for Laboon`);
+		}
 	}
 	const hats = strawHatStacks(g);
 	if (hats > 0) {
 		out.speedMultiplier *= 1 + (STRAW_HAT_SPEED_PERCENT / 100) * hats;
 		out.yieldPercent += STRAW_HAT_YIELD_PERCENT * hats;
-		out.lines.push(
-			`+${STRAW_HAT_SPEED_PERCENT * hats}% fishing speed and +${STRAW_HAT_YIELD_PERCENT * hats}% fishing yield (Straw hat)`
-		);
+		if (!usingCaptain) {
+			out.lines.push(
+				`+${STRAW_HAT_SPEED_PERCENT * hats}% fishing speed and +${STRAW_HAT_YIELD_PERCENT * hats}% fishing yield (Straw hat)`
+			);
+		}
 	}
-	if (g.usingPet(ThanksgivingItem.LABOON_STRAW_HAT, { ignoreSimilar: true })) {
+	if (usingCaptain) {
 		out.yieldPercent += CAPTAIN_LABOON_YIELD_PERCENT;
 		out.yieldLabel = 'Captain Laboon and the Straw hat';
-		out.lines.push(`+${CAPTAIN_LABOON_YIELD_PERCENT}% fishing yield (Captain Laboon)`);
+		out.lines.push(
+			`${LABOON_SPEED_MULTIPLIER}x faster, +${STRAW_HAT_SPEED_PERCENT}% fishing speed and +${STRAW_HAT_YIELD_PERCENT + CAPTAIN_LABOON_YIELD_PERCENT}% fishing yield (Captain Laboon)`
+		);
+		if (g.hasEquipped(ThanksgivingItem.STRAW_HAT)) {
+			out.lines.push(
+				`+${STRAW_HAT_SPEED_PERCENT}% fishing speed and +${STRAW_HAT_YIELD_PERCENT}% fishing yield (Straw hat)`
+			);
+		}
 	}
 	return out;
 }
