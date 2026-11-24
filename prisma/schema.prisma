@@ -443,6 +443,8 @@ model User {
   archivist_folio_charges Int @default(0)
 
   scythe_of_vitur_charges Int @default(0)
+  bottomless_compost_charges Int @default(0)
+  bottomless_compost_type    CropUpgradeType?
 
   // Balances
   lms_points           Int @default(0)

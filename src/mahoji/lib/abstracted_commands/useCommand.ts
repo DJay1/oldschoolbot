@@ -17,8 +17,13 @@ import { BitField } from '@/lib/constants.js';
 import { easterUseTrollResponse } from '@/lib/events/easter/use.js';
 import { getLydiaQuote } from '@/lib/events/summer/summerDays.js';
 import { ThanksgivingItem } from '@/lib/events/thanksgiving/items.js';
+import {
+	BOTTOMLESS_COMPOST_BUCKET_ID,
+	bottomlessItemsForUseAutocomplete
+} from '@/lib/skilling/skills/farming/bottomlessCompostBucket.js';
 import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
 import { assert } from '@/lib/util/logError.js';
+import { handleBottomlessCompostUse } from '@/mahoji/lib/abstracted_commands/bottomlessCompostUse.js';
 import { flowerTable } from '@/mahoji/lib/abstracted_commands/hotColdCommand.js';
 
 const messageInABottleMessages = [
@@ -807,9 +812,18 @@ This looks like a treasure trail. ${minionMessage}`;
 	}
 });
 
-export const allUsableItems = new Set(usables.map(i => i.items.map(i => i.id)).flat(2));
+export const allUsableItems = new Set([
+	...usables.map(i => i.items.map(item => item.id)).flat(2),
+	BOTTOMLESS_COMPOST_BUCKET_ID
+]);
+export const useAutocompleteItemIDs = new Set([...allUsableItems, ...bottomlessItemsForUseAutocomplete()]);
 
-export async function useCommand(user: MUser, _firstItem: string, _secondItem?: string): CommandResponse {
+export async function useCommand(
+	user: MUser,
+	_firstItem: string,
+	_secondItem?: string,
+	extra?: { quantity?: number; empty?: boolean; interaction?: MInteraction }
+): CommandResponse {
 	const firstItem = Items.getItem(_firstItem);
 	const secondItem = _secondItem === undefined ? null : Items.getItem(_secondItem);
 	if (!firstItem || (_secondItem !== undefined && !secondItem)) return "That's not a valid item.";
@@ -822,6 +836,16 @@ export async function useCommand(user: MUser, _firstItem: string, _secondItem?: 
 	const checkBank = new Bank();
 	for (const i of items) checkBank.add(i.id);
 	if (!bank.has(checkBank)) return `You don't own ${checkBank}.`;
+
+	if (extra?.empty || items.some(item => item.id === BOTTOMLESS_COMPOST_BUCKET_ID)) {
+		return handleBottomlessCompostUse({
+			user,
+			items,
+			quantity: extra?.quantity,
+			empty: extra?.empty,
+			interaction: extra?.interaction
+		});
+	}
 
 	const usable = usables.find(i => i.items.length === items.length && i.items.every(t => items.includes(t)));
 	if (!usable) return `That's not a usable ${items.length === 1 ? 'item' : 'combination'}.`;

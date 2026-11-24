@@ -28,4 +28,4 @@ While Hespori does fall under the boss category, there are no boosts for killing
 
 It takes approximately 32 hours to grow.
 
-It does drop all 3 Anima seeds but they currently have no use. Additionally, it does drop the Bottomless compost bucket at 1/35 chance, but this has no functional use either.
+It does drop all 3 Anima seeds but they currently have no use. It also drops the Bottomless compost bucket at a 1/35 chance. Fill, check, or empty it with `/use`, and `/farm` and Auto Farm will use those charges on patches.

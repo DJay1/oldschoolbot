@@ -4,6 +4,7 @@ import { Emoji, stringMatches } from '@oldschoolgg/toolkit';
 import { AutoFarmFilterEnum } from '@/prisma/main/enums.js';
 import { BitField } from '@/lib/constants.js';
 import { allFarm } from '@/lib/minions/functions/autoFarmFilters.js';
+import { checkBottomlessMessage, getBottomlessState } from '@/lib/skilling/skills/farming/bottomlessCompostBucket.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
 import type {
 	FarmingSeedPreference,
@@ -122,6 +123,12 @@ export function userGrowingProgressStr(patchesDetailed: IPatchDataDetailed[], us
 	}
 	const notReady = patchesDetailed.filter(i => i.ready === null);
 	str += `${Emoji.RedX} **Nothing planted:** ${formatList(notReady.map(i => i.friendlyName))}.`;
+	if (user) {
+		const bottomless = getBottomlessState(user);
+		if (bottomless.owned) {
+			str += `\n${checkBottomlessMessage(bottomless)}`;
+		}
+	}
 
 	const buttons: ButtonBuilder[] = [];
 	if (

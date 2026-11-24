@@ -3,6 +3,10 @@ import { Bank } from 'oldschooljs';
 
 import type { CropUpgradeType } from '@/prisma/main/enums.js';
 import { resolveSeedForPatch } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
+import {
+	applyBottomlessUse,
+	type BottomlessCompostState
+} from '@/lib/skilling/skills/farming/bottomlessCompostBucket.js';
 import type { FarmingPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import type {
 	FarmingSeedPreference,
@@ -25,6 +29,7 @@ export interface PlannedAutoFarmStep {
 	friendlyName: string;
 	info: string[];
 	boosts: string[];
+	bucketChargesUsed?: number;
 }
 
 export interface PlanRequest {
@@ -170,7 +175,9 @@ export async function evaluateCandidateForPatch({
 	totalCost,
 	compostTier,
 	patches,
-	preferredQuantity
+	preferredQuantity,
+	remainingBottomless,
+	totalBucketChargesUsed
 }: {
 	user: MUser;
 	candidate: Plant;
@@ -182,6 +189,8 @@ export async function evaluateCandidateForPatch({
 	compostTier: CropUpgradeType;
 	patches: Record<FarmingPatchName, IPatchData>;
 	preferredQuantity?: number;
+	remainingBottomless: BottomlessCompostState;
+	totalBucketChargesUsed: { value: number };
 }): Promise<CandidateEvaluationResult> {
 	const prepared = await prepareFarmingStep({
 		user,
@@ -191,13 +200,15 @@ export async function evaluateCandidateForPatch({
 		patchDetailed: patch,
 		maxTripLength,
 		availableBank: remainingBank,
-		compostTier
+		compostTier,
+		bottomless: remainingBottomless
 	});
 	if (!prepared.success) {
 		return { success: false, error: prepared.error };
 	}
 
-	const { quantity, duration, cost, upgradeType, didPay, infoStr, boostStr, treeChopFee } = prepared.data;
+	const { quantity, duration, cost, upgradeType, didPay, infoStr, boostStr, treeChopFee, bucketChargesUsed } =
+		prepared.data;
 	if (quantity <= 0 || duration <= 0) {
 		return { success: false };
 	}
@@ -232,6 +243,12 @@ export async function evaluateCandidateForPatch({
 		totalCost.add(treeFeeBank);
 	}
 	totalCost.add(cost);
+	if (bucketChargesUsed > 0) {
+		const next = applyBottomlessUse(remainingBottomless, bucketChargesUsed);
+		remainingBottomless.charges = next.charges;
+		remainingBottomless.type = next.type;
+		totalBucketChargesUsed.value += bucketChargesUsed;
+	}
 	const updatedTotalDuration = totalDuration + duration;
 	return {
 		success: true,
@@ -246,7 +263,8 @@ export async function evaluateCandidateForPatch({
 			patchName: patch.patchName,
 			friendlyName: patch.friendlyName,
 			info: infoStr,
-			boosts: boostStr
+			boosts: boostStr,
+			bucketChargesUsed
 		},
 		updatedTotalDuration
 	};
@@ -264,7 +282,9 @@ export async function selectCandidateForPatch({
 	patches,
 	skippedPatchNamesDueToTripLength,
 	plannedSteps,
-	quantity: preferredQuantity
+	quantity: preferredQuantity,
+	remainingBottomless,
+	totalBucketChargesUsed
 }: {
 	user: MUser;
 	patch: IPatchDataDetailed;
@@ -278,6 +298,8 @@ export async function selectCandidateForPatch({
 	skippedPatchNamesDueToTripLength: Set<string>;
 	plannedSteps: PlannedAutoFarmStep[];
 	quantity?: number;
+	remainingBottomless: BottomlessCompostState;
+	totalBucketChargesUsed: { value: number };
 }): Promise<{
 	planned: boolean;
 	updatedTotalDuration: number;
@@ -300,7 +322,9 @@ export async function selectCandidateForPatch({
 			totalCost,
 			compostTier,
 			patches,
-			preferredQuantity
+			preferredQuantity,
+			remainingBottomless,
+			totalBucketChargesUsed
 		});
 		if (!result.success) {
 			if (result.skippedTripLength) {

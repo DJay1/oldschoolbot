@@ -5,6 +5,11 @@ import type { CropUpgradeType } from '@/prisma/main/enums.js';
 import { BitField } from '@/lib/constants.js';
 import { superCompostables } from '@/lib/data/filterables.js';
 import { prepareFarmingStep, treeCheck } from '@/lib/minions/functions/farmingTripHelpers.js';
+import {
+	applyBottomlessUse,
+	bottomlessChargeUpdates,
+	getBottomlessState
+} from '@/lib/skilling/skills/farming/bottomlessCompostBucket.js';
 import { Farming } from '@/lib/skilling/skills/farming/index.js';
 import { calcNumOfPatches } from '@/lib/skilling/skills/farming/utils/calcsFarming.js';
 import {
@@ -196,7 +201,14 @@ export async function farmingPlantCommand({
 	boostStr.push(...preparedBoosts);
 
 	if (!user.owns(cost)) return `You don't own ${cost}.`;
-	await user.transactItems({ itemsToRemove: cost });
+	const bucketChargesUsed = prepared.data.bucketChargesUsed;
+	await user.transactItems({
+		itemsToRemove: cost,
+		otherUpdates:
+			bucketChargesUsed > 0
+				? bottomlessChargeUpdates(applyBottomlessUse(getBottomlessState(user), bucketChargesUsed))
+				: undefined
+	});
 
 	await ClientSettings.updateBankSetting('farming_cost_bank', cost);
 	// If user does not have something already planted, just plant the new seeds.

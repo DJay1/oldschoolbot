@@ -145,7 +145,16 @@ export function condenseCompostInfoLines(lines: string[]): string[] {
 	return result;
 }
 
-export function formatPatchTreatment(compostCost: Bank): string {
+export function formatPatchTreatment(
+	compostCost: Bank,
+	bucketUses?: { typeName: string; charges: number } | null
+): string {
+	if (bucketUses && bucketUses.charges > 0 && compostCost.length === 0) {
+		return `You are treating your patches with ${bucketUses.charges} uses of ${bucketUses.typeName} from your Bottomless compost bucket.`;
+	}
+	if (bucketUses && bucketUses.charges > 0) {
+		return `You are treating your patches with ${bucketUses.charges} uses of ${bucketUses.typeName} from your Bottomless compost bucket and ${compostCost}.`;
+	}
 	return `You are treating your patches with ${compostCost}.`;
 }
 

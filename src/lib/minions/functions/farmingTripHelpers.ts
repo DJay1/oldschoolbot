@@ -4,6 +4,11 @@ import { Bank } from 'oldschooljs';
 
 import { CropUpgradeType } from '@/prisma/main/enums.js';
 import { BitField } from '@/lib/constants.js';
+import {
+	type BottomlessCompostState,
+	getBottomlessState,
+	splitCompostUse
+} from '@/lib/skilling/skills/farming/bottomlessCompostBucket.js';
 import { calcNumOfPatches } from '@/lib/skilling/skills/farming/utils/calcsFarming.js';
 import {
 	farmingBoostMessages,
@@ -27,6 +32,7 @@ export interface PrepareFarmingStepOptions {
 	maxTripLength: number;
 	availableBank: Bank;
 	compostTier: CropUpgradeType;
+	bottomless?: BottomlessCompostState;
 }
 
 export interface PreparedFarmingStep {
@@ -35,6 +41,7 @@ export interface PreparedFarmingStep {
 	cost: Bank;
 	didPay: boolean;
 	upgradeType: CropUpgradeType | null;
+	bucketChargesUsed: number;
 	infoStr: string[];
 	boostStr: string[];
 	treeChopFee: number;
@@ -61,28 +68,38 @@ export function resolveCompostUpgrade({
 	compostTier,
 	useBestAvailable,
 	availableBank,
-	quantityToDo
+	quantityToDo,
+	bottomless
 }: {
 	compostTier: CropUpgradeType;
 	useBestAvailable: boolean;
 	availableBank: Bank;
 	quantityToDo: number;
+	bottomless?: BottomlessCompostState | null;
 }):
-	| { upgradeType: CropUpgradeType; compostCost: Bank; fallbackFrom: CropUpgradeType | null }
-	| { upgradeType: null; compostCost: null; fallbackFrom: null } {
+	| {
+			upgradeType: CropUpgradeType;
+			compostCost: Bank;
+			fallbackFrom: CropUpgradeType | null;
+			bucketChargesUsed: number;
+	  }
+	| { upgradeType: null; compostCost: null; fallbackFrom: null; bucketChargesUsed: 0 } {
 	const requestedIndex = COMPOST_TIER_ORDER.indexOf(compostTier as (typeof COMPOST_TIER_ORDER)[number]);
 	const startIndex = useBestAvailable ? 0 : requestedIndex >= 0 ? requestedIndex : COMPOST_TIER_ORDER.length - 1;
+	const emptyBottomless: BottomlessCompostState = { owned: false, charges: 0, type: null };
 
 	for (let i = startIndex; i < COMPOST_TIER_ORDER.length; i++) {
 		const tier = COMPOST_TIER_ORDER[i];
-		const compostCost = new Bank().add(tier, quantityToDo);
-		if (availableBank.has(compostCost)) {
+		const split = splitCompostUse(bottomless ?? emptyBottomless, tier, quantityToDo);
+		if (split.fromBucket + availableBank.amount(compostItemName(tier)) >= quantityToDo) {
+			const compostCost = new Bank();
+			if (split.fromBank > 0) compostCost.add(tier, split.fromBank);
 			const fallbackFrom = !useBestAvailable && tier !== compostTier ? compostTier : null;
-			return { upgradeType: tier, compostCost, fallbackFrom };
+			return { upgradeType: tier, compostCost, fallbackFrom, bucketChargesUsed: split.fromBucket };
 		}
 	}
 
-	return { upgradeType: null, compostCost: null, fallbackFrom: null };
+	return { upgradeType: null, compostCost: null, fallbackFrom: null, bucketChargesUsed: 0 };
 }
 
 export function treeCheck(
@@ -114,7 +131,8 @@ export async function prepareFarmingStep({
 	patchDetailed,
 	maxTripLength,
 	availableBank,
-	compostTier
+	compostTier,
+	bottomless: bottomlessOption
 }: PrepareFarmingStepOptions): Promise<
 	{ success: true; data: PreparedFarmingStep } | { success: false; error: string }
 > {
@@ -222,15 +240,25 @@ export async function prepareFarmingStep({
 	}
 
 	let upgradeType: CropUpgradeType | null = null;
+	let bucketChargesUsed = 0;
+	const bottomless = bottomlessOption ?? getBottomlessState(user);
 	if ((didPay && plant.canCompostandPay) || (!didPay && plant.canCompostPatch && compostTier)) {
 		const resolved = resolveCompostUpgrade({
 			compostTier,
 			useBestAvailable: user.bitfield.includes(BitField.UseBestAvailableCompost),
 			availableBank,
-			quantityToDo
+			quantityToDo,
+			bottomless
 		});
-		if (resolved.upgradeType && resolved.compostCost) {
-			infoStr.push(formatPatchTreatment(resolved.compostCost));
+		if (resolved.upgradeType) {
+			infoStr.push(
+				formatPatchTreatment(
+					resolved.compostCost ?? new Bank(),
+					resolved.bucketChargesUsed > 0
+						? { typeName: compostItemName(resolved.upgradeType), charges: resolved.bucketChargesUsed }
+						: null
+				)
+			);
 			if (resolved.fallbackFrom) {
 				infoStr.push(
 					formatCompostFallback(
@@ -240,8 +268,9 @@ export async function prepareFarmingStep({
 					)
 				);
 			}
-			cost.add(resolved.compostCost);
+			if (resolved.compostCost) cost.add(resolved.compostCost);
 			upgradeType = resolved.upgradeType;
+			bucketChargesUsed = resolved.bucketChargesUsed;
 		} else {
 			infoStr.push(formatMissingCompost(quantityToDo));
 		}
@@ -297,6 +326,7 @@ export async function prepareFarmingStep({
 			cost,
 			didPay,
 			upgradeType,
+			bucketChargesUsed,
 			infoStr,
 			boostStr,
 			treeChopFee: treeChopCost

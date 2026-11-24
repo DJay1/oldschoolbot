@@ -22,6 +22,11 @@ import {
 	rememberCropsInPreferences,
 	serializePreferredSeeds
 } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
+import {
+	applyBottomlessUse,
+	bottomlessChargeUpdates,
+	getBottomlessState
+} from '@/lib/skilling/skills/farming/bottomlessCompostBucket.js';
 import { plants } from '@/lib/skilling/skills/farming/index.js';
 import {
 	condenseCompostInfoLines,
@@ -45,6 +50,8 @@ export interface PrepareAutoFarmResult {
 	firstPrepareError: string | null;
 	errorString: string;
 	autoFarmPlan: AutoFarmStepData[];
+	totalBucketChargesUsed: number;
+	bottomlessBefore: ReturnType<typeof getBottomlessState>;
 }
 
 export async function planAutoFarmTrip(
@@ -78,6 +85,8 @@ export async function planAutoFarmTrip(
 	let totalDuration = 0;
 	const totalCost = new Bank();
 	const remainingBank = baseBank.clone();
+	const remainingBottomless = getBottomlessState(user);
+	const totalBucketChargesUsed = { value: 0 };
 	let skippedDueToTripLength = false;
 	const skippedPatchNamesDueToTripLength = new Set<string>();
 
@@ -141,7 +150,9 @@ export async function planAutoFarmTrip(
 			patches,
 			skippedPatchNamesDueToTripLength,
 			plannedSteps,
-			quantity: request.quantity
+			quantity: request.quantity,
+			remainingBottomless,
+			totalBucketChargesUsed
 		});
 
 		totalDuration = selection.updatedTotalDuration;
@@ -162,7 +173,9 @@ export async function planAutoFarmTrip(
 		skippedPatchNamesDueToTripLength: [...skippedPatchNamesDueToTripLength],
 		firstPrepareError,
 		errorString,
-		autoFarmPlan
+		autoFarmPlan,
+		totalBucketChargesUsed: totalBucketChargesUsed.value,
+		bottomlessBefore: getBottomlessState(user)
 	};
 }
 
@@ -186,7 +199,9 @@ export async function autoFarm(
 		skippedPatchNamesDueToTripLength,
 		firstPrepareError,
 		errorString,
-		autoFarmPlan
+		autoFarmPlan,
+		totalBucketChargesUsed,
+		bottomlessBefore
 	} = planning;
 
 	if (plannedSteps.length === 0) {
@@ -236,8 +251,14 @@ export async function autoFarm(
 		if (!user.owns(totalCost)) {
 			return `You don't own ${totalCost}.`;
 		}
-		if (totalCost.length > 0) {
-			await user.transactItems({ itemsToRemove: totalCost });
+		if (totalCost.length > 0 || totalBucketChargesUsed > 0) {
+			await user.transactItems({
+				itemsToRemove: totalCost.length > 0 ? totalCost : undefined,
+				otherUpdates:
+					totalBucketChargesUsed > 0
+						? bottomlessChargeUpdates(applyBottomlessUse(bottomlessBefore, totalBucketChargesUsed))
+						: undefined
+			});
 			chargedCost = true;
 		}
 		await addSubTaskToActivityTask(firstTask);
@@ -248,9 +269,12 @@ export async function autoFarm(
 		} else {
 			Logging.logDebug(`AutoFarm failed to start for ${user.id}: ${(err as Error).message}`, startFailContext);
 		}
-		if (chargedCost && totalCost.length > 0) {
+		if (chargedCost && (totalCost.length > 0 || totalBucketChargesUsed > 0)) {
 			try {
-				await user.transactItems({ itemsToAdd: totalCost });
+				await user.transactItems({
+					itemsToAdd: totalCost.length > 0 ? totalCost : undefined,
+					otherUpdates: totalBucketChargesUsed > 0 ? bottomlessChargeUpdates(bottomlessBefore) : undefined
+				});
 			} catch (refundErr) {
 				Logging.logError(refundErr as Error);
 			}

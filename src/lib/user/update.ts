@@ -45,6 +45,7 @@ type PrismaIntKeys =
 	| 'zeal_tokens'
 	| 'slayer_points'
 	| 'sacrificedValue'
+	| 'bottomless_compost_charges'
 	| DegradeableItemColumns;
 
 type PrismaBigIntUpdateInput = bigint | number | { increment: bigint | number } | { decrement: bigint | number };
@@ -107,6 +108,7 @@ export type FullUserUpdateInput = Partial<
 		bank_sort_method: bank_sort_method_enum | null;
 		auto_farm_filter: AutoFarmFilterEnum;
 		minion_defaultCompostToUse: CropUpgradeType;
+		bottomless_compost_type: CropUpgradeType | null;
 		bso_mystery_trail_current_step_id: number;
 		minion_farmingPreferredContract: boolean;
 		minion_farmingPreferredSeeds: FarmingPreferredSeeds | null;

@@ -2,6 +2,12 @@ import { Bank, type ItemBank } from 'oldschooljs';
 
 import type { Prisma } from '@/prisma/main.js';
 import { handleNewCLItems } from '@/lib/handleNewCLItems.js';
+import {
+	BOTTOMLESS_COMPOST_BUCKET_ID,
+	chargedBottomlessRemovalError,
+	getBottomlessState,
+	resolveNextBottomlessCharges
+} from '@/lib/skilling/skills/farming/bottomlessCompostBucket.js';
 import { filterLootReplace } from '@/lib/slayer/slayerUtil.js';
 import type { SafeUserUpdateInput } from '@/lib/user/update.js';
 import type { GearWithSetupType } from '@/lib/user/userTypes.js';
@@ -122,6 +128,14 @@ export async function unqueuedTransactItems({
 			throw errObj;
 		}
 		newBank.remove(itemsToRemove);
+	}
+
+	const nextBottomlessCharges = resolveNextBottomlessCharges(
+		user.user.bottomless_compost_charges ?? 0,
+		resolvedOtherUpdates?.bottomless_compost_charges
+	);
+	if (nextBottomlessCharges > 0 && newBank.amount(BOTTOMLESS_COMPOST_BUCKET_ID) < 1) {
+		throw new Error(chargedBottomlessRemovalError(getBottomlessState(user)));
 	}
 
 	const updateData = {

@@ -12,6 +12,8 @@ SELECT add_constraint('users', 'chk_blood_essence_charges_bounds', 'CHECK (blood
 SELECT add_constraint('users', 'chk_trident_charges_bounds', 'CHECK (trident_charges >= 0)');
 SELECT add_constraint('users', 'chk_venator_bow_charges_bounds', 'CHECK (venator_bow_charges >= 0)');
 SELECT add_constraint('users', 'chk_scythe_of_vitur_charges_bounds','CHECK (scythe_of_vitur_charges >= 0)');
+SELECT add_constraint('users', 'chk_bottomless_compost_charges_bounds', 'CHECK (bottomless_compost_charges >= 0 AND bottomless_compost_charges <= 10000)');
+SELECT add_constraint('users', 'chk_bottomless_compost_type_consistency', 'CHECK ((bottomless_compost_charges = 0 AND bottomless_compost_type IS NULL) OR (bottomless_compost_charges > 0 AND bottomless_compost_type IS NOT NULL))');
 SELECT add_constraint('users', 'chk_lms_points_bounds', 'CHECK (lms_points >= 0)');
 SELECT add_constraint('users', 'chk_volcanic_mine_points_bounds', 'CHECK (volcanic_mine_points >= 0)');
 SELECT add_constraint('users', 'chk_nmz_points_bounds', 'CHECK (nmz_points >= 0)');
