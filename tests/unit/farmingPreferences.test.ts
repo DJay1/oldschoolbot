@@ -494,3 +494,81 @@ describe('farming preferred seed lists', () => {
 		expect(description.startsWith('Filter: AllFarm.')).toBe(true);
 	});
 });
+
+describe('replant filter seed resolution', () => {
+	const irit = plants.find(plant => plant.name === 'Irit');
+	const marrentill = plants.find(plant => plant.name === 'Marrentill');
+	if (!irit || !marrentill) {
+		throw new Error('Expected Irit and Marrentill plants to exist');
+	}
+	const iritSeedID = getPrimarySeedForPlant(irit);
+	if (!iritSeedID) {
+		throw new Error('Expected Irit to have a seed item');
+	}
+
+	const plantedMarrentill: IPatchDataDetailed = {
+		...basePatchData,
+		lastPlanted: marrentill.name,
+		patchPlanted: true,
+		lastQuantity: 10,
+		plant: marrentill,
+		ready: true
+	};
+
+	it('uses the planted crop when the Replant filter is on, even if a preferred seed is saved', () => {
+		const preferences = new Map<FarmingPatchName, FarmingSeedPreference>();
+		preferences.set('herb', { type: 'seed', seedID: iritSeedID });
+
+		const result = resolveSeedForPatch({
+			patch: plantedMarrentill,
+			preferContract: false,
+			contractPlant: irit,
+			preferences,
+			fallbackPlant: irit,
+			replantFilter: true
+		});
+
+		expect(result).toEqual({ type: 'plant', plant: marrentill, reason: 'last_planted' });
+	});
+
+	it('leaves empty patches empty when the Replant filter is on', () => {
+		const preferences = new Map<FarmingPatchName, FarmingSeedPreference>();
+		preferences.set('herb', { type: 'seed', seedID: iritSeedID });
+
+		const emptyPatch: IPatchDataDetailed = {
+			...basePatchData,
+			ready: null,
+			patchPlanted: false,
+			lastPlanted: null,
+			plant: null
+		};
+
+		const result = resolveSeedForPatch({
+			patch: emptyPatch,
+			preferContract: true,
+			hasActiveContract: true,
+			contractPlant: irit,
+			preferences,
+			fallbackPlant: irit,
+			replantFilter: true
+		});
+
+		expect(result).toBeNull();
+	});
+
+	it('still uses preferred seeds when the Replant filter is off', () => {
+		const preferences = new Map<FarmingPatchName, FarmingSeedPreference>();
+		preferences.set('herb', { type: 'seed', seedID: iritSeedID });
+
+		const result = resolveSeedForPatch({
+			patch: plantedMarrentill,
+			preferContract: false,
+			contractPlant: null,
+			preferences,
+			fallbackPlant: herbPlant,
+			replantFilter: false
+		});
+
+		expect(result).toEqual({ type: 'plant', plant: irit, reason: 'preference_seed' });
+	});
+});

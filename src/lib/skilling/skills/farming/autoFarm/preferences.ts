@@ -383,6 +383,8 @@ export interface ResolveSeedForPatchOptions {
 	contractPlant: Plant | null;
 	preferences: Map<FarmingPatchName, FarmingSeedPreference>;
 	fallbackPlant: Plant | null;
+	/** When true, always replant the crop already in the patch and ignore saved preferences. */
+	replantFilter?: boolean;
 }
 
 export type ResolvedSeedForPatchResult =
@@ -390,7 +392,7 @@ export type ResolvedSeedForPatchResult =
 	| { type: 'plants'; plants: Plant[]; reason: 'preference_seed' }
 	| { type: 'highest'; reason: 'preference_highest' };
 
-function lastPlantedCrop(patch: IPatchDataDetailed): Plant | null {
+export function lastPlantedCrop(patch: IPatchDataDetailed): Plant | null {
 	if (patch.plant && patch.plant.seedType === patch.patchName) {
 		return patch.plant;
 	}
@@ -407,9 +409,21 @@ export function resolveSeedForPatch({
 	hasActiveContract = false,
 	contractPlant,
 	preferences,
-	fallbackPlant
+	fallbackPlant,
+	replantFilter = false
 }: ResolveSeedForPatchOptions): ResolvedSeedForPatchResult | null {
 	if (patch.ready === false) {
+		return null;
+	}
+
+	// Replant filter: harvest and plant the same crop that is already in the patch.
+	// Saved preferred seeds, highest_available, empty, contract, and fallback crops
+	// do not override that crop. Empty patches are left empty.
+	if (replantFilter) {
+		const sameCrop = lastPlantedCrop(patch);
+		if (patch.ready === true && sameCrop) {
+			return { type: 'plant', plant: sameCrop, reason: 'last_planted' };
+		}
 		return null;
 	}
 

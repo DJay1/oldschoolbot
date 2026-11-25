@@ -33,6 +33,8 @@ export interface PrepareFarmingStepOptions {
 	availableBank: Bank;
 	compostTier: CropUpgradeType;
 	bottomless?: BottomlessCompostState;
+	/** Harvest a ready crop without planting a new one (used when Replant cannot afford the same seed). */
+	harvestOnly?: boolean;
 }
 
 export interface PreparedFarmingStep {
@@ -132,7 +134,8 @@ export async function prepareFarmingStep({
 	maxTripLength,
 	availableBank,
 	compostTier,
-	bottomless: bottomlessOption
+	bottomless: bottomlessOption,
+	harvestOnly = false
 }: PrepareFarmingStepOptions): Promise<
 	{ success: true; data: PreparedFarmingStep } | { success: false; error: string }
 > {
@@ -163,6 +166,68 @@ export async function prepareFarmingStep({
 			}
 			treeChopCost = fee;
 		}
+	}
+
+	if (harvestOnly) {
+		if (!patchDetailed.patchPlanted || patchDetailed.lastQuantity <= 0) {
+			return { success: false, error: 'There is nothing to harvest.' };
+		}
+
+		const quantityToDo = patchDetailed.lastQuantity;
+		const timePerPatchTravel = Time.Second * plant.timePerPatchTravel;
+		const timePerPatchHarvest = Time.Second * plant.timePerHarvest;
+		let duration = quantityToDo * (timePerPatchTravel + timePerPatchHarvest);
+
+		if (treeChopCost > 0) {
+			infoStr.push(formatTreeRemovalPreparation(treeChopCost));
+		}
+
+		if (user.hasGracefulEquipped()) {
+			boostStr.push(farmingBoostMessages.gracefulTime);
+			duration *= 0.9;
+		}
+
+		if (user.hasEquippedOrInBank('Ring of endurance')) {
+			boostStr.push(farmingBoostMessages.ringOfEnduranceTime);
+			duration *= 0.9;
+		}
+
+		if (user.bitfield.includes(BitField.HasMoondashCharm)) {
+			boostStr.push('25% faster for Moondash charm');
+			duration = reduceNumByPercent(duration, 25);
+		}
+
+		if (user.hasDiary('ardougne.hard')) {
+			boostStr.push(farmingBoostMessages.ardougneHardTime);
+			duration *= 0.96;
+		}
+
+		if (user.hasDiary('ardougne.elite')) {
+			boostStr.push(farmingBoostMessages.ardougneEliteTime);
+			duration *= 0.96;
+		}
+
+		if (duration > maxTripLength) {
+			return {
+				success: false,
+				error: `${user.minionName} can't go on trips longer than ${formatDuration(maxTripLength)}.`
+			};
+		}
+
+		return {
+			success: true,
+			data: {
+				quantity: quantityToDo,
+				duration,
+				cost: new Bank(),
+				didPay: false,
+				upgradeType: null,
+				bucketChargesUsed: 0,
+				infoStr,
+				boostStr,
+				treeChopFee: treeChopCost
+			}
+		};
 	}
 
 	const [numOfPatches] = calcNumOfPatches(plant, user, user.QP);

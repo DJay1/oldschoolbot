@@ -345,3 +345,55 @@ describe('condenseCompostInfoLines', () => {
 		expect(condensed.join('\n').length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - LENGTH_BUFFER);
 	});
 });
+
+describe('prepareFarmingStep harvest-only', () => {
+	const treePlant = plants.find(p => p.name === 'Oak tree');
+	if (!treePlant) {
+		throw new Error('Expected Oak tree plant to exist for tests');
+	}
+
+	const plantedTree: IPatchDataDetailed = {
+		lastPlanted: treePlant.name,
+		patchPlanted: true,
+		plantTime: Date.now(),
+		lastQuantity: 3,
+		lastUpgradeType: null,
+		lastPayment: false,
+		ready: true,
+		readyIn: 0,
+		readyAt: new Date(),
+		patchName: treePlant.seedType,
+		friendlyName: 'Tree patch',
+		plant: treePlant
+	};
+
+	it('harvestOnly does not consume seeds or compost and still charges the tree-removal fee', async () => {
+		const user = mockMUser({
+			bank: new Bank().add('Coins', 10_000),
+			skills_farming: convertLVLtoXP(40),
+			skills_woodcutting: convertLVLtoXP(1)
+		});
+
+		const prepared = await prepareFarmingStep({
+			user,
+			plant: treePlant,
+			quantity: null,
+			pay: false,
+			patchDetailed: plantedTree,
+			maxTripLength: 60 * 60 * 1000,
+			availableBank: user.bank.clone(),
+			compostTier: CropUpgradeType.supercompost,
+			harvestOnly: true
+		});
+
+		expect(prepared.success).toBe(true);
+		if (!prepared.success) return;
+		expect(prepared.data.quantity).toBe(3);
+		expect(prepared.data.cost.length).toBe(0);
+		expect(prepared.data.cost.amount('Acorn')).toBe(0);
+		expect(prepared.data.cost.amount('Supercompost')).toBe(0);
+		expect(prepared.data.upgradeType).toBeNull();
+		expect(prepared.data.treeChopFee).toBe(600);
+		expect(prepared.data.duration).toBeGreaterThan(0);
+	});
+});

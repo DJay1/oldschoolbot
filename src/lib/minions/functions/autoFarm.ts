@@ -8,10 +8,12 @@ import { MessageBuilderClass } from '@/discord/MessageBuilder.js';
 import { InteractionID } from '@/lib/InteractionID.js';
 import { allFarm, replant } from '@/lib/minions/functions/autoFarmFilters.js';
 import {
+	AUTO_FARM_START_MESSAGE_SAFE_LIMIT,
 	buildAutoFarmPlan,
 	buildFallbackPlantsByPatch,
 	buildPlanRequests,
 	buildSummaryForStep,
+	formatCouldNotReplantLine,
 	type PlannedAutoFarmStep,
 	selectCandidateForPatch
 } from '@/lib/minions/functions/autoFarmHelpers.js';
@@ -120,13 +122,15 @@ export async function planAutoFarmTrip(
 			? assignedContractPlant
 			: null;
 
+	const replantFilter = autoFarmFilter === AutoFarmFilterEnum.Replant;
 	const planRequests = buildPlanRequests({
 		patchesDetailed,
 		preferredSeeds,
 		preferContract,
 		hasActiveContract,
 		contractPlant: contractPlant ?? null,
-		fallbackPlantsByPatch
+		fallbackPlantsByPatch,
+		replantFilter
 	});
 
 	for (const request of planRequests) {
@@ -158,7 +162,8 @@ export async function planAutoFarmTrip(
 			plannedSteps,
 			quantity: request.quantity,
 			remainingBottomless,
-			totalBucketChargesUsed
+			totalBucketChargesUsed,
+			replantFilter
 		});
 
 		totalDuration = selection.updatedTotalDuration;
@@ -183,6 +188,135 @@ export async function planAutoFarmTrip(
 		totalBucketChargesUsed: totalBucketChargesUsed.value,
 		bottomlessBefore: getBottomlessState(user)
 	};
+}
+
+export function buildAutoFarmTripStartMessage({
+	minionName,
+	tripDurationText,
+	summaryLines,
+	couldNotReplantLine,
+	itemsUsed,
+	infoDetails,
+	uniqueBoosts,
+	skippedDueToTripLength,
+	skippedPatchNames,
+	maxTripLength
+}: {
+	minionName: string;
+	tripDurationText: string;
+	summaryLines: string[];
+	couldNotReplantLine: string;
+	itemsUsed: string;
+	infoDetails: string[];
+	uniqueBoosts: string[];
+	skippedDueToTripLength: boolean;
+	skippedPatchNames: string[];
+	maxTripLength: number;
+}): string {
+	const patchGroupCount = summaryLines.length;
+	const intro = `${minionName} is now auto farming ${patchGroupCount.toLocaleString()} patch group${
+		patchGroupCount === 1 ? '' : 's'
+	}, the trip will return in about ${tripDurationText}:`;
+	const skippedPatchStr = skippedDueToTripLength
+		? skippedPatchNames.length > 0
+			? `Skipped due to trip length: ${skippedPatchNames.join(', ')}. Your maximum trip length is ${formatDuration(maxTripLength)}.`
+			: `Some ready patches were skipped. Your maximum trip length is ${formatDuration(maxTripLength)}.`
+		: '';
+	const condensedInfo = infoDetails.length > 0 ? condenseCompostInfoLines(infoDetails).join('\n') : '';
+	const boostText = formatFarmingBoosts(uniqueBoosts, { label: '**Boosts**:', suffix: '' });
+
+	const assemble = ({
+		warning,
+		lines,
+		includeItems,
+		includeInfo,
+		includeBoosts,
+		includeSkipped
+	}: {
+		warning: string;
+		lines: string[];
+		includeItems: boolean;
+		includeInfo: boolean;
+		includeBoosts: boolean;
+		includeSkipped: boolean;
+	}) => {
+		let response = intro;
+		if (warning) {
+			response += `\n\n${warning}`;
+		}
+		response += `\n\n**Patches:**\n${lines.join('\n')}`;
+		if (includeItems && itemsUsed.length > 0) {
+			response += `\n\n${itemsUsed}`;
+		}
+		if (includeInfo && condensedInfo.length > 0) {
+			response += `\n\n${condensedInfo}`;
+		}
+		if (includeBoosts) {
+			response += boostText;
+		}
+		if (includeSkipped && skippedPatchStr) {
+			response += `\n\n${skippedPatchStr}`;
+		}
+		return response;
+	};
+
+	let warning = couldNotReplantLine;
+	let lines = [...summaryLines];
+	let includeItems = true;
+	let includeInfo = true;
+	let includeBoosts = true;
+	let includeSkipped = true;
+	let response = assemble({ warning, lines, includeItems, includeInfo, includeBoosts, includeSkipped });
+
+	const shrinkSteps: Array<() => boolean> = [
+		() => {
+			if (!includeInfo) return false;
+			includeInfo = false;
+			return true;
+		},
+		() => {
+			if (!includeBoosts) return false;
+			includeBoosts = false;
+			return true;
+		},
+		() => {
+			if (!includeSkipped) return false;
+			includeSkipped = false;
+			return true;
+		},
+		() => {
+			if (!includeItems) return false;
+			includeItems = false;
+			return true;
+		},
+		() => {
+			const keptCount = lines.filter(line => !line.startsWith('And ')).length;
+			if (keptCount <= 1) return false;
+			const nextCount = keptCount - 1;
+			const omitted = summaryLines.length - nextCount;
+			lines = [
+				...summaryLines.slice(0, nextCount),
+				`And ${omitted} more patch group${omitted === 1 ? '' : 's'}.`
+			];
+			return true;
+		}
+	];
+
+	let step = 0;
+	while (response.length > AUTO_FARM_START_MESSAGE_SAFE_LIMIT && step < 100) {
+		const shrink = shrinkSteps[Math.min(step, shrinkSteps.length - 1)];
+		if (!shrink()) {
+			if (warning.length > 120) {
+				warning = `${warning.slice(0, 117).trimEnd()}...`;
+			} else {
+				break;
+			}
+		}
+		response = assemble({ warning, lines, includeItems, includeInfo, includeBoosts, includeSkipped });
+		step += 1;
+	}
+
+	return response;
 }
 
 export async function autoFarm(
@@ -293,7 +427,9 @@ export async function autoFarm(
 	const currentPreferences = parsePreferredSeeds(user.user.minion_farmingPreferredSeeds);
 	const nextPreferences = rememberCropsInPreferences(
 		currentPreferences,
-		plannedSteps.map(step => ({ patchName: step.patchName, plant: step.plant }))
+		plannedSteps
+			.filter(step => step.planting !== false)
+			.map(step => ({ patchName: step.patchName, plant: step.plant }))
 	);
 	if (!preferencesEqual(currentPreferences, nextPreferences)) {
 		try {
@@ -322,34 +458,22 @@ export async function autoFarm(
 		infoDetails.push(...extraInfoLines);
 	});
 
-	const patchGroupCount = summaryLines.length;
-	let response = `${user.minionName} is now auto farming ${patchGroupCount.toLocaleString()} patch group${
-		patchGroupCount === 1 ? '' : 's'
-	}, the trip will return in about ${formatTripDuration(
-		user,
-		totalDuration
-	)}:\n\n**Patches:**\n${summaryLines.join('\n')}`;
+	const couldNotReplantLine = formatCouldNotReplantLine(
+		plannedSteps
+			.filter(step => step.couldNotReplantNeed)
+			.map(step => ({ friendlyName: step.friendlyName, need: step.couldNotReplantNeed as string }))
+	);
 
-	const itemsUsed = formatItemsUsed(totalCost);
-	if (itemsUsed.length > 0) {
-		response += `\n\n${itemsUsed}`;
-	}
-
-	if (infoDetails.length > 0) {
-		response += `
-
-${condenseCompostInfoLines(infoDetails).join('\n')}`;
-	}
-
-	response += formatFarmingBoosts(uniqueBoosts, { label: '**Boosts**:', suffix: '' });
-	if (skippedDueToTripLength) {
-		const skippedPatches = skippedPatchNamesDueToTripLength;
-		const skippedPatchStr =
-			skippedPatches.length > 0
-				? `Skipped due to trip length: ${skippedPatches.join(', ')}.`
-				: 'Some ready patches were skipped.';
-		response += `\n\n${skippedPatchStr} Your maximum trip length is ${formatDuration(maxTripLength)}.`;
-	}
-
-	return response;
+	return buildAutoFarmTripStartMessage({
+		minionName: user.minionName,
+		tripDurationText: formatTripDuration(user, totalDuration),
+		summaryLines,
+		couldNotReplantLine,
+		itemsUsed: formatItemsUsed(totalCost),
+		infoDetails,
+		uniqueBoosts,
+		skippedDueToTripLength,
+		skippedPatchNames: skippedPatchNamesDueToTripLength,
+		maxTripLength
+	});
 }

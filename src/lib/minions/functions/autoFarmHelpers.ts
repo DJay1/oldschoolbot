@@ -2,7 +2,11 @@ import { formatDuration } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import type { CropUpgradeType } from '@/prisma/main/enums.js';
-import { getPreferredPlants, resolveSeedForPatch } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
+import {
+	getPreferredPlants,
+	lastPlantedCrop,
+	resolveSeedForPatch
+} from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
 import {
 	applyBottomlessUse,
 	type BottomlessCompostState
@@ -30,6 +34,8 @@ export interface PlannedAutoFarmStep {
 	info: string[];
 	boosts: string[];
 	bucketChargesUsed?: number;
+	planting?: boolean;
+	couldNotReplantNeed?: string;
 }
 
 export interface PlanRequest {
@@ -67,10 +73,60 @@ export function buildSummaryForStep(index: number, step: PlannedAutoFarmStep): B
 		.filter(infoLine => !shouldHideInfoLine(infoLine))
 		.map(infoLine => `${step.friendlyName}: ${infoLine}`);
 
+	const summaryLine =
+		step.planting === false
+			? `${index + 1}. ${step.friendlyName}: harvested ${step.quantity.toLocaleString()}x ${step.plant.name} (not replanted)`
+			: `${index + 1}. ${step.friendlyName}: ${step.quantity.toLocaleString()}x ${step.plant.name}`;
+
 	return {
-		summaryLine: `${index + 1}. ${step.friendlyName}: ${step.quantity.toLocaleString()}x ${step.plant.name}`,
+		summaryLine,
 		extraInfoLines
 	};
+}
+
+export function missingPlantInputNames(plant: Plant, bank: Bank): string[] {
+	const names: string[] = [];
+	for (const [item, qty] of plant.inputItems.items()) {
+		if (bank.amount(item.id) < qty && !names.includes(item.name)) {
+			names.push(item.name);
+		}
+	}
+	return names;
+}
+
+export const AUTO_FARM_START_MESSAGE_SAFE_LIMIT = 2000 - 150;
+const COULD_NOT_REPLANT_LINE_LIMIT = 500;
+
+export function formatCouldNotReplantLine(
+	entries: { friendlyName: string; need: string }[],
+	maxLength = COULD_NOT_REPLANT_LINE_LIMIT
+): string {
+	if (entries.length === 0) {
+		return '';
+	}
+	const prefix = "⚠️ Couldn't replant: ";
+	const partFor = (entry: { friendlyName: string; need: string }) => `${entry.friendlyName} (need ${entry.need})`;
+	const full = `${prefix}${entries.map(partFor).join(', ')}.`;
+	if (full.length <= maxLength) {
+		return full;
+	}
+
+	const kept: string[] = [];
+	for (let i = 0; i < entries.length; i++) {
+		const remaining = entries.length - (i + 1);
+		const suffix = remaining > 0 ? `, and ${remaining} more.` : '.';
+		const candidate = `${prefix}${[...kept, partFor(entries[i])].join(', ')}${suffix}`;
+		if (candidate.length > maxLength) {
+			break;
+		}
+		kept.push(partFor(entries[i]));
+	}
+	if (kept.length === 0) {
+		const fallback = `${prefix}${entries.length} patches (need the same seed).`;
+		return fallback.length <= maxLength ? fallback : fallback.slice(0, maxLength);
+	}
+	const remaining = entries.length - kept.length;
+	return `${prefix}${kept.join(', ')}${remaining > 0 ? `, and ${remaining} more.` : '.'}`;
 }
 
 export function buildPlanRequests({
@@ -79,7 +135,8 @@ export function buildPlanRequests({
 	preferContract,
 	hasActiveContract,
 	contractPlant,
-	fallbackPlantsByPatch
+	fallbackPlantsByPatch,
+	replantFilter = false
 }: {
 	patchesDetailed: IPatchDataDetailed[];
 	preferredSeeds: Map<FarmingPatchName, FarmingSeedPreference>;
@@ -87,17 +144,19 @@ export function buildPlanRequests({
 	hasActiveContract: boolean;
 	contractPlant: Plant | null | undefined;
 	fallbackPlantsByPatch: Map<FarmingPatchName, Plant>;
+	replantFilter?: boolean;
 }): PlanRequest[] {
 	const planRequests: PlanRequest[] = [];
 	for (const patch of patchesDetailed) {
-		const preferredQuantity = preferredSeeds.get(patch.patchName)?.quantity;
+		const preferredQuantity = replantFilter ? undefined : preferredSeeds.get(patch.patchName)?.quantity;
 		const resolved = resolveSeedForPatch({
 			patch,
 			preferContract,
 			hasActiveContract,
 			contractPlant: contractPlant ?? null,
 			preferences: preferredSeeds,
-			fallbackPlant: fallbackPlantsByPatch.get(patch.patchName) ?? null
+			fallbackPlant: fallbackPlantsByPatch.get(patch.patchName) ?? null,
+			replantFilter
 		});
 
 		if (!resolved) {
@@ -149,7 +208,7 @@ export function buildAutoFarmPlan(plannedSteps: PlannedAutoFarmStep[], planningS
 			treeChopFeePaid: step.treeChopFee,
 			treeChopFeePlanned: step.treeChopFee,
 			patchType: step.patch,
-			planting: true,
+			planting: step.planting !== false,
 			currentDate: planningStartTime + accumulatedDuration,
 			duration: step.duration
 		});
@@ -189,7 +248,8 @@ export async function evaluateCandidateForPatch({
 	patches,
 	preferredQuantity,
 	remainingBottomless,
-	totalBucketChargesUsed
+	totalBucketChargesUsed,
+	harvestOnly = false
 }: {
 	user: MUser;
 	candidate: Plant;
@@ -203,6 +263,7 @@ export async function evaluateCandidateForPatch({
 	preferredQuantity?: number;
 	remainingBottomless: BottomlessCompostState;
 	totalBucketChargesUsed: { value: number };
+	harvestOnly?: boolean;
 }): Promise<CandidateEvaluationResult> {
 	const prepared = await prepareFarmingStep({
 		user,
@@ -213,7 +274,8 @@ export async function evaluateCandidateForPatch({
 		maxTripLength,
 		availableBank: remainingBank,
 		compostTier,
-		bottomless: remainingBottomless
+		bottomless: remainingBottomless,
+		harvestOnly
 	});
 	if (!prepared.success) {
 		return { success: false, error: prepared.error };
@@ -276,7 +338,8 @@ export async function evaluateCandidateForPatch({
 			friendlyName: patch.friendlyName,
 			info: infoStr,
 			boosts: boostStr,
-			bucketChargesUsed
+			bucketChargesUsed,
+			planting: !harvestOnly
 		},
 		updatedTotalDuration
 	};
@@ -296,7 +359,8 @@ export async function selectCandidateForPatch({
 	plannedSteps,
 	quantity: preferredQuantity,
 	remainingBottomless,
-	totalBucketChargesUsed
+	totalBucketChargesUsed,
+	replantFilter = false
 }: {
 	user: MUser;
 	patch: IPatchDataDetailed;
@@ -312,6 +376,7 @@ export async function selectCandidateForPatch({
 	quantity?: number;
 	remainingBottomless: BottomlessCompostState;
 	totalBucketChargesUsed: { value: number };
+	replantFilter?: boolean;
 }): Promise<{
 	planned: boolean;
 	updatedTotalDuration: number;
@@ -354,6 +419,39 @@ export async function selectCandidateForPatch({
 			planned = true;
 			currentTotalDuration = result.updatedTotalDuration ?? currentTotalDuration;
 			break;
+		}
+	}
+
+	if (!planned && !skippedThisPatch && replantFilter && patch.ready === true && patch.patchPlanted) {
+		const sameCrop = lastPlantedCrop(patch) ?? candidates[0] ?? null;
+		if (sameCrop) {
+			const harvestResult = await evaluateCandidateForPatch({
+				user,
+				candidate: sameCrop,
+				patch,
+				maxTripLength,
+				remainingBank,
+				totalDuration: currentTotalDuration,
+				totalCost,
+				compostTier,
+				patches,
+				remainingBottomless,
+				totalBucketChargesUsed,
+				harvestOnly: true
+			});
+			if (harvestResult.success && harvestResult.plannedStep) {
+				const missing = missingPlantInputNames(sameCrop, remainingBank);
+				harvestResult.plannedStep.couldNotReplantNeed =
+					missing.length > 0 ? missing.join(', ') : 'the same seed';
+				plannedSteps.push(harvestResult.plannedStep);
+				planned = true;
+				currentTotalDuration = harvestResult.updatedTotalDuration ?? currentTotalDuration;
+			} else if (harvestResult.skippedTripLength) {
+				skippedThisPatch = true;
+				skippedPatchNamesDueToTripLength.add(patch.friendlyName);
+			} else if (harvestResult.error && errorsForPatch.length === 0) {
+				errorsForPatch.push(harvestResult.error);
+			}
 		}
 	}
 
