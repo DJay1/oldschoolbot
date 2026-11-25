@@ -30,6 +30,7 @@ import {
 	isDailyHardModalId,
 	isDailyTypingButton,
 	isDailyWordleGuessButton,
+	isDailyWordleHintButton,
 	isUnstartedTimedDaily,
 	parseButtonAction,
 	renderTypingPromptImage,
@@ -236,7 +237,7 @@ async function hardGameContent(
 	if (game.type === 'wordle') {
 		return {
 			content: formatWordleMessage(game, left),
-			components: game.status === 'playing' ? buttonsFromSpec(wordleGuessRows()) : []
+			components: game.status === 'playing' ? buttonsFromSpec(wordleGuessRows(game)) : []
 		};
 	}
 	if (game.type === 'buttons') {
@@ -460,6 +461,26 @@ async function playHardGame(
 							return;
 						}
 						throw new Error('Failed to open the daily typing box.');
+					}
+					return;
+				}
+				if (game.type === 'wordle' && isDailyWordleHintButton(customId)) {
+					try {
+						await button.baseDeferUpdate();
+					} catch {
+						// Already acknowledged; still apply the hint and edit if we can.
+					}
+					game = applyWordleAction(game, { kind: 'hint' });
+					await updateDailyPendingGame(user.id, game, expiresAt);
+					const view = await hardGameContent(game, expiresAt);
+					try {
+						if (button.deferred || button.replied) {
+							await button.baseEditReply({ content: view.content, components: view.components });
+						} else {
+							await button.update({ content: view.content, components: view.components });
+						}
+					} catch {
+						// The hint is already saved. Don't fail the command over a stale token.
 					}
 					return;
 				}

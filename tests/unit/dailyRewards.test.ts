@@ -26,14 +26,18 @@ import {
 	DAILY_TYPING_MS,
 	DAILY_TYPING_PHRASES,
 	DAILY_WORDLE_GUESSES,
+	DAILY_WORDLE_HINT_AFTER_MISSES,
+	DAILY_WORDLE_HINTS,
 	DAILY_WORDLE_LENGTH,
 	DAILY_WORDLE_MS,
+	DAILY_WORDLE_RETIRED_WORDS,
 	DAILY_WORDLE_WORDS,
 	dailyModalIsValid,
 	dailyModalPayload,
 	discordButtonRowsAreValid,
 	formatButtonGameMessage,
 	formatTypingMessage,
+	formatWordleHintLine,
 	formatWordleMessage,
 	HARD_GAME_TYPES,
 	hardestDailyRewardPreview,
@@ -41,15 +45,18 @@ import {
 	isAllowedWordleGuess,
 	isTypingGuessCorrect,
 	isUnstartedTimedDaily,
+	isWordleHintVisible,
 	normalizeTypingGuess,
 	normalizeWordleGuess,
 	parseButtonAction,
+	parseWordleAction,
 	renderTypingPromptImage,
 	scoreWordleGuess,
 	showDailyGameModal,
 	typingGameRows,
 	typingModalSpec,
 	wordleGuessRows,
+	wordleHintFor,
 	wordleModalSpec,
 	wordleTiles
 } from '@/lib/bsc/dailyGames.js';
@@ -226,12 +233,15 @@ describe('Wordle game', () => {
 		'SPEAR'
 	];
 
-	test('the word list is 5-letter OSRS or BSC names, not common English', () => {
-		expect(DAILY_WORDLE_WORDS).toContain('CORGO');
+	test('the word list is 5-letter OSRS names, not common English or custom words', () => {
+		expect(DAILY_WORDLE_WORDS).not.toContain('CORGO');
+		expect(DAILY_WORDLE_WORDS).not.toContain('AKUMU');
+		expect(DAILY_WORDLE_RETIRED_WORDS).toEqual(['CORGO', 'AKUMU']);
 		expect(DAILY_WORDLE_WORDS).toContain('HYDRA');
 		expect(DAILY_WORDLE_WORDS).toContain('AHRIM');
 		expect(DAILY_WORDLE_GUESSES).toBe(5);
 		expect(DAILY_WORDLE_MS).toBe(90_000);
+		expect(DAILY_WORDLE_HINT_AFTER_MISSES).toBe(2);
 		for (const word of commonEnglish) {
 			expect(DAILY_WORDLE_WORDS).not.toContain(word);
 		}
@@ -239,7 +249,20 @@ describe('Wordle game', () => {
 			expect(word).toBe(word.toUpperCase());
 			expect(word).toHaveLength(DAILY_WORDLE_LENGTH);
 			expect(/^[A-Z]+$/.test(word)).toBe(true);
+			expect(DAILY_WORDLE_RETIRED_WORDS as readonly string[]).not.toContain(word);
+			const hint = wordleHintFor(word);
+			expect(hint).toBeTruthy();
+			expect(hint?.category.length).toBeGreaterThan(0);
+			expect(hint?.clue.length).toBeGreaterThan(0);
+			expect(`Hint: ${hint?.category} — ${hint?.clue}`).toBe(formatWordleHintLine(word));
 		}
+		for (const word of DAILY_WORDLE_RETIRED_WORDS) {
+			expect(DAILY_WORDLE_WORDS as readonly string[]).not.toContain(word);
+			expect(wordleHintFor(word)).toBeTruthy();
+		}
+		expect(Object.keys(DAILY_WORDLE_HINTS).sort()).toEqual(
+			[...DAILY_WORDLE_WORDS, ...DAILY_WORDLE_RETIRED_WORDS].slice().sort()
+		);
 	});
 
 	test('scoring handles greens, yellows, and double letters', () => {
@@ -285,17 +308,99 @@ describe('Wordle game', () => {
 		expect(after.rows).toHaveLength(DAILY_WORDLE_GUESSES);
 	});
 
-	test('Wordle uses a single Guess button and stays within Discord limits', () => {
+	test('Wordle starts with Guess and Hint buttons and stays within Discord limits', () => {
 		const rows = wordleGuessRows();
 		expect(discordButtonRowsAreValid(rows)).toBe(true);
-		expect(rows).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
-		expect(hardGameTimeoutMs(createWordleState(mockRng([], ['CORGO'])))).toBe(DAILY_WORDLE_MS);
-		const text = formatWordleMessage(createWordleState(mockRng([], ['CORGO'])), DAILY_WORDLE_MS);
+		expect(rows).toEqual([
+			[
+				{ id: 'dlyw:GO', label: 'Guess' },
+				{ id: 'dlyw:HINT', label: 'Hint' }
+			]
+		]);
+		expect(hardGameTimeoutMs(createWordleState(mockRng([], ['HYDRA'])))).toBe(DAILY_WORDLE_MS);
+		const text = formatWordleMessage(createWordleState(mockRng([], ['HYDRA'])), DAILY_WORDLE_MS);
 		expect(text).toContain('5 tries');
 		expect(text).toContain('Any 5-letter word counts as a guess.');
+		expect(text).not.toContain('Hint:');
 		expect(text).not.toContain('4 tries');
 		expect(text).not.toContain('6 tries');
 		expect(text).not.toContain('Not in the list');
+		for (const button of rows.flat()) {
+			expect(button.id.length).toBeLessThanOrEqual(100);
+			expect(button.label.length).toBeLessThanOrEqual(80);
+		}
+	});
+
+	test('a hint click reveals the clue without using a try or changing the answer', () => {
+		let state = createWordleState(mockRng([], ['HYDRA']));
+		expect(parseWordleAction('dlyw:HINT')).toEqual({ kind: 'hint' });
+		state = applyWordleAction(state, { kind: 'hint' });
+		expect(state.status).toBe('playing');
+		expect(state.answer).toBe('HYDRA');
+		expect(state.rows).toHaveLength(0);
+		expect(state.hintRevealed).toBe(true);
+		expect(isWordleHintVisible(state)).toBe(true);
+		expect(isUnstartedTimedDaily(state)).toBe(false);
+		const text = formatWordleMessage(state, DAILY_WORDLE_MS);
+		expect(text).toContain('Hint: Monster — The Alchemical boss.');
+		expect(wordleGuessRows(state)).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
+		const again = applyWordleAction(state, { kind: 'hint' });
+		expect(again).toEqual(state);
+		expect(again.rows).toHaveLength(0);
+		expect(again.status).toBe('playing');
+		expect(again.answer).toBe('HYDRA');
+	});
+
+	test('the hint appears automatically after two misses and cannot settle the game', () => {
+		let state = createWordleState(mockRng([], ['HYDRA']));
+		state = applyWordleAction(state, { kind: 'submit', guess: 'AHRIM' });
+		expect(state.hintRevealed).toBeFalsy();
+		expect(formatWordleMessage(state, DAILY_WORDLE_MS)).not.toContain('Hint:');
+		state = applyWordleAction(state, { kind: 'submit', guess: 'KARIL' });
+		expect(state.hintRevealed).toBe(true);
+		expect(state.status).toBe('playing');
+		expect(state.answer).toBe('HYDRA');
+		expect(state.rows).toHaveLength(2);
+		const text = formatWordleMessage(state, DAILY_WORDLE_MS);
+		expect(text).toContain('Hint: Monster — The Alchemical boss.');
+		expect(wordleGuessRows(state)).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
+		const afterWin = applyWordleAction(
+			applyWordleAction(createWordleState(mockRng([], ['HYDRA'])), { kind: 'submit', guess: 'HYDRA' }),
+			{ kind: 'hint' }
+		);
+		expect(afterWin.status).toBe('won');
+		expect(afterWin.hintRevealed).toBeFalsy();
+	});
+
+	test('a stored retired answer can still be finished and hinted', () => {
+		let state = createWordleState(mockRng([], ['CORGO']));
+		expect(state.answer).toBe('CORGO');
+		expect(DAILY_WORDLE_WORDS as readonly string[]).not.toContain(state.answer);
+		state = applyWordleAction(state, { kind: 'hint' });
+		expect(formatWordleMessage(state, DAILY_WORDLE_MS)).toContain('Hint: Custom — A four-legged mascot.');
+		state = applyWordleAction(state, { kind: 'submit', guess: 'corgo' });
+		expect(state.status).toBe('won');
+		expect(state.rows).toHaveLength(1);
+		expect(state.answer).toBe('CORGO');
+	});
+
+	test('the longest Wordle board plus hint stays under the Discord length limit', () => {
+		const longest = [...DAILY_WORDLE_WORDS, ...DAILY_WORDLE_RETIRED_WORDS].reduce((best, word) => {
+			const line = formatWordleHintLine(word) ?? '';
+			return line.length > best.length ? line : best;
+		}, '');
+		let state = createWordleState(mockRng([], ['HYDRA']));
+		for (const guess of ['AHRIM', 'KARIL', 'TORAG', 'VERAC']) {
+			state = applyWordleAction(state, { kind: 'submit', guess });
+		}
+		state = { ...state, notice: 'Type exactly 5 letters.' };
+		const text = formatWordleMessage(state, DAILY_WORDLE_MS);
+		expect(text).toContain('Hint:');
+		expect(longest.length).toBeGreaterThan(0);
+		expect(
+			text.length + Math.max(0, longest.length - (formatWordleHintLine('HYDRA') ?? '').length)
+		).toBeLessThanOrEqual(2000 - 150);
+		expect(text.length).toBeLessThanOrEqual(2000 - 150);
 	});
 });
 
@@ -403,7 +508,7 @@ describe('daily messages', () => {
 			difficulty: 'hard',
 			success: true,
 			game: 'wordle',
-			detail: 'You got CORGO in 5 tries.'
+			detail: 'You got HYDRA in 5 tries.'
 		};
 		const lootLine =
 			"10000000000x Coins, 1x Double XP token, 1x Double loot token, 20x Tradeable Mystery Box, 20x Untradeable Mystery Box, 20x Equippable mystery box, 20x Spinning plate, 1x Hornwood helm, 1x Disk of returning, 1x Diango's claws, 1x Rainbow scarf";

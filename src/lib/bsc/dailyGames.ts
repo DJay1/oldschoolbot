@@ -22,14 +22,17 @@ export const DAILY_TYPING_BUTTON_PREFIX = 'dlyt:';
 export const DAILY_WORDLE_GUESS_BUTTON_ID = 'dlyw:GO';
 export const DAILY_WORDLE_MODAL_ID = 'dlyw:MODAL';
 export const DAILY_WORDLE_MODAL_INPUT_ID = 'dlyw:TEXT';
+export const DAILY_WORDLE_HINT_BUTTON_ID = 'dlyw:HINT';
+export const DAILY_WORDLE_HINT_AFTER_MISSES = 2;
 export const DAILY_TYPING_BUTTON_ID = 'dlyt:GO';
 export const DAILY_TYPING_MODAL_ID = 'dlyt:MODAL';
 export const DAILY_TYPING_MODAL_INPUT_ID = 'dlyt:TEXT';
 export const HARD_GAME_TYPES = ['wordle', 'typing'] as const;
 
 /**
- * Distinctly OSRS or BSC 5-letter names. No common English words like SHARK or DEATH.
- * Used as both answers and the allowed guess list.
+ * Distinctly OSRS 5-letter names. No common English words like SHARK or DEATH,
+ * and no BSC or custom names. New games pick answers from this list only.
+ * Any 5-letter alphabetic guess is still allowed.
  */
 export const DAILY_WORDLE_WORDS = [
 	'AHRIM',
@@ -58,11 +61,50 @@ export const DAILY_WORDLE_WORDS = [
 	'ZEBAK',
 	'NYLOC',
 	'NIHIL',
-	'CORGO',
 	'CHINS',
-	'AKUMU',
 	'ARRAV'
 ] as const;
+
+/** Retired answers kept so a game already in progress can still finish and show a hint. */
+export const DAILY_WORDLE_RETIRED_WORDS = ['CORGO', 'AKUMU'] as const;
+
+export type WordleHint = {
+	category: string;
+	clue: string;
+};
+
+export const DAILY_WORDLE_HINTS: Record<string, WordleHint> = {
+	AHRIM: { category: 'Barrows brother', clue: 'The mage of the six.' },
+	KARIL: { category: 'Barrows brother', clue: 'The ranger of the six.' },
+	TORAG: { category: 'Barrows brother', clue: 'He fights with hammers.' },
+	VERAC: { category: 'Barrows brother', clue: 'He fights with a flail.' },
+	HYDRA: { category: 'Monster', clue: 'The Alchemical boss.' },
+	ABYSS: { category: 'Location', clue: 'Where rune pouches come from.' },
+	HASTA: { category: 'Item', clue: 'A Zamorakian spear-like weapon.' },
+	KERIS: { category: 'Item', clue: 'A desert dagger for Kalphites.' },
+	TORVA: { category: 'Item', clue: "Nex's melee armour." },
+	ZAROS: { category: 'God', clue: 'The Empty Lord.' },
+	SEREN: { category: 'God', clue: 'The elven crystal goddess.' },
+	XERIC: { category: 'Person', clue: 'The Chambers are named after him.' },
+	NIEVE: { category: 'NPC', clue: 'A gnome slayer master.' },
+	KONAR: { category: 'NPC', clue: 'The slayer master in Kourend.' },
+	ANKOU: { category: 'Monster', clue: 'A lingering spirit in the Stronghold.' },
+	JOGRE: { category: 'Monster', clue: 'A jungle ogre.' },
+	MOGRE: { category: 'Monster', clue: 'An underwater ogre.' },
+	KYATT: { category: 'Hunter creature', clue: 'A sabre-toothed big cat.' },
+	VORKI: { category: 'Pet', clue: 'Hatches from Vorkath.' },
+	IKKLE: { category: 'Pet', clue: 'A tiny hydra.' },
+	ARTIO: { category: 'Boss', clue: 'The woodland bear in the Wilderness.' },
+	RALOS: { category: 'God', clue: 'The sun god of Varlamore.' },
+	AKKHA: { category: 'Boss', clue: 'A path challenge in ToA.' },
+	ZEBAK: { category: 'Boss', clue: 'The crocodile of ToA.' },
+	NYLOC: { category: 'Monster', clue: "ToB's swarming pests." },
+	NIHIL: { category: 'Item', clue: 'A horn or shard from Nex.' },
+	CHINS: { category: 'Item', clue: 'Short name for chinchompas.' },
+	ARRAV: { category: 'Person', clue: 'His shield starts a Varrock quest.' },
+	CORGO: { category: 'Custom', clue: 'A four-legged mascot.' },
+	AKUMU: { category: 'Custom boss', clue: 'A nightmare demon.' }
+};
 
 /** Clusters of similar-looking OSRS names. Decoys are taken from the same cluster as a target. */
 export const DAILY_BUTTON_CLUSTERS: readonly (readonly string[])[] = [
@@ -152,6 +194,21 @@ export interface WordleState {
 	rows: WordleRow[];
 	status: 'playing' | 'won' | 'lost';
 	notice?: string;
+	hintRevealed?: boolean;
+}
+
+export function wordleHintFor(answer: string): WordleHint | null {
+	return DAILY_WORDLE_HINTS[answer] ?? null;
+}
+
+export function formatWordleHintLine(answer: string): string | null {
+	const hint = wordleHintFor(answer);
+	if (!hint) return null;
+	return `Hint: ${hint.category} — ${hint.clue}`;
+}
+
+export function isWordleHintVisible(state: Pick<WordleState, 'hintRevealed' | 'rows'>): boolean {
+	return Boolean(state.hintRevealed) || state.rows.length >= DAILY_WORDLE_HINT_AFTER_MISSES;
 }
 
 export interface ButtonGameState {
@@ -217,9 +274,10 @@ export function createWordleState(rng: RNGProvider): WordleState {
 	};
 }
 
-export type WordleAction = { kind: 'submit'; guess: string };
+export type WordleAction = { kind: 'submit'; guess: string } | { kind: 'hint' };
 
 export function parseWordleAction(customId: string): WordleAction | null {
+	if (customId === DAILY_WORDLE_HINT_BUTTON_ID) return { kind: 'hint' };
 	return customId === DAILY_WORDLE_GUESS_BUTTON_ID || customId === DAILY_WORDLE_MODAL_ID
 		? { kind: 'submit', guess: '' }
 		: null;
@@ -227,6 +285,10 @@ export function parseWordleAction(customId: string): WordleAction | null {
 
 export function applyWordleAction(state: WordleState, action: WordleAction): WordleState {
 	if (state.status !== 'playing') return state;
+	if (action.kind === 'hint') {
+		if (state.hintRevealed) return state;
+		return { ...state, hintRevealed: true, notice: undefined };
+	}
 	const next: WordleState = { ...state, rows: [...state.rows], notice: undefined };
 	const guess = normalizeWordleGuess(action.guess);
 	if (guess.length !== DAILY_WORDLE_LENGTH) {
@@ -240,6 +302,9 @@ export function applyWordleAction(state: WordleState, action: WordleAction): Wor
 		next.notice = `You got ${next.answer} in ${next.rows.length} ${next.rows.length === 1 ? 'try' : 'tries'}.`;
 		return next;
 	}
+	if (next.rows.length >= DAILY_WORDLE_HINT_AFTER_MISSES) {
+		next.hintRevealed = true;
+	}
 	if (next.rows.length >= DAILY_WORDLE_GUESSES) {
 		next.status = 'lost';
 		next.notice = `Out of tries. The word was ${next.answer}.`;
@@ -248,8 +313,14 @@ export function applyWordleAction(state: WordleState, action: WordleAction): Wor
 	return next;
 }
 
-export function wordleGuessRows(): { id: string; label: string }[][] {
-	return [[{ id: DAILY_WORDLE_GUESS_BUTTON_ID, label: 'Guess' }]];
+export function wordleGuessRows(
+	state?: Pick<WordleState, 'status' | 'hintRevealed' | 'rows'>
+): { id: string; label: string }[][] {
+	const buttons = [{ id: DAILY_WORDLE_GUESS_BUTTON_ID, label: 'Guess' }];
+	if (!state || (state.status === 'playing' && !isWordleHintVisible(state))) {
+		buttons.push({ id: DAILY_WORDLE_HINT_BUTTON_ID, label: 'Hint' });
+	}
+	return [buttons];
 }
 
 export function formatWordleMessage(state: WordleState, remainingMs: number): string {
@@ -266,6 +337,10 @@ export function formatWordleMessage(state: WordleState, remainingMs: number): st
 	}
 	for (const row of state.rows) {
 		lines.push(`${wordleTiles(row.marks)}  ${row.guess}`);
+	}
+	if (isWordleHintVisible(state)) {
+		const hintLine = formatWordleHintLine(state.answer);
+		if (hintLine) lines.push(hintLine);
 	}
 	if (state.notice) lines.push(state.notice);
 	return lines.join('\n');
@@ -519,6 +594,10 @@ export function isDailyWordleGuessButton(customId: string): boolean {
 	return customId === DAILY_WORDLE_GUESS_BUTTON_ID;
 }
 
+export function isDailyWordleHintButton(customId: string): boolean {
+	return customId === DAILY_WORDLE_HINT_BUTTON_ID;
+}
+
 export function isDailyTypingButton(customId: string): boolean {
 	return customId === DAILY_TYPING_BUTTON_ID;
 }
@@ -597,7 +676,7 @@ export async function showDailyGameModal(
 
 export function isUnstartedTimedDaily(game: HardGameState): boolean {
 	if (game.status !== 'playing') return false;
-	if (game.type === 'wordle') return game.rows.length === 0;
+	if (game.type === 'wordle') return game.rows.length === 0 && !game.hintRevealed;
 	if (game.type === 'buttons') return game.progress === 0;
 	return true;
 }
@@ -634,5 +713,5 @@ export function hardestDailyRewardPreview(maxLootLine: string): string {
 		'🐧 Skipper negotiated you 50% more coins!',
 		'🎉 Launch event: your mystery boxes were tripled!'
 	];
-	return `${tokenLines.join('\n')}\n${bonuses.join('')}**Hard daily: Wordle — You got CORGO in 5 tries.**\nThat's correct! I've picked you some random items as a reward...\n\nYou received ${maxLootLine}`;
+	return `${tokenLines.join('\n')}\n${bonuses.join('')}**Hard daily: Wordle — You got HYDRA in 5 tries.**\nThat's correct! I've picked you some random items as a reward...\n\nYou received ${maxLootLine}`;
 }
