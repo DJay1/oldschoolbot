@@ -24,6 +24,9 @@ export const DAILY_WORDLE_MODAL_ID = 'dlyw:MODAL';
 export const DAILY_WORDLE_MODAL_INPUT_ID = 'dlyw:TEXT';
 export const DAILY_WORDLE_HINT_BUTTON_ID = 'dlyw:HINT';
 export const DAILY_WORDLE_HINT_AFTER_MISSES = 2;
+export const DAILY_WORDLE_BETTER_HINT_COST_MS = 15 * 1000;
+export const DAILY_WORDLE_BETTER_HINT_MIN_MS = 5 * 1000;
+export const DAILY_WORDLE_BETTER_HINT_BUTTON_LABEL = 'Better hint (-15s)';
 export const DAILY_TYPING_BUTTON_ID = 'dlyt:GO';
 export const DAILY_TYPING_MODAL_ID = 'dlyt:MODAL';
 export const DAILY_TYPING_MODAL_INPUT_ID = 'dlyt:TEXT';
@@ -70,6 +73,8 @@ export const DAILY_WORDLE_RETIRED_WORDS = ['CORGO', 'AKUMU'] as const;
 
 export type WordleHint = {
 	category: string;
+	/** Light second-hint nudge. Never names the exact answer or a unique role. */
+	nudge?: string;
 };
 
 /** Broad hint labels shown to players. Keep these shared so a category rarely names one answer. */
@@ -85,34 +90,34 @@ export const DAILY_WORDLE_CATEGORIES = [
 ] as const;
 
 export const DAILY_WORDLE_HINTS: Record<string, WordleHint> = {
-	AHRIM: { category: 'Barrows brother' },
-	KARIL: { category: 'Barrows brother' },
-	TORAG: { category: 'Barrows brother' },
-	VERAC: { category: 'Barrows brother' },
-	HYDRA: { category: 'Monster' },
-	ABYSS: { category: 'Location' },
-	HASTA: { category: 'Item' },
-	KERIS: { category: 'Item' },
-	TORVA: { category: 'Item' },
-	ZAROS: { category: 'God' },
-	SEREN: { category: 'God' },
-	XERIC: { category: 'NPC' },
-	NIEVE: { category: 'NPC' },
-	KONAR: { category: 'NPC' },
-	ANKOU: { category: 'Monster' },
-	JOGRE: { category: 'Monster' },
-	MOGRE: { category: 'Monster' },
-	KYATT: { category: 'Monster' },
-	VORKI: { category: 'Pet' },
-	IKKLE: { category: 'Pet' },
-	ARTIO: { category: 'Boss' },
-	RALOS: { category: 'God' },
-	AKKHA: { category: 'Boss' },
-	ZEBAK: { category: 'Boss' },
-	NYLOC: { category: 'Monster' },
-	NIHIL: { category: 'Item' },
-	CHINS: { category: 'Item' },
-	ARRAV: { category: 'NPC' },
+	AHRIM: { category: 'Barrows brother', nudge: 'found in Morytania' },
+	KARIL: { category: 'Barrows brother', nudge: 'found in Morytania' },
+	TORAG: { category: 'Barrows brother', nudge: 'found in Morytania' },
+	VERAC: { category: 'Barrows brother', nudge: 'found in Morytania' },
+	HYDRA: { category: 'Monster', nudge: 'a high-level slayer target' },
+	ABYSS: { category: 'Location', nudge: 'used for Runecrafting' },
+	HASTA: { category: 'Item', nudge: 'used in melee' },
+	KERIS: { category: 'Item', nudge: 'used in melee' },
+	TORVA: { category: 'Item', nudge: 'worn as armour' },
+	ZAROS: { category: 'God', nudge: "from Gielinor's history" },
+	SEREN: { category: 'God', nudge: "from Gielinor's history" },
+	XERIC: { category: 'NPC', nudge: 'from Kourend lore' },
+	NIEVE: { category: 'NPC', nudge: 'a slayer master' },
+	KONAR: { category: 'NPC', nudge: 'a slayer master' },
+	ANKOU: { category: 'Monster', nudge: 'an undead creature' },
+	JOGRE: { category: 'Monster', nudge: 'found in the jungle' },
+	MOGRE: { category: 'Monster', nudge: 'found in the sea' },
+	KYATT: { category: 'Monster', nudge: 'caught with Hunter' },
+	VORKI: { category: 'Pet', nudge: 'from a boss' },
+	IKKLE: { category: 'Pet', nudge: 'from a boss' },
+	ARTIO: { category: 'Boss', nudge: 'found in the Wilderness' },
+	RALOS: { category: 'God', nudge: "from Gielinor's history" },
+	AKKHA: { category: 'Boss', nudge: 'fought in a raid' },
+	ZEBAK: { category: 'Boss', nudge: 'fought in a raid' },
+	NYLOC: { category: 'Monster', nudge: 'fought in a raid' },
+	NIHIL: { category: 'Item', nudge: 'dropped by a boss' },
+	CHINS: { category: 'Item', nudge: 'used in ranged' },
+	ARRAV: { category: 'NPC', nudge: 'from Varrock lore' },
 	CORGO: { category: 'Custom' },
 	AKUMU: { category: 'Custom' }
 };
@@ -206,16 +211,27 @@ export interface WordleState {
 	status: 'playing' | 'won' | 'lost';
 	notice?: string;
 	hintRevealed?: boolean;
+	betterHintRevealed?: boolean;
 }
 
 export function wordleHintFor(answer: string): WordleHint | null {
 	return DAILY_WORDLE_HINTS[answer] ?? null;
 }
 
-export function formatWordleHintLine(answer: string): string | null {
+export function formatWordleHintLine(answer: string, tier: 1 | 2 = 1): string | null {
 	const hint = wordleHintFor(answer);
 	if (!hint) return null;
+	if (tier >= 2 && hint.nudge) {
+		return `Hint: ${hint.category} — ${hint.nudge}`;
+	}
 	return `Hint: ${hint.category}`;
+}
+
+/** Remaining time after a better-hint click. Never extends the timer, and will not drop below 5s unless less than 5s was already left. */
+export function betterHintRemainingMs(remainingMs: number): number {
+	const penalized = remainingMs - DAILY_WORDLE_BETTER_HINT_COST_MS;
+	if (penalized >= DAILY_WORDLE_BETTER_HINT_MIN_MS) return penalized;
+	return Math.min(remainingMs, DAILY_WORDLE_BETTER_HINT_MIN_MS);
 }
 
 export function isWordleHintVisible(state: Pick<WordleState, 'hintRevealed' | 'rows'>): boolean {
@@ -297,8 +313,11 @@ export function parseWordleAction(customId: string): WordleAction | null {
 export function applyWordleAction(state: WordleState, action: WordleAction): WordleState {
 	if (state.status !== 'playing') return state;
 	if (action.kind === 'hint') {
-		if (state.hintRevealed) return state;
-		return { ...state, hintRevealed: true, notice: undefined };
+		if (!state.hintRevealed) {
+			return { ...state, hintRevealed: true, notice: undefined };
+		}
+		if (state.betterHintRevealed || !wordleHintFor(state.answer)?.nudge) return state;
+		return { ...state, hintRevealed: true, betterHintRevealed: true, notice: undefined };
 	}
 	const next: WordleState = { ...state, rows: [...state.rows], notice: undefined };
 	const guess = normalizeWordleGuess(action.guess);
@@ -325,11 +344,17 @@ export function applyWordleAction(state: WordleState, action: WordleAction): Wor
 }
 
 export function wordleGuessRows(
-	state?: Pick<WordleState, 'status' | 'hintRevealed' | 'rows'>
+	state?: Pick<WordleState, 'status' | 'hintRevealed' | 'betterHintRevealed' | 'rows' | 'answer'>
 ): { id: string; label: string }[][] {
 	const buttons = [{ id: DAILY_WORDLE_GUESS_BUTTON_ID, label: 'Guess' }];
-	if (!state || (state.status === 'playing' && !isWordleHintVisible(state))) {
+	if (!state || state.status !== 'playing') {
+		if (!state) buttons.push({ id: DAILY_WORDLE_HINT_BUTTON_ID, label: 'Hint' });
+		return [buttons];
+	}
+	if (!isWordleHintVisible(state)) {
 		buttons.push({ id: DAILY_WORDLE_HINT_BUTTON_ID, label: 'Hint' });
+	} else if (!state.betterHintRevealed && wordleHintFor(state.answer)?.nudge) {
+		buttons.push({ id: DAILY_WORDLE_HINT_BUTTON_ID, label: DAILY_WORDLE_BETTER_HINT_BUTTON_LABEL });
 	}
 	return [buttons];
 }
@@ -350,7 +375,7 @@ export function formatWordleMessage(state: WordleState, remainingMs: number): st
 		lines.push(`${wordleTiles(row.marks)}  ${row.guess}`);
 	}
 	if (isWordleHintVisible(state)) {
-		const hintLine = formatWordleHintLine(state.answer);
+		const hintLine = formatWordleHintLine(state.answer, state.betterHintRevealed ? 2 : 1);
 		if (hintLine) lines.push(hintLine);
 	}
 	if (state.notice) lines.push(state.notice);

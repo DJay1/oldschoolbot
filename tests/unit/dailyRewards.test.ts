@@ -9,6 +9,7 @@ import {
 	applyButtonAction,
 	applyTypingGuess,
 	applyWordleAction,
+	betterHintRemainingMs,
 	buttonGameRows,
 	buttonGameSpec,
 	clusterForButtonName,
@@ -25,6 +26,9 @@ import {
 	DAILY_TYPING_MIN_CHARS,
 	DAILY_TYPING_MS,
 	DAILY_TYPING_PHRASES,
+	DAILY_WORDLE_BETTER_HINT_BUTTON_LABEL,
+	DAILY_WORDLE_BETTER_HINT_COST_MS,
+	DAILY_WORDLE_BETTER_HINT_MIN_MS,
 	DAILY_WORDLE_CATEGORIES,
 	DAILY_WORDLE_GUESSES,
 	DAILY_WORDLE_HINT_AFTER_MISSES,
@@ -255,12 +259,23 @@ describe('Wordle game', () => {
 			expect(hint).toBeTruthy();
 			expect(DAILY_WORDLE_CATEGORIES as readonly string[]).toContain(hint?.category);
 			expect(formatWordleHintLine(word)).toBe(`Hint: ${hint?.category}`);
-			expect(formatWordleHintLine(word)).not.toContain('—');
+			expect(formatWordleHintLine(word, 1)).not.toContain('—');
+			expect(formatWordleHintLine(word, 1)).not.toContain('The ranger of the six');
+			expect(formatWordleHintLine(word, 2)).not.toContain('The ranger of the six');
+			expect(formatWordleHintLine(word, 2)).not.toContain('The Alchemical boss');
+			if (hint?.nudge) {
+				expect(hint.nudge.length).toBeGreaterThan(0);
+				expect(formatWordleHintLine(word, 2)).toBe(`Hint: ${hint.category} — ${hint.nudge}`);
+			} else {
+				expect(formatWordleHintLine(word, 2)).toBe(`Hint: ${hint?.category}`);
+			}
 		}
 		for (const word of DAILY_WORDLE_RETIRED_WORDS) {
 			expect(DAILY_WORDLE_WORDS as readonly string[]).not.toContain(word);
 			expect(wordleHintFor(word)?.category).toBe('Custom');
+			expect(wordleHintFor(word)?.nudge).toBeUndefined();
 			expect(formatWordleHintLine(word)).toBe('Hint: Custom');
+			expect(formatWordleHintLine(word, 2)).toBe('Hint: Custom');
 		}
 		expect(Object.keys(DAILY_WORDLE_HINTS).sort()).toEqual(
 			[...DAILY_WORDLE_WORDS, ...DAILY_WORDLE_RETIRED_WORDS].slice().sort()
@@ -359,9 +374,25 @@ describe('Wordle game', () => {
 		expect(text).toContain('Hint: Monster');
 		expect(text).not.toContain('—');
 		expect(text).not.toContain('The Alchemical boss');
-		expect(wordleGuessRows(state)).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
-		const again = applyWordleAction(state, { kind: 'hint' });
-		expect(again).toEqual(state);
+		expect(wordleGuessRows(state)).toEqual([
+			[
+				{ id: 'dlyw:GO', label: 'Guess' },
+				{ id: 'dlyw:HINT', label: DAILY_WORDLE_BETTER_HINT_BUTTON_LABEL }
+			]
+		]);
+		expect(DAILY_WORDLE_BETTER_HINT_BUTTON_LABEL.length).toBeLessThanOrEqual(80);
+
+		const better = applyWordleAction(state, { kind: 'hint' });
+		expect(better.status).toBe('playing');
+		expect(better.answer).toBe('HYDRA');
+		expect(better.rows).toHaveLength(0);
+		expect(better.betterHintRevealed).toBe(true);
+		const betterText = formatWordleMessage(better, DAILY_WORDLE_MS - DAILY_WORDLE_BETTER_HINT_COST_MS);
+		expect(betterText).toContain('Hint: Monster — a high-level slayer target');
+		expect(betterText).not.toContain('The Alchemical boss');
+		expect(wordleGuessRows(better)).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
+		const again = applyWordleAction(better, { kind: 'hint' });
+		expect(again).toEqual(better);
 		expect(again.rows).toHaveLength(0);
 		expect(again.status).toBe('playing');
 		expect(again.answer).toBe('HYDRA');
@@ -381,7 +412,13 @@ describe('Wordle game', () => {
 		expect(text).toContain('Hint: Monster');
 		expect(text).not.toContain('—');
 		expect(text).not.toContain('The Alchemical boss');
-		expect(wordleGuessRows(state)).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
+		expect(state.betterHintRevealed).toBeFalsy();
+		expect(wordleGuessRows(state)).toEqual([
+			[
+				{ id: 'dlyw:GO', label: 'Guess' },
+				{ id: 'dlyw:HINT', label: DAILY_WORDLE_BETTER_HINT_BUTTON_LABEL }
+			]
+		]);
 		const afterWin = applyWordleAction(
 			applyWordleAction(createWordleState(mockRng([], ['HYDRA'])), { kind: 'submit', guess: 'HYDRA' }),
 			{ kind: 'hint' }
@@ -397,27 +434,43 @@ describe('Wordle game', () => {
 		state = applyWordleAction(state, { kind: 'hint' });
 		expect(formatWordleMessage(state, DAILY_WORDLE_MS)).toContain('Hint: Custom');
 		expect(formatWordleMessage(state, DAILY_WORDLE_MS)).not.toContain('four-legged mascot');
+		expect(wordleGuessRows(state)).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
+		const noBetter = applyWordleAction(state, { kind: 'hint' });
+		expect(noBetter.betterHintRevealed).toBeFalsy();
 		state = applyWordleAction(state, { kind: 'submit', guess: 'corgo' });
 		expect(state.status).toBe('won');
 		expect(state.rows).toHaveLength(1);
 		expect(state.answer).toBe('CORGO');
 	});
 
-	test('the longest Wordle board plus hint stays under the Discord length limit', () => {
+	test('a better hint shortens the timer by 15 seconds, never extends it, and will not drop below 5s', () => {
+		expect(DAILY_WORDLE_BETTER_HINT_COST_MS).toBe(15_000);
+		expect(DAILY_WORDLE_BETTER_HINT_MIN_MS).toBe(5_000);
+		expect(betterHintRemainingMs(DAILY_WORDLE_MS)).toBe(DAILY_WORDLE_MS - 15_000);
+		expect(betterHintRemainingMs(20_000)).toBe(5_000);
+		expect(betterHintRemainingMs(10_000)).toBe(5_000);
+		expect(betterHintRemainingMs(5_000)).toBe(5_000);
+		expect(betterHintRemainingMs(4_000)).toBe(4_000);
+		expect(betterHintRemainingMs(0)).toBe(0);
+	});
+
+	test('the longest Wordle board plus better hint stays under the Discord length limit', () => {
 		const longest = [...DAILY_WORDLE_WORDS, ...DAILY_WORDLE_RETIRED_WORDS].reduce((best, word) => {
-			const line = formatWordleHintLine(word) ?? '';
+			const line = formatWordleHintLine(word, 2) ?? '';
 			return line.length > best.length ? line : best;
 		}, '');
 		let state = createWordleState(mockRng([], ['HYDRA']));
 		for (const guess of ['AHRIM', 'KARIL', 'TORAG', 'VERAC']) {
 			state = applyWordleAction(state, { kind: 'submit', guess });
 		}
+		state = applyWordleAction(state, { kind: 'hint' });
 		state = { ...state, notice: 'Type exactly 5 letters.' };
 		const text = formatWordleMessage(state, DAILY_WORDLE_MS);
 		expect(text).toContain('Hint:');
+		expect(text).toContain('—');
 		expect(longest.length).toBeGreaterThan(0);
 		expect(
-			text.length + Math.max(0, longest.length - (formatWordleHintLine('HYDRA') ?? '').length)
+			text.length + Math.max(0, longest.length - (formatWordleHintLine('HYDRA', 2) ?? '').length)
 		).toBeLessThanOrEqual(2000 - 150);
 		expect(text.length).toBeLessThanOrEqual(2000 - 150);
 	});

@@ -17,6 +17,7 @@ import {
 	applyButtonAction,
 	applyTypingGuess,
 	applyWordleAction,
+	betterHintRemainingMs,
 	buttonGameRows,
 	createButtonGameState,
 	createHardGame,
@@ -378,8 +379,25 @@ async function playHardGame(
 		};
 
 		const settle = createDailySettle();
+		let betterHintTimeout: ReturnType<typeof setTimeout> | undefined;
+		const clearBetterHintTimeout = () => {
+			if (betterHintTimeout) {
+				clearTimeout(betterHintTimeout);
+				betterHintTimeout = undefined;
+			}
+		};
+		const armBetterHintTimeout = () => {
+			clearBetterHintTimeout();
+			const left = remainingMs(expiresAt);
+			if (left <= 0) return;
+			betterHintTimeout = setTimeout(() => {
+				if (game.status !== 'playing') return;
+				void finish({ ...game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE }, true);
+			}, left);
+		};
 		const finish = async (finalGame: HardGameState, timedOut = false) => {
 			if (!settle.tryBegin()) return;
+			clearBetterHintTimeout();
 			cleanupModal();
 			collector.stop('finished');
 			try {
@@ -470,7 +488,17 @@ async function playHardGame(
 					} catch {
 						// Already acknowledged; still apply the hint and edit if we can.
 					}
+					const before = game;
 					game = applyWordleAction(game, { kind: 'hint' });
+					if (
+						before.type === 'wordle' &&
+						game.type === 'wordle' &&
+						!before.betterHintRevealed &&
+						game.betterHintRevealed
+					) {
+						expiresAt = Date.now() + betterHintRemainingMs(remainingMs(expiresAt));
+						armBetterHintTimeout();
+					}
 					await updateDailyPendingGame(user.id, game, expiresAt);
 					const view = await hardGameContent(game, expiresAt);
 					try {
