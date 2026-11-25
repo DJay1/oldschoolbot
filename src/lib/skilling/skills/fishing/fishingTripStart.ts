@@ -336,7 +336,9 @@ export async function calcFishingTripStart({
 		return 'This fishing spot is not yet supported.';
 	}
 
-	let quantity = quantityInput ?? 3000;
+	// If no quantity is given, fish until max trip length or bait runs out.
+	// A hidden 3000-fish cap can end a trip early once speed boosts are high enough.
+	let quantity = quantityInput ?? Number.MAX_SAFE_INTEGER;
 	const spiritFlakePreference = wantsToUseFlakes;
 	let isUsingSpiritFlakes = wantsToUseFlakes;
 	let isPowerfishing = powerfish;
