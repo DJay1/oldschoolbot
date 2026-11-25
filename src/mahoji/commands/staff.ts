@@ -231,7 +231,8 @@ export const staffCommand = defineCommand({
 	run: async ctx => {
 		const { user, guildId, interaction, rng } = ctx;
 		const options = ctx.options as Record<string, any>;
-		const tier = staffTierOf(user);
+		const roleIds = interaction.member?.roles;
+		const tier = staffTierOf(user, roleIds);
 		const denied = staffDeniedReply(guildId, tier, rng);
 		if (denied) return denied;
 
@@ -249,7 +250,7 @@ export const staffCommand = defineCommand({
 		if (options.boost) {
 			await interaction.defer();
 			const kind = options.boost.type === 'xp' ? 'xp' : 'loot';
-			return runStaffBoost(user, kind);
+			return runStaffBoost(user, kind, roleIds);
 		}
 
 		if (options.tickets) {

@@ -15,6 +15,7 @@ import {
 	staffBoostWeeklyCap,
 	staffWeekKey
 } from '@/lib/bsc/staffTiers.js';
+import { higherStaffTier, staffTierFromRoleIds } from '@/lib/bsc/staffRoleBits.js';
 import { Channel, globalConfig } from '@/lib/constants.js';
 import { itemStatusIcon } from '@/lib/util/itemStatusIcon.js';
 
@@ -28,14 +29,17 @@ export function setTestStaffTierOverride(userId: string, tier: StaffTier | null)
 	return true;
 }
 
-export function staffTierOf(user: MUser): StaffTier {
-	return resolveStaffTier({
+export function staffTierOf(user: MUser, roleIds?: readonly string[] | null): StaffTier {
+	const fromBits = resolveStaffTier({
 		isAdmin: user.isAdmin(),
 		isDeveloper: user.isDeveloper(),
 		isMod: user.isMod(),
 		isProduction: globalConfig.isProduction,
 		override: globalConfig.isProduction ? null : (testTierOverrides.get(user.id) ?? null)
 	});
+	// Role IDs on the slash-command member are a live fallback if the saved flags are briefly out of date.
+	// Roles can only raise the tier (Contributor still grants nothing). They never grant admin.
+	return higherStaffTier(fromBits, staffTierFromRoleIds(roleIds));
 }
 
 /** Same rule as /admin and /rp: the support server only on prod, never in DMs. */
@@ -121,8 +125,12 @@ export function staffBoostAnnouncement(name: string, kind: StaffBoostKind, endsA
 	return `${icon}**Staff boost!** ${name} added **${STAFF_BOOST_MINUTES} minutes** of ${label} for everyone. ${label} now ends ${time(ends)} (${time(ends, 'R')}).`;
 }
 
-export async function runStaffBoost(user: MUser, kind: StaffBoostKind): Promise<string> {
-	const tier = staffTierOf(user);
+export async function runStaffBoost(
+	user: MUser,
+	kind: StaffBoostKind,
+	roleIds?: readonly string[] | null
+): Promise<string> {
+	const tier = staffTierOf(user, roleIds);
 	const cap = staffBoostWeeklyCap(tier);
 	const label = STAFF_BOOST_LABELS[kind];
 	if (cap < 1) return 'Only staff can use boosts.';

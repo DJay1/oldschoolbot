@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'vitest';
 
-import { administratorRoleIds, BSC_STAFF_ROLE_BITS, staffBitChanges } from '../../src/lib/bsc/staffRoleBits.js';
+import {
+	administratorRoleIds,
+	BSC_STAFF_ROLE_BITS,
+	higherStaffTier,
+	resolvedRoleIdsForStaffSync,
+	staffBitChanges,
+	staffTierFromRoleIds
+} from '../../src/lib/bsc/staffRoleBits.js';
 import { resolveStaffTier, staffBoostWeeklyCap } from '../../src/lib/bsc/staffTiers.js';
 import { BitField } from '../../src/lib/constants.js';
 
@@ -98,5 +105,66 @@ describe('Head Mod', () => {
 		expect(add).not.toContain(BitField.Developer);
 		expect(add).not.toContain(BitField.Contributor);
 		expect(add).toEqual([BitField.Moderator]);
+	});
+});
+
+describe('staffTierFromRoleIds', () => {
+	test('Developer role is developer, even without a saved bit', () => {
+		expect(staffTierFromRoleIds([developerRole])).toBe('developer');
+		expect(staffTierFromRoleIds([developerRole, modRole])).toBe('developer');
+	});
+
+	test('Mod or Head Mod is moderator, and Contributor is not a staff tier', () => {
+		const headModRole = '1353916725086785646';
+		expect(staffTierFromRoleIds([modRole])).toBe('moderator');
+		expect(staffTierFromRoleIds([headModRole])).toBe('moderator');
+		expect(staffTierFromRoleIds([contributorRole])).toBe('none');
+		expect(staffTierFromRoleIds([])).toBe('none');
+		expect(staffTierFromRoleIds(null)).toBe('none');
+	});
+
+	test('live roles can raise a missing bitfield tier, but never lower one', () => {
+		expect(higherStaffTier('none', staffTierFromRoleIds([developerRole]))).toBe('developer');
+		expect(higherStaffTier('developer', staffTierFromRoleIds([]))).toBe('developer');
+		expect(higherStaffTier('moderator', staffTierFromRoleIds([developerRole]))).toBe('developer');
+		expect(higherStaffTier('developer', staffTierFromRoleIds([modRole]))).toBe('developer');
+	});
+});
+
+describe('resolvedRoleIdsForStaffSync', () => {
+	const payloadEmpty: string[] = [];
+	const fetchedDev = [developerRole, modRole];
+
+	test('an unconfirmed empty payload does not apply removals', () => {
+		expect(
+			resolvedRoleIdsForStaffSync({
+				payloadRoleIds: payloadEmpty,
+				fetchedRoleIds: null,
+				left: false,
+				wouldRemove: true
+			})
+		).toEqual({ roleIds: payloadEmpty, applyRemovals: false });
+	});
+
+	test('a fresh fetch is used when the payload would drop bits', () => {
+		expect(
+			resolvedRoleIdsForStaffSync({
+				payloadRoleIds: payloadEmpty,
+				fetchedRoleIds: fetchedDev,
+				left: false,
+				wouldRemove: true
+			})
+		).toEqual({ roleIds: fetchedDev, applyRemovals: true });
+	});
+
+	test('an explicit leave still uses the empty payload so bits can be cleared', () => {
+		expect(
+			resolvedRoleIdsForStaffSync({
+				payloadRoleIds: payloadEmpty,
+				fetchedRoleIds: fetchedDev,
+				left: true,
+				wouldRemove: true
+			})
+		).toEqual({ roleIds: payloadEmpty, applyRemovals: true });
 	});
 });

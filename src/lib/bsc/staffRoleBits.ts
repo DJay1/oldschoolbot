@@ -1,6 +1,7 @@
 import { Routes } from '@oldschoolgg/discord';
 
 import { BitField, globalConfig } from '@/lib/constants.js';
+import { STAFF_TIER_RANK, type StaffTier } from '@/lib/bsc/staffTiers.js';
 
 export const BSC_STAFF_ROLE_BITS: readonly { bit: BitField; roleId: string }[] = [
 	{ bit: BitField.Developer, roleId: '1569683439190286346' },
@@ -63,6 +64,39 @@ export function staffBitChanges(
 	return { add, remove };
 }
 
+/** Staff tier implied by support-server Discord roles. Contributor is not a staff tier. */
+export function staffTierFromRoleIds(roleIds: readonly string[] | null | undefined): StaffTier {
+	if (!roleIds || roleIds.length === 0) return 'none';
+	const held = new Set(BSC_STAFF_ROLE_BITS.filter(r => roleIds.includes(r.roleId)).map(r => r.bit));
+	if (held.has(BitField.Developer)) return 'developer';
+	if (held.has(BitField.Moderator)) return 'moderator';
+	return 'none';
+}
+
+export function higherStaffTier(a: StaffTier, b: StaffTier): StaffTier {
+	return STAFF_TIER_RANK[a] >= STAFF_TIER_RANK[b] ? a : b;
+}
+
+/**
+ * When a role payload would drop staff bits, prefer a freshly fetched member role list.
+ * If that fetch failed, keep the bits (same idea as an unknown Administrator role list).
+ * An explicit leave still uses the empty payload so bits can be cleared.
+ */
+export function resolvedRoleIdsForStaffSync(options: {
+	payloadRoleIds: readonly string[];
+	fetchedRoleIds: readonly string[] | null;
+	left: boolean;
+	wouldRemove: boolean;
+}): { roleIds: readonly string[]; applyRemovals: boolean } {
+	if (options.left || !options.wouldRemove) {
+		return { roleIds: options.payloadRoleIds, applyRemovals: true };
+	}
+	if (options.fetchedRoleIds === null) {
+		return { roleIds: options.payloadRoleIds, applyRemovals: false };
+	}
+	return { roleIds: options.fetchedRoleIds, applyRemovals: true };
+}
+
 const ADMIN_ROLE_CACHE_MS = 10 * 60 * 1000;
 let adminRoleCache: { ids: string[]; at: number } | null = null;
 
@@ -86,15 +120,40 @@ export async function getAdministratorRoleIds(force = false): Promise<string[] |
 	}
 }
 
-export async function syncBscStaffBitsFromRoles(userId: string, roleIds: readonly string[]): Promise<void> {
+async function fetchSupportMemberRoleIds(userId: string): Promise<string[] | null> {
+	try {
+		const member = (await globalClient.rest.get(Routes.guildMember(globalConfig.supportServerID, userId))) as {
+			roles?: string[];
+		};
+		return member.roles ?? [];
+	} catch {
+		return null;
+	}
+}
+
+export async function syncBscStaffBitsFromRoles(
+	userId: string,
+	roleIds: readonly string[],
+	opts?: { left?: boolean }
+): Promise<void> {
 	if (!staffRoleBitsEnabled()) return;
 	const existing = await prisma.user.findUnique({ where: { id: userId }, select: { bitfield: true } });
 	if (!existing) return;
 	const adminRoleIds = await getAdministratorRoleIds();
-	const { add, remove } = staffBitChanges(existing.bitfield, roleIds, adminRoleIds);
-	if (add.length === 0 && remove.length === 0) return;
+	const left = opts?.left === true;
+	const preview = staffBitChanges(existing.bitfield, roleIds, adminRoleIds);
+	const fetched = !left && preview.remove.length > 0 ? await fetchSupportMemberRoleIds(userId) : null;
+	const resolved = resolvedRoleIdsForStaffSync({
+		payloadRoleIds: roleIds,
+		fetchedRoleIds: fetched,
+		left,
+		wouldRemove: preview.remove.length > 0
+	});
+	const { add, remove } = staffBitChanges(existing.bitfield, resolved.roleIds, adminRoleIds);
+	const appliedRemove = resolved.applyRemovals ? remove : [];
+	if (add.length === 0 && appliedRemove.length === 0) return;
 	const user = await mUserFetch(userId);
-	const next = [...user.bitfield.filter(bit => !remove.includes(bit)), ...add];
+	const next = [...user.bitfield.filter(bit => !appliedRemove.includes(bit)), ...add];
 	await user.update({ bitfield: next });
 	await user.fetchPerkTier({ forceNoCache: true });
 }

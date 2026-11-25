@@ -418,7 +418,10 @@ export const rpCommand = defineCommand({
 		await interaction.defer();
 		const isAdmin = adminUser.isAdmin();
 		// Tier check on every call. Hiding the command in Discord is not relied on.
-		if (!staffGuildAllowed(guildId) || !tierAtLeast(staffTierOf(adminUser), rpActionTier(options))) {
+		if (
+			!staffGuildAllowed(guildId) ||
+			!tierAtLeast(staffTierOf(adminUser, interaction.member?.roles), rpActionTier(options))
+		) {
 			return rng.pick(gifs);
 		}
 		await logStaffAction(adminUser, 'rp', options);

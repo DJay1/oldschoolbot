@@ -173,7 +173,7 @@ export async function handleBscGuildMemberUpdate(
 	const userId = member.user?.id;
 	if (!userId) return;
 	await syncBscPatronFromRoles(userId, member.roles ?? []);
-	await syncBscStaffBitsFromRoles(userId, member.roles ?? []);
+	await syncBscStaffBitsFromRoles(userId, member.roles ?? [], { left });
 	if (!left) await syncBscPlayerRole(userId, member.roles ?? []);
 }
 

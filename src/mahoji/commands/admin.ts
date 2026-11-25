@@ -1387,7 +1387,7 @@ export const adminCommand = defineCommand({
 		const adminUser = await mUserFetch(userId);
 		const isAdmin = adminUser.isAdmin();
 		// Tier check on every call. Hiding the command in Discord is not relied on.
-		const staffTier = staffTierOf(adminUser);
+		const staffTier = staffTierOf(adminUser, interaction.member?.roles);
 		if (!staffGuildAllowed(guildId) || !tierAtLeast(staffTier, adminActionTier(options))) {
 			return rng.pick(gifs);
 		}
