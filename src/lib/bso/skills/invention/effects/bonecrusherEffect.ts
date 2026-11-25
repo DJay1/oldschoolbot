@@ -1,4 +1,9 @@
-import { InventionID, inventionBoosts, inventionItemBoostRaw } from '@/lib/bso/skills/invention/inventions.js';
+import {
+	InventionID,
+	type InventionItemBoostRawResult,
+	inventionBoosts,
+	inventionItemBoostRaw
+} from '@/lib/bso/skills/invention/inventions.js';
 
 import { increaseNumByPercent, Time } from '@oldschoolgg/toolkit';
 import { toKMB } from 'oldschooljs';
@@ -38,7 +43,7 @@ export function bonecrusherEffect({
 	if (totalXP === 0) return;
 
 	const durationForCost = totalXP * 16.8;
-	const inventionResult =
+	const inventionResult: InventionItemBoostRawResult | { success: false } =
 		hasSuperior && durationForCost > Time.Minute
 			? inventionItemBoostRaw({
 					gearBank,
@@ -48,7 +53,7 @@ export function bonecrusherEffect({
 				})
 			: { success: false };
 
-	if (!inventionResult.success || !inventionResult.materialCost) {
+	if (!inventionResult.success || !('materialCost' in inventionResult) || !inventionResult.materialCost) {
 		hasSuperior = false;
 	} else {
 		totalXP = increaseNumByPercent(totalXP, inventionBoosts.superiorBonecrusher.xpBoostPercent);
@@ -67,9 +72,14 @@ export function bonecrusherEffect({
 		`${toKMB(totalXP)} Prayer XP ${
 			hasSuperior
 				? `+${inventionBoosts.superiorBonecrusher.xpBoostPercent}% more from Superior bonecrusher${
-						inventionResult.messages ? ` (${inventionResult.messages.join(', ')})` : ''
+						'success' in inventionResult && inventionResult.success && inventionResult.messages
+							? ` (${inventionResult.messages.join(', ')})`
+							: ''
 					}`
 				: ' from Gorajan bonecrusher'
 		}`
 	);
+	if (!inventionResult.success && 'skipLine' in inventionResult && inventionResult.skipLine) {
+		messages.push(inventionResult.skipLine);
+	}
 }

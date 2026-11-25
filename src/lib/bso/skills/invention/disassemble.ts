@@ -200,6 +200,8 @@ export async function handleDisassembly({
 			messages.push(
 				`${inventionBoosts.dwarvenToolkit.disassembleBoostPercent}% faster disassembly from Dwarven toolkit (${boostRes.messages})`
 			);
+		} else if (boostRes.skipLine) {
+			messages.push(boostRes.skipLine);
 		}
 	}
 	if (user.hasEquippedOrInBank('Invention master cape')) {

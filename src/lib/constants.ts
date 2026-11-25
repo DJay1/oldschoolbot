@@ -280,7 +280,9 @@ export enum BitField {
 	/** Prefer the best compost that covers a full Auto Farm / farm patch group. Set via /farming default_compost. */
 	UseBestAvailableCompost = 247,
 	HasTesterLabBackground = 248,
-	HasBugHunterTitle = 249
+	HasBugHunterTitle = 249,
+	/** Player has already seen the first-time invention material-skip confirm. */
+	HasSeenInventionMaterialSkipConfirm = 250
 }
 
 export interface IBitFieldData {
@@ -632,6 +634,11 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 	},
 	[BitField.HasBugHunterTitle]: {
 		name: 'Bug Hunter title',
+		protected: false,
+		userConfigurable: false
+	},
+	[BitField.HasSeenInventionMaterialSkipConfirm]: {
+		name: 'Seen invention material-skip confirm',
 		protected: false,
 		userConfigurable: false
 	}

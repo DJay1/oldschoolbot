@@ -7,6 +7,7 @@ import { preCommand } from '@/discord/preCommand.js';
 import { userErrorResponse } from '@/discord/userErrorResponse.js';
 import { busyImmuneCommands, SILENT_ERROR } from '@/lib/constants.js';
 import { RawSQL } from '@/lib/rawSql.js';
+import { runInCommandInvokeContext } from '@/lib/util/commandInvokeContext.js';
 
 export async function rawCommandHandlerInner({
 	interaction,
@@ -74,16 +75,18 @@ export async function rawCommandHandlerInner({
 		}
 
 		const runClosure = () =>
-			command.run({
-				interaction,
-				options,
-				user,
-				member: interaction.member,
-				channelId: interaction.channelId,
-				guildId: interaction.guildId,
-				userId: interaction.userId,
-				rng
-			});
+			runInCommandInvokeContext({ interaction, isContinue: Boolean(isContinue) }, () =>
+				command.run({
+					interaction,
+					options,
+					user,
+					member: interaction.member,
+					channelId: interaction.channelId,
+					guildId: interaction.guildId,
+					userId: interaction.userId,
+					rng
+				})
+			);
 
 		const requiresLock = Boolean('flags' in command && command.flags?.includes('REQUIRES_LOCK'));
 		if (requiresLock) {

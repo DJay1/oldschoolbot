@@ -175,6 +175,8 @@ export async function applyFarmingLootBoosts({
 			boosts.push(
 				`${inventionBoosts.arcaneHarvester.harvestBoostPercent}% bonus yield from Arcane Harvester (${boostRes.messages})`
 			);
+		} else if (boostRes.skipLine) {
+			boosts.push(boostRes.skipLine);
 		}
 	}
 

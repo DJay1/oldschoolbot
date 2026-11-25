@@ -1,6 +1,11 @@
 import { monkeyTiers } from '@/lib/bso/minigames/monkey-rumble/monkeyRumble.js';
 import { VAMPYRIUM_CREATURE_IDS } from '@/lib/bso/skills/hunter/bsoCreatures.js';
-import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
+import {
+	InventionID,
+	inventionBoosts,
+	inventionMaterialSkipLine,
+	resolveInventionItemBoosts
+} from '@/lib/bso/skills/invention/inventions.js';
 
 import { formatDuration, reduceNumByPercent, stringMatches, Time } from '@oldschoolgg/toolkit';
 import { Bank, ECreature, type ItemBank, itemID } from 'oldschooljs';
@@ -410,21 +415,19 @@ export const huntCommand = defineCommand({
 			return preResult;
 		}
 
-		const quickTrapResult = elligibleForQuickTrap
-			? await inventionItemBoost({
-					user,
-					inventionID: InventionID.QuickTrap,
-					duration: preResult.duration
-				})
-			: null;
-
-		const webshooterResult = elligibleForWebshooter
-			? await inventionItemBoost({
-					user,
-					inventionID: InventionID.Webshooter,
-					duration: preResult.duration
-				})
-			: null;
+		const resolvedBoosts = await resolveInventionItemBoosts({
+			user,
+			boosts: [
+				...(elligibleForQuickTrap
+					? [{ inventionID: InventionID.QuickTrap, duration: preResult.duration }]
+					: []),
+				...(elligibleForWebshooter
+					? [{ inventionID: InventionID.Webshooter, duration: preResult.duration }]
+					: [])
+			]
+		});
+		const quickTrapResult = elligibleForQuickTrap ? resolvedBoosts.get(InventionID.QuickTrap)! : null;
+		const webshooterResult = elligibleForWebshooter ? resolvedBoosts.get(InventionID.Webshooter)! : null;
 
 		const result = calculateHunterInput({
 			...hunterInputArgs,
@@ -437,6 +440,11 @@ export const huntCommand = defineCommand({
 		if (typeof result === 'string') {
 			return result;
 		}
+
+		const quickTrapSkip = inventionMaterialSkipLine(quickTrapResult);
+		const webshooterSkip = inventionMaterialSkipLine(webshooterResult);
+		if (quickTrapSkip) result.messages.push(quickTrapSkip);
+		if (webshooterSkip) result.messages.push(webshooterSkip);
 
 		const {
 			wildyPeak,

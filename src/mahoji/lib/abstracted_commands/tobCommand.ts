@@ -471,6 +471,7 @@ export async function tobStartCommand(
 				const res = await inventionItemBoost({
 					user,
 					inventionID: InventionID.ChinCannon,
+					optional: false,
 					duration: totalDuration
 				});
 				if (!res.success) {

@@ -48,7 +48,10 @@ export function clueUpgraderEffect({
 		duration: durationForCost,
 		disabledInventions
 	});
-	if (!boostRes.success) return false;
+	if (!boostRes.success) {
+		if (boostRes.skipLine) messages.push(boostRes.skipLine);
+		return false;
+	}
 	updateBank.clientStatsBankUpdates.clue_upgrader_loot = upgradedClues;
 	updateBank.userStatsBankUpdates.clue_upgrader_bank = upgradedClues;
 	updateBank.itemLootBank.add(upgradedClues);

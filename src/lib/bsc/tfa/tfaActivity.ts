@@ -199,6 +199,8 @@ export const tfaTask: MinionTask = {
 				if (res.shouldGiveBoost) {
 					flappy[u.id] = true;
 					flappyMsgs[u.id] = res.userMsg;
+				} else if (res.userMsg) {
+					flappyMsgs[u.id] = res.userMsg;
 				}
 			}
 		}

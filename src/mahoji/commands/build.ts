@@ -120,6 +120,8 @@ export const buildCommand = defineCommand({
 				boosts.push(
 					`${inventionBoosts.drygoreSaw.buildBoostPercent}% faster building from Drygore saw (${boostRes.messages})`
 				);
+			} else if (boostRes.skipLine) {
+				boosts.push(boostRes.skipLine);
 			}
 		}
 		const maxForTime = Math.floor(maxTripLength / timeToBuildSingleObject);

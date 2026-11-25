@@ -206,6 +206,8 @@ export const runecraftCommand = defineCommand({
 					boosts.push(
 						`${abyssalAmuletBoost.boost}% boost for Abyssal amulet (Removed ${boostResult.materialCost})`
 					);
+				} else if (boostResult.skipLine) {
+					boosts.push(boostResult.skipLine);
 				}
 			}
 		}

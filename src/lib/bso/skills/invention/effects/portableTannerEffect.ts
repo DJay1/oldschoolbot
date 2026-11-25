@@ -1,4 +1,8 @@
-import { InventionID, inventionItemBoostRaw } from '@/lib/bso/skills/invention/inventions.js';
+import {
+	InventionID,
+	inventionItemBoostRaw,
+	inventionMaterialSkipLine
+} from '@/lib/bso/skills/invention/inventions.js';
 
 import { Bank, Items } from 'oldschooljs';
 
@@ -36,7 +40,11 @@ export function portableTannerEffect({
 		disabledInventions
 	});
 
-	if (!boostRes.success || !boostRes.materialCost) return;
+	if (!boostRes.success || !boostRes.materialCost) {
+		const skipLine = inventionMaterialSkipLine(boostRes);
+		if (skipLine) messages.push(skipLine);
+		return;
+	}
 
 	const toAdd = new Bank();
 	for (const [hide, leather] of hideLeatherMap) {

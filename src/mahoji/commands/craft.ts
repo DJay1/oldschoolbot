@@ -110,6 +110,8 @@ export const craftCommand = defineCommand({
 				boosts.push(
 					`${inventionBoosts.masterHammerAndChisel.speedBoostPercent}% faster for Master hammer and chisel (${res.messages})`
 				);
+			} else if (res.skipLine) {
+				boosts.push(res.skipLine);
 			}
 		}
 

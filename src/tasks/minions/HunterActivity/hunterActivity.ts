@@ -2,7 +2,12 @@ import { GLOBAL_BSO_XP_MULTIPLIER } from '@/lib/bso/bsoConstants.js';
 import { clAdjustedDroprate } from '@/lib/bso/bsoUtil.js';
 import { globalDroprates } from '@/lib/bso/globalDroprates.js';
 import { chargePortentIfHasCharges, PortentID } from '@/lib/bso/skills/divination.js';
-import { InventionID, inventionBoosts, inventionItemBoost } from '@/lib/bso/skills/invention/inventions.js';
+import {
+	InventionID,
+	inventionBoosts,
+	inventionItemBoost,
+	inventionMaterialSkipLine
+} from '@/lib/bso/skills/invention/inventions.js';
 
 import { Time } from '@oldschoolgg/toolkit';
 import { randInt, roll } from 'node-rng';
@@ -393,13 +398,18 @@ export const hunterTask: MinionTask = {
 			equippedPet: user.user.minion_equippedPet,
 			wildyPeakTier: wildyPeak?.peakTier,
 			isUsingArcaneHarvester: boostRes?.success ?? false,
-			arcaneHarvesterMessages: boostRes?.success ? boostRes.messages : undefined,
+			arcaneHarvesterMessages: boostRes?.success ? boostRes.messages : inventionMaterialSkipLine(boostRes),
 			portentResult,
 			rng,
 			graceful,
 			experienceScore,
 			hornCharges
 		});
+
+		const arcaneSkip = inventionMaterialSkipLine(boostRes);
+		if (arcaneSkip && !messages.includes(arcaneSkip)) {
+			messages.push(arcaneSkip);
+		}
 
 		await user.transactItems({
 			collectionLog: true,

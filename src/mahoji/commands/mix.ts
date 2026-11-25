@@ -126,6 +126,8 @@ export const mixCommand = defineCommand({
 					`${inventionBoosts.mechaMortar.herbloreSpeedBoostPercent}% boost for Mecha-Mortar (${boostResult.messages})`
 				);
 				if (!options.quantity) quantity = Math.min(maxCanDo, Math.floor(maxTripLength / timeToMixSingleItem));
+			} else if (boostResult.skipLine) {
+				boosts.push(boostResult.skipLine);
 			}
 		}
 

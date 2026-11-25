@@ -169,6 +169,8 @@ export const lapsCommand = defineCommand({
 				boosts.push(
 					`${inventionBoosts.silverHawks.agilityBoostMultiplier}x faster for Silverhawk boots (${costRes.messages})`
 				);
+			} else if (costRes.skipLine) {
+				boosts.push(costRes.skipLine);
 			}
 		}
 

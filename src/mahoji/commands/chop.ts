@@ -219,6 +219,7 @@ export const chopCommand = defineCommand({
 				axeMultiplier = 8;
 				boosts.pop();
 				boosts.push('**8x** success multiplier for Dwarven greataxe');
+				if (boostRes.skipLine) boosts.push(boostRes.skipLine);
 			}
 		} else {
 			for (const axe of axes) {

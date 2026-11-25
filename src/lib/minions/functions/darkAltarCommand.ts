@@ -95,6 +95,8 @@ export async function darkAltarCommand({
 			if (res.success) {
 				timePerRune = reduceNumByPercent(timePerRune, abyssalAmuletBoost.boost);
 				boosts.push(`${abyssalAmuletBoost.boost}% boost for Abyssal amulet (Removed ${res.materialCost})`);
+			} else if (res.skipLine) {
+				boosts.push(res.skipLine);
 			}
 		}
 	}

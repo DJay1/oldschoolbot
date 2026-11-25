@@ -1,4 +1,9 @@
 import type { IMaterialBank, MaterialType } from '@/lib/bso/skills/invention/index.js';
+import {
+	confirmInventionMaterialSkips,
+	formatInventionMaterialSkipLine,
+	type InventionMaterialSkip
+} from '@/lib/bso/skills/invention/inventionBoostNotice.js';
 import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 
 import { userMention } from '@oldschoolgg/discord';
@@ -613,7 +618,25 @@ export async function inventCommand(user: MUser, inventionName: string): Command
 	}) Items removed: ${invention.itemCost ?? 'None'}. Materials used: ${cost}.`;
 }
 
-type InventionItemBoostResult =
+export type InventionBoostFailReason = 'unavailable' | 'cannot_afford';
+
+export type InventionItemBoostRawResult =
+	| {
+			success: true;
+			materialCost: MaterialBank;
+			messages: string[];
+			invention: Invention;
+	  }
+	| {
+			success: false;
+			reason: InventionBoostFailReason;
+			invention: Invention;
+			materialCost?: MaterialBank;
+			materialsOwned?: MaterialBank;
+			skipLine?: string;
+	  };
+
+export type InventionItemBoostResult =
 	| {
 			success: true;
 			materialCost: MaterialBank;
@@ -621,6 +644,8 @@ type InventionItemBoostResult =
 	  }
 	| {
 			success: false;
+			reason?: InventionBoostFailReason;
+			skipLine?: string;
 	  };
 
 export function canAffordInventionBoostRaw(materialsOwned: MaterialBank, inventionID: InventionID, duration: number) {
@@ -664,7 +689,7 @@ export function inventionItemBoostRaw({
 	inventionID: InventionID;
 	duration: number;
 	disabledInventions: number[];
-}) {
+}): InventionItemBoostRawResult {
 	const { materialCost, canAfford, invention } = canAffordInventionBoostRaw(
 		gearBank.materials,
 		inventionID,
@@ -677,12 +702,17 @@ export function inventionItemBoostRaw({
 		(invention.flags.includes('equipped') && !gearBank.hasEquipped(invention.item.id)) ||
 		(invention.flags.includes('bank') && !gearBank.hasEquippedOrInBank([invention.item.id]))
 	) {
-		return { success: false };
+		return { success: false, reason: 'unavailable' as const, invention };
 	}
 
 	if (!canAfford) {
 		return {
-			success: false
+			success: false,
+			reason: 'cannot_afford' as const,
+			invention,
+			materialCost,
+			materialsOwned: gearBank.materials,
+			skipLine: formatInventionMaterialSkipLine(invention.item.name)
 		};
 	}
 
@@ -699,23 +729,10 @@ export function inventionItemBoostRaw({
 	return { success: true, materialCost, messages, invention };
 }
 
-export async function inventionItemBoost({
-	user,
-	inventionID,
-	duration
-}: {
-	user: MUser;
-	inventionID: InventionID;
-	duration: number;
-}): Promise<InventionItemBoostResult> {
-	const result = inventionItemBoostRaw({
-		gearBank: user.gearBank,
-		inventionID,
-		duration,
-		disabledInventions: user.user.disabled_inventions
-	});
-	if (!result.success || !result.messages) return { success: false };
-
+export async function chargeInventionItemBoost(
+	user: MUser,
+	result: Extract<InventionItemBoostRawResult, { success: true }>
+): Promise<InventionItemBoostResult> {
 	const { materialCost, messages } = result;
 	try {
 		await transactMaterialsFromUser({
@@ -726,8 +743,89 @@ export async function inventionItemBoost({
 		return { success: true, materialCost, messages: messages.join(', ') };
 	} catch (err) {
 		Logging.logError(err as Error, { user_id: user.id });
-		return { success: false };
+		return { success: false, reason: 'unavailable' };
 	}
+}
+
+export function inventionMaterialSkipLine(
+	result: InventionItemBoostResult | InventionItemBoostRawResult | null | undefined
+): string | undefined {
+	return result && !result.success ? result.skipLine : undefined;
+}
+
+function skipFromEval(result: InventionItemBoostRawResult): InventionMaterialSkip | null {
+	if (result.success || result.reason !== 'cannot_afford' || !result.materialCost || !result.materialsOwned) {
+		return null;
+	}
+	return {
+		inventionName: result.invention.item.name,
+		materialCost: result.materialCost,
+		materialsOwned: result.materialsOwned
+	};
+}
+
+/**
+ * Evaluate, optionally confirm first-time material skips (no charge yet),
+ * then charge every boost the player can afford. Cancelling throws SILENT_ERROR.
+ */
+export async function resolveInventionItemBoosts({
+	user,
+	boosts,
+	optional = true
+}: {
+	user: MUser;
+	boosts: Array<{ inventionID: InventionID; duration: number }>;
+	/** When false (e.g. opted-in Chincannon), a missing-materials result is just a failure — no Start anyway confirm. */
+	optional?: boolean;
+}): Promise<Map<InventionID, InventionItemBoostResult>> {
+	const evaluated = boosts.map(boost => ({
+		inventionID: boost.inventionID,
+		result: inventionItemBoostRaw({
+			gearBank: user.gearBank,
+			inventionID: boost.inventionID,
+			duration: boost.duration,
+			disabledInventions: user.user.disabled_inventions
+		})
+	}));
+
+	const skips = evaluated
+		.map(entry => skipFromEval(entry.result))
+		.filter((s): s is InventionMaterialSkip => s !== null);
+	if (optional) await confirmInventionMaterialSkips(user, skips);
+
+	const out = new Map<InventionID, InventionItemBoostResult>();
+	for (const entry of evaluated) {
+		const { result } = entry;
+		if (!result.success) {
+			out.set(entry.inventionID, {
+				success: false,
+				reason: result.reason,
+				skipLine: result.skipLine
+			});
+			continue;
+		}
+		out.set(entry.inventionID, await chargeInventionItemBoost(user, result));
+	}
+	return out;
+}
+
+export async function inventionItemBoost({
+	user,
+	inventionID,
+	duration,
+	optional = true
+}: {
+	user: MUser;
+	inventionID: InventionID;
+	duration: number;
+	optional?: boolean;
+}): Promise<InventionItemBoostResult> {
+	const resolved = await resolveInventionItemBoosts({
+		user,
+		boosts: [{ inventionID, duration }],
+		optional
+	});
+	return resolved.get(inventionID)!;
 }
 
 export async function userHasFlappy({
@@ -752,6 +850,10 @@ export async function userHasFlappy({
 				userMsg: `You are getting 2x loot/rewards from RoboFlappy (${boostResult.messages})`
 			};
 		}
+		return {
+			shouldGiveBoost: false,
+			userMsg: boostResult.skipLine ?? ''
+		};
 	}
 	return {
 		shouldGiveBoost: false,

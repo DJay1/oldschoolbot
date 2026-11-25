@@ -493,6 +493,8 @@ const tripFinishEffects: TripFinishEffect[] = [
 						duration: data.duration
 					});
 					messages.push(`+${toKMB(xpToReceive)} Agility XP from Silverhawk boots (${costRes.messages})`);
+				} else if (costRes.skipLine) {
+					messages.push(costRes.skipLine);
 				}
 			}
 		}

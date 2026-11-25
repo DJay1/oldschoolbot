@@ -633,6 +633,8 @@ export async function calcFishingTripStart({
 				...boosts,
 				`${inventionBoosts.mechaRod.speedBoostPercent}% faster for Mecha rod (${mechaRodBoost.messages})`
 			]);
+		} else if (mechaRodBoost.skipLine && typeof result !== 'string') {
+			result.boosts.push(mechaRodBoost.skipLine);
 		}
 	}
 

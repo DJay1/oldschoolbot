@@ -273,6 +273,8 @@ You have ${portentCharges[portent.id]} charges left, and you receive ${
 						`${inventionBoosts.wispBuster.xpIncreasePercent}% extra XP for Wisp-buster (${boostResult.messages})`
 					);
 					hasWispBuster = true;
+				} else if (boostResult.skipLine) {
+					boosts.push(boostResult.skipLine);
 				}
 			} else if (shouldAttemptToUseDivineHand) {
 				const boostResult = await inventionItemBoost({
@@ -285,6 +287,8 @@ You have ${portentCharges[portent.id]} charges left, and you receive ${
 						`${inventionBoosts.divineHand.memoryHarvestExtraYieldPercent}% extra energy yield and Clue scrolls for Divine hand (${boostResult.messages})`
 					);
 					hasDivineHand = true;
+				} else if (boostResult.skipLine) {
+					boosts.push(boostResult.skipLine);
 				}
 			}
 

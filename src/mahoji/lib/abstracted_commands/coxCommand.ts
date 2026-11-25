@@ -221,6 +221,7 @@ export async function coxCommand(
 				const res = await inventionItemBoost({
 					user,
 					inventionID: InventionID.ChinCannon,
+					optional: false,
 					duration
 				});
 				if (!res.success) {

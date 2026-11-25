@@ -151,6 +151,7 @@ export async function tfaStartCommand(
 		const res = await inventionItemBoost({
 			user: chinCannonUser,
 			inventionID: InventionID.ChinCannon,
+			optional: false,
 			duration: realDuration
 		});
 		if (!res.success) {
