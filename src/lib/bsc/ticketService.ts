@@ -1,0 +1,442 @@
+import { InteractionResponseType, MessageFlags, Routes, SpecialResponse } from '@oldschoolgg/discord';
+
+import { gifs } from '@/lib/bsc/corgoGifs.js';
+import { staffGuildAllowed, staffTierOf } from '@/lib/bsc/staffAccess.js';
+import { STAFF_TIER_NAMES, type StaffTier, tierAtLeast } from '@/lib/bsc/staffTiers.js';
+import {
+	actionPingsReporter,
+	type CleanTicketInput,
+	cleanTicketLine,
+	isTicketStatus,
+	isTicketType,
+	type NewTicketInput,
+	parseTicketCustomId,
+	playerTicketLimitError,
+	prepareNewTicket,
+	readModalInputs,
+	TICKET_ACTION_RULES,
+	TICKET_INPUT_COMMAND,
+	TICKET_INPUT_REASON,
+	TICKET_INPUT_SCREENSHOT,
+	TICKET_INPUT_WHAT,
+	TICKET_MAX_OPEN_PER_PLAYER,
+	TICKET_PLAYER_COOLDOWN_MS,
+	TICKET_REASON_MAX,
+	type TicketAction,
+	type TicketModalSpec,
+	type TicketRecord,
+	type TicketStatus,
+	ticketButtonRows,
+	ticketEmbed,
+	ticketFiledReply,
+	ticketNewModal,
+	ticketNoticeContent,
+	ticketReasonModal,
+	ticketStaffContent
+} from '@/lib/bsc/tickets.js';
+import { Channel, globalConfig } from '@/lib/constants.js';
+
+const SNOWFLAKE = /^\d{5,20}$/;
+const NOT_SET_UP = "Tickets aren't set up on this bot yet. Please tell a staff member instead.";
+const MAX_POST_ATTEMPTS = 5;
+
+/** The parts of a modal submit interaction the ticket code reads. */
+export interface TicketModalSubmit {
+	id: string;
+	token: string;
+	guild_id?: string;
+	channel?: { id: string };
+	message?: unknown;
+	data: {
+		custom_id: string;
+		components?: readonly { components?: readonly { type: number; custom_id?: string; value?: string }[] }[];
+	};
+}
+
+function envId(name: string): string | null {
+	const raw = process.env[name]?.trim();
+	return raw && SNOWFLAKE.test(raw) ? raw : null;
+}
+
+/** See the config notes at the top of tickets.ts. */
+export function ticketConfig(): {
+	channelId: string | null;
+	staffRoleId: string | null;
+	noticeChannelId: string | null;
+} {
+	const fallback = globalConfig.isProduction ? null : Channel.BotLogs;
+	return {
+		channelId: envId('TICKET_CHANNEL_ID') ?? (fallback && SNOWFLAKE.test(fallback) ? fallback : null),
+		staffRoleId: envId('TICKET_STAFF_ROLE_ID'),
+		noticeChannelId: envId('TICKET_NOTICE_CHANNEL_ID')
+	};
+}
+
+interface TicketRow {
+	id: number;
+	type: string;
+	source: string;
+	reporter_id: string | null;
+	filed_by: string;
+	guild_id: string | null;
+	origin_channel_id: string | null;
+	what: string;
+	command: string | null;
+	screenshot: string | null;
+	status: string;
+	staff_channel_id: string | null;
+	staff_message_id: string | null;
+	notice_message_id: string | null;
+	handled_by: string | null;
+	handled_by_tier: string | null;
+	reason: string | null;
+	created_at: Date;
+	updated_at: Date;
+}
+
+function toRecord(row: TicketRow): TicketRecord {
+	const tier = row.handled_by_tier;
+	return {
+		id: Number(row.id),
+		type: isTicketType(row.type) ? row.type : 'bug',
+		source: row.source === 'auto' || row.source === 'staff' ? row.source : 'player',
+		reporterId: row.reporter_id,
+		filedBy: row.filed_by,
+		guildId: row.guild_id,
+		originChannelId: row.origin_channel_id,
+		what: row.what,
+		command: row.command,
+		screenshot: row.screenshot,
+		status: isTicketStatus(row.status) ? row.status : 'open',
+		staffChannelId: row.staff_channel_id,
+		staffMessageId: row.staff_message_id,
+		noticeMessageId: row.notice_message_id,
+		handledBy: row.handled_by,
+		handledByTier: tier && tier in STAFF_TIER_NAMES ? (tier as StaffTier) : null,
+		reason: row.reason,
+		createdAt: new Date(row.created_at),
+		updatedAt: new Date(row.updated_at)
+	};
+}
+
+export async function getTicket(id: number): Promise<TicketRecord | null> {
+	const rows = await prisma.$queryRaw<TicketRow[]>`SELECT * FROM bsc_tickets WHERE id = ${id} LIMIT 1`;
+	return rows[0] ? toRecord(rows[0]) : null;
+}
+
+/** Read-only list for /staff tickets (and DJ's daily list). Oldest first. */
+export async function listTickets(statuses: TicketStatus[], limit = 200): Promise<TicketRecord[]> {
+	const rows = await prisma.$queryRaw<TicketRow[]>`
+		SELECT * FROM bsc_tickets WHERE status = ANY(${statuses}::text[]) ORDER BY id ASC LIMIT ${limit}
+	`;
+	return rows.map(toRecord);
+}
+
+async function playerLimitError(userId: string): Promise<string | null> {
+	const rows = await prisma.$queryRaw<{ open_count: number; last_created: Date | null }[]>`
+		SELECT
+			(SELECT COUNT(*)::int FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open') AS open_count,
+			(SELECT MAX(created_at) FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player') AS last_created
+	`;
+	return playerTicketLimitError({
+		openCount: Number(rows[0]?.open_count ?? 0),
+		lastCreatedAt: rows[0]?.last_created ? new Date(rows[0].last_created) : null,
+		now: Date.now()
+	});
+}
+
+async function insertTicket(t: CleanTicketInput): Promise<TicketRecord | null> {
+	if (t.source !== 'player') {
+		const rows = await prisma.$queryRaw<TicketRow[]>`
+			INSERT INTO bsc_tickets (type, source, reporter_id, filed_by, guild_id, origin_channel_id, what, command, screenshot)
+			VALUES (${t.type}, ${t.source}, ${t.reporterId}, ${t.filedBy}, ${t.guildId}, ${t.originChannelId}, ${t.what}, ${t.command}, ${t.screenshot})
+			RETURNING *
+		`;
+		return rows[0] ? toRecord(rows[0]) : null;
+	}
+	// Player tickets: the cooldown and open cap are re-checked inside the insert, so a double submit can't skip them.
+	const cooldownMs = TICKET_PLAYER_COOLDOWN_MS;
+	const rows = await prisma.$queryRaw<TicketRow[]>`
+		INSERT INTO bsc_tickets (type, source, reporter_id, filed_by, guild_id, origin_channel_id, what, command, screenshot)
+		SELECT ${t.type}, 'player', ${t.reporterId}, ${t.filedBy}, ${t.guildId}, ${t.originChannelId}, ${t.what}, ${t.command}, ${t.screenshot}
+		WHERE NOT EXISTS (
+			SELECT 1 FROM bsc_tickets
+			WHERE reporter_id = ${t.reporterId} AND source = 'player'
+			AND created_at > NOW() - (${cooldownMs}::int * INTERVAL '1 millisecond')
+		)
+		AND (
+			SELECT COUNT(*) FROM bsc_tickets WHERE reporter_id = ${t.reporterId} AND source = 'player' AND status = 'open'
+		) < ${TICKET_MAX_OPEN_PER_PLAYER}
+		RETURNING *
+	`;
+	return rows[0] ? toRecord(rows[0]) : null;
+}
+
+export type FileTicketResult =
+	| { ok: true; ticket: TicketRecord; screenshotDropped: boolean }
+	| { ok: false; error: string };
+
+/**
+ * Files a ticket. Use this for player tickets, /staff ticket_file and the bug scan (source 'auto').
+ * Nothing is ever sent to the player here: the staff post only pings the staff role.
+ * The player is pinged once, as a new message, when staff press Confirm (and again on Live).
+ */
+export async function fileTicket(input: NewTicketInput, opts: { post?: boolean } = {}): Promise<FileTicketResult> {
+	if (!ticketConfig().channelId) return { ok: false, error: NOT_SET_UP };
+	const prepared = prepareNewTicket(input);
+	if (!prepared.ok) return prepared;
+	if (input.source === 'player' && input.reporterId) {
+		const limit = await playerLimitError(input.reporterId);
+		if (limit) return { ok: false, error: limit };
+	}
+	const ticket = await insertTicket(prepared.ticket);
+	if (!ticket) {
+		const limit = input.reporterId ? await playerLimitError(input.reporterId) : null;
+		return { ok: false, error: limit ?? 'Could not file that ticket. Please try again in a minute.' };
+	}
+	if (opts.post !== false) await postTicketToStaff(ticket.id);
+	return { ok: true, ticket, screenshotDropped: prepared.ticket.screenshotDropped };
+}
+
+/** Posts a ticket to the staff channel once. Safe to call from the ticker and the filer at the same time. */
+export async function postTicketToStaff(id: number): Promise<boolean> {
+	const { channelId, staffRoleId } = ticketConfig();
+	if (!channelId) return false;
+	const claimed = await prisma.$queryRaw<TicketRow[]>`
+		UPDATE bsc_tickets SET posting_at = NOW()
+		WHERE id = ${id} AND staff_message_id IS NULL AND post_attempts < ${MAX_POST_ATTEMPTS}
+		AND (posting_at IS NULL OR posting_at < NOW() - INTERVAL '2 minutes')
+		RETURNING *
+	`;
+	if (!claimed[0]) return false;
+	const ticket = toRecord(claimed[0]);
+	try {
+		const msg = (await globalClient.rest.post(Routes.channelMessages(channelId), {
+			body: {
+				content: ticketStaffContent(ticket, staffRoleId),
+				embeds: [ticketEmbed(ticket)],
+				components: ticketButtonRows(ticket),
+				// Only the staff role may ping. Never @everyone, never players (they are only shown in the embed).
+				allowed_mentions: { parse: [], users: [], roles: staffRoleId ? [staffRoleId] : [] }
+			}
+		})) as { id: string; channel_id: string; guild_id?: string };
+		const guildId = msg.guild_id ?? ticket.guildId ?? globalConfig.supportServerID ?? null;
+		await prisma.$executeRaw`
+			UPDATE bsc_tickets SET staff_channel_id = ${channelId}, staff_message_id = ${msg.id},
+				guild_id = COALESCE(guild_id, ${guildId}), posting_at = NULL, updated_at = NOW()
+			WHERE id = ${id}
+		`;
+		return true;
+	} catch (err) {
+		Logging.logError(err as Error, { type: 'TICKET_POST', ticket_id: id });
+		await prisma.$executeRaw`
+			UPDATE bsc_tickets SET posting_at = NULL, post_attempts = post_attempts + 1 WHERE id = ${id}
+		`;
+		return false;
+	}
+}
+
+/** Ticker: posts tickets that were filed by a script (bug scan) or whose first post failed. */
+export async function processTicketTicker(): Promise<void> {
+	if (!ticketConfig().channelId) return;
+	const rows = await prisma.$queryRaw<{ id: number }[]>`
+		SELECT id FROM bsc_tickets
+		WHERE staff_message_id IS NULL AND status = 'open' AND post_attempts < ${MAX_POST_ATTEMPTS}
+		AND (posting_at IS NULL OR posting_at < NOW() - INTERVAL '2 minutes')
+		ORDER BY id ASC LIMIT 5
+	`;
+	for (const row of rows) await postTicketToStaff(Number(row.id));
+}
+
+async function respond(interactionId: string, token: string, type: InteractionResponseType, data: unknown) {
+	await globalClient.rest.post(Routes.interactionCallback(interactionId, token), { body: { type, data } });
+}
+
+async function showModal(interactionId: string, token: string, modal: TicketModalSpec) {
+	await respond(interactionId, token, InteractionResponseType.Modal, modal);
+}
+
+async function followUpEphemeral(token: string, content: string) {
+	await globalClient.rest
+		.post(Routes.webhook(globalClient.applicationId, token), {
+			body: { content, flags: MessageFlags.Ephemeral, allowed_mentions: { parse: [] } }
+		})
+		.catch(err => Logging.logError(err as Error));
+}
+
+function staffMessageBody(ticket: TicketRecord) {
+	return {
+		embeds: [ticketEmbed(ticket)],
+		components: ticketButtonRows(ticket),
+		allowed_mentions: { parse: [], users: [], roles: [] }
+	};
+}
+
+type ActionResult = { ok: true; ticket: TicketRecord } | { ok: false; error: string };
+
+/** Moves a ticket. Atomic: two staff pressing at once only apply (and ping) once. */
+export async function applyTicketAction(
+	id: number,
+	action: TicketAction,
+	staffId: string,
+	tier: StaffTier,
+	reason: string | null
+): Promise<ActionResult> {
+	const rule = TICKET_ACTION_RULES[action];
+	if (!tierAtLeast(tier, rule.minTier)) {
+		return { ok: false, error: `${rule.label} needs the ${STAFF_TIER_NAMES[rule.minTier]} role.` };
+	}
+	const cleanReason = reason ? cleanTicketLine(reason, TICKET_REASON_MAX) || null : null;
+	const rows = await prisma.$queryRaw<TicketRow[]>`
+		UPDATE bsc_tickets SET status = ${rule.to}, handled_by = ${staffId}, handled_by_tier = ${tier},
+			reason = COALESCE(${cleanReason}, reason), updated_at = NOW()
+		WHERE id = ${id} AND status = ANY(${rule.from}::text[])
+		RETURNING *
+	`;
+	if (!rows[0]) {
+		const current = await getTicket(id);
+		if (!current) return { ok: false, error: `Ticket #${id} could not be found.` };
+		return { ok: false, error: `Ticket #${id} is already ${current.status.replace('_', ' ')}. Nothing changed.` };
+	}
+	return { ok: true, ticket: toRecord(rows[0]) };
+}
+
+/** Sends the one-time player notice as a NEW message (edits never notify), pinging only that player. */
+export async function sendTicketNotice(ticket: TicketRecord, action: TicketAction): Promise<boolean> {
+	const content = ticketNoticeContent(ticket, action);
+	if (!content || !ticket.reporterId) return true;
+	const { noticeChannelId } = ticketConfig();
+	const targets = [ticket.originChannelId, noticeChannelId, ticket.staffChannelId].filter(
+		(id, i, arr): id is string => Boolean(id) && arr.indexOf(id) === i
+	);
+	for (const channelId of targets) {
+		try {
+			const msg = (await globalClient.rest.post(Routes.channelMessages(channelId), {
+				body: { content, allowed_mentions: { parse: [], users: [ticket.reporterId], roles: [] } }
+			})) as { id: string };
+			await prisma.$executeRaw`UPDATE bsc_tickets SET notice_message_id = ${msg.id} WHERE id = ${ticket.id}`;
+			return true;
+		} catch (err) {
+			Logging.logError(err as Error, { type: 'TICKET_NOTICE', ticket_id: ticket.id, channel_id: channelId });
+		}
+	}
+	return false;
+}
+
+async function finishAction(
+	itx: { id: string; token: string },
+	ticket: TicketRecord,
+	action: TicketAction
+): Promise<void> {
+	// Update the staff post in place (no ping), then ping the player in a new message.
+	await respond(itx.id, itx.token, InteractionResponseType.UpdateMessage, staffMessageBody(ticket));
+	if (actionPingsReporter(action) && ticket.reporterId) {
+		const sent = await sendTicketNotice(ticket, action);
+		if (!sent)
+			await followUpEphemeral(
+				itx.token,
+				`Ticket #${ticket.id} updated, but the player notice could not be sent.`
+			);
+	}
+}
+
+function staffDenied(user: MUser, guildId: string | null): string | null {
+	const tier = staffTierOf(user);
+	if (!staffGuildAllowed(guildId) || tier === 'none') return gifs[Math.floor(Math.random() * gifs.length)];
+	return null;
+}
+
+/** Buttons with ids starting "TKT:". Returns null if the id is not a ticket button. */
+export async function handleTicketButton(user: MUser, customId: string, interaction: OSInteraction): CommandResponse {
+	const parsed = parseTicketCustomId(customId);
+	if (!parsed) return { content: 'That ticket button is not valid.', ephemeral: true };
+	const token = interaction.rawInteraction.token;
+
+	if (parsed.kind === 'form') {
+		if (!ticketConfig().channelId) return { content: NOT_SET_UP, ephemeral: true };
+		const limit = await playerLimitError(user.id);
+		if (limit) return { content: limit, ephemeral: true };
+		await showModal(interaction.id, token, ticketNewModal(parsed.type));
+		return SpecialResponse.RespondedManually;
+	}
+
+	if (parsed.kind !== 'act') return { content: 'That ticket button is not valid.', ephemeral: true };
+	const denied = staffDenied(user, interaction.guildId);
+	if (denied) return { content: denied, ephemeral: true };
+	const tier = staffTierOf(user);
+	const rule = TICKET_ACTION_RULES[parsed.action];
+	if (!tierAtLeast(tier, rule.minTier)) {
+		return { content: `${rule.label} needs the ${STAFF_TIER_NAMES[rule.minTier]} role.`, ephemeral: true };
+	}
+	const ticket = await getTicket(parsed.id);
+	if (!ticket || (ticket.staffMessageId && ticket.staffMessageId !== interaction.messageId)) {
+		return { content: `Ticket #${parsed.id} could not be found on this message.`, ephemeral: true };
+	}
+	if (!rule.from.includes(ticket.status)) {
+		return { content: `Ticket #${ticket.id} is already ${ticket.status.replace('_', ' ')}.`, ephemeral: true };
+	}
+	if (rule.needsReason) {
+		await showModal(interaction.id, token, ticketReasonModal(parsed.action, ticket.id));
+		return SpecialResponse.RespondedManually;
+	}
+	const result = await applyTicketAction(ticket.id, parsed.action, user.id, tier, null);
+	if (!result.ok) return { content: result.error, ephemeral: true };
+	await finishAction({ id: interaction.id, token }, result.ticket, parsed.action);
+	return SpecialResponse.RespondedManually;
+}
+
+export function isTicketModalId(customId: string): boolean {
+	const parsed = parseTicketCustomId(customId);
+	return parsed?.kind === 'new' || parsed?.kind === 'rsn';
+}
+
+/** Modal submits for the player form and the staff reason box. */
+export async function handleTicketModalSubmit(itx: TicketModalSubmit, user: MUser): Promise<void> {
+	const parsed = parseTicketCustomId(itx.data.custom_id);
+	if (!parsed) return;
+	const reply = (content: string) =>
+		respond(itx.id, itx.token, InteractionResponseType.ChannelMessageWithSource, {
+			content,
+			flags: MessageFlags.Ephemeral,
+			allowed_mentions: { parse: [] }
+		});
+	const inputs = readModalInputs(itx.data);
+
+	if (parsed.kind === 'new') {
+		const result = await fileTicket(
+			{
+				type: parsed.type,
+				source: 'player',
+				reporterId: user.id,
+				filedBy: user.id,
+				guildId: itx.guild_id ?? null,
+				originChannelId: itx.channel?.id ?? null,
+				what: inputs[TICKET_INPUT_WHAT] ?? '',
+				command: inputs[TICKET_INPUT_COMMAND] ?? null,
+				screenshot: inputs[TICKET_INPUT_SCREENSHOT] ?? null
+			},
+			{ post: false }
+		);
+		await reply(result.ok ? ticketFiledReply(result.ticket, result.screenshotDropped) : result.error);
+		if (result.ok) await postTicketToStaff(result.ticket.id);
+		return;
+	}
+
+	if (parsed.kind !== 'rsn') return;
+	const denied = staffDenied(user, itx.guild_id ?? null);
+	if (denied) return reply(denied);
+	const tier = staffTierOf(user);
+	const result = await applyTicketAction(
+		parsed.id,
+		parsed.action,
+		user.id,
+		tier,
+		inputs[TICKET_INPUT_REASON] ?? null
+	);
+	if (!result.ok) return reply(result.error);
+	if (itx.message) {
+		await finishAction({ id: itx.id, token: itx.token }, result.ticket, parsed.action);
+	} else {
+		await reply(`Ticket #${result.ticket.id} is now ${result.ticket.status.replace('_', ' ')}.`);
+	}
+}

@@ -12,6 +12,7 @@ import { AUTO_ROLES_CHECK_INTERVAL, autoRolesTick } from '@/lib/bsc/autoRolesSch
 import { syncBscPatrons } from '@/lib/bsc/patronSync.js';
 import { processPollTicker } from '@/lib/bsc/pollService.js';
 import { serverFirstsTick } from '@/lib/bsc/serverFirsts.js';
+import { processTicketTicker } from '@/lib/bsc/ticketService.js';
 import { processQueueReminders, processScheduledQueueStarts } from '@/lib/bsc/tripQueue.js';
 import { weeklyRecapTick } from '@/lib/bsc/weeklyRecap.js';
 import { Channel, globalConfig, testingShortcutsEnabled } from '@/lib/constants.js';
@@ -405,6 +406,16 @@ tickers.push({
 	productionOnly: true,
 	cb: async () => {
 		await processPollTicker();
+	}
+});
+
+tickers.push({
+	name: 'ticket_posts',
+	startupWait: Time.Minute,
+	interval: Time.Minute,
+	timer: null,
+	cb: async () => {
+		await processTicketTicker();
 	}
 });
 

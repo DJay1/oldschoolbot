@@ -125,6 +125,16 @@ export type StaffActionInfo = { command: string; minTier: StaffTier; help: strin
 export const STAFF_ACTIONS: StaffActionInfo[] = [
 	{ command: '/staff help', minTier: 'moderator', help: 'Shows this list and your boosts left this week.' },
 	{
+		command: '/staff tickets',
+		minTier: 'moderator',
+		help: 'List tickets. Confirm or Ignore new ones in the ticket channel.'
+	},
+	{
+		command: '/staff ticket_file',
+		minTier: 'developer',
+		help: 'File a ticket for a player (staff only until Confirm).'
+	},
+	{
 		command: '/staff boost type:2x loot',
 		minTier: 'moderator',
 		help: `Adds ${STAFF_BOOST_MINUTES} min of Double Loot for everyone. Weekly limit.`

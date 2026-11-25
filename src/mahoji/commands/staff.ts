@@ -16,6 +16,8 @@ import {
 	staffDeniedReply,
 	staffViewNameAutoComplete
 } from '@/lib/bsc/staffView.js';
+import { fileTicket, listTickets } from '@/lib/bsc/ticketService.js';
+import { buildTicketList, TICKET_ACTIVE_STATUSES, TICKET_STATUS_LABELS, type TicketStatus } from '@/lib/bsc/tickets.js';
 import { globalConfig } from '@/lib/constants.js';
 import { adminCommand } from '@/mahoji/commands/admin.js';
 import { rpCommand } from '@/mahoji/commands/rp.js';
@@ -167,6 +169,63 @@ export const staffCommand = defineCommand({
 			type: 'Subcommand',
 			name: 'event_list',
 			description: 'Dev: list seasonal events and whether they are on.'
+		},
+		{
+			type: 'Subcommand',
+			name: 'tickets',
+			description: 'Mod: list bug and suggestion tickets (default: everything not closed).',
+			options: [
+				{
+					type: 'String',
+					name: 'status',
+					description: 'Which tickets to show.',
+					required: false,
+					choices: [
+						{ name: 'Not closed (open, confirmed, on test)', value: 'active' },
+						{ name: 'Open (waiting for staff)', value: 'open' },
+						{ name: 'Confirmed (waiting for a fix)', value: 'confirmed' },
+						{ name: 'On test', value: 'on_test' },
+						{ name: 'Live', value: 'live' },
+						{ name: 'Ignored', value: 'ignored' },
+						{ name: "Won't fix", value: 'wont_fix' }
+					]
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
+			name: 'ticket_file',
+			description: 'Dev: file a ticket for a player. Only staff see it until someone presses Confirm.',
+			options: [
+				{
+					type: 'String',
+					name: 'type',
+					description: 'Bug or suggestion.',
+					required: true,
+					choices: [
+						{ name: 'Bug', value: 'bug' },
+						{ name: 'Suggestion', value: 'suggestion' }
+					]
+				},
+				{
+					type: 'String',
+					name: 'what',
+					description: 'What happened (10-500 characters).',
+					required: true
+				},
+				{
+					type: 'User',
+					name: 'user',
+					description: 'The player it hit. They are only pinged when staff press Confirm.',
+					required: false
+				},
+				{
+					type: 'String',
+					name: 'command',
+					description: 'The command that broke, if any.',
+					required: false
+				}
+			]
 		}
 	] as CommandOption[],
 	run: async ctx => {
@@ -191,6 +250,45 @@ export const staffCommand = defineCommand({
 			await interaction.defer();
 			const kind = options.boost.type === 'xp' ? 'xp' : 'loot';
 			return runStaffBoost(user, kind);
+		}
+
+		if (options.tickets) {
+			const choice: string = options.tickets.status ?? 'active';
+			const statuses: TicketStatus[] =
+				choice === 'active'
+					? TICKET_ACTIVE_STATUSES
+					: [choice as TicketStatus].filter(s => s in TICKET_STATUS_LABELS);
+			if (statuses.length === 0) return 'Invalid status.';
+			const heading =
+				choice === 'active' ? 'Tickets not closed' : `Tickets: ${TICKET_STATUS_LABELS[statuses[0]]}`;
+			try {
+				return {
+					content: buildTicketList(await listTickets(statuses), heading, Date.now()),
+					allowedMentions: { parse: [], users: [], roles: [] }
+				};
+			} catch (err) {
+				Logging.logError(err as Error, { type: 'TICKET_LIST' });
+				return 'Could not load tickets. Is the bsc_tickets table set up on this database?';
+			}
+		}
+
+		if (options.ticket_file) {
+			if (!tierAtLeast(tier, 'developer')) {
+				return 'That needs the Developer role. Use /staff help to see your commands.';
+			}
+			const o = options.ticket_file;
+			const result = await fileTicket({
+				type: o.type,
+				source: 'staff',
+				reporterId: o.user?.user?.id ?? null,
+				filedBy: user.id,
+				guildId,
+				originChannelId: null,
+				what: o.what,
+				command: o.command ?? null
+			});
+			if (!result.ok) return result.error;
+			return `Filed ticket **#${result.ticket.id}** in the staff ticket channel. The player is only pinged if staff press Confirm.`;
 		}
 
 		const key = Object.keys(ROUTES).find(k => options[k] !== undefined && options[k] !== null);
