@@ -70,40 +70,51 @@ export const DAILY_WORDLE_RETIRED_WORDS = ['CORGO', 'AKUMU'] as const;
 
 export type WordleHint = {
 	category: string;
-	clue: string;
 };
 
+/** Broad hint labels shown to players. Keep these shared so a category rarely names one answer. */
+export const DAILY_WORDLE_CATEGORIES = [
+	'Barrows brother',
+	'Monster',
+	'Boss',
+	'Item',
+	'Location',
+	'God',
+	'Pet',
+	'NPC'
+] as const;
+
 export const DAILY_WORDLE_HINTS: Record<string, WordleHint> = {
-	AHRIM: { category: 'Barrows brother', clue: 'The mage of the six.' },
-	KARIL: { category: 'Barrows brother', clue: 'The ranger of the six.' },
-	TORAG: { category: 'Barrows brother', clue: 'He fights with hammers.' },
-	VERAC: { category: 'Barrows brother', clue: 'He fights with a flail.' },
-	HYDRA: { category: 'Monster', clue: 'The Alchemical boss.' },
-	ABYSS: { category: 'Location', clue: 'Where rune pouches come from.' },
-	HASTA: { category: 'Item', clue: 'A Zamorakian spear-like weapon.' },
-	KERIS: { category: 'Item', clue: 'A desert dagger for Kalphites.' },
-	TORVA: { category: 'Item', clue: "Nex's melee armour." },
-	ZAROS: { category: 'God', clue: 'The Empty Lord.' },
-	SEREN: { category: 'God', clue: 'The elven crystal goddess.' },
-	XERIC: { category: 'Person', clue: 'The Chambers are named after him.' },
-	NIEVE: { category: 'NPC', clue: 'A gnome slayer master.' },
-	KONAR: { category: 'NPC', clue: 'The slayer master in Kourend.' },
-	ANKOU: { category: 'Monster', clue: 'A lingering spirit in the Stronghold.' },
-	JOGRE: { category: 'Monster', clue: 'A jungle ogre.' },
-	MOGRE: { category: 'Monster', clue: 'An underwater ogre.' },
-	KYATT: { category: 'Hunter creature', clue: 'A sabre-toothed big cat.' },
-	VORKI: { category: 'Pet', clue: 'Hatches from Vorkath.' },
-	IKKLE: { category: 'Pet', clue: 'A tiny hydra.' },
-	ARTIO: { category: 'Boss', clue: 'The woodland bear in the Wilderness.' },
-	RALOS: { category: 'God', clue: 'The sun god of Varlamore.' },
-	AKKHA: { category: 'Boss', clue: 'A path challenge in ToA.' },
-	ZEBAK: { category: 'Boss', clue: 'The crocodile of ToA.' },
-	NYLOC: { category: 'Monster', clue: "ToB's swarming pests." },
-	NIHIL: { category: 'Item', clue: 'A horn or shard from Nex.' },
-	CHINS: { category: 'Item', clue: 'Short name for chinchompas.' },
-	ARRAV: { category: 'Person', clue: 'His shield starts a Varrock quest.' },
-	CORGO: { category: 'Custom', clue: 'A four-legged mascot.' },
-	AKUMU: { category: 'Custom boss', clue: 'A nightmare demon.' }
+	AHRIM: { category: 'Barrows brother' },
+	KARIL: { category: 'Barrows brother' },
+	TORAG: { category: 'Barrows brother' },
+	VERAC: { category: 'Barrows brother' },
+	HYDRA: { category: 'Monster' },
+	ABYSS: { category: 'Location' },
+	HASTA: { category: 'Item' },
+	KERIS: { category: 'Item' },
+	TORVA: { category: 'Item' },
+	ZAROS: { category: 'God' },
+	SEREN: { category: 'God' },
+	XERIC: { category: 'NPC' },
+	NIEVE: { category: 'NPC' },
+	KONAR: { category: 'NPC' },
+	ANKOU: { category: 'Monster' },
+	JOGRE: { category: 'Monster' },
+	MOGRE: { category: 'Monster' },
+	KYATT: { category: 'Monster' },
+	VORKI: { category: 'Pet' },
+	IKKLE: { category: 'Pet' },
+	ARTIO: { category: 'Boss' },
+	RALOS: { category: 'God' },
+	AKKHA: { category: 'Boss' },
+	ZEBAK: { category: 'Boss' },
+	NYLOC: { category: 'Monster' },
+	NIHIL: { category: 'Item' },
+	CHINS: { category: 'Item' },
+	ARRAV: { category: 'NPC' },
+	CORGO: { category: 'Custom' },
+	AKUMU: { category: 'Custom' }
 };
 
 /** Clusters of similar-looking OSRS names. Decoys are taken from the same cluster as a target. */
@@ -204,7 +215,7 @@ export function wordleHintFor(answer: string): WordleHint | null {
 export function formatWordleHintLine(answer: string): string | null {
 	const hint = wordleHintFor(answer);
 	if (!hint) return null;
-	return `Hint: ${hint.category} — ${hint.clue}`;
+	return `Hint: ${hint.category}`;
 }
 
 export function isWordleHintVisible(state: Pick<WordleState, 'hintRevealed' | 'rows'>): boolean {
