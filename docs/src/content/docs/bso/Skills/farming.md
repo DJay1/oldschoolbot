@@ -31,7 +31,7 @@ title: "Farming"
 
 ## Auto farming
 
-`/farming auto_farm` plans every eligible patch into one trip. `/farming set_preferred` stores a seed, `highest_available`, `empty`, a quantity cap, or contract priority for each patch type. Default compost and the always-pay toggle are applied automatically. Check patches shows an Auto Farm button when something is ready to plant or harvest. That button can be turned off with the Disable Auto Farm Button user toggle.
+`/farming auto_farm` plans every eligible patch into one trip. `/farming set_preferred` stores a seed or an ordered list of up to 5 seeds, `highest_available`, `empty`, a quantity cap, or contract priority for each patch type. If more than one seed is set, Auto Farm uses the first you have enough of. Default compost and the always-pay toggle are applied automatically. Check patches shows an Auto Farm button when something is ready to plant or harvest. That button can be turned off with the Disable Auto Farm Button user toggle.
 
 ## Methods
 

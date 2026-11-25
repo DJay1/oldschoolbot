@@ -40,7 +40,7 @@ export type DetailedFarmingContract = {
 };
 
 export type FarmingSeedPreference =
-	| { type: 'seed'; seedID: number; quantity?: number }
+	| { type: 'seed'; seedID: number; fallbackSeedIDs?: number[]; quantity?: number }
 	| { type: 'highest_available'; quantity?: number }
 	| { type: 'empty'; quantity?: number };
 

@@ -18,7 +18,8 @@ Auto farming collects ready patches into a single Farming activity so you can ha
 - Configure the behaviour with [[/farming auto_farm_filter auto_farm_filter_data:AllFarm]] or [[/farming auto_farm_filter auto_farm_filter_data:Replant]].
 - Use [[/farming set_preferred]] for per-patch overrides:
   - Set `quantity` to limit how many patches auto farm plants or replants for that patch type.
-  - `seed` to force a specific seed for that patch type
+  - `seed` to set one seed, or a comma-separated list of up to 5 seeds in priority order. Auto Farm uses the first seed you have enough of
+  - `add` to append a seed as a fallback on an existing seed list
   - `highest_available` to always choose the best available seed for that patch
   - `empty` to skip that patch type entirely
   - `reset_patch` with `patch` to clear one saved patch preference

@@ -675,6 +675,83 @@ describe('auto farm helpers', () => {
 		expect(response).not.toContain('Ranarr');
 	});
 
+	it('autoFarm falls back to the next preferred seed when the first is missing', async () => {
+		const bank = new Bank().add('Ranarr seed', 4).add('Guam seed', 4).add('Compost', 8);
+		const user = mockMUser({
+			bank,
+			skills_farming: convertLVLtoXP(50)
+		});
+		const mutableUser = user.user as MutableUser;
+		mutableUser.auto_farm_filter = AutoFarmFilterEnum.AllFarm;
+		(mutableUser as any).minion_farmingPreferredSeeds = {
+			herb: {
+				type: 'seed',
+				seedID: itemID('Toadflax seed'),
+				fallbackSeedIDs: [itemID('Ranarr seed')]
+			}
+		};
+
+		const transactResult = {
+			newUser: user,
+			itemsAdded: new Bank(),
+			itemsRemoved: new Bank(),
+			newBank: user.bank.clone(),
+			newCL: user.cl.clone(),
+			previousCL: new Bank(),
+			clLootBank: null
+		} satisfies Awaited<ReturnType<typeof user.transactItems>>;
+		vi.spyOn(user, 'transactItems').mockResolvedValue(transactResult);
+		vi.spyOn(user, 'statsBankUpdate').mockResolvedValue(undefined);
+		vi.spyOn(global.ClientSettings, 'updateBankSetting').mockResolvedValue();
+
+		calcMaxTripLengthSpy.mockReturnValue(300 * 1000);
+
+		const response = await autoFarm(
+			user,
+			[herbPatchDetailed],
+			herbPatches as Record<FarmingPatchName, IPatchData>,
+			baseInteraction as MInteraction
+		);
+
+		expect(typeof response).toBe('string');
+		if (typeof response !== 'string') return;
+		expect(response).toContain('Ranarr');
+		expect(response).not.toContain('Toadflax');
+		expect(response).not.toContain('Guam');
+	});
+
+	it('autoFarm does not plant an unlisted seed when every preferred seed is missing', async () => {
+		const bank = new Bank().add('Guam seed', 4).add('Compost', 8);
+		const user = mockMUser({
+			bank,
+			skills_farming: convertLVLtoXP(50)
+		});
+		const mutableUser = user.user as MutableUser;
+		mutableUser.auto_farm_filter = AutoFarmFilterEnum.AllFarm;
+		(mutableUser as any).minion_farmingPreferredSeeds = {
+			herb: {
+				type: 'seed',
+				seedID: itemID('Toadflax seed'),
+				fallbackSeedIDs: [itemID('Ranarr seed')]
+			}
+		};
+
+		calcMaxTripLengthSpy.mockReturnValue(300 * 1000);
+
+		const response = await autoFarm(
+			user,
+			[herbPatchDetailed],
+			herbPatches as Record<FarmingPatchName, IPatchData>,
+			baseInteraction as MInteraction
+		);
+
+		expect(addSubTaskToActivityTask).not.toHaveBeenCalled();
+		expect(typeof response === 'string' || isBaseMessage(response)).toBe(true);
+		if (typeof response === 'string') {
+			expect(response).not.toContain('Guam');
+		}
+	});
+
 	it('autoFarm highest_available preference picks best seed', async () => {
 		const bank = new Bank().add('Guam seed', 4).add('Ranarr seed', 4).add('Compost', 8);
 		const user = mockMUser({

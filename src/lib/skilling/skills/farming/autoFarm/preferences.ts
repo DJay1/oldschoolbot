@@ -1,3 +1,6 @@
+import { stringMatches } from '@oldschoolgg/toolkit';
+import { Items } from 'oldschooljs';
+
 import { plants } from '@/lib/skilling/skills/farming/index.js';
 import type { FarmingPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import { findPlant, isPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
@@ -7,6 +10,9 @@ import type {
 	IPatchDataDetailed
 } from '@/lib/skilling/skills/farming/utils/types.js';
 import type { Plant } from '@/lib/skilling/types.js';
+
+export const MAX_PREFERRED_SEEDS_PER_PATCH = 5;
+export const PREFERRED_SEEDS_EMBED_DESCRIPTION_LIMIT = 4096 - 150;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -38,8 +44,79 @@ export function findPlantBySeedID(seedID: number, patchName: FarmingPatchName): 
 	return null;
 }
 
-function isValidPreferenceRecord(value: unknown): value is { type: string; seedID?: unknown; quantity?: unknown } {
+function isValidPreferenceRecord(
+	value: unknown
+): value is { type: string; seedID?: unknown; seedIDs?: unknown; fallbackSeedIDs?: unknown; quantity?: unknown } {
 	return isRecord(value) && typeof value.type === 'string';
+}
+
+export function normalizeSeedIDList(patchName: FarmingPatchName, seedIDs: unknown): number[] {
+	const rawIDs = Array.isArray(seedIDs) ? seedIDs : [seedIDs];
+	const result: number[] = [];
+	for (const id of rawIDs) {
+		if (typeof id !== 'number' || !Number.isSafeInteger(id) || id <= 0) {
+			continue;
+		}
+		if (result.includes(id)) {
+			continue;
+		}
+		if (!findPlantBySeedID(id, patchName)) {
+			continue;
+		}
+		result.push(id);
+		if (result.length >= MAX_PREFERRED_SEEDS_PER_PATCH) {
+			break;
+		}
+	}
+	return result;
+}
+
+export function preferenceFromSeedIDs(seedIDs: number[], quantity?: number): FarmingSeedPreference | null {
+	if (seedIDs.length === 0) {
+		return null;
+	}
+	const [seedID, ...fallbackSeedIDs] = seedIDs;
+	const quantityData = quantity === undefined ? {} : { quantity };
+	return fallbackSeedIDs.length > 0
+		? { type: 'seed', seedID, fallbackSeedIDs, ...quantityData }
+		: { type: 'seed', seedID, ...quantityData };
+}
+
+export function getPreferenceSeedIDs(preference: FarmingSeedPreference): number[] {
+	if (preference.type !== 'seed') {
+		return [];
+	}
+	const unique: number[] = [];
+	for (const id of [preference.seedID, ...(preference.fallbackSeedIDs ?? [])]) {
+		if (typeof id !== 'number' || !Number.isSafeInteger(id) || id <= 0) {
+			continue;
+		}
+		if (unique.includes(id)) {
+			continue;
+		}
+		unique.push(id);
+		if (unique.length >= MAX_PREFERRED_SEEDS_PER_PATCH) {
+			break;
+		}
+	}
+	return unique;
+}
+
+export function getPreferredPlants(
+	patchName: FarmingPatchName,
+	preference: FarmingSeedPreference | undefined
+): Plant[] {
+	if (!preference || preference.type !== 'seed') {
+		return [];
+	}
+	const plantsForIDs: Plant[] = [];
+	for (const seedID of normalizeSeedIDList(patchName, [preference.seedID, ...(preference.fallbackSeedIDs ?? [])])) {
+		const plant = findPlantBySeedID(seedID, patchName);
+		if (plant) {
+			plantsForIDs.push(plant);
+		}
+	}
+	return plantsForIDs;
 }
 
 export function normalizeSeedPreference(patchName: FarmingPatchName, value: unknown): FarmingSeedPreference | null {
@@ -56,20 +133,25 @@ export function normalizeSeedPreference(patchName: FarmingPatchName, value: unkn
 	if (quantity === null) {
 		return null;
 	}
-	const quantityData = quantity === undefined ? {} : { quantity };
 
 	if (value.type === 'highest_available') {
-		return { type: 'highest_available', ...quantityData };
+		return quantity === undefined ? { type: 'highest_available' } : { type: 'highest_available', quantity };
 	}
 	if (value.type === 'empty') {
-		return { type: 'empty', ...quantityData };
+		return quantity === undefined ? { type: 'empty' } : { type: 'empty', quantity };
 	}
-	if (value.type === 'seed' && typeof value.seedID === 'number') {
-		const plant = findPlantBySeedID(value.seedID, patchName);
-		if (!plant) {
-			return null;
+	if (value.type === 'seed') {
+		const rawIDs: unknown[] = [];
+		if (typeof value.seedID === 'number') {
+			rawIDs.push(value.seedID);
 		}
-		return { type: 'seed', seedID: value.seedID, ...quantityData };
+		if (Array.isArray(value.seedIDs)) {
+			rawIDs.push(...value.seedIDs);
+		}
+		if (Array.isArray(value.fallbackSeedIDs)) {
+			rawIDs.push(...value.fallbackSeedIDs);
+		}
+		return preferenceFromSeedIDs(normalizeSeedIDList(patchName, rawIDs), quantity);
 	}
 	return null;
 }
@@ -147,6 +229,153 @@ export function rememberCropsInPreferences(
 	return next;
 }
 
+function resolveSeedNameForPatch(patchName: FarmingPatchName, seedInput: string): number | string {
+	const trimmed = seedInput.trim();
+	const normalized = trimmed.toLowerCase().replace(/\s+/g, '_');
+	const plantsForPatch = getPlantsForPatch(patchName);
+	let matchingPlant = plantsForPatch.find(
+		plant => stringMatches(plant.name, trimmed) || plant.aliases.some(alias => stringMatches(alias, trimmed))
+	);
+
+	if (!matchingPlant) {
+		matchingPlant = plantsForPatch.find(plant =>
+			plant.inputItems
+				.items()
+				.some(([item]) => stringMatches(item.name, trimmed) || stringMatches(item.name, normalized))
+		);
+	}
+
+	if (!matchingPlant) {
+		return `I couldn't find a seed or plant matching "${seedInput}" for that patch.`;
+	}
+
+	const seedID = getPrimarySeedForPlant(matchingPlant);
+	if (!seedID) {
+		return `Unable to determine the seed item for ${matchingPlant.name}.`;
+	}
+
+	return seedID;
+}
+
+export function parseSeedPreferenceInput(
+	patchName: FarmingPatchName,
+	seedInput: string
+): FarmingSeedPreference | string {
+	const trimmed = seedInput.trim();
+	if (trimmed.length === 0) {
+		return 'Please specify a seed preference.';
+	}
+
+	const parts = trimmed
+		.split(',')
+		.map(part => part.trim())
+		.filter(part => part.length > 0);
+	if (parts.length === 0) {
+		return 'Please specify a seed preference.';
+	}
+	if (parts.length > MAX_PREFERRED_SEEDS_PER_PATCH) {
+		return `You can set up to ${MAX_PREFERRED_SEEDS_PER_PATCH} preferred seeds for each patch type.`;
+	}
+
+	const specials = parts.map(part => part.toLowerCase().replace(/\s+/g, '_'));
+	const hasHighest = specials.includes('highest_available');
+	const hasEmpty = specials.includes('empty');
+	if ((hasHighest || hasEmpty) && parts.length > 1) {
+		return 'highest_available and empty cannot be combined with a seed list.';
+	}
+	if (hasHighest) {
+		return { type: 'highest_available' };
+	}
+	if (hasEmpty) {
+		return { type: 'empty' };
+	}
+
+	const seedIDs: number[] = [];
+	for (const part of parts) {
+		const seedID = resolveSeedNameForPatch(patchName, part);
+		if (typeof seedID === 'string') {
+			return seedID;
+		}
+		if (!seedIDs.includes(seedID)) {
+			seedIDs.push(seedID);
+		}
+	}
+	const preference = preferenceFromSeedIDs(seedIDs);
+	if (!preference) {
+		return 'Please specify a seed preference.';
+	}
+	return preference;
+}
+
+export function appendPreferredSeeds(
+	existing: FarmingSeedPreference | undefined,
+	incoming: FarmingSeedPreference,
+	patchFriendlyName: string
+): FarmingSeedPreference | string {
+	if (incoming.type !== 'seed') {
+		return 'Use add with a seed name, not highest_available or empty.';
+	}
+	if (existing && existing.type !== 'seed') {
+		return `Clear the saved preference for ${patchFriendlyName} before adding fallback seeds.`;
+	}
+	if (!existing) {
+		return incoming;
+	}
+
+	const currentIDs = getPreferenceSeedIDs(existing);
+	const incomingIDs = getPreferenceSeedIDs(incoming);
+	const toAdd = incomingIDs.filter(id => !currentIDs.includes(id));
+	if (toAdd.length === 0) {
+		const names = incomingIDs.map(id => Items.getItem(id)?.name ?? `Item ${id}`);
+		if (names.length === 1) {
+			return `${names[0]} is already in your ${patchFriendlyName} preference list.`;
+		}
+		return `${names.join(', ')} are already in your ${patchFriendlyName} preference list.`;
+	}
+	if (currentIDs.length + toAdd.length > MAX_PREFERRED_SEEDS_PER_PATCH) {
+		return `You can set up to ${MAX_PREFERRED_SEEDS_PER_PATCH} preferred seeds for each patch type.`;
+	}
+	const merged = preferenceFromSeedIDs([...currentIDs, ...toAdd], existing.quantity);
+	if (!merged) {
+		return 'Please specify a seed preference.';
+	}
+	return merged;
+}
+
+export function formatSeedPreference(preference: FarmingSeedPreference): string {
+	if (preference.type === 'highest_available') {
+		return preference.quantity === undefined
+			? 'highest_available'
+			: `highest_available, quantity: ${preference.quantity}`;
+	}
+	if (preference.type === 'empty') {
+		return preference.quantity === undefined ? 'empty' : `empty, quantity: ${preference.quantity}`;
+	}
+	const names = getPreferenceSeedIDs(preference).map(seedID => Items.getItem(seedID)?.name ?? `Item ${seedID}`);
+	const seedText = `seed: ${names.join(', then ')}`;
+	return preference.quantity === undefined ? seedText : `${seedText}, quantity: ${preference.quantity}`;
+}
+
+export function buildPreferredSeedsEmbedDescription(lines: string[]): string {
+	const joined = lines.join('\n');
+	if (joined.length <= PREFERRED_SEEDS_EMBED_DESCRIPTION_LIMIT) {
+		return joined;
+	}
+	const suffix = '\nAnd more patches.';
+	const keep: string[] = [];
+	for (const line of lines) {
+		const next = `${[...keep, line].join('\n')}${suffix}`;
+		if (next.length > PREFERRED_SEEDS_EMBED_DESCRIPTION_LIMIT) {
+			break;
+		}
+		keep.push(line);
+	}
+	if (keep.length === 0) {
+		return joined.slice(0, PREFERRED_SEEDS_EMBED_DESCRIPTION_LIMIT);
+	}
+	return `${keep.join('\n')}${suffix}`;
+}
+
 export interface ResolveSeedForPatchOptions {
 	patch: IPatchDataDetailed;
 	preferContract: boolean;
@@ -158,6 +387,7 @@ export interface ResolveSeedForPatchOptions {
 
 export type ResolvedSeedForPatchResult =
 	| { type: 'plant'; plant: Plant; reason: 'contract' | 'preference_seed' | 'fallback' | 'last_planted' }
+	| { type: 'plants'; plants: Plant[]; reason: 'preference_seed' }
 	| { type: 'highest'; reason: 'preference_highest' };
 
 function lastPlantedCrop(patch: IPatchDataDetailed): Plant | null {
@@ -202,11 +432,14 @@ export function resolveSeedForPatch({
 			return null;
 		}
 		if (preference.type === 'seed') {
-			const plant = findPlantBySeedID(preference.seedID, patch.patchName);
-			if (!plant) {
+			const preferredPlants = getPreferredPlants(patch.patchName, preference);
+			if (preferredPlants.length === 0) {
 				return null;
 			}
-			return { type: 'plant', plant, reason: 'preference_seed' };
+			if (preferredPlants.length === 1) {
+				return { type: 'plant', plant: preferredPlants[0], reason: 'preference_seed' };
+			}
+			return { type: 'plants', plants: preferredPlants, reason: 'preference_seed' };
 		}
 		if (preference.type === 'highest_available') {
 			return { type: 'highest', reason: 'preference_highest' };

@@ -2,7 +2,7 @@ import { formatDuration } from '@oldschoolgg/toolkit';
 import { Bank } from 'oldschooljs';
 
 import type { CropUpgradeType } from '@/prisma/main/enums.js';
-import { resolveSeedForPatch } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
+import { getPreferredPlants, resolveSeedForPatch } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
 import {
 	applyBottomlessUse,
 	type BottomlessCompostState
@@ -36,6 +36,7 @@ export interface PlanRequest {
 	type: 'highest' | 'plant';
 	patch: IPatchDataDetailed;
 	plant?: Plant;
+	plants?: Plant[];
 	quantity?: number;
 }
 
@@ -103,11 +104,22 @@ export function buildPlanRequests({
 			continue;
 		}
 
-		if (resolved.type === 'plant') {
+		if (resolved.type === 'plant' || resolved.type === 'plants') {
+			const plants =
+				resolved.type === 'plants'
+					? resolved.plants
+					: resolved.reason === 'preference_seed'
+						? getPreferredPlants(patch.patchName, preferredSeeds.get(patch.patchName))
+						: [resolved.plant];
+			const chosenPlants = plants.length > 0 ? plants : resolved.type === 'plant' ? [resolved.plant] : [];
+			if (chosenPlants.length === 0) {
+				continue;
+			}
 			const planRequest: PlanRequest = {
 				type: 'plant',
 				patch,
-				plant: resolved.plant,
+				plant: chosenPlants[0],
+				plants: chosenPlants,
 				quantity: preferredQuantity
 			};
 			if (resolved.reason === 'contract') {

@@ -1,6 +1,5 @@
 import { EmbedBuilder } from '@oldschoolgg/discord';
 import { stringMatches, toTitleCase, uniqueArr } from '@oldschoolgg/toolkit';
-import { Items } from 'oldschooljs';
 
 import { AutoFarmFilterEnum } from '@/prisma/main/enums.js';
 import { choicesOf } from '@/discord/index.js';
@@ -13,9 +12,12 @@ import {
 	titheFarmBuyRewardAutoComplete
 } from '@/lib/skilling/skills/farming/autocompletes.js';
 import {
+	appendPreferredSeeds,
+	buildPreferredSeedsEmbedDescription,
+	formatSeedPreference,
 	getPlantsForPatch,
-	getPrimarySeedForPlant,
 	parsePreferredSeeds,
+	parseSeedPreferenceInput,
 	serializePreferredSeeds
 } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
 import { CompostTiers, Farming } from '@/lib/skilling/skills/farming/index.js';
@@ -42,13 +44,7 @@ function formatPreference(preference: FarmingSeedPreference | undefined, autoFar
 			? 'not set (AllFarm: highest available)'
 			: 'not set (Replant: same crop only)';
 	}
-	const preferenceText =
-		preference.type === 'highest_available'
-			? 'highest_available'
-			: preference.type === 'empty'
-				? 'empty'
-				: `seed: ${Items.getItem(preference.seedID)?.name ?? `Item ${preference.seedID}`}`;
-	return preference.quantity === undefined ? preferenceText : `${preferenceText}, quantity: ${preference.quantity}`;
+	return formatSeedPreference(preference);
 }
 
 function buildPreferencesEmbed(
@@ -59,7 +55,8 @@ function buildPreferencesEmbed(
 ): EmbedBuilder {
 	const descriptionLines: string[] = [
 		`Filter: ${autoFarmFilter}.`,
-		`Contract priority: ${preferContract ? 'enabled' : 'disabled'}.`
+		`Contract priority: ${preferContract ? 'enabled' : 'disabled'}.`,
+		'If you set more than one seed, Auto Farm uses the first you have enough of.'
 	];
 	for (const patch of patchesDetailed) {
 		descriptionLines.push(
@@ -67,45 +64,9 @@ function buildPreferencesEmbed(
 		);
 	}
 
-	return new EmbedBuilder().setTitle('Auto-farm preferences').setDescription(descriptionLines.join('\n'));
-}
-
-function resolveSeedPreferenceInput(patchName: FarmingPatchName, seedInput: string): FarmingSeedPreference | string {
-	const trimmed = seedInput.trim();
-	if (trimmed.length === 0) {
-		return 'Please specify a seed preference.';
-	}
-	const normalized = trimmed.toLowerCase().replace(/\s+/g, '_');
-	if (normalized === 'highest_available') {
-		return { type: 'highest_available' };
-	}
-	if (normalized === 'empty') {
-		return { type: 'empty' };
-	}
-
-	const plantsForPatch = getPlantsForPatch(patchName);
-	let matchingPlant = plantsForPatch.find(
-		plant => stringMatches(plant.name, trimmed) || plant.aliases.some(alias => stringMatches(alias, trimmed))
-	);
-
-	if (!matchingPlant) {
-		matchingPlant = plantsForPatch.find(plant =>
-			plant.inputItems
-				.items()
-				.some(([item]) => stringMatches(item.name, trimmed) || stringMatches(item.name, normalized))
-		);
-	}
-
-	if (!matchingPlant) {
-		return `I couldn't find a seed or plant matching "${seedInput}" for that patch.`;
-	}
-
-	const seedID = getPrimarySeedForPlant(matchingPlant);
-	if (!seedID) {
-		return `Unable to determine the seed item for ${matchingPlant.name}.`;
-	}
-
-	return { type: 'seed', seedID };
+	return new EmbedBuilder()
+		.setTitle('Auto-farm preferences')
+		.setDescription(buildPreferredSeedsEmbedDescription(descriptionLines));
 }
 
 export const farmingCommand = defineCommand({
@@ -187,9 +148,15 @@ export const farmingCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'seed',
-					description: "Preferred seed (item name, 'highest_available', or 'empty').",
+					description: "Preferred seed (name or comma-separated list, 'highest_available', or 'empty').",
 					required: false,
 					autocomplete: farmingPreferredSeedAutoComplete
+				},
+				{
+					type: 'Boolean',
+					name: 'add',
+					description: 'Add this seed as a fallback when you run out of your earlier preferred seeds.',
+					required: false
 				},
 				{
 					type: 'Integer',
@@ -384,6 +351,13 @@ export const farmingCommand = defineCommand({
 			if (resetPatchInput && !patchNameInput) {
 				return 'You must provide a patch when clearing one saved preference.';
 			}
+			const addInput = Boolean(options.set_preferred.add);
+			if (addInput && (resetAllInput || resetPatchInput)) {
+				return 'You cannot use add with reset_all or reset_patch.';
+			}
+			if (addInput && !seedInput) {
+				return 'You must provide a seed when adding a fallback.';
+			}
 
 			if (typeof preferContractInput === 'boolean') {
 				if (preferContractInput !== preferContractCurrent) {
@@ -467,14 +441,26 @@ export const farmingCommand = defineCommand({
 				let resolvedPreference = preferenceMap.get(patchData.patchName);
 				if (seedInput) {
 					const existingQuantity = resolvedPreference?.quantity;
-					const resolvedSeedPreference = resolveSeedPreferenceInput(patchData.patchName, seedInput);
+					const resolvedSeedPreference = parseSeedPreferenceInput(patchData.patchName, seedInput);
 					if (typeof resolvedSeedPreference === 'string') {
 						return resolvedSeedPreference;
 					}
-					resolvedPreference =
-						existingQuantity === undefined
-							? resolvedSeedPreference
-							: { ...resolvedSeedPreference, quantity: existingQuantity };
+					if (addInput) {
+						const appended = appendPreferredSeeds(
+							resolvedPreference,
+							resolvedSeedPreference,
+							patchData.friendlyName
+						);
+						if (typeof appended === 'string') {
+							return appended;
+						}
+						resolvedPreference = appended;
+					} else {
+						resolvedPreference =
+							existingQuantity === undefined
+								? resolvedSeedPreference
+								: { ...resolvedSeedPreference, quantity: existingQuantity };
+					}
 				}
 				if (!resolvedPreference) {
 					return 'You must set a seed preference before setting its quantity.';

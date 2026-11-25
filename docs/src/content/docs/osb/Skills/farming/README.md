@@ -60,7 +60,7 @@ XP, speed, and harvest quantity can be boosted by the following:
 - **Replant** – [[/farming auto_farm_filter auto_farm_filter_data\:Replant]]
   Replants the same seed in only the patches that had it
   _(Empty other patches using [[/farming harvest]] for better control)_
-- [[/farming set_preferred]] can force a seed, choose `highest_available`, skip a patch with `empty`, limit quantity, or prioritise the active farming contract.
+- [[/farming set_preferred]] can force a seed or an ordered list of up to 5 seeds, choose `highest_available`, skip a patch with `empty`, limit quantity, or prioritise the active farming contract. If you set more than one seed, Auto Farm uses the first you have enough of.
 - Default compost and the always-pay setting are applied automatically.
 
 See [Auto Farming](auto-farming.md) for the full behaviour.

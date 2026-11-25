@@ -132,7 +132,13 @@ export async function planAutoFarmTrip(
 	for (const request of planRequests) {
 		const patch = request.patch;
 		const candidates =
-			request.type === 'highest' ? getPlantsForPatch(patch.patchName) : request.plant ? [request.plant] : [];
+			request.type === 'highest'
+				? getPlantsForPatch(patch.patchName)
+				: request.plants && request.plants.length > 0
+					? request.plants
+					: request.plant
+						? [request.plant]
+						: [];
 		const levelEligibleCandidates = candidates.filter(candidate => candidate.level <= farmingLevel);
 		if (levelEligibleCandidates.length === 0) {
 			continue;

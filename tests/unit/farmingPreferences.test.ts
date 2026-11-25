@@ -3,9 +3,14 @@ import { describe, expect, it } from 'vitest';
 import './setup.js';
 
 import {
+	appendPreferredSeeds,
+	buildPreferredSeedsEmbedDescription,
+	formatSeedPreference,
 	getPlantsForPatch,
 	getPrimarySeedForPlant,
 	parsePreferredSeeds,
+	parseSeedPreferenceInput,
+	preferenceFromSeedIDs,
 	resolveSeedForPatch,
 	serializePreferredSeeds
 } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
@@ -305,5 +310,187 @@ describe('farming seed preferences', () => {
 		});
 
 		expect(result).toBeNull();
+	});
+});
+
+describe('farming preferred seed lists', () => {
+	const toadflax = plants.find(plant => plant.name === 'Toadflax');
+	const ranarr = plants.find(plant => plant.name === 'Ranarr');
+	const snapdragon = plants.find(plant => plant.name === 'Snapdragon');
+	if (!toadflax || !ranarr || !snapdragon) {
+		throw new Error('Expected Toadflax, Ranarr, and Snapdragon plants to exist');
+	}
+	const toadflaxSeedID = getPrimarySeedForPlant(toadflax);
+	const ranarrSeedID = getPrimarySeedForPlant(ranarr);
+	const snapdragonSeedID = getPrimarySeedForPlant(snapdragon);
+	if (!toadflaxSeedID || !ranarrSeedID || !snapdragonSeedID) {
+		throw new Error('Expected herb plants to have seed items');
+	}
+
+	it('parsePreferredSeeds accepts a legacy seed and fallbackSeedIDs list', () => {
+		const result = parsePreferredSeeds({
+			herb: {
+				type: 'seed',
+				seedID: toadflaxSeedID,
+				fallbackSeedIDs: [ranarrSeedID, snapdragonSeedID],
+				quantity: 3
+			}
+		});
+
+		expect(result.get('herb')).toEqual({
+			type: 'seed',
+			seedID: toadflaxSeedID,
+			fallbackSeedIDs: [ranarrSeedID, snapdragonSeedID],
+			quantity: 3
+		});
+	});
+
+	it('serializePreferredSeeds keeps a single-seed preference in the legacy shape', () => {
+		const parsed = parsePreferredSeeds({ herb: { type: 'seed', seedID: herbSeedID } });
+		const serialized = serializePreferredSeeds(parsed);
+		expect(serialized.herb).toEqual({ type: 'seed', seedID: herbSeedID });
+		expect((serialized.herb as FarmingSeedPreference).fallbackSeedIDs).toBeUndefined();
+	});
+
+	it('parsePreferredSeeds promotes a valid fallback when the first seed ID is invalid', () => {
+		const result = parsePreferredSeeds({
+			herb: { type: 'seed', seedID: 999999, fallbackSeedIDs: [toadflaxSeedID] }
+		});
+		expect(result.get('herb')).toEqual({ type: 'seed', seedID: toadflaxSeedID });
+	});
+
+	it('resolveSeedForPatch returns an ordered plant list for multiple preferred seeds', () => {
+		const preferences = new Map<FarmingPatchName, FarmingSeedPreference>();
+		preferences.set('herb', { type: 'seed', seedID: toadflaxSeedID, fallbackSeedIDs: [ranarrSeedID] });
+
+		const result = resolveSeedForPatch({
+			patch: basePatchData,
+			preferContract: false,
+			contractPlant: null,
+			preferences,
+			fallbackPlant: herbPlant
+		});
+
+		expect(result).toEqual({
+			type: 'plants',
+			plants: [toadflax, ranarr],
+			reason: 'preference_seed'
+		});
+	});
+
+	it('parseSeedPreferenceInput accepts a comma-separated seed list in order', () => {
+		const result = parseSeedPreferenceInput('herb', 'Toadflax seed, Ranarr seed, Snapdragon seed');
+		expect(result).toEqual({
+			type: 'seed',
+			seedID: toadflaxSeedID,
+			fallbackSeedIDs: [ranarrSeedID, snapdragonSeedID]
+		});
+	});
+
+	it('parseSeedPreferenceInput rejects mixing special values with seeds', () => {
+		expect(parseSeedPreferenceInput('herb', 'Toadflax seed, highest_available')).toBe(
+			'highest_available and empty cannot be combined with a seed list.'
+		);
+	});
+
+	it('parseSeedPreferenceInput rejects more than 5 seeds', () => {
+		const herbPlants = getPlantsForPatch('herb')
+			.map(plant => plant.inputItems.items()[0]?.[0].name)
+			.filter((name): name is string => Boolean(name));
+		const uniqueNames = [...new Set(herbPlants)].slice(0, 6);
+		expect(uniqueNames.length).toBe(6);
+		expect(parseSeedPreferenceInput('herb', uniqueNames.join(', '))).toBe(
+			'You can set up to 5 preferred seeds for each patch type.'
+		);
+	});
+
+	it('appendPreferredSeeds appends a fallback and rejects duplicates or overflow', () => {
+		const first = { type: 'seed' as const, seedID: toadflaxSeedID, quantity: 2 };
+		const added = appendPreferredSeeds(first, { type: 'seed', seedID: ranarrSeedID }, 'Herb');
+		expect(added).toEqual({
+			type: 'seed',
+			seedID: toadflaxSeedID,
+			fallbackSeedIDs: [ranarrSeedID],
+			quantity: 2
+		});
+		expect(
+			appendPreferredSeeds(added as FarmingSeedPreference, { type: 'seed', seedID: ranarrSeedID }, 'Herb')
+		).toBe('Ranarr seed is already in your Herb preference list.');
+		expect(appendPreferredSeeds(first, { type: 'highest_available' }, 'Herb')).toBe(
+			'Use add with a seed name, not highest_available or empty.'
+		);
+		expect(appendPreferredSeeds({ type: 'empty' }, { type: 'seed', seedID: ranarrSeedID }, 'Herb')).toBe(
+			'Clear the saved preference for Herb before adding fallback seeds.'
+		);
+
+		const fiveIDs = getPlantsForPatch('herb')
+			.map(plant => getPrimarySeedForPlant(plant))
+			.filter((id): id is number => id !== null)
+			.filter((id, index, all) => all.indexOf(id) === index)
+			.slice(0, 5);
+		expect(fiveIDs.length).toBe(5);
+		const full = preferenceFromSeedIDs(fiveIDs);
+		expect(full).not.toBeNull();
+		const overflowID = getPlantsForPatch('herb')
+			.map(plant => getPrimarySeedForPlant(plant))
+			.find(id => id && !fiveIDs.includes(id));
+		expect(overflowID).toBeTruthy();
+		expect(appendPreferredSeeds(full!, { type: 'seed', seedID: overflowID as number }, 'Herb')).toBe(
+			'You can set up to 5 preferred seeds for each patch type.'
+		);
+	});
+
+	it('formatSeedPreference lists seeds in priority order', () => {
+		expect(
+			formatSeedPreference({
+				type: 'seed',
+				seedID: toadflaxSeedID,
+				fallbackSeedIDs: [ranarrSeedID, snapdragonSeedID],
+				quantity: 4
+			})
+		).toBe('seed: Toadflax seed, then Ranarr seed, then Snapdragon seed, quantity: 4');
+		expect(formatSeedPreference({ type: 'seed', seedID: toadflaxSeedID })).toBe('seed: Toadflax seed');
+	});
+
+	it('worst-case Auto-farm preferences embed stays at least 150 under the description limit', () => {
+		const DISCORD_EMBED_DESCRIPTION_LIMIT = 4096;
+		const herbPlants = getPlantsForPatch('herb');
+		const seedIDs = herbPlants
+			.map(plant => getPrimarySeedForPlant(plant))
+			.filter((id): id is number => id !== null)
+			.filter((id, index, all) => all.indexOf(id) === index)
+			.slice(0, 5);
+		const longPreference = preferenceFromSeedIDs(seedIDs, 100_000);
+		if (!longPreference) {
+			throw new Error('Expected a 5-seed preference');
+		}
+		const longLine = formatSeedPreference(longPreference);
+		const patchLines = [
+			'Filter: AllFarm.',
+			'Contract priority: disabled.',
+			'If you set more than one seed, Auto Farm uses the first you have enough of.',
+			'Fruit Tree -> ' + longLine,
+			'Herb -> ' + longLine,
+			'Allotment -> ' + longLine,
+			'Hops -> ' + longLine,
+			'Cactus -> ' + longLine,
+			'Bush -> ' + longLine,
+			'Spirit -> ' + longLine,
+			'Hardwood -> ' + longLine,
+			'Seaweed -> ' + longLine,
+			'Vine -> ' + longLine,
+			'Calquat -> ' + longLine,
+			'Redwood -> ' + longLine,
+			'Crystal -> ' + longLine,
+			'Celastrus -> ' + longLine,
+			'Hespori -> ' + longLine,
+			'Flower -> ' + longLine,
+			'Mushroom -> ' + longLine,
+			'Belladonna -> ' + longLine,
+			'Tree -> ' + longLine
+		];
+		const description = buildPreferredSeedsEmbedDescription(patchLines);
+		expect(description.length).toBeLessThanOrEqual(DISCORD_EMBED_DESCRIPTION_LIMIT - 150);
+		expect(description.startsWith('Filter: AllFarm.')).toBe(true);
 	});
 });
