@@ -51,6 +51,7 @@ import {
 import { runAnnouncementBackfill } from '@/lib/bsc/announcementBackfill.js';
 import { gifs } from '@/lib/bsc/corgoGifs.js';
 import { getDeveloperPoints, giveDeveloperPoints, removeDeveloperPoints } from '@/lib/bsc/developerPoints.js';
+import { itemStatsMessage, itemStatsOwnedSql, ownedQtyFromSum } from '@/lib/bsc/itemStats.js';
 import { assignBscCustomBackground } from '@/lib/bsc/patronPerks.js';
 import { setBscPatronOverride } from '@/lib/bsc/patronSync.js';
 import { parseBscPatronTierInput } from '@/lib/bsc/patronTiers.js';
@@ -1952,15 +1953,10 @@ ${META_CONSTANTS.RENDERED_STR}`
 			const item = Items.getItem(options.item_stats.item);
 			if (!item) return 'Invalid item.';
 			const isIron = false;
-			const ownedResult = await prisma.$queryRawUnsafe<
-				{ qty: bigint }[]
-			>(`SELECT SUM((bank->>'${item.id}')::int) as qty
-FROM users
-WHERE bank->>'${item.id}' IS NOT NULL;`);
-			return `There are ${ownedResult[0].qty.toLocaleString()} ${item.name} owned by everyone.
-There are ${await countUsersWithItemInCl(item.id, isIron)} ${isIron ? 'ironmen' : 'people'} with at least 1 ${
-				item.name
-			} in their collection log.`;
+			const ownedResult = await prisma.$queryRawUnsafe<{ qty: bigint | null }[]>(itemStatsOwnedSql(item.id));
+			const owned = ownedQtyFromSum(ownedResult[0]?.qty);
+			const clUsers = await countUsersWithItemInCl(item.id, isIron);
+			return itemStatsMessage(item.name, owned, clUsers, isIron);
 		}
 
 		if (options.ltc) {
