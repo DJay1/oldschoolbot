@@ -362,6 +362,7 @@ describe('Auto Farm Replant message length', () => {
 			summaryLines,
 			couldNotReplantLine: formatCouldNotReplantLine(entries),
 			itemsUsed: '**Items used:** 99999x Ultracompost, 99999x Coins, 99999x Tomatoes(5).',
+			chargeLine: 'Bottomless compost bucket: 10,000 charges used (0 left)',
 			infoDetails,
 			uniqueBoosts: [
 				'10% faster for Graceful outfit',
@@ -376,6 +377,7 @@ describe('Auto Farm Replant message length', () => {
 			maxTripLength: 99 * 60 * 60 * 1000
 		});
 
+		expect(message).toContain('Bottomless compost bucket: 10,000 charges used (0 left)');
 		expect(message).toContain("Couldn't replant");
 		expect(message.indexOf("Couldn't replant")).toBeLessThan(message.indexOf('**Patches:**'));
 		expect(message.length).toBeLessThanOrEqual(AUTO_FARM_START_MESSAGE_SAFE_LIMIT);

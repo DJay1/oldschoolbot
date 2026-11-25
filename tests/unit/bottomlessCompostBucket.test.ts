@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import './setup.js';
 
 import { BitField } from '../../src/lib/constants.js';
+import { buildAutoFarmTripStartMessage } from '../../src/lib/minions/functions/autoFarm.js';
+import { AUTO_FARM_START_MESSAGE_SAFE_LIMIT } from '../../src/lib/minions/functions/autoFarmHelpers.js';
 import { prepareFarmingStep, resolveCompostUpgrade } from '../../src/lib/minions/functions/farmingTripHelpers.js';
 import {
 	applyBottomlessUse,
@@ -21,7 +23,11 @@ import {
 	wouldLoseChargedBottomlessBucket
 } from '../../src/lib/skilling/skills/farming/bottomlessCompostBucket.js';
 import { plants } from '../../src/lib/skilling/skills/farming/index.js';
-import { formatPatchTreatment } from '../../src/lib/skilling/skills/farming/utils/farmingFormatters.js';
+import {
+	formatBottomlessChargesUsed,
+	formatItemsUsed,
+	formatPatchTreatment
+} from '../../src/lib/skilling/skills/farming/utils/farmingFormatters.js';
 import type { IPatchDataDetailed } from '../../src/lib/skilling/skills/farming/utils/types.js';
 import { CropUpgradeType } from '../../src/prisma/main/enums.js';
 import { mockMUser } from './userutil.js';
@@ -343,5 +349,56 @@ describe('Bottomless compost bucket Discord length limits', () => {
 		for (const text of [check, removal, treatment]) {
 			expect(text.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - LENGTH_BUFFER);
 		}
+	});
+});
+
+describe('Bottomless compost bucket charge line', () => {
+	it('uses the exact item name, and omits the line when no charges were used', () => {
+		expect(formatBottomlessChargesUsed(8, 12)).toBe('Bottomless compost bucket: 8 charges used (12 left)');
+		expect(formatBottomlessChargesUsed(0, 12)).toBe('');
+		expect(formatItemsUsed(new Bank().add('Guam seed', 4))).not.toContain('Bottomless compost bucket');
+		expect(formatItemsUsed(new Bank(), { chargesUsed: 0, chargesLeft: 20 })).toBe('');
+		expect(formatItemsUsed(new Bank(), { chargesUsed: 8, chargesLeft: 12 })).toBe(
+			'Bottomless compost bucket: 8 charges used (12 left)'
+		);
+		expect(formatItemsUsed(new Bank().add('Ultracompost', 2), { chargesUsed: 8, chargesLeft: 12 })).toContain(
+			'Bottomless compost bucket: 8 charges used (12 left)'
+		);
+	});
+
+	it('keeps the worst-case Auto Farm start message under the Discord cap with a full bucket line', () => {
+		const chargeLine = formatBottomlessChargesUsed(BOTTOMLESS_COMPOST_MAX_CHARGES, 0);
+		expect(chargeLine).toBe('Bottomless compost bucket: 10,000 charges used (0 left)');
+		const itemsUsed = formatItemsUsed(new Bank().add('Ultracompost', 99_999).add('Coins', 99_999), {
+			chargesUsed: BOTTOMLESS_COMPOST_MAX_CHARGES,
+			chargesLeft: 0
+		});
+		expect(itemsUsed).toContain(chargeLine);
+		const message = buildAutoFarmTripStartMessage({
+			minionName: 'A very long minion name for length testing of auto farm start messages',
+			tripDurationText: '99 hours, 59 minutes, and 59 seconds',
+			summaryLines: Array.from({ length: 20 }, (_, i) => `${i + 1}. Herb patch: 99,999x Guam`),
+			couldNotReplantLine: "Couldn't replant Herb, Allotment, Flower, Tree, Fruit Tree, Bush, Cactus, and more.",
+			itemsUsed: formatItemsUsed(new Bank().add('Ultracompost', 99_999).add('Coins', 99_999)),
+			chargeLine,
+			infoDetails: Array.from(
+				{ length: 20 },
+				() =>
+					'Herb: You did not have enough Ultracompost to treat 99999 patches, so they were planted with Supercompost.'
+			),
+			uniqueBoosts: [
+				'10% faster for Graceful outfit',
+				'10% faster for Ring of endurance',
+				'25% faster for Moondash charm',
+				'4% faster for Ardougne hard diary',
+				'4% faster for Ardougne elite diary',
+				'50% less seeds used'
+			],
+			skippedDueToTripLength: true,
+			skippedPatchNames: Array.from({ length: 20 }, (_, i) => `Patch ${i + 1}`),
+			maxTripLength: 99 * 60 * 60 * 1000
+		});
+		expect(message).toContain('Bottomless compost bucket: 10,000 charges used (0 left)');
+		expect(message.length).toBeLessThanOrEqual(AUTO_FARM_START_MESSAGE_SAFE_LIMIT);
 	});
 });

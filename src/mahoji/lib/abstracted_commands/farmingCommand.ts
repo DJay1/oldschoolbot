@@ -14,6 +14,7 @@ import { Farming } from '@/lib/skilling/skills/farming/index.js';
 import { calcNumOfPatches } from '@/lib/skilling/skills/farming/utils/calcsFarming.js';
 import {
 	farmingBoostMessages,
+	formatBottomlessChargesUsed,
 	formatFarmingBoosts,
 	pushFarmingCropYieldBoosts
 } from '@/lib/skilling/skills/farming/utils/farmingFormatters.js';
@@ -202,11 +203,12 @@ export async function farmingPlantCommand({
 
 	if (!user.owns(cost)) return `You don't own ${cost}.`;
 	const bucketChargesUsed = prepared.data.bucketChargesUsed;
+	const bottomlessBefore = getBottomlessState(user);
 	await user.transactItems({
 		itemsToRemove: cost,
 		otherUpdates:
 			bucketChargesUsed > 0
-				? bottomlessChargeUpdates(applyBottomlessUse(getBottomlessState(user), bucketChargesUsed))
+				? bottomlessChargeUpdates(applyBottomlessUse(bottomlessBefore, bucketChargesUsed))
 				: undefined
 	});
 
@@ -254,11 +256,16 @@ export async function farmingPlantCommand({
 		pid: inserted.id
 	});
 
+	const bucketLine = formatBottomlessChargesUsed(
+		bucketChargesUsed,
+		Math.max(0, bottomlessBefore.charges - bucketChargesUsed)
+	);
+
 	return `${infoStr.join(' ')}
 It'll take around ${formatTripDuration(user, duration, ' to finish')}.${formatFarmingBoosts(boostStr, {
 		label: '**Boosts**:',
 		suffix: ''
-	})}`;
+	})}${bucketLine ? `\n${bucketLine}` : ''}`;
 }
 
 export async function compostBinCommand(

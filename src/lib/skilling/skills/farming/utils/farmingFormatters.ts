@@ -182,9 +182,15 @@ function pushBankLine(lines: string[], label: string, bank: Bank): void {
 	}
 }
 
-export function formatItemsUsed(cost: Bank): string {
+export function formatBottomlessChargesUsed(chargesUsed: number, chargesLeft: number): string {
+	if (chargesUsed <= 0) return '';
+	return `Bottomless compost bucket: ${chargesUsed.toLocaleString()} charges used (${chargesLeft.toLocaleString()} left)`;
+}
+
+export function formatItemsUsed(cost: Bank, bucket?: { chargesUsed: number; chargesLeft: number } | null): string {
+	const bucketLine = formatBottomlessChargesUsed(bucket?.chargesUsed ?? 0, bucket?.chargesLeft ?? 0);
 	if (cost.length === 0) {
-		return '';
+		return bucketLine;
 	}
 
 	const compost = cost.filter(item => compostItemNames.has(item.name));
@@ -199,6 +205,7 @@ export function formatItemsUsed(cost: Bank): string {
 	pushBankLine(lines, 'Seeds/spores', seedsAndSpores);
 	pushBankLine(lines, 'Coins', coins);
 	pushBankLine(lines, 'Other items', otherItems);
+	if (bucketLine) lines.push(bucketLine);
 
 	return lines.join('\n');
 }

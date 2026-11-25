@@ -32,6 +32,7 @@ import {
 import { plants } from '@/lib/skilling/skills/farming/index.js';
 import {
 	condenseCompostInfoLines,
+	formatBottomlessChargesUsed,
 	formatFarmingBoosts,
 	formatItemsUsed
 } from '@/lib/skilling/skills/farming/utils/farmingFormatters.js';
@@ -196,6 +197,7 @@ export function buildAutoFarmTripStartMessage({
 	summaryLines,
 	couldNotReplantLine,
 	itemsUsed,
+	chargeLine,
 	infoDetails,
 	uniqueBoosts,
 	skippedDueToTripLength,
@@ -207,6 +209,7 @@ export function buildAutoFarmTripStartMessage({
 	summaryLines: string[];
 	couldNotReplantLine: string;
 	itemsUsed: string;
+	chargeLine?: string;
 	infoDetails: string[];
 	uniqueBoosts: string[];
 	skippedDueToTripLength: boolean;
@@ -245,6 +248,9 @@ export function buildAutoFarmTripStartMessage({
 			response += `\n\n${warning}`;
 		}
 		response += `\n\n**Patches:**\n${lines.join('\n')}`;
+		if (chargeLine) {
+			response += `\n\n${chargeLine}`;
+		}
 		if (includeItems && itemsUsed.length > 0) {
 			response += `\n\n${itemsUsed}`;
 		}
@@ -470,6 +476,10 @@ export async function autoFarm(
 		summaryLines,
 		couldNotReplantLine,
 		itemsUsed: formatItemsUsed(totalCost),
+		chargeLine: formatBottomlessChargesUsed(
+			totalBucketChargesUsed,
+			Math.max(0, bottomlessBefore.charges - totalBucketChargesUsed)
+		),
 		infoDetails,
 		uniqueBoosts,
 		skippedDueToTripLength,
