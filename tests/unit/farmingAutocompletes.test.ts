@@ -78,5 +78,15 @@ describe('farming autocompletes', () => {
 			{ name: 'highest_available', value: 'highest_available' },
 			{ name: 'empty', value: 'empty' }
 		]);
+		expect(specialOptions.length).toBeLessThanOrEqual(25);
+	});
+
+	it('farmingPreferredSeedAutoComplete still finds Torstol seed on the herb patch', async () => {
+		const results = await farmingPreferredSeedAutoComplete({
+			value: 'Torstol seed',
+			rawOptions: [{ name: 'patch', value: 'herb' }]
+		} as any);
+		expect(results).toContainEqual({ name: 'Torstol seed (Torstol)', value: 'Torstol seed' });
+		expect(results.length).toBeLessThanOrEqual(25);
 	});
 });

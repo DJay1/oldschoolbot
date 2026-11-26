@@ -20,6 +20,8 @@ function findRawOptionValue(options: StringAutoComplete['rawOptions'], optionNam
 	return null;
 }
 
+export const MAX_FARMING_AUTOCOMPLETE_RESULTS = 25;
+
 function matchesAutocompleteValue(name: string, value: string, searchValue: string): boolean {
 	const normalizedSearch = searchValue.toLowerCase();
 	return (
@@ -27,6 +29,40 @@ function matchesAutocompleteValue(name: string, value: string, searchValue: stri
 		name.toLowerCase().includes(normalizedSearch) ||
 		value.toLowerCase().includes(normalizedSearch)
 	);
+}
+
+function rankAutocompleteMatch(option: { name: string; value: string }, searchValue: string): number {
+	const search = searchValue.trim().toLowerCase();
+	if (!search) {
+		return 0;
+	}
+	const name = option.name.toLowerCase();
+	const value = option.value.toLowerCase();
+	if (value === search || name === search) {
+		return 0;
+	}
+	if (value.startsWith(search) || name.startsWith(search)) {
+		return 1;
+	}
+	return 2;
+}
+
+function limitAutocompleteOptions(
+	options: { name: string; value: string }[],
+	searchValue: string
+): { name: string; value: string }[] {
+	if (!searchValue.trim()) {
+		return options.slice(0, MAX_FARMING_AUTOCOMPLETE_RESULTS);
+	}
+	return [...options]
+		.sort((a, b) => {
+			const rankDiff = rankAutocompleteMatch(a, searchValue) - rankAutocompleteMatch(b, searchValue);
+			if (rankDiff !== 0) {
+				return rankDiff;
+			}
+			return a.value.localeCompare(b.value);
+		})
+		.slice(0, MAX_FARMING_AUTOCOMPLETE_RESULTS);
 }
 
 export async function farmingPlantNameAutoComplete({ value, user }: StringAutoComplete) {
@@ -56,7 +92,10 @@ export async function farmingPreferredSeedAutoComplete({ value, rawOptions }: St
 		});
 	}
 
-	return options.filter(option => matchesAutocompleteValue(option.name, option.value, value));
+	return limitAutocompleteOptions(
+		options.filter(option => matchesAutocompleteValue(option.name, option.value, value)),
+		value
+	);
 }
 
 export async function titheFarmBuyRewardAutoComplete({ value }: StringAutoComplete) {

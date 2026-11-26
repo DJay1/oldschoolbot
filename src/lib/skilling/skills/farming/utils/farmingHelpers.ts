@@ -122,7 +122,9 @@ export function userGrowingProgressStr(patchesDetailed: IPatchDataDetailed[], us
 		)}\n`;
 	}
 	const notReady = patchesDetailed.filter(i => i.ready === null);
-	str += `${Emoji.RedX} **Nothing planted:** ${formatList(notReady.map(i => i.friendlyName))}.`;
+	if (notReady.length > 0) {
+		str += `${Emoji.RedX} **Nothing planted:** ${formatList(notReady.map(i => i.friendlyName))}.`;
+	}
 	if (user) {
 		const bottomless = getBottomlessState(user);
 		if (bottomless.owned) {

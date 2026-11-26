@@ -278,4 +278,28 @@ describe('farming helpers', () => {
 		expect(normalized.components).toHaveLength(1);
 		expect(normalized.content).toContain('Nothing planted');
 	});
+
+	it('userGrowingProgressStr omits the empty Nothing planted line when every patch is planted', () => {
+		const readyPatch: IPatchDataDetailed = {
+			lastPlanted: 'Guam',
+			patchPlanted: true,
+			plantTime: Date.now(),
+			lastQuantity: 5,
+			lastUpgradeType: null,
+			lastPayment: false,
+			ready: true,
+			readyIn: 0,
+			readyAt: new Date('2020-01-01T00:00:00Z'),
+			patchName: 'herb',
+			friendlyName: 'Ready patch',
+			plant: null
+		};
+
+		const result = userGrowingProgressStr([readyPatch], mockMUser());
+		const normalized = normalizeGrowingProgress(result);
+
+		expect(normalized.content).toContain('Ready patch');
+		expect(normalized.content).not.toContain('Nothing planted');
+		expect(normalized.content).not.toContain('Nothing planted: .');
+	});
 });

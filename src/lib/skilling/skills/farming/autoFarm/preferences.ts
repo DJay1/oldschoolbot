@@ -2,6 +2,7 @@ import { stringMatches } from '@oldschoolgg/toolkit';
 import { Items } from 'oldschooljs';
 
 import { plants } from '@/lib/skilling/skills/farming/index.js';
+import { calcNumOfPatches } from '@/lib/skilling/skills/farming/utils/calcsFarming.js';
 import type { FarmingPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import { findPlant, isPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import type {
@@ -229,22 +230,46 @@ export function rememberCropsInPreferences(
 	return next;
 }
 
-function resolveSeedNameForPatch(patchName: FarmingPatchName, seedInput: string): number | string {
-	const trimmed = seedInput.trim();
-	const normalized = trimmed.toLowerCase().replace(/\s+/g, '_');
-	const plantsForPatch = getPlantsForPatch(patchName);
-	let matchingPlant = plantsForPatch.find(
-		plant => stringMatches(plant.name, trimmed) || plant.aliases.some(alias => stringMatches(alias, trimmed))
-	);
-
-	if (!matchingPlant) {
-		matchingPlant = plantsForPatch.find(plant =>
-			plant.inputItems
-				.items()
-				.some(([item]) => stringMatches(item.name, trimmed) || stringMatches(item.name, normalized))
-		);
+function namesForPlant(plant: Plant): string[] {
+	const names = [plant.name, ...plant.aliases];
+	for (const [item] of plant.inputItems.items()) {
+		if (item.name) {
+			names.push(item.name);
+		}
 	}
+	return names;
+}
 
+function withoutSeedSuffix(value: string): string {
+	return value
+		.trim()
+		.replace(/\s+(tree\s+)?(seed|spore)s?$/i, '')
+		.trim();
+}
+
+export function seedInputMatchesPlant(plant: Plant, seedInput: string): boolean {
+	const trimmed = seedInput.trim();
+	if (trimmed.length === 0) {
+		return false;
+	}
+	const stripped = withoutSeedSuffix(trimmed);
+	for (const candidate of namesForPlant(plant)) {
+		if (stringMatches(candidate, trimmed) || stringMatches(candidate, stripped)) {
+			return true;
+		}
+		const candidateStripped = withoutSeedSuffix(candidate);
+		if (
+			candidateStripped.length > 0 &&
+			(stringMatches(candidateStripped, trimmed) || stringMatches(candidateStripped, stripped))
+		) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function resolveSeedNameForPatch(patchName: FarmingPatchName, seedInput: string): number | string {
+	const matchingPlant = getPlantsForPatch(patchName).find(plant => seedInputMatchesPlant(plant, seedInput));
 	if (!matchingPlant) {
 		return `I couldn't find a seed or plant matching "${seedInput}" for that patch.`;
 	}
@@ -255,6 +280,42 @@ function resolveSeedNameForPatch(patchName: FarmingPatchName, seedInput: string)
 	}
 
 	return seedID;
+}
+
+export function getPreferredSeedQuantityLimit(
+	patchName: FarmingPatchName,
+	user: MUser,
+	preference?: FarmingSeedPreference
+): number {
+	const preferredPlants = preference ? getPreferredPlants(patchName, preference) : [];
+	const plantsForLimit = preferredPlants.length > 0 ? preferredPlants : getPlantsForPatch(patchName);
+	if (plantsForLimit.length === 0) {
+		return 0;
+	}
+	return Math.max(...plantsForLimit.map(plant => calcNumOfPatches(plant, user, user.QP)[0]));
+}
+
+export function formatPreferredSeedQuantityMessage(friendlyName: string, maximumQuantity: number): string {
+	if (maximumQuantity <= 0) {
+		return `You can't set a quantity for ${friendlyName} because you have no patches of that type unlocked.`;
+	}
+	if (maximumQuantity === 1) {
+		return `Quantity for ${friendlyName} must be 1.`;
+	}
+	return `Quantity for ${friendlyName} must be between 1 and ${maximumQuantity}.`;
+}
+
+export function clampPreferredSeedQuantity(
+	quantity: number,
+	maximumQuantity: number
+): { quantity: number; clamped: boolean } | null {
+	if (maximumQuantity <= 0 || !Number.isSafeInteger(quantity) || quantity < 1) {
+		return null;
+	}
+	if (quantity > maximumQuantity) {
+		return { quantity: maximumQuantity, clamped: true };
+	}
+	return { quantity, clamped: false };
 }
 
 export function parseSeedPreferenceInput(

@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import './setup.js';
 
+import { convertLVLtoXP } from 'oldschooljs';
+
 import {
 	appendPreferredSeeds,
 	buildPreferredSeedsEmbedDescription,
+	clampPreferredSeedQuantity,
+	formatPreferredSeedQuantityMessage,
 	formatSeedPreference,
 	getPlantsForPatch,
+	getPreferredSeedQuantityLimit,
 	getPrimarySeedForPlant,
 	parsePreferredSeeds,
 	parseSeedPreferenceInput,
@@ -20,6 +25,7 @@ import type {
 	FarmingSeedPreference,
 	IPatchDataDetailed
 } from '@/lib/skilling/skills/farming/utils/types.js';
+import { mockMUser } from './userutil.js';
 
 const herbPlant = plants.find(plant => plant.name === 'Guam');
 const treePlant = plants.find(plant => plant.name === 'Oak tree');
@@ -570,5 +576,86 @@ describe('replant filter seed resolution', () => {
 		});
 
 		expect(result).toEqual({ type: 'plant', plant: irit, reason: 'preference_seed' });
+	});
+});
+
+describe('preferred seed name matching and quantity limits', () => {
+	const cases: { patch: FarmingPatchName; inputs: string[]; plantName: string }[] = [
+		{ patch: 'herb', inputs: ['Torstol seed', 'Torstol'], plantName: 'Torstol' },
+		{ patch: 'celastrus', inputs: ['Celastrus seed', 'Celastrus', 'Celastrus tree'], plantName: 'Celastrus tree' },
+		{ patch: 'redwood', inputs: ['Redwood tree seed', 'Redwood', 'Redwood tree'], plantName: 'Redwood tree' },
+		{ patch: 'hespori', inputs: ['Hespori seed', 'Hespori'], plantName: 'Hespori' },
+		{ patch: 'mushroom', inputs: ['Mushroom spore', 'Mushroom'], plantName: 'Mushroom' },
+		{ patch: 'tree', inputs: ['Magic seed', 'Magic tree', 'Oak tree'], plantName: 'placeholder' }
+	];
+
+	it('matches exact in-game seed and plant names on the right patch type', () => {
+		for (const { patch, inputs, plantName } of cases) {
+			for (const input of inputs) {
+				const result = parseSeedPreferenceInput(patch, input);
+				expect(typeof result, `${patch} ${input}`).toBe('object');
+				if (typeof result === 'string') {
+					throw new Error(`Expected ${input} to match on ${patch}, got ${result}`);
+				}
+				if (result.type !== 'seed') {
+					throw new Error(`Expected ${input} to resolve to a seed on ${patch}`);
+				}
+				if (plantName !== 'placeholder') {
+					const plant = plants.find(p => p.name === plantName);
+					if (plant) {
+						expect(result.seedID).toBe(getPrimarySeedForPlant(plant));
+					}
+				}
+			}
+		}
+	});
+
+	it('does not match a seed on the wrong patch type', () => {
+		expect(parseSeedPreferenceInput('herb', 'Celastrus seed')).toBe(
+			'I couldn\'t find a seed or plant matching "Celastrus seed" for that patch.'
+		);
+		expect(parseSeedPreferenceInput('tree', 'Torstol seed')).toBe(
+			'I couldn\'t find a seed or plant matching "Torstol seed" for that patch.'
+		);
+	});
+
+	it("uses a single-patch wording and the selected seed's patch count", () => {
+		const user = mockMUser({
+			skills_farming: convertLVLtoXP(99),
+			QP: 300
+		});
+		expect(getPreferredSeedQuantityLimit('celastrus', user)).toBe(1);
+		expect(getPreferredSeedQuantityLimit('redwood', user)).toBe(1);
+		expect(getPreferredSeedQuantityLimit('hespori', user)).toBe(1);
+		expect(getPreferredSeedQuantityLimit('mushroom', user)).toBe(1);
+		expect(formatPreferredSeedQuantityMessage('Celastrus', 1)).toBe('Quantity for Celastrus must be 1.');
+		expect(formatPreferredSeedQuantityMessage('Trees', 7)).toBe('Quantity for Trees must be between 1 and 7.');
+
+		const oak = plants.find(plant => plant.name === 'Oak tree');
+		const mysterious = plants.find(plant => plant.name === 'Mysterious tree');
+		if (!oak || !mysterious) {
+			throw new Error('Expected Oak tree and Mysterious tree plants');
+		}
+		const oakLimit = getPreferredSeedQuantityLimit('tree', user, {
+			type: 'seed',
+			seedID: getPrimarySeedForPlant(oak)!
+		});
+		const mysteriousLimit = getPreferredSeedQuantityLimit('tree', user, {
+			type: 'seed',
+			seedID: getPrimarySeedForPlant(mysterious)!
+		});
+		const treeMax = getPreferredSeedQuantityLimit('tree', user);
+		expect(oakLimit).toBeGreaterThan(mysteriousLimit);
+		expect(treeMax).toBe(oakLimit);
+		expect(clampPreferredSeedQuantity(7, 1)).toEqual({ quantity: 1, clamped: true });
+		expect(clampPreferredSeedQuantity(4, 6)).toEqual({ quantity: 4, clamped: false });
+		expect(clampPreferredSeedQuantity(0, 6)).toBeNull();
+
+		const worstCase = formatPreferredSeedQuantityMessage('X'.repeat(80), 100_000);
+		expect(worstCase.length).toBeLessThanOrEqual(2000 - 150);
+		expect('Fruit tree only has 1 patch, so quantity was set to 1.'.length).toBeLessThanOrEqual(2000 - 150);
+		expect(`Quantity for ${'X'.repeat(80)} was set to 100000, the most you can plant.`.length).toBeLessThanOrEqual(
+			2000 - 150
+		);
 	});
 });

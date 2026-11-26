@@ -14,14 +14,15 @@ import {
 import {
 	appendPreferredSeeds,
 	buildPreferredSeedsEmbedDescription,
+	clampPreferredSeedQuantity,
+	formatPreferredSeedQuantityMessage,
 	formatSeedPreference,
-	getPlantsForPatch,
+	getPreferredSeedQuantityLimit,
 	parsePreferredSeeds,
 	parseSeedPreferenceInput,
 	serializePreferredSeeds
 } from '@/lib/skilling/skills/farming/autoFarm/preferences.js';
 import { CompostTiers, Farming } from '@/lib/skilling/skills/farming/index.js';
-import { calcNumOfPatches } from '@/lib/skilling/skills/farming/utils/calcsFarming.js';
 import type { FarmingPatchName } from '@/lib/skilling/skills/farming/utils/farmingHelpers.js';
 import type { FarmingSeedPreference } from '@/lib/skilling/skills/farming/utils/types.js';
 import { ContractOptions } from '@/lib/skilling/skills/farming/utils/types.js';
@@ -399,17 +400,6 @@ export const farmingCommand = defineCommand({
 				if (!patchData) {
 					return 'Invalid patch.';
 				}
-				if (quantityInput !== undefined) {
-					const maximumQuantity = Math.max(
-						...getPlantsForPatch(patchData.patchName).map(
-							plant => calcNumOfPatches(plant, user, user.QP)[0]
-						)
-					);
-					if (!Number.isSafeInteger(quantityInput) || quantityInput < 1 || quantityInput > maximumQuantity) {
-						return `Quantity for ${patchData.friendlyName} must be between 1 and ${maximumQuantity}.`;
-					}
-				}
-
 				if (resetPatchInput) {
 					preferenceMap.delete(patchData.patchName);
 					await user.update({
@@ -465,10 +455,25 @@ export const farmingCommand = defineCommand({
 				if (!resolvedPreference) {
 					return 'You must set a seed preference before setting its quantity.';
 				}
-				resolvedPreference =
-					quantityInput === undefined
-						? resolvedPreference
-						: { ...resolvedPreference, quantity: quantityInput };
+				if (quantityInput !== undefined) {
+					const maximumQuantity = getPreferredSeedQuantityLimit(
+						patchData.patchName,
+						user,
+						resolvedPreference
+					);
+					const clamped = clampPreferredSeedQuantity(quantityInput, maximumQuantity);
+					if (!clamped) {
+						return formatPreferredSeedQuantityMessage(patchData.friendlyName, maximumQuantity);
+					}
+					if (clamped.clamped) {
+						responses.push(
+							maximumQuantity === 1
+								? `${patchData.friendlyName} only has 1 patch, so quantity was set to 1.`
+								: `Quantity for ${patchData.friendlyName} was set to ${maximumQuantity}, the most you can plant.`
+						);
+					}
+					resolvedPreference = { ...resolvedPreference, quantity: clamped.quantity };
+				}
 
 				preferenceMap.set(patchData.patchName, resolvedPreference);
 				await user.update({
