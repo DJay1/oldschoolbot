@@ -135,6 +135,13 @@ const gearPresets = [
 	}
 ];
 
+export function inventionMaterialsWipeData(): SafeUserUpdateInput {
+	return {
+		materials_owned: {},
+		researched_materials_bank: {}
+	};
+}
+
 const thingsToReset = [
 	{
 		name: 'Everything/All',
@@ -147,6 +154,10 @@ const thingsToReset = [
 			await prisma.lastManStandingGame.deleteMany({ where: { user_id: BigInt(user.id) } }).catch(noOp);
 			await prisma.minigame.deleteMany({ where: { user_id: user.id } }).catch(noOp);
 			await prisma.playerOwnedHouse.deleteMany({ where: { user_id: user.id } }).catch(noOp);
+			// Clear invention materials first. Deleting the user row can fail if other
+			// related rows still exist, and that error is ignored, which used to leave
+			// materials in place after a full reset.
+			await user.update(inventionMaterialsWipeData()).catch(noOp);
 			await prisma.user.deleteMany({ where: { id: user.id } }).catch(noOp);
 			return 'Reset all your data.';
 		}
