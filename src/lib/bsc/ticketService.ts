@@ -17,6 +17,8 @@ import {
 	type CleanTicketInput,
 	cleanTicketLine,
 	filerCanClose,
+	filerCanToggleVisibility,
+	isSensitiveTicketType,
 	isTicketStatus,
 	isTicketType,
 	maskTicketOverwrite,
@@ -27,7 +29,6 @@ import {
 	readModalInputs,
 	reporterHasChannelAccess,
 	resolveTicketStaffRoleId,
-	TICKET_ACTION_RULES,
 	TICKET_INPUT_COMMAND,
 	TICKET_INPUT_REASON,
 	TICKET_INPUT_SCREENSHOT,
@@ -47,7 +48,9 @@ import {
 	type TicketType,
 	type TicketVisibility,
 	type TranscriptMessage,
+	ticketActionRule,
 	ticketButtonRows,
+	ticketCanBePublic,
 	ticketChannelName,
 	ticketChannelOpenContent,
 	ticketChannelOpenMentions,
@@ -99,10 +102,14 @@ export function ticketConfig(): {
 	staffRoleId: string | null;
 	noticeChannelId: string | null;
 	categoryId: string | null;
+	/** Close transcripts and delete notes. TICKET_LOG_CHANNEL_ID, else the staff ticket channel. */
+	logChannelId: string | null;
 } {
 	const fallback = globalConfig.isProduction ? null : Channel.BotLogs;
+	const channelId = envId('TICKET_CHANNEL_ID') ?? (fallback && SNOWFLAKE.test(fallback) ? fallback : null);
 	return {
-		channelId: envId('TICKET_CHANNEL_ID') ?? (fallback && SNOWFLAKE.test(fallback) ? fallback : null),
+		channelId,
+		logChannelId: envId('TICKET_LOG_CHANNEL_ID') ?? channelId,
 		staffRoleId: resolveTicketStaffRoleId(envId('TICKET_STAFF_ROLE_ID'), globalConfig.isProduction),
 		noticeChannelId: envId('TICKET_NOTICE_CHANNEL_ID'),
 		categoryId: envId('TICKET_CATEGORY_ID')
@@ -283,6 +290,8 @@ export async function postTicketFilerCopy(ticket: TicketRecord): Promise<TicketF
 	if (ticket.source !== 'player' || !ticket.reporterId) return 'none';
 	// Ticket channels are private. Never post a public copy of a ticket that has its own channel.
 	if (ticket.ticketChannelId) return 'none';
+	// Reports and appeals never get a copy in a public channel: DM only.
+	const sensitive = isSensitiveTicketType(ticket.type);
 	const { channelId } = ticketConfig();
 	const raw = ticketEmbed(ticket);
 	const body = {
@@ -298,7 +307,7 @@ export async function postTicketFilerCopy(ticket: TicketRecord): Promise<TicketF
 		allowedMentions: FILER_COPY_NO_PINGS
 	};
 	const origin = ticket.originChannelId;
-	if (origin && origin !== channelId) {
+	if (origin && origin !== channelId && !sensitive) {
 		try {
 			await globalClient.sendMessage(origin, body);
 			return 'channel';
@@ -404,10 +413,13 @@ export async function applyTicketAction(
 	tier: StaffTier,
 	reason: string | null
 ): Promise<ActionResult> {
-	const rule = TICKET_ACTION_RULES[action];
+	const typeRows = await prisma.$queryRaw<{ type: string }[]>`SELECT type FROM bsc_tickets WHERE id = ${id}`;
+	const ticketType = isTicketType(typeRows[0]?.type) ? typeRows[0].type : null;
+	const rule = ticketActionRule(action, ticketType);
 	if (!tierAtLeast(tier, rule.minTier)) {
 		return { ok: false, error: `${rule.label} needs the ${STAFF_TIER_NAMES[rule.minTier]} role.` };
 	}
+	if (rule.from.length === 0) return { ok: false, error: `${rule.label} isn't used for this ticket type.` };
 	const cleanReason = reason ? cleanTicketLine(reason, TICKET_REASON_MAX) || null : null;
 	const rows = await prisma.$queryRaw<TicketRow[]>`
 		UPDATE bsc_tickets SET status = ${rule.to}, handled_by = ${staffId}, handled_by_tier = ${tier},
@@ -434,9 +446,11 @@ export async function sendTicketNotice(ticket: TicketRecord, action: TicketActio
 			? ticket.ticketChannelId
 			: null;
 	const fallbackStaff = ticket.ticketChannelId ? ticketConfig().channelId : ticket.staffChannelId;
-	const targets = [ownChannel, ticket.originChannelId, noticeChannelId, fallbackStaff].filter(
-		(id, i, arr): id is string => Boolean(id) && arr.indexOf(id) === i
-	);
+	// Reports and appeals: only their own private channel, else a DM. Never a public channel.
+	const sensitive = isSensitiveTicketType(ticket.type);
+	const targets = (
+		sensitive ? [ownChannel] : [ownChannel, ticket.originChannelId, noticeChannelId, fallbackStaff]
+	).filter((id, i, arr): id is string => Boolean(id) && arr.indexOf(id) === i);
 	for (const channelId of targets) {
 		try {
 			const msg = (await globalClient.rest.post(Routes.channelMessages(channelId), {
@@ -446,6 +460,14 @@ export async function sendTicketNotice(ticket: TicketRecord, action: TicketActio
 			return true;
 		} catch (err) {
 			Logging.logError(err as Error, { type: 'TICKET_NOTICE', ticket_id: ticket.id, channel_id: channelId });
+		}
+	}
+	if (sensitive) {
+		try {
+			await globalClient.sendDm(ticket.reporterId, { content, allowedMentions: { users: [], roles: [] } });
+			return true;
+		} catch (err) {
+			Logging.logError(err as Error, { type: 'TICKET_NOTICE_DM', ticket_id: ticket.id });
 		}
 	}
 	return false;
@@ -502,11 +524,15 @@ export async function handleTicketButton(user: MUser, customId: string, interact
 	if (parsed.kind === 'tool') {
 		const denied = staffDenied(user, interaction.guildId);
 		if (denied) {
-			// The filer may Close their own ticket; everything else (and everyone else) gets the Corgo.
-			if (parsed.tool === 'close' && staffGuildAllowed(interaction.guildId)) {
+			// The filer may Close their own ticket, and Make Public/Private their own Suggestion.
+			// Everything else (and everyone else) gets the Corgo.
+			const filerTool = parsed.tool === 'close' || parsed.tool === 'public' || parsed.tool === 'private';
+			if (filerTool && staffGuildAllowed(interaction.guildId)) {
 				const own = await getTicket(parsed.id);
-				if (own && filerCanClose(own, user.id))
-					return handleTicketTool(user, 'close', parsed.id, interaction, true);
+				const allowed =
+					own &&
+					(parsed.tool === 'close' ? filerCanClose(own, user.id) : filerCanToggleVisibility(own, user.id));
+				if (allowed) return handleTicketTool(user, parsed.tool, parsed.id, interaction, true);
 			}
 			return deniedResponse(denied);
 		}
@@ -517,19 +543,19 @@ export async function handleTicketButton(user: MUser, customId: string, interact
 	const denied = staffDenied(user, interaction.guildId);
 	if (denied) return deniedResponse(denied);
 	const tier = staffTierOf(user);
-	const rule = TICKET_ACTION_RULES[parsed.action];
-	if (!tierAtLeast(tier, rule.minTier)) {
-		return { content: `${rule.label} needs the ${STAFF_TIER_NAMES[rule.minTier]} role.`, ephemeral: true };
-	}
 	const ticket = await getTicket(parsed.id);
 	if (!ticket || (ticket.staffMessageId && ticket.staffMessageId !== interaction.messageId)) {
 		return { content: `Ticket #${parsed.id} could not be found on this message.`, ephemeral: true };
+	}
+	const rule = ticketActionRule(parsed.action, ticket.type);
+	if (!tierAtLeast(tier, rule.minTier)) {
+		return { content: `${rule.label} needs the ${STAFF_TIER_NAMES[rule.minTier]} role.`, ephemeral: true };
 	}
 	if (!rule.from.includes(ticket.status)) {
 		return { content: `Ticket #${ticket.id} is already ${ticket.status.replace('_', ' ')}.`, ephemeral: true };
 	}
 	if (rule.needsReason) {
-		await showModal(interaction.id, token, ticketReasonModal(parsed.action, ticket.id));
+		await showModal(interaction.id, token, ticketReasonModal(parsed.action, ticket.id, ticket.type));
 		return SpecialResponse.RespondedManually;
 	}
 	const result = await applyTicketAction(ticket.id, parsed.action, user.id, tier, null);
@@ -798,7 +824,7 @@ interface ApiMessageLite {
 
 /** Saves the last 100 messages as a .txt in the staff ticket log channel. Returns false if it could not. */
 async function saveTranscript(ticket: TicketRecord, closedById: string): Promise<boolean> {
-	const logChannelId = ticketConfig().channelId;
+	const { logChannelId } = ticketConfig();
 	if (!ticket.ticketChannelId || !logChannelId) return false;
 	try {
 		const messages = (await globalClient.rest.get(Routes.channelMessages(ticket.ticketChannelId), {
@@ -861,7 +887,9 @@ async function handleTicketTool(
 	interaction: OSInteraction,
 	asFiler = false
 ): CommandResponse {
-	if (asFiler && tool !== 'close') return { content: 'Only staff can do that.', ephemeral: true };
+	if (asFiler && tool !== 'close' && tool !== 'public' && tool !== 'private') {
+		return { content: 'Only staff can do that.', ephemeral: true };
+	}
 	const tier = staffTierOf(user);
 	const rule = TICKET_TOOL_RULES[tool];
 	if (!asFiler && !tierAtLeast(tier, rule.minTier)) {
@@ -906,12 +934,20 @@ async function handleTicketTool(
 	}
 
 	if (tool === 'public' || tool === 'private') {
+		if (!ticketCanBePublic(ticket.type)) {
+			return { content: 'Player reports and appeals always stay private.', ephemeral: true };
+		}
+		if (asFiler && !filerCanToggleVisibility(ticket, user.id)) {
+			return { content: 'Only staff can do that.', ephemeral: true };
+		}
 		const from: TicketVisibility = tool === 'public' ? 'private' : 'public';
 		const guildId = ticket.guildId ?? interaction.guildId;
 		if (!guildId) return { content: 'This ticket has no server saved.', ephemeral: true };
 		const rows = await prisma.$queryRaw<TicketRow[]>`
 			UPDATE bsc_tickets SET visibility = ${tool}, updated_at = NOW()
 			WHERE id = ${id} AND visibility = ${from} AND closed_at IS NULL AND channel_deleted_at IS NULL
+				AND type NOT IN ('report', 'appeal')
+				AND (${!asFiler} OR (reporter_id = ${user.id} AND source = 'player' AND type = 'suggestion'))
 			RETURNING *
 		`;
 		if (!rows[0]) return { content: `Ticket #${id} is already ${tool}.`, ephemeral: true };
@@ -993,7 +1029,7 @@ async function handleTicketTool(
 		await followUpEphemeral(token, `Could not delete the channel. ${NO_PERMS_HINT}`);
 		return SpecialResponse.RespondedManually;
 	}
-	const logChannelId = ticketConfig().channelId;
+	const { logChannelId } = ticketConfig();
 	if (logChannelId && logChannelId !== channelId)
 		await postNote(logChannelId, ticketDeletedLogContent(ticket, user.id, deletedName));
 	return SpecialResponse.RespondedManually;

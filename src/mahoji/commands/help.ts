@@ -1,7 +1,7 @@
 import { ButtonBuilder, ButtonStyle } from '@oldschoolgg/discord';
 
 import { ticketConfig } from '@/lib/bsc/ticketService.js';
-import { ticketFormButtonId, ticketFormButtonLabel, ticketHelpPrompt } from '@/lib/bsc/tickets.js';
+import { isTicketType, ticketFormButtonId, ticketFormButtonLabel, ticketHelpPrompt } from '@/lib/bsc/tickets.js';
 import { patreonUrl } from '@/lib/patreonLink.js';
 
 export const helpCommand = defineCommand({
@@ -13,17 +13,19 @@ export const helpCommand = defineCommand({
 		{
 			type: 'String',
 			name: 'ticket',
-			description: 'Report a bug or make a suggestion. Staff will look at it.',
+			description: 'Open a private ticket: bug, suggestion, player report or appeal.',
 			required: false,
 			choices: [
 				{ name: 'Bug', value: 'bug' },
-				{ name: 'Suggestion', value: 'suggestion' }
+				{ name: 'Suggestion', value: 'suggestion' },
+				{ name: 'Report a player', value: 'report' },
+				{ name: 'Appeal (mute or warning)', value: 'appeal' }
 			]
 		}
 	],
 	run: async ({ options }) => {
 		const ticket = (options as { ticket?: string }).ticket;
-		if (ticket === 'bug' || ticket === 'suggestion') {
+		if (isTicketType(ticket)) {
 			if (!ticketConfig().channelId) {
 				return {
 					content: "Tickets aren't set up on this bot yet. Please tell a staff member instead.",
@@ -45,7 +47,7 @@ export const helpCommand = defineCommand({
 			content: `Help for **Bark School Corgo**. Old school, on four legs.
 
 Use the slash commands to play. If you do not have a minion yet, run \`/minion buy\`.
-Found a bug or have an idea? Use \`/help ticket:Bug\` or \`/help ticket:Suggestion\`.
+Found a bug, have an idea, need to report a player or appeal? Use \`/help ticket:\` and pick one.
 
 Perks: /patron info — ${patreonUrl()}`
 		};

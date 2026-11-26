@@ -173,7 +173,7 @@ export const staffCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'tickets',
-			description: 'Mod: list bug and suggestion tickets (default: everything not closed).',
+			description: 'Mod: list tickets (default: everything not closed).',
 			options: [
 				{
 					type: 'String',

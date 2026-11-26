@@ -17,6 +17,11 @@
  *                             channel there (bug-0007-name / suggestion-0008-name). Unset = the old flow,
  *                             tickets are posted in TICKET_CHANNEL_ID. TICKET_CHANNEL_ID becomes the staff
  *                             ticket log (close transcripts).
+ *   TICKET_LOG_CHANNEL_ID     Optional. Where close transcripts and delete notes go. Unset = TICKET_CHANNEL_ID
+ *                             (which itself falls back to the bot log channel on test).
+ *
+ * Types: Bug, Suggestion, Player report and Appeal. Reports and appeals are always private (filer + staff only),
+ * never get a public copy, and can never be made public. The filer may Make Public/Private their own Suggestion.
  *
  * Ticket channels: the channel-per-ticket idea, Claim, Add/Remove User, Close with a transcript, and
  * Reopen/Delete are based on Krypt's Server Helper bot. Rewritten for BSC (no code copied). Thanks Krypt!
@@ -25,7 +30,7 @@ import { escapeMarkdown } from '@oldschoolgg/discord';
 
 import { STAFF_TIER_NAMES, type StaffTier } from '@/lib/bsc/staffTiers.js';
 
-export const TICKET_TYPES = ['bug', 'suggestion'] as const;
+export const TICKET_TYPES = ['bug', 'suggestion', 'report', 'appeal'] as const;
 export type TicketType = (typeof TICKET_TYPES)[number];
 
 export const TICKET_STATUSES = ['open', 'confirmed', 'on_test', 'live', 'ignored', 'wont_fix'] as const;
@@ -52,8 +57,27 @@ export const TICKET_STATUS_ICONS: Record<TicketStatus, string> = {
 	wont_fix: '⛔'
 };
 
-export const TICKET_TYPE_ICONS: Record<TicketType, string> = { bug: '🐞', suggestion: '💡' };
-export const TICKET_TYPE_LABELS: Record<TicketType, string> = { bug: 'Bug', suggestion: 'Suggestion' };
+export const TICKET_TYPE_ICONS: Record<TicketType, string> = {
+	bug: '🐞',
+	suggestion: '💡',
+	report: '🚩',
+	appeal: '📨'
+};
+export const TICKET_TYPE_LABELS: Record<TicketType, string> = {
+	bug: 'Bug',
+	suggestion: 'Suggestion',
+	report: 'Player report',
+	appeal: 'Appeal'
+};
+
+/** Reports and appeals: always private, no public copy, no Make Public (not even staff), no On test step. */
+export const TICKET_SENSITIVE_TYPES: readonly TicketType[] = ['report', 'appeal'];
+export function isSensitiveTicketType(type: TicketType | null | undefined): boolean {
+	return Boolean(type && TICKET_SENSITIVE_TYPES.includes(type));
+}
+
+/** Types the filer may Make Public / Make Private themselves (for feedback from other players). */
+export const TICKET_FILER_PUBLIC_TYPES: readonly TicketType[] = ['suggestion'];
 
 /** OSRS-ish colours: parchment yellow, bronze, rune blue, green, grey, red. */
 export const TICKET_STATUS_COLORS: Record<TicketStatus, number> = {
@@ -201,14 +225,15 @@ export type CleanTicketInput = Omit<NewTicketInput, 'command' | 'screenshot'> & 
 export function prepareNewTicket(
 	input: NewTicketInput
 ): { ok: true; ticket: CleanTicketInput } | { ok: false; error: string } {
-	if (!isTicketType(input.type)) return { ok: false, error: 'Ticket type must be Bug or Suggestion.' };
+	if (!isTicketType(input.type))
+		return { ok: false, error: 'Ticket type must be Bug, Suggestion, Player report or Appeal.' };
 	const snowflake = /^\d{5,20}$/;
 	if (input.reporterId !== null && !snowflake.test(input.reporterId)) {
 		return { ok: false, error: 'That player ID is not valid.' };
 	}
 	const what = cleanTicketBody(input.what, TICKET_WHAT_MAX);
 	if (what.replace(/\s/g, '').length < TICKET_WHAT_MIN) {
-		return { ok: false, error: `Please describe what happened (at least ${TICKET_WHAT_MIN} characters).` };
+		return { ok: false, error: `Please add a few more details (at least ${TICKET_WHAT_MIN} characters).` };
 	}
 	const command = cleanTicketLine(input.command, TICKET_COMMAND_MAX) || null;
 	const screenshot = cleanScreenshotLink(input.screenshot);
@@ -285,12 +310,27 @@ export const TICKET_ACTION_RULES: Record<
 	}
 };
 
+/**
+ * The action rule for one ticket type. Reports and appeals skip On test, and Moderators can finish them:
+ * Live reads "Resolved" and Won't fix reads "Denied".
+ */
+export function ticketActionRule(action: TicketAction, type?: TicketType | null) {
+	const base = TICKET_ACTION_RULES[action];
+	if (!isSensitiveTicketType(type)) return base;
+	if (action === 'ontest') return { ...base, from: [] as TicketStatus[] };
+	if (action === 'live')
+		return { ...base, from: ['confirmed'] as TicketStatus[], label: 'Resolved', minTier: 'moderator' as StaffTier };
+	if (action === 'wontfix')
+		return { ...base, from: ['confirmed'] as TicketStatus[], label: 'Denied', minTier: 'moderator' as StaffTier };
+	return base;
+}
+
 export function isTicketAction(value: unknown): value is TicketAction {
 	return typeof value === 'string' && (TICKET_ACTIONS as readonly string[]).includes(value);
 }
 
-export function actionsForStatus(status: TicketStatus): TicketAction[] {
-	return TICKET_ACTIONS.filter(a => TICKET_ACTION_RULES[a].from.includes(status));
+export function actionsForStatus(status: TicketStatus, type?: TicketType | null): TicketAction[] {
+	return TICKET_ACTIONS.filter(a => ticketActionRule(a, type).from.includes(status));
 }
 
 /** True when this action should ping the player (as a new message). */
@@ -376,8 +416,8 @@ const ACTION_EMOJI: Record<TicketAction, string> = {
 	wontfix: '⛔'
 };
 
-export function ticketButtonRows(ticket: Pick<TicketRecord, 'id' | 'status'>) {
-	const actions = actionsForStatus(ticket.status);
+export function ticketButtonRows(ticket: Pick<TicketRecord, 'id' | 'status'> & { type?: TicketType }) {
+	const actions = actionsForStatus(ticket.status, ticket.type);
 	if (actions.length === 0) return [];
 	return [
 		{
@@ -385,7 +425,7 @@ export function ticketButtonRows(ticket: Pick<TicketRecord, 'id' | 'status'>) {
 			components: actions.map(action => ({
 				type: BUTTON,
 				style: ACTION_STYLES[action],
-				label: TICKET_ACTION_RULES[action].label,
+				label: ticketActionRule(action, ticket.type).label,
 				emoji: { name: ACTION_EMOJI[action] },
 				custom_id: ticketActionButtonId(action, ticket.id)
 			}))
@@ -394,7 +434,12 @@ export function ticketButtonRows(ticket: Pick<TicketRecord, 'id' | 'status'>) {
 }
 
 export function ticketFormButtonLabel(type: TicketType): string {
-	return type === 'bug' ? '🐞 Write bug report' : '💡 Write suggestion';
+	return {
+		bug: '🐞 Write bug report',
+		suggestion: '💡 Write suggestion',
+		report: '🚩 Write player report',
+		appeal: '📨 Write appeal'
+	}[type];
 }
 
 export function ticketTitle(ticket: Pick<TicketRecord, 'id' | 'type' | 'status'>): string {
@@ -417,9 +462,11 @@ export function ticketEmbed(ticket: TicketRecord) {
 				? 'Player (auto scan)'
 				: 'Player (staff filed)';
 	fields.push({ name: sourceLabel, value: who, inline: true });
+	const commandLabel =
+		ticket.type === 'report' ? 'Reported player' : ticket.type === 'appeal' ? 'Punishment' : 'Command';
 	if (ticket.command)
-		fields.push({ name: 'Command', value: `\`${ticket.command.replace(/`/g, "'")}\``, inline: true });
-	fields.push({ name: 'What happened', value: ticket.what || '—' });
+		fields.push({ name: commandLabel, value: `\`${ticket.command.replace(/`/g, "'")}\``, inline: true });
+	fields.push({ name: ticket.type === 'appeal' ? 'Appeal' : 'What happened', value: ticket.what || '—' });
 	if (ticket.screenshot) fields.push({ name: 'Screenshot', value: ticket.screenshot });
 	if (ticket.handledBy) {
 		fields.push({
@@ -466,6 +513,16 @@ export function ticketNoticeContent(
 	if (!ticket.reporterId || !actionPingsReporter(action)) return null;
 	const mention = `<@${ticket.reporterId}>`;
 	const ref = `**Ticket #${ticket.id}**`;
+	if (ticket.type === 'report') {
+		return action === 'confirm'
+			? `${mention} ✅ ${ref}: staff are looking into your player report. Thanks for telling us.`
+			: `${mention} ✅ ${ref}: staff have dealt with your player report. Thanks for telling us.`;
+	}
+	if (ticket.type === 'appeal') {
+		return action === 'confirm'
+			? `${mention} 📨 ${ref}: staff are reviewing your appeal.`
+			: `${mention} ✅ ${ref}: your appeal was accepted.`;
+	}
 	if (action === 'confirm') {
 		return ticket.type === 'bug'
 			? `${mention} ✅ ${ref}: staff confirmed your bug report. We're working on a fix.`
@@ -498,9 +555,12 @@ export function ticketFilerCopyContent(ticket: Pick<TicketRecord, 'id' | 'type'>
 }
 
 export function ticketHelpPrompt(type: TicketType): string {
-	return type === 'bug'
-		? '🐞 Found a bug? Press the button and tell us what happened. Staff will look at it.'
-		: '💡 Got an idea? Press the button and tell us about it. Staff will look at it.';
+	return {
+		bug: '🐞 Found a bug? Press the button and tell us what happened. Staff will look at it.',
+		suggestion: '💡 Got an idea? Press the button and tell us about it. Staff will look at it.',
+		report: '🚩 Reporting a player? Press the button and tell us what happened. Only you and staff will see it. The player you report is never told who filed it.',
+		appeal: '📨 Want a mute or warning looked at again? Press the button and tell us why. Only you and staff will see it.'
+	}[type];
 }
 
 export interface TicketModalSpec {
@@ -547,32 +607,62 @@ function input(
 	};
 }
 
+const MODAL_TEXT: Record<
+	TicketType,
+	{ title: string; what: string; whatHint: string; second: string; secondHint: string; secondRequired: boolean }
+> = {
+	bug: {
+		title: 'Report a bug',
+		what: 'What happened?',
+		whatHint: 'What you expected, and what happened instead.',
+		second: 'Command used (optional)',
+		secondHint: '/fish name:Leechfin',
+		secondRequired: false
+	},
+	suggestion: {
+		title: 'Make a suggestion',
+		what: 'What is your idea?',
+		whatHint: 'What should change, and why.',
+		second: 'Command used (optional)',
+		secondHint: '/fish name:Leechfin',
+		secondRequired: false
+	},
+	report: {
+		title: 'Report a player',
+		what: 'What happened?',
+		whatHint: 'What they did, where and when. Only staff see this.',
+		second: 'Who are you reporting? (optional)',
+		secondHint: 'Their Discord name or RSN',
+		secondRequired: false
+	},
+	appeal: {
+		title: 'Appeal a punishment',
+		what: 'Why should it be looked at again?',
+		whatHint: 'What happened, and why staff should change it.',
+		second: 'What punishment? (optional)',
+		secondHint: 'Mute, warning or a removed role',
+		secondRequired: false
+	}
+};
+
 export function ticketNewModal(type: TicketType): TicketModalSpec {
-	const bug = type === 'bug';
+	const text = MODAL_TEXT[type];
 	return {
 		custom_id: ticketNewModalId(type),
-		title: bug ? 'Report a bug' : 'Make a suggestion',
+		title: text.title,
 		components: [
-			input(
-				TICKET_INPUT_WHAT,
-				bug ? 'What happened?' : 'What is your idea?',
-				TEXT_PARAGRAPH,
-				true,
-				TICKET_WHAT_MAX,
-				bug ? 'What you expected, and what happened instead.' : 'What should change, and why.',
-				TICKET_WHAT_MIN
-			),
+			input(TICKET_INPUT_WHAT, text.what, TEXT_PARAGRAPH, true, TICKET_WHAT_MAX, text.whatHint, TICKET_WHAT_MIN),
 			input(
 				TICKET_INPUT_COMMAND,
-				'Command used (optional)',
+				text.second,
 				TEXT_SHORT,
-				false,
+				text.secondRequired,
 				TICKET_COMMAND_MAX,
-				'/fish name:Leechfin'
+				text.secondHint
 			),
 			input(
 				TICKET_INPUT_SCREENSHOT,
-				'Screenshot link (optional)',
+				type === 'report' ? 'Evidence or screenshot link (optional)' : 'Screenshot link (optional)',
 				TEXT_SHORT,
 				false,
 				TICKET_SCREENSHOT_MAX,
@@ -582,10 +672,10 @@ export function ticketNewModal(type: TicketType): TicketModalSpec {
 	};
 }
 
-export function ticketReasonModal(action: TicketAction, id: number): TicketModalSpec {
+export function ticketReasonModal(action: TicketAction, id: number, type?: TicketType | null): TicketModalSpec {
 	return {
 		custom_id: ticketReasonModalId(action, id),
-		title: `${TICKET_ACTION_RULES[action].label} ticket #${id}`,
+		title: `${ticketActionRule(action, type).label} ticket #${id}`,
 		components: [
 			input(
 				TICKET_INPUT_REASON,
@@ -689,6 +779,24 @@ export function filerCanClose(
 	);
 }
 
+/** Staff or filer: can this ticket ever be made public? Reports and appeals never. */
+export function ticketCanBePublic(type: TicketType | null | undefined): boolean {
+	return !isSensitiveTicketType(type);
+}
+
+/**
+ * The filer may Make Public / Make Private their own player-filed Suggestion (so others can give feedback).
+ * Public stays read + react only. Never bugs, reports or appeals, and never scan or staff-filed tickets.
+ */
+export function filerCanToggleVisibility(
+	ticket: Pick<TicketRecord, 'type' | 'source' | 'reporterId' | 'ticketChannelId' | 'closedAt' | 'channelDeletedAt'>,
+	userId: string
+): boolean {
+	return (
+		TICKET_FILER_PUBLIC_TYPES.includes(ticket.type) && ticket.source === 'player' && filerCanClose(ticket, userId)
+	);
+}
+
 /** Every channel tool is staff-only, except the filer may Close their own ticket. Delete only works on a closed ticket. */
 export const TICKET_TOOL_RULES: Record<
 	TicketTool,
@@ -710,7 +818,7 @@ export const TICKET_MAX_ADDED_USERS = 10;
 type ChannelTicket = Pick<
 	TicketRecord,
 	'id' | 'status' | 'ticketChannelId' | 'claimedBy' | 'visibility' | 'closedAt' | 'channelDeletedAt'
->;
+> & { type?: TicketType };
 
 /** Which channel tools to show right now. Empty for tickets without a channel. */
 export function ticketToolsFor(ticket: ChannelTicket): TicketTool[] {
@@ -720,7 +828,7 @@ export function ticketToolsFor(ticket: ChannelTicket): TicketTool[] {
 		...(ticket.claimedBy ? [] : (['claim'] as const)),
 		'add',
 		'remove',
-		ticket.visibility === 'public' ? 'private' : 'public',
+		...(ticketCanBePublic(ticket.type) ? ([ticket.visibility === 'public' ? 'private' : 'public'] as const) : []),
 		'close'
 	];
 }
@@ -785,8 +893,9 @@ export function ticketChannelTopic(
 	ticket: Pick<TicketRecord, 'id' | 'type'>,
 	visibility: TicketVisibility = 'private'
 ): string {
-	const who =
-		visibility === 'public'
+	const who = isSensitiveTicketType(ticket.type)
+		? 'Private: only the player who filed it and staff can see this. It can never be made public.'
+		: visibility === 'public'
 			? 'Public: everyone can read and react. Only people in the ticket can type.'
 			: 'Only the player, staff and anyone staff add can see this.';
 	return `${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} ticket #${ticket.id}. ${who}`;
@@ -800,7 +909,13 @@ export function ticketChannelOpenContent(
 	const role = staffRoleId ? `<@&${staffRoleId}> ` : '';
 	const kind = TICKET_TYPE_LABELS[ticket.type].toLowerCase();
 	if (ticket.source === 'player' && ticket.reporterId) {
-		return `${role}${TICKET_TYPE_ICONS[ticket.type]} New ${kind} ticket **#${ticket.id}** from <@${ticket.reporterId}>.\nThanks! Add any extra details or screenshots here. Only you and staff can see this channel.`;
+		const extra =
+			ticket.type === 'report'
+				? ' The player you reported can not see it and is never told who filed it.'
+				: ticket.type === 'suggestion'
+					? ' Want feedback from other players? Press Make Public (they can read and react, not type).'
+					: '';
+		return `${role}${TICKET_TYPE_ICONS[ticket.type]} New ${kind} ticket **#${ticket.id}** from <@${ticket.reporterId}>.\nThanks! Add any extra details or screenshots here. Only you and staff can see this channel.${extra}`;
 	}
 	const lead = ticket.source === 'auto' ? `🤖 Auto-filed ${kind}` : `📋 Staff-filed ${kind}`;
 	return `${role}${TICKET_TYPE_ICONS[ticket.type]} ${lead} ticket **#${ticket.id}**. Staff only for now. Confirm adds the player.`;

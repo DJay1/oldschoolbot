@@ -17,6 +17,7 @@ import {
 	DISCORD_TEXT_INPUT_LABEL_LIMIT,
 	embedTotalLength,
 	filerCanClose,
+	filerCanToggleVisibility,
 	maskTicketOverwrite,
 	neutralizeMentions,
 	parseTicketCustomId,
@@ -37,6 +38,7 @@ import {
 	TICKET_TYPES,
 	type TicketRecord,
 	ticketActionButtonId,
+	ticketActionRule,
 	ticketButtonRows,
 	ticketChannelName,
 	ticketChannelOpenContent,
@@ -512,6 +514,65 @@ describe('ticket channels (Krypt-style, private by default)', () => {
 		expect(ticketTranscriptLogContent(t, '5', 'bad`name<#1>')).not.toContain('<#');
 		expect(ticketPersonLabel(null, ID)).toBe(ID);
 		expect(ticketPersonLabel('x', null)).toBe('none');
+	});
+
+	test('player reports and appeals stay private; filer may Make Public only their own suggestion', () => {
+		const base = {
+			id: BIG_ID,
+			status: 'open' as const,
+			ticketChannelId: '1',
+			claimedBy: null,
+			visibility: 'private' as const,
+			closedAt: null,
+			channelDeletedAt: null
+		};
+		for (const type of ['report', 'appeal'] as const) {
+			const tools = ticketToolsFor({ ...base, type });
+			expect(tools).not.toContain('public');
+			expect(tools).not.toContain('private');
+			expect(tools).toContain('close');
+			expect(ticketChannelTopic({ id: 1, type }, 'public')).toContain('never be made public');
+			expect(actionsForStatus('open', type)).toEqual(['confirm', 'ignore']);
+			expect(actionsForStatus('confirmed', type)).toEqual(['live', 'wontfix']);
+			expect(ticketActionRule('live', type).label).toBe('Resolved');
+			expect(ticketActionRule('wontfix', type).label).toBe('Denied');
+			expect(ticketActionRule('live', type).minTier).toBe('moderator');
+			expect(ticketActionRule('ontest', type).from).toEqual([]);
+			for (const status of TICKET_STATUSES) {
+				for (const row of ticketButtonRows({ id: BIG_ID, status, type })) {
+					expect(row.components.length).toBeLessThanOrEqual(5);
+					for (const b of row.components)
+						expect(b.label.length).toBeLessThanOrEqual(DISCORD_BUTTON_LABEL_LIMIT - 40);
+				}
+			}
+		}
+		expect(ticketToolsFor({ ...base, type: 'suggestion' })).toContain('public');
+		expect(ticketActionRule('live', 'bug').label).toBe('Live');
+		const own = {
+			type: 'suggestion' as const,
+			source: 'player' as const,
+			reporterId: ID,
+			ticketChannelId: '1',
+			closedAt: null,
+			channelDeletedAt: null
+		};
+		expect(filerCanToggleVisibility(own, ID)).toBe(true);
+		expect(filerCanToggleVisibility(own, '5')).toBe(false); // added users / anyone else
+		for (const type of ['bug', 'report', 'appeal'] as const)
+			expect(filerCanToggleVisibility({ ...own, type }, ID)).toBe(false);
+		expect(filerCanToggleVisibility({ ...own, source: 'auto' }, ID)).toBe(false);
+		expect(filerCanToggleVisibility({ ...own, source: 'staff' }, ID)).toBe(false);
+		expect(filerCanToggleVisibility({ ...own, closedAt: new Date() }, ID)).toBe(false);
+		const report = ticketChannelOpenContent({ id: BIG_ID, type: 'report', source: 'player', reporterId: ID }, ID);
+		expect(report).toContain('never told who filed it');
+		const reportModal = ticketNewModal('report');
+		expect(reportModal.title).toBe('Report a player');
+		expect(reportModal.components.map(r => r.components[0].required)).toEqual([true, false, false]);
+		expect(reportModal.components[2].components[0].label).toContain('Evidence');
+		expect(report.length).toBeLessThan(DISCORD_CONTENT_LIMIT - TICKET_LENGTH_MARGIN);
+		const mentions = ticketChannelOpenMentions({ source: 'player', reporterId: ID }, ID);
+		expect(mentions.parse).toEqual([]);
+		expect(mentions.users).toEqual([ID]);
 	});
 
 	test('only the filer may close their own open ticket (Krypt-style), nobody else', () => {
