@@ -237,9 +237,19 @@ export function playerTicketLimitError(input: {
 	/** Open (not yet looked at) tickets of the type being filed. One per type at a time. */
 	openSameType?: number;
 	type?: TicketType;
+	/** The waiting ticket of that type, so the refusal can say which one and where it is. */
+	openTicket?: { id: number; channelId: string | null } | null;
 }): string | null {
 	if (input.type && (input.openSameType ?? 0) > 0) {
-		return `You already have a ${TICKET_TYPE_LABELS[input.type].toLowerCase()} ticket waiting for staff. Please wait until it is looked at.`;
+		const kind = TICKET_TYPE_LABELS[input.type].toLowerCase();
+		const t = input.openTicket;
+		if (t) {
+			const where = t.channelId
+				? ` in <#${t.channelId}>. Add any extra details there.`
+				: '. Staff are reviewing it.';
+			return `You already have ${kind} ticket **#${t.id}** waiting for staff${where} You can file another ${kind} once it is looked at.`;
+		}
+		return `You already have a ${kind} ticket waiting for staff. Please wait until it is looked at.`;
 	}
 	if (input.openCount >= TICKET_MAX_OPEN_PER_PLAYER) {
 		return `You already have ${TICKET_MAX_OPEN_PER_PLAYER} tickets waiting for staff. Please wait until one is looked at.`;
@@ -926,18 +936,42 @@ export interface TranscriptMessage {
 export const TICKET_TRANSCRIPT_MAX_MESSAGES = 100;
 
 /** Plain text transcript, oldest first. Runs as a .txt attachment, so it never pings anyone. */
+/** "Nov 25, 2026, 9:15 PM CT". Ticket logs and transcripts use the server's time zone (America/Chicago). */
+export function formatTicketTimeCT(date: Date): string {
+	const text = new Intl.DateTimeFormat('en-US', {
+		timeZone: 'America/Chicago',
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit'
+	}).format(date);
+	return `${text} CT`;
+}
+
+/** "Blaf (179896682337665024)", or just the id if the name could not be looked up. */
+export function ticketPersonLabel(name: string | null | undefined, id: string | null): string {
+	if (!id) return 'none';
+	const clean = (name ?? '')
+		.replace(/[\r\n]/g, ' ')
+		.trim()
+		.slice(0, 40);
+	return clean ? `${clean} (${id})` : id;
+}
+
 export function buildTicketTranscript(
 	ticket: Pick<TicketRecord, 'id' | 'type' | 'reporterId'>,
 	channelName: string,
-	closedById: string,
+	closedBy: { id: string; name: string | null },
 	messagesNewestFirst: TranscriptMessage[],
-	now: Date
+	now: Date,
+	playerName: string | null = null
 ): string {
 	const lines = [
 		`BSC ticket transcript: ${TICKET_TYPE_LABELS[ticket.type]} #${ticket.id} (#${channelName})`,
-		`Player: ${ticket.reporterId ?? 'none'}`,
-		`Closed by: ${closedById}`,
-		`Closed at: ${now.toISOString()}`,
+		`Player: ${ticketPersonLabel(playerName, ticket.reporterId)}`,
+		`Closed by: ${ticketPersonLabel(closedBy.name, closedBy.id)}`,
+		`Closed at: ${formatTicketTimeCT(now)}`,
 		`Messages: ${messagesNewestFirst.length} (most recent ${TICKET_TRANSCRIPT_MAX_MESSAGES} max)`,
 		''.padEnd(60, '-')
 	];
@@ -946,7 +980,8 @@ export function buildTicketTranscript(
 			' '
 		);
 		const body = [m.content.replace(/\r/g, ''), extras].filter(Boolean).join(' ');
-		lines.push(`[${m.timestamp}] ${m.authorName}${m.bot ? ' [BOT]' : ''} (${m.authorId}): ${body || '(no text)'}`);
+		const when = Number.isNaN(Date.parse(m.timestamp)) ? m.timestamp : formatTicketTimeCT(new Date(m.timestamp));
+		lines.push(`[${when}] ${m.authorName}${m.bot ? ' [BOT]' : ''} (${m.authorId}): ${body || '(no text)'}`);
 	}
 	return lines.join('\n');
 }
@@ -959,12 +994,22 @@ export function ticketTranscriptFileName(ticket: Pick<TicketRecord, 'id' | 'type
 export function ticketTranscriptLogContent(
 	ticket: Pick<TicketRecord, 'id' | 'type' | 'reporterId'>,
 	closedById: string,
-	channelId: string
+	channelName: string
 ): string {
 	const player = ticket.reporterId ? ` Player: <@${ticket.reporterId}>.` : '';
-	return `📜 ${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} **#${ticket.id}** closed by <@${closedById}> in <#${channelId}>.${player}`;
+	// Plain channel name, not a <#id> mention: the mention shows #unknown once the channel is deleted.
+	return `📜 ${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} **#${ticket.id}** closed by <@${closedById}> in \`#${ticketChannelSlugName(channelName)}\`.${player}`;
 }
 
-export function ticketDeletedLogContent(ticket: Pick<TicketRecord, 'id' | 'type'>, staffId: string): string {
-	return `🗑️ ${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} **#${ticket.id}** channel deleted by <@${staffId}>.`;
+/** Channel names are already a-z0-9 and dashes; this just guards the log line against anything odd. */
+function ticketChannelSlugName(name: string): string {
+	return name.replace(/[^a-z0-9-]/gi, '').slice(0, 100) || 'ticket';
+}
+
+export function ticketDeletedLogContent(
+	ticket: Pick<TicketRecord, 'id' | 'type'>,
+	staffId: string,
+	channelName: string
+): string {
+	return `🗑️ ${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} **#${ticket.id}** channel \`#${ticketChannelSlugName(channelName)}\` deleted by <@${staffId}>.`;
 }

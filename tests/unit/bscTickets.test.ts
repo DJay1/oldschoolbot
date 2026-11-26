@@ -53,6 +53,7 @@ import {
 	ticketMemberOverwrite,
 	ticketNewModal,
 	ticketNoticeContent,
+	ticketPersonLabel,
 	ticketPlayerReplyWithChannel,
 	ticketReasonModal,
 	ticketReasonModalId,
@@ -337,8 +338,8 @@ describe('ticket channels (Krypt-style, private by default)', () => {
 			ticketChannelOpenContent({ ...t, source: 'auto' }, ID),
 			ticketChannelOpenContent({ ...t, source: 'staff' }, ID),
 			ticketPlayerReplyWithChannel(t, ID, true),
-			ticketTranscriptLogContent(t, ID, ID),
-			ticketDeletedLogContent(t, ID),
+			ticketTranscriptLogContent(t, ID, `suggestion-999999999-${'x'.repeat(24)}`),
+			ticketDeletedLogContent(t, ID, `suggestion-999999999-${'x'.repeat(24)}`),
 			...(['claim', 'public', 'private', 'close', 'reopen', 'added', 'removed'] as const).map(k =>
 				ticketToolNote(k, ID, ID)
 			),
@@ -476,13 +477,47 @@ describe('ticket channels (Krypt-style, private by default)', () => {
 		expect(
 			playerTicketLimitError({ openCount: 1, openSameType: 0, type: 'suggestion', lastCreatedAt: null, now: 0 })
 		).toBeNull();
+		const inChannel = playerTicketLimitError({
+			openCount: 3,
+			openSameType: 1,
+			type: 'suggestion',
+			openTicket: { id: BIG_ID, channelId: ID },
+			lastCreatedAt: null,
+			now: 0
+		});
+		expect(inChannel).toContain(`**#${BIG_ID}**`);
+		expect(inChannel).toContain(`<#${ID}>`);
+		expect(inChannel!.length).toBeLessThan(DISCORD_CONTENT_LIMIT - TICKET_LENGTH_MARGIN);
+		const noChannel = playerTicketLimitError({
+			openCount: 1,
+			openSameType: 1,
+			type: 'bug',
+			openTicket: { id: 2, channelId: null },
+			lastCreatedAt: null,
+			now: 0
+		});
+		expect(noChannel).toContain('**#2**');
+		expect(noChannel).toContain('Staff are reviewing it.');
+	});
+
+	test('log lines use the plain channel name, never a <#id> mention', () => {
+		const t = { id: 7, type: 'bug' as const, reporterId: ID };
+		const closed = ticketTranscriptLogContent(t, '5', 'bug-0007-blaf-osrs');
+		expect(closed).toContain('`#bug-0007-blaf-osrs`');
+		expect(closed).not.toContain('<#');
+		const deleted = ticketDeletedLogContent(t, '5', 'bug-0007-blaf-osrs');
+		expect(deleted).toContain('`#bug-0007-blaf-osrs`');
+		expect(deleted).not.toContain('<#');
+		expect(ticketTranscriptLogContent(t, '5', 'bad`name<#1>')).not.toContain('<#');
+		expect(ticketPersonLabel(null, ID)).toBe(ID);
+		expect(ticketPersonLabel('x', null)).toBe('none');
 	});
 
 	test('transcript is oldest first with a header', () => {
 		const text = buildTicketTranscript(
 			{ id: 7, type: 'bug', reporterId: ID },
 			'bug-0007-salty',
-			'5',
+			{ id: '5', name: 'DJ' },
 			[
 				{
 					authorName: 'b',
@@ -503,10 +538,14 @@ describe('ticket channels (Krypt-style, private by default)', () => {
 					embedTitles: ['Bug #7']
 				}
 			],
-			new Date(0)
+			new Date(0),
+			'Blaf'
 		);
 		const lines = text.split('\n');
 		expect(lines[0]).toContain('Bug #7 (#bug-0007-salty)');
+		expect(lines[1]).toBe(`Player: Blaf (${ID})`);
+		expect(lines[2]).toBe('Closed by: DJ (5)');
+		expect(lines[3]).toBe('Closed at: Dec 31, 1969, 6:00 PM CT');
 		expect(lines.at(-2)).toContain('a [BOT] (1): [embed: Bug #7]');
 		expect(lines.at(-1)).toContain('b (2): second [file: https://x/y.png]');
 	});

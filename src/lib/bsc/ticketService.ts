@@ -183,15 +183,26 @@ export async function listTickets(statuses: TicketStatus[], limit = 200): Promis
 }
 
 async function playerLimitError(userId: string, type?: TicketType): Promise<string | null> {
-	const rows = await prisma.$queryRaw<{ open_count: number; same_type: number; last_created: Date | null }[]>`
+	const rows = await prisma.$queryRaw<
+		{
+			open_count: number;
+			same_type: number;
+			same_id: number | null;
+			same_channel: string | null;
+			last_created: Date | null;
+		}[]
+	>`
 		SELECT
 			(SELECT COUNT(*)::int FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open') AS open_count,
 			(SELECT COUNT(*)::int FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''}) AS same_type,
+			(SELECT id FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_id,
+			(SELECT CASE WHEN channel_deleted_at IS NULL THEN ticket_channel_id END FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_channel,
 			(SELECT MAX(created_at) FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player') AS last_created
 	`;
 	return playerTicketLimitError({
 		openCount: Number(rows[0]?.open_count ?? 0),
 		openSameType: Number(rows[0]?.same_type ?? 0),
+		openTicket: rows[0]?.same_id ? { id: Number(rows[0].same_id), channelId: rows[0].same_channel ?? null } : null,
 		type,
 		lastCreatedAt: rows[0]?.last_created ? new Date(rows[0].last_created) : null,
 		now: Date.now()
@@ -779,16 +790,22 @@ async function saveTranscript(ticket: TicketRecord, closedById: string): Promise
 			attachmentUrls: (m.attachments ?? []).map(a => a.url),
 			embedTitles: (m.embeds ?? []).map(e => e.title ?? 'embed')
 		}));
+		const channelName = channel.name ?? `ticket-${ticket.id}`;
+		const [closedByName, playerName] = await Promise.all([
+			discordUsername(closedById),
+			ticket.reporterId ? discordUsername(ticket.reporterId) : Promise.resolve(null)
+		]);
 		const text = buildTicketTranscript(
 			ticket,
-			channel.name ?? `ticket-${ticket.id}`,
-			closedById,
+			channelName,
+			{ id: closedById, name: closedByName },
 			mapped,
-			new Date()
+			new Date(),
+			playerName
 		);
 		await globalClient.rest.post(Routes.channelMessages(logChannelId), {
 			body: {
-				content: ticketTranscriptLogContent(ticket, closedById, ticket.ticketChannelId),
+				content: ticketTranscriptLogContent(ticket, closedById, channelName),
 				allowed_mentions: { parse: [], users: [], roles: [] }
 			},
 			files: [{ name: ticketTranscriptFileName(ticket), data: Buffer.from(text, 'utf8') }]
@@ -931,6 +948,11 @@ async function handleTicketTool(
 		RETURNING *
 	`;
 	if (!rows[0]) return { content: `Ticket #${id} is already deleted.`, ephemeral: true };
+	// Grab the name before the channel is gone, for the staff log line.
+	const deletedName = await globalClient.rest
+		.get(Routes.channel(channelId))
+		.then(c => (c as { name?: string }).name ?? `ticket-${id}`)
+		.catch(() => `ticket-${id}`);
 	await respond(interaction.id, token, InteractionResponseType.ChannelMessageWithSource, {
 		content: 'Deleting this ticket channel…',
 		flags: MessageFlags.Ephemeral,
@@ -946,7 +968,7 @@ async function handleTicketTool(
 	}
 	const logChannelId = ticketConfig().channelId;
 	if (logChannelId && logChannelId !== channelId)
-		await postNote(logChannelId, ticketDeletedLogContent(ticket, user.id));
+		await postNote(logChannelId, ticketDeletedLogContent(ticket, user.id, deletedName));
 	return SpecialResponse.RespondedManually;
 }
 
