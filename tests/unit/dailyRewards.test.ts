@@ -62,6 +62,7 @@ import {
 	typingGameRows,
 	typingModalSpec,
 	wordleGuessRows,
+	wordleHintBonusTier,
 	wordleHintFor,
 	wordleModalSpec,
 	wordleTiles,
@@ -77,7 +78,7 @@ import {
 	shouldExemptDailyGameButtonFromGlobalRatelimit
 } from '@/lib/bsc/dailyPending.js';
 import {
-	applyWordleNoHintBonus,
+	applyWordleHintBonus,
 	buildDailyRewardContent,
 	DAILY_TIER,
 	type DailyOutcome,
@@ -90,8 +91,8 @@ import {
 	messageHasUserPing,
 	parseDailyDifficulty,
 	rollDailyRewardTokens,
-	WORDLE_NO_HINT_BONUS_LINE,
-	WORDLE_NO_HINT_COIN_BONUS
+	WORDLE_HINT_BONUS_COINS,
+	wordleHintBonusLine
 } from '@/lib/bsc/dailyRewards.js';
 import {
 	DAILY_EASY_TRIVIA,
@@ -502,20 +503,28 @@ describe('Wordle game', () => {
 		expect(again.betterHintRevealed).toBe(true);
 	});
 
-	test('a no-hint Wordle win is only available if no hint was used, including the auto hint after two misses', () => {
+	test('hint bonus tiers: no hint, category (including auto after two misses), and better hint', () => {
 		const win = applyWordleAction(createWordleState(mockRng([], ['HYDRA'])), { kind: 'submit', guess: 'HYDRA' });
 		expect(win.status).toBe('won');
 		expect(wordleUsedHint(win)).toBe(false);
+		expect(wordleHintBonusTier(win)).toBe('none');
 		const hinted = applyWordleAction(createWordleState(mockRng([], ['HYDRA'])), { kind: 'hint' });
 		const hintedWin = applyWordleAction(hinted, { kind: 'submit', guess: 'HYDRA' });
 		expect(hintedWin.status).toBe('won');
 		expect(wordleUsedHint(hintedWin)).toBe(true);
+		expect(wordleHintBonusTier(hintedWin)).toBe('category');
 		let auto = createWordleState(mockRng([], ['HYDRA']));
 		auto = applyWordleAction(auto, { kind: 'submit', guess: 'AHRIM' });
 		auto = applyWordleAction(auto, { kind: 'submit', guess: 'KARIL' });
 		auto = applyWordleAction(auto, { kind: 'submit', guess: 'HYDRA' });
 		expect(auto.status).toBe('won');
 		expect(wordleUsedHint(auto)).toBe(true);
+		expect(wordleHintBonusTier(auto)).toBe('category');
+		let better = applyWordleAction(createWordleState(mockRng([], ['HYDRA'])), { kind: 'hint' });
+		better = applyWordleAction(better, { kind: 'hint' });
+		better = applyWordleAction(better, { kind: 'submit', guess: 'HYDRA' });
+		expect(better.status).toBe('won');
+		expect(wordleHintBonusTier(better)).toBe('better');
 	});
 });
 
@@ -1009,15 +1018,16 @@ describe('interrupted daily game command path', () => {
 	});
 });
 
-describe('Wordle no-hint bonus', () => {
-	test('adds 50% coins and one of each mystery box, and the reward text stays under the Discord limit', () => {
+describe('Wordle hint-tier coin bonus', () => {
+	test('no hint pays 100m coins and one of each mystery box, and the reward text stays under the Discord limit', () => {
 		const loot = new Bank().add('Coins', 1000).add('Tradeable Mystery Box', 1);
-		const { coins, line } = applyWordleNoHintBonus(loot, 1000);
-		expect(WORDLE_NO_HINT_COIN_BONUS).toBe(0.5);
-		expect(coins).toBe(1500);
+		const { coins, line } = applyWordleHintBonus(loot, 1000, 'none');
+		expect(WORDLE_HINT_BONUS_COINS.none).toBe(100_000_000);
+		expect(coins).toBe(100_001_000);
 		expect(loot.amount('Tradeable Mystery Box')).toBe(2);
 		expect(loot.amount('Untradeable Mystery Box')).toBe(1);
-		expect(line).toBe(WORDLE_NO_HINT_BONUS_LINE);
+		expect(line).toBe(wordleHintBonusLine('none', 100_000_000));
+		expect(line).toContain('100,000,000');
 		loot.set('Coins', coins);
 		const content = buildDailyRewardContent({
 			bonuses: [
@@ -1034,7 +1044,7 @@ describe('Wordle no-hint bonus', () => {
 				success: true,
 				game: 'wordle',
 				detail: 'You got HYDRA in 1 try.',
-				noHintBonus: true
+				wordleHintBonus: 'none'
 			},
 			loot,
 			tokenLines: [
@@ -1042,17 +1052,46 @@ describe('Wordle no-hint bonus', () => {
 				'**Double loot token!** Use it with `/use item:Double loot token`.'
 			]
 		});
-		expect(content).toContain(WORDLE_NO_HINT_BONUS_LINE);
+		expect(content).toContain(line);
 		expect(content.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
 		expect(messageHasUserPing(content)).toBe(false);
 	});
 
-	test('an ironman with 0 coins still receives the extra boxes', () => {
+	test('the category hint pays 50m coins and no boxes; the better hint pays 25m and no boxes', () => {
+		const categoryLoot = new Bank();
+		const category = applyWordleHintBonus(categoryLoot, 2_000, 'category');
+		expect(category.coins).toBe(50_002_000);
+		expect(categoryLoot.amount('Tradeable Mystery Box')).toBe(0);
+		expect(categoryLoot.amount('Untradeable Mystery Box')).toBe(0);
+		expect(category.line).toBe('Category hint bonus: +50,000,000 coins.');
+		const betterLoot = new Bank();
+		const better = applyWordleHintBonus(betterLoot, 2_000, 'better');
+		expect(better.coins).toBe(25_002_000);
+		expect(betterLoot.amount('Tradeable Mystery Box')).toBe(0);
+		expect(betterLoot.amount('Untradeable Mystery Box')).toBe(0);
+		expect(better.line).toBe('Better hint bonus: +25,000,000 coins.');
+	});
+
+	test('an ironman with 0 coins still receives the no-hint boxes, and hint tiers add no coins or boxes', () => {
 		const loot = new Bank();
-		const { coins, line } = applyWordleNoHintBonus(loot, 0);
+		const { coins, line } = applyWordleHintBonus(loot, 0, 'none');
 		expect(coins).toBe(0);
 		expect(loot.amount('Tradeable Mystery Box')).toBe(1);
 		expect(loot.amount('Untradeable Mystery Box')).toBe(1);
-		expect(line).toBe(WORDLE_NO_HINT_BONUS_LINE);
+		expect(line).toContain("Ironmen don't receive the coin bonus");
+		expect(line).not.toContain('100,000,000');
+		const hinted = new Bank();
+		const hintedBonus = applyWordleHintBonus(hinted, 0, 'category');
+		expect(hintedBonus.coins).toBe(0);
+		expect(hintedBonus.line).toBe('');
+		expect(hinted.amount('Tradeable Mystery Box')).toBe(0);
+	});
+
+	test('the bonus is a flat add, so it is not a coin multiplier and boxes are not added twice in one apply', () => {
+		const loot = new Bank();
+		const first = applyWordleHintBonus(loot, 10, 'none');
+		expect(first.coins).toBe(100_000_010);
+		expect(loot.amount('Tradeable Mystery Box')).toBe(1);
+		expect(loot.amount('Untradeable Mystery Box')).toBe(1);
 	});
 });

@@ -39,8 +39,8 @@ import {
 	typingGameRows,
 	typingModalSpec,
 	wordleGuessRows,
-	wordleModalSpec,
-	wordleUsedHint
+	wordleHintBonusTier,
+	wordleModalSpec
 } from '@/lib/bsc/dailyGames.js';
 import {
 	clearDailyPending,
@@ -55,7 +55,7 @@ import {
 	updateDailyPendingGame
 } from '@/lib/bsc/dailyPending.js';
 import {
-	applyWordleNoHintBonus,
+	applyWordleHintBonus,
 	buildDailyRewardContent,
 	type DailyDifficulty,
 	type DailyOutcome,
@@ -188,10 +188,10 @@ async function giveDailyReward(rng: RNGProvider, user: MUser, outcome: DailyOutc
 		coinsToGive = 0;
 	}
 
-	if (outcome.difficulty === 'hard' && outcome.success && outcome.noHintBonus) {
-		const bonus = applyWordleNoHintBonus(loot, coinsToGive);
+	if (outcome.difficulty === 'hard' && outcome.success && outcome.wordleHintBonus) {
+		const bonus = applyWordleHintBonus(loot, coinsToGive, outcome.wordleHintBonus);
 		coinsToGive = bonus.coins;
-		bonuses.push(bonus.line);
+		if (bonus.line) bonuses.push(bonus.line);
 	}
 
 	loot.set('Coins', Math.floor(coinsToGive));
@@ -308,7 +308,7 @@ async function payHardOutcome(
 		success,
 		game: game.type === 'typing' ? 'typing' : 'wordle',
 		detail,
-		noHintBonus: success && game.type === 'wordle' && !wordleUsedHint(game)
+		wordleHintBonus: success && game.type === 'wordle' ? wordleHintBonusTier(game) : undefined
 	});
 }
 

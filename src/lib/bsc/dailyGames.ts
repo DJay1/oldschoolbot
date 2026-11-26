@@ -2,6 +2,7 @@ import type { REST } from '@discordjs/rest';
 import { ComponentType, InteractionResponseType, Routes } from '@oldschoolgg/discord';
 import { Items, itemID } from 'oldschooljs';
 
+import { wordleHintBonusLine } from '@/lib/bsc/dailyRewards.js';
 import { createCanvas } from '@/lib/canvas/canvasUtil.js';
 import { OSRSCanvas } from '@/lib/canvas/OSRSCanvas.js';
 
@@ -230,6 +231,17 @@ export function formatWordleHintLine(answer: string, tier: 1 | 2 = 1): string | 
 /** True if the player pressed Hint or the free category appeared after 2 misses. */
 export function wordleUsedHint(state: Pick<WordleState, 'hintRevealed' | 'betterHintRevealed'>): boolean {
 	return Boolean(state.hintRevealed || state.betterHintRevealed);
+}
+
+/** Hint tier used for the Hard Wordle win bonus. Better hint is the lowest coin tier. */
+export type WordleHintBonusTier = 'none' | 'category' | 'better';
+
+export function wordleHintBonusTier(
+	state: Pick<WordleState, 'hintRevealed' | 'betterHintRevealed'>
+): WordleHintBonusTier {
+	if (state.betterHintRevealed) return 'better';
+	if (state.hintRevealed) return 'category';
+	return 'none';
 }
 
 /**
@@ -774,7 +786,7 @@ export function hardestDailyRewardPreview(maxLootLine: string): string {
 		'✨ The sparkle fizzled, so Diango stuffed a smaller prize in the bag.',
 		'🐧 Skipper negotiated you 50% more coins!',
 		'🎉 Launch event: your mystery boxes were tripled!',
-		'No hint bonus: +50% coins, +1 Tradeable Mystery Box, +1 Untradeable Mystery Box!'
+		wordleHintBonusLine('none', 100_000_000)
 	];
 	return `${tokenLines.join('\n')}\n${bonuses.join('')}**Hard daily: Wordle — You got HYDRA in 5 tries.**\nThat's correct! I've picked you some random items as a reward...\n\nYou received ${maxLootLine}`;
 }

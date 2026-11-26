@@ -33,7 +33,7 @@ export type DailyOutcome =
 			success: boolean;
 			game: 'wordle' | 'typing' | 'buttons';
 			detail?: string;
-			noHintBonus?: boolean;
+			wordleHintBonus?: 'none' | 'category' | 'better';
 	  };
 
 export function parseDailyDifficulty(input?: string | null): DailyDifficulty {
@@ -126,16 +126,40 @@ export function messageHasUserPing(content: string): boolean {
 	return /<@!?\d+>/.test(content) || content.includes('@everyone') || content.includes('@here');
 }
 
-/** Extra coins and boxes for a Hard Wordle win with no hint used. Applied after other coin bonuses. */
-export const WORDLE_NO_HINT_COIN_BONUS = 0.5;
+/**
+ * Flat Hard Wordle win bonus, after other coin bonuses and after the ironman coin wipe.
+ * This replaces the old +50% no-hint multiplier. Mystery boxes are only for no-hint wins.
+ * Ironmen get 0 coins (caller passes coins === 0). One daily payout per day (paid flag).
+ */
+export const WORDLE_HINT_BONUS_COINS = {
+	none: 100_000_000,
+	category: 50_000_000,
+	better: 25_000_000
+} as const;
+
 export const WORDLE_NO_HINT_TRADEABLE_BOXES = 1;
 export const WORDLE_NO_HINT_UNTRADEABLE_BOXES = 1;
-export const WORDLE_NO_HINT_BONUS_LINE =
-	'No hint bonus: +50% coins, +1 Tradeable Mystery Box, +1 Untradeable Mystery Box!';
 
-export function applyWordleNoHintBonus(loot: Bank, coins: number): { coins: number; line: string } {
-	const nextCoins = coins > 0 ? Math.floor(coins * (1 + WORDLE_NO_HINT_COIN_BONUS)) : coins;
-	loot.add('Tradeable Mystery Box', WORDLE_NO_HINT_TRADEABLE_BOXES);
-	loot.add('Untradeable Mystery Box', WORDLE_NO_HINT_UNTRADEABLE_BOXES);
-	return { coins: nextCoins, line: WORDLE_NO_HINT_BONUS_LINE };
+export function wordleHintBonusLine(tier: 'none' | 'category' | 'better', awardedCoins: number): string {
+	const gp = WORDLE_HINT_BONUS_COINS[tier].toLocaleString('en-US');
+	if (tier === 'none') {
+		const boxes = '+1 Tradeable Mystery Box, +1 Untradeable Mystery Box';
+		if (awardedCoins > 0) return `No hint bonus: +${gp} coins, ${boxes}!`;
+		return `No hint bonus: ${boxes}! Ironmen don't receive the coin bonus.`;
+	}
+	if (awardedCoins <= 0) return '';
+	return tier === 'category' ? `Category hint bonus: +${gp} coins.` : `Better hint bonus: +${gp} coins.`;
+}
+
+export function applyWordleHintBonus(
+	loot: Bank,
+	coins: number,
+	tier: 'none' | 'category' | 'better'
+): { coins: number; line: string } {
+	const awardedCoins = coins > 0 ? WORDLE_HINT_BONUS_COINS[tier] : 0;
+	if (tier === 'none') {
+		loot.add('Tradeable Mystery Box', WORDLE_NO_HINT_TRADEABLE_BOXES);
+		loot.add('Untradeable Mystery Box', WORDLE_NO_HINT_UNTRADEABLE_BOXES);
+	}
+	return { coins: coins + awardedCoins, line: wordleHintBonusLine(tier, awardedCoins) };
 }
