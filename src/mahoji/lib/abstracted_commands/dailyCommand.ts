@@ -46,12 +46,17 @@ import {
 	clearDailyPending,
 	createDailySettle,
 	type DailyPendingRow,
+	isDailyGameLive,
 	isDailyPendingExpired,
 	loadDailyPending,
+	markDailyGameDone,
+	markDailyGameLive,
 	markDailyPendingPaid,
 	remainingMs,
 	resolveDailyPendingPayout,
+	resumeInterruptedDaily,
 	saveDailyPending,
+	shouldResumeInterruptedDaily,
 	updateDailyPendingGame
 } from '@/lib/bsc/dailyPending.js';
 import {
@@ -382,6 +387,7 @@ async function playHardGame(
 			maxCollected: 80,
 			timeoutMs: remainingMs(expiresAt)
 		});
+		const liveToken = markDailyGameLive(user.id);
 
 		const cleanupModal = () => {
 			globalClient.removeListener('interactionCreate', onModalSubmit);
@@ -566,6 +572,7 @@ async function playHardGame(
 		}
 
 		collector.on('end', async (_collected, reason) => {
+			markDailyGameDone(user.id, liveToken);
 			if (reason === 'finished' || reason === 'error') {
 				cleanupModal();
 				return;
@@ -623,6 +630,17 @@ export async function dailyCommand(
 ): CommandResponse {
 	const pending = await loadDailyPending(user.id);
 	if (pending && !pending.paid) {
+		if (shouldResumeInterruptedDaily(pending, isDailyGameLive(user.id))) {
+			// Set before any await so a double click can't resume it twice.
+			const token = markDailyGameLive(user.id);
+			try {
+				const resumed = resumeInterruptedDaily(pending);
+				await updateDailyPendingGame(user.id, resumed.game, resumed.expiresAt);
+				return await playHardGame(rng, interaction, user, resumed);
+			} finally {
+				markDailyGameDone(user.id, token);
+			}
+		}
 		const payout = resolveDailyPendingPayout(pending);
 		if (payout.game.status === 'playing') {
 			return playHardGame(rng, interaction, user, pending);

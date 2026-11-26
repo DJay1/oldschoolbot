@@ -1,9 +1,12 @@
 import {
+	betterHintRemainingMs,
+	DAILY_RESUMED_NOTICE,
 	DAILY_SPEED_CLICK_BUTTON_PREFIX,
 	DAILY_TIMEOUT_NOTICE,
 	DAILY_TYPING_BUTTON_PREFIX,
 	DAILY_WORDLE_BUTTON_PREFIX,
-	type HardGameState
+	type HardGameState,
+	hardGameTimeoutMs
 } from '@/lib/bsc/dailyGames.js';
 
 export interface DailyPendingRow {
@@ -147,6 +150,47 @@ export function resolveDailyPendingPayout(
 		return { game: { ...pending.game, status: 'lost', notice: DAILY_TIMEOUT_NOTICE }, timedOut: true };
 	}
 	return { game: pending.game, timedOut: false };
+}
+
+/** Users with a Hard or Medium daily timer running in this process. A restart empties it. */
+const liveDailyGames = new Map<string, symbol>();
+
+export function markDailyGameLive(userId: string): symbol {
+	const token = Symbol(userId);
+	liveDailyGames.set(userId, token);
+	return token;
+}
+
+/** Only the run that set the flag can clear it, so an older game ending cannot clear a newer one. */
+export function markDailyGameDone(userId: string, token: symbol): void {
+	if (liveDailyGames.get(userId) === token) liveDailyGames.delete(userId);
+}
+
+export function isDailyGameLive(userId: string): boolean {
+	return liveDailyGames.has(userId);
+}
+
+/** A game whose timer died with the bot (no live timer here) gets one fresh timer instead of an unseen Time ran out. */
+export function shouldResumeInterruptedDaily(pending: DailyPendingRow, live: boolean, now = Date.now()): boolean {
+	return (
+		!pending.paid &&
+		!live &&
+		pending.game.status === 'playing' &&
+		!pending.game.resumed &&
+		isDailyPendingExpired(pending.expiresAt, now)
+	);
+}
+
+/** Same board, guesses and hints; a used Better hint keeps its time cost. Only ever done once per claim. */
+export function resumeInterruptedDaily(pending: DailyPendingRow, now = Date.now()): DailyPendingRow {
+	const full = hardGameTimeoutMs(pending.game);
+	const timeout =
+		pending.game.type === 'wordle' && pending.game.betterHintRevealed ? betterHintRemainingMs(full) : full;
+	return {
+		...pending,
+		game: { ...pending.game, resumed: true, notice: DAILY_RESUMED_NOTICE },
+		expiresAt: now + timeout
+	};
 }
 
 export function isDailyHardGameButtonId(customId: string): boolean {

@@ -91,14 +91,9 @@ export function dailyRewardBody(outcome: DailyOutcome): string {
 			? "I've picked you some random items as a reward..."
 			: "Even though you got it wrong, here's a little reward...";
 	}
-	if (outcome.success) {
-		return outcome.detail ? `${outcome.detail} Here's your reward...` : "Here's your reward...";
-	}
-	return outcome.detail
-		? `${outcome.detail} Here's ${outcome.difficulty === 'medium' ? 'the Easy-level' : 'a smaller'} reward...`
-		: outcome.difficulty === 'medium'
-			? "Here's the Easy-level reward..."
-			: "Here's a smaller reward...";
+	// The summary line above already shows the result, so it isn't repeated here.
+	if (outcome.success) return "Here's your reward...";
+	return outcome.difficulty === 'medium' ? "Here's the Easy-level reward..." : "Here's a smaller reward...";
 }
 
 export function buildDailyRewardContent(opts: {

@@ -20,6 +20,7 @@ import {
 	DAILY_BUTTON_DECOYS,
 	DAILY_BUTTON_GAME_MS,
 	DAILY_BUTTON_TARGETS,
+	DAILY_RESUMED_NOTICE,
 	DAILY_TIMEOUT_NOTICE,
 	DAILY_TYPING_ITEMS,
 	DAILY_TYPING_MAX_CHARS,
@@ -71,11 +72,16 @@ import {
 import type { DailyPendingRow } from '@/lib/bsc/dailyPending.js';
 import {
 	createDailySettle,
+	isDailyGameLive,
 	isDailyHardGameButtonId,
 	isDailyPendingExpired,
+	markDailyGameDone,
+	markDailyGameLive,
 	remainingMs,
 	resolveDailyPendingPayout,
-	shouldExemptDailyGameButtonFromGlobalRatelimit
+	resumeInterruptedDaily,
+	shouldExemptDailyGameButtonFromGlobalRatelimit,
+	shouldResumeInterruptedDaily
 } from '@/lib/bsc/dailyPending.js';
 import {
 	applyWordleHintBonus,
@@ -1093,5 +1099,109 @@ describe('Wordle hint-tier coin bonus', () => {
 		expect(first.coins).toBe(100_000_010);
 		expect(loot.amount('Tradeable Mystery Box')).toBe(1);
 		expect(loot.amount('Untradeable Mystery Box')).toBe(1);
+	});
+});
+
+describe('a Hard daily cut off by a bot restart', () => {
+	const now = 1_795_660_000_000;
+	// The board a player had when the test bot restarted mid-game: two guesses and both hints used.
+	const cutOff: DailyPendingRow = {
+		userId: 'player-1',
+		claimedAt: now - 11 * 60 * 60 * 1000,
+		difficulty: 'hard',
+		expiresAt: now - 11 * 60 * 60 * 1000 + DAILY_WORDLE_MS,
+		paid: false,
+		game: {
+			type: 'wordle',
+			answer: 'ARRAV',
+			rows: [
+				{ guess: 'VERAC', marks: ['present', 'absent', 'correct', 'correct', 'absent'] },
+				{ guess: 'GHRAC', marks: ['absent', 'absent', 'correct', 'correct', 'absent'] }
+			],
+			status: 'playing',
+			hintRevealed: true,
+			betterHintRevealed: true
+		}
+	};
+
+	test('resumes the same board with a fresh timer instead of paying an unseen Time ran out', () => {
+		expect(shouldResumeInterruptedDaily(cutOff, false, now)).toBe(true);
+		const resumed = resumeInterruptedDaily(cutOff, now);
+		expect(resumed.game.resumed).toBe(true);
+		expect(resumed.game.notice).toBe(DAILY_RESUMED_NOTICE);
+		expect(resumed.expiresAt).toBe(now + DAILY_WORDLE_MS - DAILY_WORDLE_BETTER_HINT_COST_MS);
+		expect(resumed.game.type === 'wordle' && resumed.game.answer).toBe('ARRAV');
+		expect(resumed.game.type === 'wordle' && resumed.game.rows.length).toBe(2);
+		const payout = resolveDailyPendingPayout(resumed, now);
+		expect(payout.timedOut).toBe(false);
+		expect(payout.game.status).toBe('playing');
+		const board = formatWordleMessage(resumed.game as never, remainingMs(resumed.expiresAt, now));
+		expect(board).toContain('VERAC');
+		expect(board).toContain(DAILY_RESUMED_NOTICE);
+		expect(board).not.toContain('ARRAV');
+		expect(messageHasUserPing(board)).toBe(false);
+		expect(board.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+	});
+
+	test('a game without hints gets the full timer back', () => {
+		const plain = {
+			...cutOff,
+			game: { ...cutOff.game, hintRevealed: false, betterHintRevealed: false }
+		} as DailyPendingRow;
+		expect(resumeInterruptedDaily(plain, now).expiresAt).toBe(now + DAILY_WORDLE_MS);
+	});
+
+	test('only once: a resumed game that runs out again is a normal timeout', () => {
+		const resumed = resumeInterruptedDaily(cutOff, now);
+		const later = now + DAILY_WORDLE_MS + 1;
+		expect(shouldResumeInterruptedDaily(resumed, false, later)).toBe(false);
+		const payout = resolveDailyPendingPayout(resumed, later);
+		expect(payout.timedOut).toBe(true);
+		expect(payout.game.notice).toBe(DAILY_TIMEOUT_NOTICE);
+	});
+
+	test('never resumes a live, paid, finished or still-running game', () => {
+		expect(shouldResumeInterruptedDaily(cutOff, true, now)).toBe(false);
+		expect(shouldResumeInterruptedDaily({ ...cutOff, paid: true }, false, now)).toBe(false);
+		expect(
+			shouldResumeInterruptedDaily(
+				{ ...cutOff, game: { ...cutOff.game, status: 'lost' } } as DailyPendingRow,
+				false,
+				now
+			)
+		).toBe(false);
+		expect(shouldResumeInterruptedDaily({ ...cutOff, expiresAt: now + 5000 }, false, now)).toBe(false);
+	});
+
+	test('an older game ending cannot clear a newer live game', () => {
+		const first = markDailyGameLive('player-2');
+		const second = markDailyGameLive('player-2');
+		markDailyGameDone('player-2', first);
+		expect(isDailyGameLive('player-2')).toBe(true);
+		markDailyGameDone('player-2', second);
+		expect(isDailyGameLive('player-2')).toBe(false);
+	});
+
+	test('the command checks for a cut-off game before paying a leftover timeout, and marks the timer live', () => {
+		const src = readFileSync(resolve('src/mahoji/lib/abstracted_commands/dailyCommand.ts'), 'utf8');
+		const cmd = src.slice(src.indexOf('export async function dailyCommand('));
+		const resume = cmd.indexOf('shouldResumeInterruptedDaily(pending, isDailyGameLive(user.id))');
+		const pay = cmd.indexOf('resolveDailyPendingPayout(pending)');
+		expect(resume).toBeGreaterThan(-1);
+		expect(pay).toBeGreaterThan(resume);
+		expect(src).toContain('const liveToken = markDailyGameLive(user.id);');
+		expect(src).toContain('markDailyGameDone(user.id, liveToken);');
+	});
+
+	test('the timeout reward says Time ran out once', () => {
+		const content = buildDailyRewardContent({
+			bonuses: ['Skipper negotiated you 50% more coins!'],
+			outcome: { difficulty: 'hard', success: false, game: 'wordle', detail: DAILY_TIMEOUT_NOTICE },
+			loot: { toString: () => '1.3m Coins, 1x White toy horsey' } as never,
+			tokenLines: []
+		});
+		expect(content.split(DAILY_TIMEOUT_NOTICE).length - 1).toBe(1);
+		expect(content).toContain('smaller reward');
+		expect(DAILY_RESUMED_NOTICE.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
 	});
 });

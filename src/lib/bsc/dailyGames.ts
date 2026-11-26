@@ -11,6 +11,7 @@ export const DAILY_WORDLE_GUESSES = 5;
 export const DAILY_WORDLE_MS = 90 * 1000;
 export const DAILY_BUTTON_GAME_MS = 20 * 1000;
 export const DAILY_TIMEOUT_NOTICE = 'Time ran out.';
+export const DAILY_RESUMED_NOTICE = 'Your last daily got cut off before it finished, so here it is again with a fresh timer.';
 export const DAILY_BUTTON_TARGETS = 5;
 export const DAILY_BUTTON_DECOYS = 5;
 export const DAILY_TYPING_MS = 30 * 1000;
@@ -213,6 +214,7 @@ export interface WordleState {
 	notice?: string;
 	hintRevealed?: boolean;
 	betterHintRevealed?: boolean;
+	resumed?: boolean;
 }
 
 export function wordleHintFor(answer: string): WordleHint | null {
@@ -279,6 +281,7 @@ export interface ButtonGameState {
 	progress: number;
 	status: 'playing' | 'won' | 'lost';
 	notice?: string;
+	resumed?: boolean;
 }
 
 export interface TypingGameState {
@@ -287,6 +290,7 @@ export interface TypingGameState {
 	itemID?: number;
 	status: 'playing' | 'won' | 'lost';
 	notice?: string;
+	resumed?: boolean;
 }
 
 export type HardGameState = WordleState | ButtonGameState | TypingGameState;
