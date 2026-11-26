@@ -24,8 +24,25 @@ export function formatNeededVsOwned(skip: InventionMaterialSkip): string {
 	return `Need ${skip.materialCost.toString()}. You have ${formatMaterialAmounts(skip.materialsOwned, types)}.`;
 }
 
-export function formatInventionMaterialSkipLine(inventionName: string): string {
-	return `⚠️ ${inventionName} skipped: not enough materials`;
+export function formatInventionMaterialShortfall(cost: MaterialBank, owned: MaterialBank): string | null {
+	const parts: string[] = [];
+	const types = cost
+		.values()
+		.map(v => v.type)
+		.sort((a, b) => a.localeCompare(b));
+	for (const type of types) {
+		const short = cost.amount(type) - owned.amount(type);
+		if (short > 0) {
+			parts.push(`${short.toLocaleString()} more ${toTitleCase(type)}`);
+		}
+	}
+	return parts.length > 0 ? parts.join(', ') : null;
+}
+
+export function formatInventionMaterialSkipLine(skip: InventionMaterialSkip): string {
+	const base = `⚠️ ${skip.inventionName} skipped: not enough materials`;
+	const shortfall = formatInventionMaterialShortfall(skip.materialCost, skip.materialsOwned);
+	return shortfall ? `${base} (need ${shortfall}).` : `${base}.`;
 }
 
 /** "You have 30 seconds to confirm." plus the blank line confirmation.ts appends. */
@@ -39,7 +56,7 @@ export function formatInventionMaterialSkipConfirm(skips: InventionMaterialSkip[
 } {
 	const header =
 		skips.length === 1
-			? `⚠️ ${skips[0].inventionName} skipped: not enough materials.`
+			? formatInventionMaterialSkipLine(skips[0])
 			: '⚠️ Invention boosts skipped: not enough materials.';
 	const question = skips.length === 1 ? 'Start the trip without this boost?' : 'Start the trip without these boosts?';
 	const detailLine = (skip: InventionMaterialSkip) =>

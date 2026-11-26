@@ -10,9 +10,10 @@ import {
 	type InventionMaterialSkip,
 	shouldPromptInventionMaterialSkipConfirm
 } from '@/lib/bso/skills/invention/inventionBoostNotice.js';
-import { Inventions } from '@/lib/bso/skills/invention/inventions.js';
+import { canAffordInventionBoostRaw, Inventions } from '@/lib/bso/skills/invention/inventions.js';
 import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 
+import { Time } from '@oldschoolgg/toolkit';
 import { describe, expect, test } from 'vitest';
 
 import { BitField } from '@/lib/constants.js';
@@ -34,9 +35,34 @@ function skipFor(
 }
 
 describe('invention material skip notice', () => {
-	test('skip line names the invention', () => {
-		expect(formatInventionMaterialSkipLine('Mecha rod')).toEqual('⚠️ Mecha rod skipped: not enough materials');
-		expect(formatInventionMaterialSkipLine('Drygore axe')).toEqual('⚠️ Drygore axe skipped: not enough materials');
+	test('skip line names the invention and the materials that are short', () => {
+		expect(
+			formatInventionMaterialSkipLine(
+				skipFor(
+					'Mecha rod',
+					{ flexible: 28, organic: 28, strong: 14 },
+					{ flexible: 16, organic: 24, strong: 2 }
+				)
+			)
+		).toEqual('⚠️ Mecha rod skipped: not enough materials (need 12 more Flexible, 4 more Organic, 12 more Strong).');
+		expect(formatInventionMaterialSkipLine(skipFor('Drygore axe', { sharp: 5 }, { sharp: 5 }))).toEqual(
+			'⚠️ Drygore axe skipped: not enough materials.'
+		);
+	});
+
+	test('skip line shortfall uses the same cost math as a real charge', () => {
+		const mecha = Inventions.find(i => i.item.name === 'Mecha rod');
+		expect(mecha).toBeTruthy();
+		const durationMs = Time.Minute * 30;
+		const owned = new MaterialBank({ flexible: 16, organic: 24, strong: 2 });
+		const { materialCost } = canAffordInventionBoostRaw(owned, mecha!.id, durationMs);
+		expect(
+			formatInventionMaterialSkipLine({
+				inventionName: mecha!.item.name,
+				materialCost,
+				materialsOwned: owned
+			})
+		).toEqual('⚠️ Mecha rod skipped: not enough materials (need 12 more Flexible, 4 more Organic, 12 more Strong).');
 	});
 
 	test('needed vs owned uses the required material types', () => {
@@ -57,7 +83,9 @@ describe('invention material skip notice', () => {
 		expect(confirm.confirmLabel).toEqual(INVENTION_MATERIAL_SKIP_CONFIRM_LABEL);
 		expect(confirm.confirmLabel.length).toBeLessThanOrEqual(DISCORD_BUTTON_LABEL_LIMIT);
 		expect(confirm.timeout).toEqual(INVENTION_MATERIAL_SKIP_CONFIRM_TIMEOUT_MS);
-		expect(confirm.content).toContain('⚠️ Mecha rod skipped: not enough materials.');
+		expect(confirm.content).toContain(
+			'⚠️ Mecha rod skipped: not enough materials (need 38 more Flexible, 48 more Organic, 19 more Strong).'
+		);
 		expect(confirm.content).toContain('Need 48x Flexible, 48x Organic, 24x Strong.');
 		expect(confirm.content).toContain('You have 10x Flexible, 0x Organic, 5x Strong.');
 		expect(confirm.content).toContain('Start the trip without this boost?');
@@ -97,11 +125,15 @@ describe('invention material skip notice', () => {
 		expect(confirm.content.length).toBeLessThanOrEqual(INVENTION_MATERIAL_SKIP_CONFIRM_CONTENT_MAX);
 		expect(withTimeoutNote.length).toBeLessThanOrEqual(DISCORD_MESSAGE_LIMIT - LENGTH_BUFFER);
 		expect(confirm.content.startsWith('⚠️')).toBe(true);
-		for (const invention of usageInventions) {
-			expect(formatInventionMaterialSkipLine(invention.item.name).length).toBeLessThanOrEqual(
-				DISCORD_MESSAGE_LIMIT - LENGTH_BUFFER
-			);
+		const skipLines = skips.map(formatInventionMaterialSkipLine);
+		for (const line of skipLines) {
+			expect(line.length).toBeLessThanOrEqual(DISCORD_MESSAGE_LIMIT - LENGTH_BUFFER);
+			expect(line).not.toMatch(/<@/);
 		}
+		// A trip starts at most two invention boosts (e.g. hunt or divination) plus other boost text.
+		const longest = [...skipLines].sort((a, b) => b.length - a.length);
+		const tripBoosts = `**Boosts:** ${'A'.repeat(800)}, ${longest[0]}, ${longest[1]}`;
+		expect(tripBoosts.length).toBeLessThanOrEqual(DISCORD_MESSAGE_LIMIT - LENGTH_BUFFER);
 	});
 
 	test('prompt only on the first interactive slash start, never queued or after it was seen', () => {

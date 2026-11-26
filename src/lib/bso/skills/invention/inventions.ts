@@ -739,7 +739,11 @@ export function inventionItemBoostRaw({
 			invention,
 			materialCost,
 			materialsOwned: gearBank.materials,
-			skipLine: formatInventionMaterialSkipLine(invention.item.name)
+			skipLine: formatInventionMaterialSkipLine({
+				inventionName: invention.item.name,
+				materialCost,
+				materialsOwned: gearBank.materials
+			})
 		};
 	}
 
