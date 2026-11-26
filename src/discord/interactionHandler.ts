@@ -12,7 +12,14 @@ import { autoCompleteHandler } from '@/discord/autoCompleteHandler.js';
 import { commandHandler } from '@/discord/commandHandler.js';
 import type { OldSchoolBotClient } from '@/discord/OldSchoolBotClient.js';
 import { handlePollUpdateComponent } from '@/lib/bsc/pollService.js';
-import { handleTicketModalSubmit, isTicketModalId, type TicketModalSubmit } from '@/lib/bsc/ticketService.js';
+import {
+	handleTicketModalSubmit,
+	handleTicketUserSelect,
+	isTicketModalId,
+	isTicketUserSelectId,
+	type TicketModalSubmit,
+	type TicketUserSelectInteraction
+} from '@/lib/bsc/ticketService.js';
 import { DISCORD_USER_IDS_INSERTED_CACHE } from '@/lib/cache.js';
 import { OSInteraction } from '@/lib/structures/OSInteraction.js';
 import { claimDiscordEvent } from '@/lib/util/discordEventGate.js';
@@ -104,6 +111,18 @@ export async function interactionHandler(client: OldSchoolBotClient, itx: APIInt
 	if (itx.type === InteractionType.ModalSubmit && isTicketModalId(itx.data.custom_id)) {
 		await handleTicketModalSubmit(itx as unknown as TicketModalSubmit, fullUser).catch(err =>
 			Logging.logError(err as Error, { type: 'TICKET_MODAL', user_id: userId })
+		);
+		return;
+	}
+
+	// Ticket channel Add User / Remove User pickers (staff only, checked inside).
+	if (
+		itx.type === InteractionType.MessageComponent &&
+		itx.data.component_type === ComponentType.UserSelect &&
+		isTicketUserSelectId(itx.data.custom_id)
+	) {
+		await handleTicketUserSelect(itx as unknown as TicketUserSelectInteraction, fullUser).catch(err =>
+			Logging.logError(err as Error, { type: 'TICKET_USER_SELECT', user_id: userId })
 		);
 		return;
 	}

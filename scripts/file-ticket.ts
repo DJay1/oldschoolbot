@@ -1,6 +1,7 @@
 /**
- * Files a ticket from the afternoon bug scan without Discord. The bot's ticket_posts ticker posts it to the
- * staff ticket channel within a minute. Nothing reaches the player until staff press Confirm.
+ * Files a ticket from the afternoon bug scan without Discord. The bot's ticket_posts ticker posts it within a
+ * minute: in a new staff-only ticket channel when TICKET_CATEGORY_ID is set, otherwise in the staff ticket
+ * channel. Nothing reaches the player until staff press Confirm (Confirm also adds them to the channel).
  *
  *   pnpm tsx --env-file=.env.test scripts/file-ticket.ts --type bug --user 123456789012345678 --command "/fish" --what "Trip stopped at 3000 fish"
  *
@@ -38,4 +39,4 @@ const res = await client.query<{ id: number }>(
 	[t.type, t.reporterId, t.filedBy, t.what, t.command]
 );
 await client.end();
-console.log(`Filed ticket #${res.rows[0].id}. The bot posts it to the staff ticket channel within a minute.`);
+console.log(`Filed ticket #${res.rows[0].id}. The bot posts it (staff only) within a minute.`);

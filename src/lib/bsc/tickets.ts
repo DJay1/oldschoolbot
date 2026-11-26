@@ -13,6 +13,13 @@
  *                             test Mod role. Prod: set this or staff will not be pinged.
  *   TICKET_NOTICE_CHANNEL_ID  Where player notices go for tickets with no channel of their own
  *                             (auto-filed ones). Unset = the staff ticket channel.
+ *   TICKET_CATEGORY_ID        Optional. A Discord category. When set, every new ticket gets its own private
+ *                             channel there (bug-0007-name / suggestion-0008-name). Unset = the old flow,
+ *                             tickets are posted in TICKET_CHANNEL_ID. TICKET_CHANNEL_ID becomes the staff
+ *                             ticket log (close transcripts).
+ *
+ * Ticket channels: the channel-per-ticket idea, Claim, Add/Remove User, Close with a transcript, and
+ * Reopen/Delete are based on Krypt's Server Helper bot. Rewritten for BSC (no code copied). Thanks Krypt!
  */
 import { escapeMarkdown } from '@oldschoolgg/discord';
 
@@ -117,7 +124,17 @@ export interface TicketRecord {
 	reason: string | null;
 	createdAt: Date;
 	updatedAt: Date;
+	/** Ticket channel mode (null for tickets posted in the staff channel). */
+	ticketChannelId?: string | null;
+	claimedBy?: string | null;
+	addedUserIds?: string[];
+	visibility?: TicketVisibility;
+	closedAt?: Date | null;
+	closedBy?: string | null;
+	channelDeletedAt?: Date | null;
 }
+
+export type TicketVisibility = 'private' | 'public';
 
 export function isTicketType(value: unknown): value is TicketType {
 	return typeof value === 'string' && (TICKET_TYPES as readonly string[]).includes(value);
@@ -217,7 +234,13 @@ export function playerTicketLimitError(input: {
 	openCount: number;
 	lastCreatedAt: Date | null;
 	now: number;
+	/** Open (not yet looked at) tickets of the type being filed. One per type at a time. */
+	openSameType?: number;
+	type?: TicketType;
 }): string | null {
+	if (input.type && (input.openSameType ?? 0) > 0) {
+		return `You already have a ${TICKET_TYPE_LABELS[input.type].toLowerCase()} ticket waiting for staff. Please wait until it is looked at.`;
+	}
 	if (input.openCount >= TICKET_MAX_OPEN_PER_PLAYER) {
 		return `You already have ${TICKET_MAX_OPEN_PER_PLAYER} tickets waiting for staff. Please wait until one is looked at.`;
 	}
@@ -280,6 +303,12 @@ export function ticketActionButtonId(action: TicketAction, id: number): string {
 export function ticketReasonModalId(action: TicketAction, id: number): string {
 	return `${TICKET_ID_PREFIX}rsn:${action}:${id}`;
 }
+export function ticketToolButtonId(tool: TicketTool, id: number): string {
+	return `${TICKET_ID_PREFIX}tool:${tool}:${id}`;
+}
+export function ticketUserSelectId(mode: TicketUserSelectMode, id: number): string {
+	return `${TICKET_ID_PREFIX}usr:${mode}:${id}`;
+}
 export const TICKET_INPUT_WHAT = 'what';
 export const TICKET_INPUT_COMMAND = 'command';
 export const TICKET_INPUT_SCREENSHOT = 'screenshot';
@@ -289,7 +318,9 @@ export type ParsedTicketId =
 	| { kind: 'form'; type: TicketType }
 	| { kind: 'new'; type: TicketType }
 	| { kind: 'act'; action: TicketAction; id: number }
-	| { kind: 'rsn'; action: TicketAction; id: number };
+	| { kind: 'rsn'; action: TicketAction; id: number }
+	| { kind: 'tool'; tool: TicketTool; id: number }
+	| { kind: 'usr'; mode: TicketUserSelectMode; id: number };
 
 export function parseTicketCustomId(customId: string): ParsedTicketId | null {
 	if (!customId.startsWith(TICKET_ID_PREFIX)) return null;
@@ -298,6 +329,12 @@ export function parseTicketCustomId(customId: string): ParsedTicketId | null {
 	if ((kind === 'form' || kind === 'new') && parts.length === 2 && isTicketType(a)) return { kind, type: a };
 	if ((kind === 'act' || kind === 'rsn') && parts.length === 3 && isTicketAction(a) && /^\d{1,9}$/.test(b)) {
 		return { kind, action: a, id: Number(b) };
+	}
+	if (kind === 'tool' && parts.length === 3 && isTicketTool(a) && /^\d{1,9}$/.test(b)) {
+		return { kind, tool: a, id: Number(b) };
+	}
+	if (kind === 'usr' && parts.length === 3 && (a === 'add' || a === 'remove') && /^\d{1,9}$/.test(b)) {
+		return { kind, mode: a, id: Number(b) };
 	}
 	return null;
 }
@@ -382,11 +419,15 @@ export function ticketEmbed(ticket: TicketRecord) {
 		});
 	}
 	if (ticket.reason) fields.push({ name: 'Reason', value: ticket.reason });
+	if (ticket.claimedBy) fields.push({ name: 'Claimed by', value: `<@${ticket.claimedBy}>`, inline: true });
+	const state = ticket.ticketChannelId
+		? ` · ${ticket.closedAt ? '🔒 Closed' : ticket.visibility === 'public' ? '👀 Public' : '🔐 Private'}`
+		: '';
 	return {
 		title: ticketTitle(ticket),
 		color: TICKET_STATUS_COLORS[ticket.status],
 		fields,
-		footer: { text: 'BSC tickets · /staff tickets to see the queue' },
+		footer: { text: `BSC tickets${state} · /staff tickets to see the queue` },
 		timestamp: ticket.createdAt.toISOString()
 	};
 }
@@ -573,7 +614,7 @@ export function formatTicketAge(createdAt: Date, now: number): string {
 export function ticketListLine(ticket: TicketRecord, now: number): string {
 	const summary = cleanTicketLine(ticket.what.replace(/\\/g, ''), 70);
 	const link =
-		ticket.guildId && ticket.staffChannelId && ticket.staffMessageId
+		ticket.guildId && ticket.staffChannelId && ticket.staffMessageId && !ticket.channelDeletedAt
 			? ` [view](<https://discord.com/channels/${ticket.guildId}/${ticket.staffChannelId}/${ticket.staffMessageId}>)`
 			: '';
 	const auto = ticket.source === 'auto' ? ' 🤖' : '';
@@ -604,4 +645,319 @@ export function embedTotalLength(embed: ReturnType<typeof ticketEmbed>): number 
 		(embed.footer?.text.length ?? 0) +
 		embed.fields.reduce((sum, f) => sum + f.name.length + f.value.length, 0)
 	);
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Ticket channels (idea from Krypt's Server Helper bot, rewritten for BSC).
+// Every ticket gets a private channel: the player who filed it, the staff role and the bot. Auto-filed and
+// staff-filed tickets start staff-only; Confirm adds the player. Staff tools: Claim, Add User, Remove User,
+// Make Public / Make Private, Close (locks + transcript), then Reopen / Delete.
+
+export const TICKET_TOOLS = ['claim', 'add', 'remove', 'public', 'private', 'close', 'reopen', 'delete'] as const;
+export type TicketTool = (typeof TICKET_TOOLS)[number];
+export type TicketUserSelectMode = 'add' | 'remove';
+
+export function isTicketTool(value: unknown): value is TicketTool {
+	return typeof value === 'string' && (TICKET_TOOLS as readonly string[]).includes(value);
+}
+
+/** Every channel tool is staff-only. Delete only works on a closed ticket. */
+export const TICKET_TOOL_RULES: Record<
+	TicketTool,
+	{ label: string; emoji: string; style: number; minTier: StaffTier }
+> = {
+	claim: { label: 'Claim', emoji: '🙋', style: STYLE_PRIMARY, minTier: 'moderator' },
+	add: { label: 'Add User', emoji: '➕', style: STYLE_SECONDARY, minTier: 'moderator' },
+	remove: { label: 'Remove User', emoji: '➖', style: STYLE_SECONDARY, minTier: 'moderator' },
+	public: { label: 'Make Public', emoji: '👀', style: STYLE_SECONDARY, minTier: 'moderator' },
+	private: { label: 'Make Private', emoji: '🔐', style: STYLE_SECONDARY, minTier: 'moderator' },
+	close: { label: 'Close', emoji: '🔒', style: STYLE_DANGER, minTier: 'moderator' },
+	reopen: { label: 'Reopen', emoji: '🔓', style: STYLE_SUCCESS, minTier: 'moderator' },
+	delete: { label: 'Delete Channel', emoji: '🗑️', style: STYLE_DANGER, minTier: 'moderator' }
+};
+
+/** Max extra people staff can add to one ticket (on top of the player who filed it). */
+export const TICKET_MAX_ADDED_USERS = 10;
+
+type ChannelTicket = Pick<
+	TicketRecord,
+	'id' | 'status' | 'ticketChannelId' | 'claimedBy' | 'visibility' | 'closedAt' | 'channelDeletedAt'
+>;
+
+/** Which channel tools to show right now. Empty for tickets without a channel. */
+export function ticketToolsFor(ticket: ChannelTicket): TicketTool[] {
+	if (!ticket.ticketChannelId || ticket.channelDeletedAt) return [];
+	if (ticket.closedAt) return ['reopen', 'delete'];
+	return [
+		...(ticket.claimedBy ? [] : (['claim'] as const)),
+		'add',
+		'remove',
+		ticket.visibility === 'public' ? 'private' : 'public',
+		'close'
+	];
+}
+
+export function ticketToolRow(ticket: ChannelTicket) {
+	const tools = ticketToolsFor(ticket);
+	if (tools.length === 0) return [];
+	return [
+		{
+			type: ACTION_ROW,
+			components: tools.map(tool => ({
+				type: BUTTON,
+				style: TICKET_TOOL_RULES[tool].style,
+				label: TICKET_TOOL_RULES[tool].label,
+				emoji: { name: TICKET_TOOL_RULES[tool].emoji },
+				custom_id: ticketToolButtonId(tool, ticket.id)
+			}))
+		}
+	];
+}
+
+/** Status buttons (Confirm/Ignore, On test/Live/Won't fix) plus the channel tools row. */
+export function ticketControlRows(ticket: ChannelTicket) {
+	return [...ticketButtonRows(ticket), ...ticketToolRow(ticket)];
+}
+
+/** Ephemeral user picker for Add User / Remove User. */
+export function ticketUserSelectRow(mode: TicketUserSelectMode, id: number) {
+	return [
+		{
+			type: ACTION_ROW,
+			components: [
+				{
+					type: 5, // User select
+					custom_id: ticketUserSelectId(mode, id),
+					placeholder: mode === 'add' ? 'Pick someone to add' : 'Pick someone to remove',
+					min_values: 1,
+					max_values: 1
+				}
+			]
+		}
+	];
+}
+
+/** Discord channel names: lowercase a-z, 0-9 and dashes, max 100. */
+export function ticketChannelSlug(name: string | null | undefined): string {
+	const slug = (name ?? '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+		.slice(0, 24)
+		.replace(/-+$/g, '');
+	return slug || 'player';
+}
+
+export function ticketChannelName(ticket: Pick<TicketRecord, 'id' | 'type'>, name: string | null | undefined): string {
+	const num = String(ticket.id).padStart(4, '0');
+	return `${ticket.type}-${num}-${ticketChannelSlug(name)}`;
+}
+
+export function ticketChannelTopic(ticket: Pick<TicketRecord, 'id' | 'type'>): string {
+	return `${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} ticket #${ticket.id}. Only the player, staff and anyone staff add can see this.`;
+}
+
+/** First message in a ticket channel. Pings the staff role; also the player on tickets they filed themselves. */
+export function ticketChannelOpenContent(
+	ticket: Pick<TicketRecord, 'id' | 'type' | 'source' | 'reporterId'>,
+	staffRoleId: string | null
+): string {
+	const role = staffRoleId ? `<@&${staffRoleId}> ` : '';
+	const kind = TICKET_TYPE_LABELS[ticket.type].toLowerCase();
+	if (ticket.source === 'player' && ticket.reporterId) {
+		return `${role}${TICKET_TYPE_ICONS[ticket.type]} New ${kind} ticket **#${ticket.id}** from <@${ticket.reporterId}>.\nThanks! Add any extra details or screenshots here. Only you and staff can see this channel.`;
+	}
+	const lead = ticket.source === 'auto' ? `🤖 Auto-filed ${kind}` : `📋 Staff-filed ${kind}`;
+	return `${role}${TICKET_TYPE_ICONS[ticket.type]} ${lead} ticket **#${ticket.id}**. Staff only for now. Confirm adds the player.`;
+}
+
+/** Who the channel-open message may ping. */
+export function ticketChannelOpenMentions(
+	ticket: Pick<TicketRecord, 'source' | 'reporterId'>,
+	staffRoleId: string | null
+): { parse: never[]; users: string[]; roles: string[] } {
+	return {
+		parse: [],
+		users: ticket.source === 'player' && ticket.reporterId ? [ticket.reporterId] : [],
+		roles: staffRoleId ? [staffRoleId] : []
+	};
+}
+
+/** Short, ping-free notes posted in the ticket channel when staff use a tool. */
+export function ticketToolNote(
+	tool: TicketTool | 'added' | 'removed',
+	staffId: string,
+	targetId?: string | null
+): string {
+	const who = `<@${staffId}>`;
+	const target = targetId ? `<@${targetId}>` : 'someone';
+	switch (tool) {
+		case 'claim':
+			return `🙋 ${who} claimed this ticket.`;
+		case 'added':
+			return `➕ ${who} added ${target} to this ticket.`;
+		case 'removed':
+			return `➖ ${who} removed ${target} from this ticket.`;
+		case 'public':
+			return `👀 ${who} made this ticket public. Everyone can read it and react, but only people in the ticket can type.`;
+		case 'private':
+			return `🔐 ${who} made this ticket private again.`;
+		case 'close':
+			return `🔒 ${who} closed this ticket. The transcript was saved for staff.`;
+		case 'reopen':
+			return `🔓 ${who} reopened this ticket.`;
+		default:
+			return `${who} updated this ticket.`;
+	}
+}
+
+export function ticketPlayerReplyWithChannel(
+	ticket: Pick<TicketRecord, 'id' | 'type'>,
+	channelId: string,
+	screenshotDropped: boolean
+): string {
+	const skipped = screenshotDropped ? '\nThe screenshot link was skipped (it has to start with https://).' : '';
+	return `${TICKET_TYPE_ICONS[ticket.type]} **Ticket #${ticket.id}** is open in <#${channelId}>. Only you and staff can see it. Add any extra details there.${skipped}`;
+}
+
+// Channel permission overwrites (Discord bitfield strings).
+export const TICKET_PERMS = {
+	REACT: 1n << 6n,
+	VIEW: 1n << 10n,
+	SEND: 1n << 11n,
+	EMBED: 1n << 14n,
+	ATTACH: 1n << 15n,
+	HISTORY: 1n << 16n,
+	MENTION_EVERYONE: 1n << 17n,
+	CREATE_PUBLIC_THREADS: 1n << 35n,
+	CREATE_PRIVATE_THREADS: 1n << 36n,
+	SEND_IN_THREADS: 1n << 38n
+} as const;
+
+const P = TICKET_PERMS;
+const MEMBER_PERMS = P.VIEW | P.SEND | P.EMBED | P.ATTACH | P.HISTORY | P.REACT;
+const READ_ONLY_PERMS = P.VIEW | P.HISTORY | P.REACT;
+const NO_THREADS = P.CREATE_PUBLIC_THREADS | P.CREATE_PRIVATE_THREADS | P.SEND_IN_THREADS;
+
+export interface TicketOverwrite {
+	id: string;
+	type: 0 | 1; // 0 role, 1 member
+	allow: string;
+	deny: string;
+}
+
+function ow(id: string, type: 0 | 1, allow: bigint, deny: bigint): TicketOverwrite {
+	return { id, type, allow: allow.toString(), deny: deny.toString() };
+}
+
+/** @everyone: hidden when private; read + react only when public. Nobody but staff can make threads. */
+export function ticketEveryoneOverwrite(guildId: string, visibility: TicketVisibility): TicketOverwrite {
+	return visibility === 'public'
+		? ow(guildId, 0, READ_ONLY_PERMS, P.SEND | NO_THREADS)
+		: ow(guildId, 0, 0n, P.VIEW | NO_THREADS);
+}
+
+/** The player and anyone staff add. Closed tickets are read-only for them. Never @everyone pings. */
+export function ticketMemberOverwrite(userId: string, closed: boolean): TicketOverwrite {
+	return closed
+		? ow(userId, 1, READ_ONLY_PERMS, P.SEND | NO_THREADS | P.MENTION_EVERYONE)
+		: ow(userId, 1, MEMBER_PERMS, NO_THREADS | P.MENTION_EVERYONE);
+}
+
+/**
+ * Discord only lets the bot allow or deny permissions it has itself. Trims an overwrite to the bot's server
+ * permissions, so a missing optional one (like Mention Everyone) never blocks the ticket. VIEW is always kept,
+ * so privacy never silently drops (Discord then refuses the change and the ticket falls back).
+ */
+export function maskTicketOverwrite(o: TicketOverwrite, botPerms: bigint): TicketOverwrite {
+	const keep = botPerms | P.VIEW;
+	return { ...o, allow: (BigInt(o.allow) & keep).toString(), deny: (BigInt(o.deny) & keep).toString() };
+}
+
+export function ticketStaffOverwrite(roleId: string): TicketOverwrite {
+	return ow(roleId, 0, MEMBER_PERMS, 0n);
+}
+
+export function ticketBotOverwrite(botId: string): TicketOverwrite {
+	return ow(botId, 1, MEMBER_PERMS, 0n);
+}
+
+/** The full overwrite list for a new ticket channel. */
+export function buildTicketOverwrites(opts: {
+	guildId: string;
+	botId: string;
+	staffRoleId: string | null;
+	memberIds: string[];
+	visibility: TicketVisibility;
+	closed: boolean;
+}): TicketOverwrite[] {
+	const out = [ticketEveryoneOverwrite(opts.guildId, opts.visibility), ticketBotOverwrite(opts.botId)];
+	if (opts.staffRoleId) out.push(ticketStaffOverwrite(opts.staffRoleId));
+	for (const id of [...new Set(opts.memberIds)]) {
+		if (id !== opts.botId && id !== opts.guildId) out.push(ticketMemberOverwrite(id, opts.closed));
+	}
+	return out;
+}
+
+/** True once the player who the ticket is about should see the channel. */
+export function reporterHasChannelAccess(ticket: Pick<TicketRecord, 'source' | 'status' | 'reporterId'>): boolean {
+	if (!ticket.reporterId) return false;
+	return ticket.source === 'player' || !['open', 'ignored'].includes(ticket.status);
+}
+
+// Transcripts.
+export interface TranscriptMessage {
+	authorName: string;
+	authorId: string;
+	bot: boolean;
+	content: string;
+	timestamp: string;
+	attachmentUrls: string[];
+	embedTitles: string[];
+}
+
+export const TICKET_TRANSCRIPT_MAX_MESSAGES = 100;
+
+/** Plain text transcript, oldest first. Runs as a .txt attachment, so it never pings anyone. */
+export function buildTicketTranscript(
+	ticket: Pick<TicketRecord, 'id' | 'type' | 'reporterId'>,
+	channelName: string,
+	closedById: string,
+	messagesNewestFirst: TranscriptMessage[],
+	now: Date
+): string {
+	const lines = [
+		`BSC ticket transcript: ${TICKET_TYPE_LABELS[ticket.type]} #${ticket.id} (#${channelName})`,
+		`Player: ${ticket.reporterId ?? 'none'}`,
+		`Closed by: ${closedById}`,
+		`Closed at: ${now.toISOString()}`,
+		`Messages: ${messagesNewestFirst.length} (most recent ${TICKET_TRANSCRIPT_MAX_MESSAGES} max)`,
+		''.padEnd(60, '-')
+	];
+	for (const m of [...messagesNewestFirst].reverse()) {
+		const extras = [...m.embedTitles.map(t => `[embed: ${t}]`), ...m.attachmentUrls.map(u => `[file: ${u}]`)].join(
+			' '
+		);
+		const body = [m.content.replace(/\r/g, ''), extras].filter(Boolean).join(' ');
+		lines.push(`[${m.timestamp}] ${m.authorName}${m.bot ? ' [BOT]' : ''} (${m.authorId}): ${body || '(no text)'}`);
+	}
+	return lines.join('\n');
+}
+
+export function ticketTranscriptFileName(ticket: Pick<TicketRecord, 'id' | 'type'>): string {
+	return `${ticket.type}-${String(ticket.id).padStart(4, '0')}-transcript.txt`;
+}
+
+/** The staff-log message the transcript file is attached to. Never pings. */
+export function ticketTranscriptLogContent(
+	ticket: Pick<TicketRecord, 'id' | 'type' | 'reporterId'>,
+	closedById: string,
+	channelId: string
+): string {
+	const player = ticket.reporterId ? ` Player: <@${ticket.reporterId}>.` : '';
+	return `📜 ${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} **#${ticket.id}** closed by <@${closedById}> in <#${channelId}>.${player}`;
+}
+
+export function ticketDeletedLogContent(ticket: Pick<TicketRecord, 'id' | 'type'>, staffId: string): string {
+	return `🗑️ ${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} **#${ticket.id}** channel deleted by <@${staffId}>.`;
 }
