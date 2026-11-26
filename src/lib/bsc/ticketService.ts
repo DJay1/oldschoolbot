@@ -7,7 +7,7 @@ import {
 	SpecialResponse
 } from '@oldschoolgg/discord';
 
-import { gifs } from '@/lib/bsc/corgoGifs.js';
+import { corgoDeniedReply } from '@/lib/bsc/corgoGifs.js';
 import { staffGuildAllowed, staffTierOf } from '@/lib/bsc/staffAccess.js';
 import { STAFF_TIER_NAMES, type StaffTier, tierAtLeast } from '@/lib/bsc/staffTiers.js';
 import {
@@ -469,10 +469,19 @@ async function finishAction(
 	}
 }
 
-function staffDenied(user: MUser, guildId: string | null): string | null {
+/** Non-staff pressing any ticket staff button gets a random Corgo gif from the shared list (same set as /staff and /admin). */
+function staffDenied(user: MUser, guildId: string | null): ReturnType<typeof corgoDeniedReply> | null {
 	const tier = staffTierOf(user);
-	if (!staffGuildAllowed(guildId) || tier === 'none') return gifs[Math.floor(Math.random() * gifs.length)];
+	if (!staffGuildAllowed(guildId) || tier === 'none') return corgoDeniedReply();
 	return null;
+}
+
+function deniedResponse(denied: ReturnType<typeof corgoDeniedReply>) {
+	return {
+		content: denied.content,
+		embeds: denied.embeds.map(e => new EmbedBuilder().setImage(e.image.url)),
+		ephemeral: true
+	};
 }
 
 /** Buttons with ids starting "TKT:". Returns null if the id is not a ticket button. */
@@ -491,13 +500,13 @@ export async function handleTicketButton(user: MUser, customId: string, interact
 
 	if (parsed.kind === 'tool') {
 		const denied = staffDenied(user, interaction.guildId);
-		if (denied) return { content: denied, ephemeral: true };
+		if (denied) return deniedResponse(denied);
 		return handleTicketTool(user, parsed.tool, parsed.id, interaction);
 	}
 
 	if (parsed.kind !== 'act') return { content: 'That ticket button is not valid.', ephemeral: true };
 	const denied = staffDenied(user, interaction.guildId);
-	if (denied) return { content: denied, ephemeral: true };
+	if (denied) return deniedResponse(denied);
 	const tier = staffTierOf(user);
 	const rule = TICKET_ACTION_RULES[parsed.action];
 	if (!tierAtLeast(tier, rule.minTier)) {
@@ -569,7 +578,13 @@ export async function handleTicketModalSubmit(itx: TicketModalSubmit, user: MUse
 
 	if (parsed.kind !== 'rsn') return;
 	const denied = staffDenied(user, itx.guild_id ?? null);
-	if (denied) return reply(denied);
+	if (denied) {
+		return respond(itx.id, itx.token, InteractionResponseType.ChannelMessageWithSource, {
+			...denied,
+			flags: MessageFlags.Ephemeral,
+			allowed_mentions: { parse: [] }
+		});
+	}
 	const tier = staffTierOf(user);
 	const result = await applyTicketAction(
 		parsed.id,
@@ -999,7 +1014,13 @@ export async function handleTicketUserSelect(itx: TicketUserSelectInteraction, u
 			allowed_mentions: { parse: [] }
 		});
 	const denied = staffDenied(user, itx.guild_id ?? null);
-	if (denied) return reply(denied);
+	if (denied) {
+		return respond(itx.id, itx.token, InteractionResponseType.UpdateMessage, {
+			...denied,
+			components: [],
+			allowed_mentions: { parse: [] }
+		});
+	}
 	const tier = staffTierOf(user);
 	const rule = TICKET_TOOL_RULES[parsed.mode];
 	if (!tierAtLeast(tier, rule.minTier))
