@@ -16,6 +16,7 @@ import {
 	buildTicketTranscript,
 	type CleanTicketInput,
 	cleanTicketLine,
+	filerCanClose,
 	isTicketStatus,
 	isTicketType,
 	maskTicketOverwrite,
@@ -500,7 +501,15 @@ export async function handleTicketButton(user: MUser, customId: string, interact
 
 	if (parsed.kind === 'tool') {
 		const denied = staffDenied(user, interaction.guildId);
-		if (denied) return deniedResponse(denied);
+		if (denied) {
+			// The filer may Close their own ticket; everything else (and everyone else) gets the Corgo.
+			if (parsed.tool === 'close' && staffGuildAllowed(interaction.guildId)) {
+				const own = await getTicket(parsed.id);
+				if (own && filerCanClose(own, user.id))
+					return handleTicketTool(user, 'close', parsed.id, interaction, true);
+			}
+			return deniedResponse(denied);
+		}
 		return handleTicketTool(user, parsed.tool, parsed.id, interaction);
 	}
 
@@ -849,11 +858,13 @@ async function handleTicketTool(
 	user: MUser,
 	tool: TicketTool,
 	id: number,
-	interaction: OSInteraction
+	interaction: OSInteraction,
+	asFiler = false
 ): CommandResponse {
+	if (asFiler && tool !== 'close') return { content: 'Only staff can do that.', ephemeral: true };
 	const tier = staffTierOf(user);
 	const rule = TICKET_TOOL_RULES[tool];
-	if (!tierAtLeast(tier, rule.minTier)) {
+	if (!asFiler && !tierAtLeast(tier, rule.minTier)) {
 		return { content: `${rule.label} needs the ${STAFF_TIER_NAMES[rule.minTier]} role.`, ephemeral: true };
 	}
 	const ticket = await getTicket(id);
@@ -923,6 +934,7 @@ async function handleTicketTool(
 		const rows = await prisma.$queryRaw<TicketRow[]>`
 			UPDATE bsc_tickets SET closed_at = NOW(), closed_by = ${user.id}, updated_at = NOW()
 			WHERE id = ${id} AND closed_at IS NULL AND channel_deleted_at IS NULL
+				AND (${!asFiler} OR reporter_id = ${user.id})
 			RETURNING *
 		`;
 		if (!rows[0]) return { content: `Ticket #${id} is already closed.`, ephemeral: true };
@@ -934,7 +946,7 @@ async function handleTicketTool(
 		await postNote(
 			channelId,
 			saved
-				? ticketToolNote('close', user.id)
+				? ticketToolNote('close', user.id) + (asFiler ? ' Only staff can reopen it.' : '')
 				: `🔒 <@${user.id}> closed this ticket. The transcript could not be saved.`
 		);
 		if (!locked) await followUpEphemeral(token, `Closed, but some people could not be locked. ${NO_PERMS_HINT}`);

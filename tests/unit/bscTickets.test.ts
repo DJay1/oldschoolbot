@@ -16,6 +16,7 @@ import {
 	DISCORD_MODAL_TITLE_LIMIT,
 	DISCORD_TEXT_INPUT_LABEL_LIMIT,
 	embedTotalLength,
+	filerCanClose,
 	maskTicketOverwrite,
 	neutralizeMentions,
 	parseTicketCustomId,
@@ -511,6 +512,21 @@ describe('ticket channels (Krypt-style, private by default)', () => {
 		expect(ticketTranscriptLogContent(t, '5', 'bad`name<#1>')).not.toContain('<#');
 		expect(ticketPersonLabel(null, ID)).toBe(ID);
 		expect(ticketPersonLabel('x', null)).toBe('none');
+	});
+
+	test('only the filer may close their own open ticket (Krypt-style), nobody else', () => {
+		const open = { reporterId: ID, ticketChannelId: '1', closedAt: null, channelDeletedAt: null };
+		expect(filerCanClose(open, ID)).toBe(true);
+		expect(filerCanClose(open, '5')).toBe(false); // added users and everyone else
+		expect(filerCanClose({ ...open, reporterId: null }, ID)).toBe(false); // scan tickets with no player
+		expect(filerCanClose({ ...open, closedAt: new Date() }, ID)).toBe(false); // no double close / transcript
+		expect(filerCanClose({ ...open, channelDeletedAt: new Date() }, ID)).toBe(false);
+		expect(filerCanClose({ ...open, ticketChannelId: null }, ID)).toBe(false);
+		const t = { id: 999999999, type: 'suggestion' as const, reporterId: ID };
+		const byFiler = ticketTranscriptLogContent(t, ID, `suggestion-999999999-${'x'.repeat(24)}`);
+		expect(byFiler).toContain(`closed by <@${ID}> (filer)`);
+		expect(byFiler.length).toBeLessThan(DISCORD_CONTENT_LIMIT - TICKET_LENGTH_MARGIN);
+		expect(ticketTranscriptLogContent(t, '5', 'x')).not.toContain('(filer)');
 	});
 
 	test('transcript is oldest first with a header', () => {

@@ -671,7 +671,25 @@ export function isTicketTool(value: unknown): value is TicketTool {
 	return typeof value === 'string' && (TICKET_TOOLS as readonly string[]).includes(value);
 }
 
-/** Every channel tool is staff-only. Delete only works on a closed ticket. */
+/**
+ * The player who filed a ticket may Close it themselves (like Krypt's Server Helper bot). Only Close: Reopen,
+ * Delete and every other tool stay staff-only. Closing only locks the channel and saves the transcript; the
+ * ticket's status (open/confirmed/...) is untouched, so it still counts toward the one-waiting-ticket limit.
+ */
+export function filerCanClose(
+	ticket: Pick<TicketRecord, 'reporterId' | 'ticketChannelId' | 'closedAt' | 'channelDeletedAt'>,
+	userId: string
+): boolean {
+	return Boolean(
+		ticket.reporterId &&
+			ticket.reporterId === userId &&
+			ticket.ticketChannelId &&
+			!ticket.closedAt &&
+			!ticket.channelDeletedAt
+	);
+}
+
+/** Every channel tool is staff-only, except the filer may Close their own ticket. Delete only works on a closed ticket. */
 export const TICKET_TOOL_RULES: Record<
 	TicketTool,
 	{ label: string; emoji: string; style: number; minTier: StaffTier }
@@ -997,8 +1015,9 @@ export function ticketTranscriptLogContent(
 	channelName: string
 ): string {
 	const player = ticket.reporterId ? ` Player: <@${ticket.reporterId}>.` : '';
+	const filer = ticket.reporterId === closedById ? ' (filer)' : '';
 	// Plain channel name, not a <#id> mention: the mention shows #unknown once the channel is deleted.
-	return `📜 ${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} **#${ticket.id}** closed by <@${closedById}> in \`#${ticketChannelSlugName(channelName)}\`.${player}`;
+	return `📜 ${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} **#${ticket.id}** closed by <@${closedById}>${filer} in \`#${ticketChannelSlugName(channelName)}\`.${player}`;
 }
 
 /** Channel names are already a-z0-9 and dashes; this just guards the log line against anything odd. */
