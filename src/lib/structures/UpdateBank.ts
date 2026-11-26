@@ -26,6 +26,8 @@ export class UpdateBank {
 	public xpBank: XPBank = new XPBank();
 	public kcBank: KCBank = new KCBank();
 	public itemLootBankNoCL: Bank = new Bank();
+	// Added to the collection log only; does not change the bank.
+	public collectionLogBank: Bank = new Bank();
 
 	// Things changed
 	public gearChanges: GearWithSetupType[] = [];
@@ -143,6 +145,10 @@ export class UpdateBank {
 
 		if (this.itemLootBankNoCL.length > 0) {
 			await user.transactItems({ itemsToAdd: this.itemLootBankNoCL, collectionLog: false });
+		}
+
+		if (this.collectionLogBank.length > 0) {
+			await user.addItemsToCollectionLog({ itemsToAdd: this.collectionLogBank });
 		}
 
 		if (Object.keys(this.clientStatsBankUpdates).length > 0) {

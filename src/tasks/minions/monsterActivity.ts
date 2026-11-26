@@ -597,7 +597,8 @@ export function doMonsterTrip(data: newOptions) {
 			loot,
 			gearBank,
 			updateBank,
-			rng
+			rng,
+			cl
 		});
 		if (effectResult) {
 			if (effectResult.loot) updateBank.itemLootBank.add(effectResult.loot);

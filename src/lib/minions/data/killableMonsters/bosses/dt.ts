@@ -17,8 +17,22 @@ const awakenedDeathProps = {
 
 function makeTabletEffect(itemName: string): KillableMonster['effect'] {
 	const item = Items.getOrThrow(itemName);
-	return ({ quantity, gearBank, rng }: Parameters<KillableMonsterEffect>['0']): ReturnType<KillableMonsterEffect> => {
-		if (gearBank.bank.has(item)) return;
+	return ({
+		quantity,
+		gearBank,
+		rng,
+		updateBank,
+		cl
+	}: Parameters<KillableMonsterEffect>['0']): ReturnType<KillableMonsterEffect> => {
+		if (gearBank.bank.has(item)) {
+			if (!cl.has(item)) {
+				updateBank.collectionLogBank.add(item);
+				return {
+					messages: [`Your ${item.name} was added to the collection log.`]
+				};
+			}
+			return;
+		}
 		let gotTab = false;
 		for (let i = 0; i < quantity; i++) {
 			if (rng.roll(25)) {

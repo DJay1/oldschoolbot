@@ -34,6 +34,7 @@ export type KillableMonsterEffect = (opts: {
 	loot: Bank;
 	updateBank: UpdateBank;
 	rng: RNGProvider;
+	cl: Bank;
 }) => void | { xpBank?: XPBank; loot?: Bank; messages: string[] };
 
 export interface KillableMonster {
