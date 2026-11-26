@@ -174,3 +174,87 @@ export function recurringTripSummary(trips: RecurringQueuedTrip[]): string {
 		})
 		.join(', ');
 }
+
+/**
+ * The daily recurring plan. If the player names a trip and a daily count,
+ * that count is the plan. It is not added on top of the current queue.
+ * Otherwise the current queue is the plan.
+ */
+export function buildRecurringQueueTemplate(
+	currentQueue: QueuedTripGroup[],
+	addedTrip?: QueuedTripGroup | null
+): QueuedTripGroup[] {
+	if (addedTrip && addedTrip.count > 0) {
+		return [{ activityId: addedTrip.activityId, type: addedTrip.type, count: addedTrip.count }];
+	}
+	return currentQueue
+		.filter(trip => trip.count > 0)
+		.map(trip => ({ activityId: trip.activityId, type: trip.type, count: trip.count }));
+}
+
+/** Drop trips past the player's daily allowance so the stored plan matches what can start. */
+export function clampRecurringTemplateToDailyCap<T extends QueuedTripGroup>(
+	trips: T[],
+	dailyCap: number
+): { trips: T[]; requested: number; stored: number } {
+	const requested = trips.reduce((sum, trip) => sum + trip.count, 0);
+	const cap = Math.max(0, dailyCap);
+	let left = cap;
+	const clamped: T[] = [];
+	for (const trip of trips) {
+		if (left <= 0) break;
+		const count = Math.min(trip.count, left);
+		clamped.push({ ...trip, count });
+		left -= count;
+	}
+	const stored = clamped.reduce((sum, trip) => sum + trip.count, 0);
+	return { trips: clamped, requested, stored };
+}
+
+/** How many of a recurring plan can be copied into the live queue this window. */
+export function planRecurringEnqueue(
+	trips: QueuedTripGroup[],
+	dailyLeft: number,
+	room: number
+): QueuedTripGroup[] {
+	const planned: QueuedTripGroup[] = [];
+	let added = 0;
+	for (const trip of trips) {
+		const remainingCap = Math.min(dailyLeft - added, room - added, trip.count);
+		if (remainingCap <= 0) break;
+		planned.push({ activityId: trip.activityId, type: trip.type, count: remainingCap });
+		added += remainingCap;
+	}
+	return planned;
+}
+
+export function formatRecurringScheduleConfirmation(options: {
+	trips: RecurringQueuedTrip[];
+	timeLabel: string;
+	scheduledAt: number;
+	days: number;
+	refunded?: number;
+	replacedRecurring?: boolean;
+	requestedPerDay?: number;
+	dailyCap?: number;
+}): string {
+	const perDay = options.trips.reduce((sum, trip) => sum + trip.count, 0);
+	const total = perDay * options.days;
+	const extras: string[] = [];
+	if (
+		options.requestedPerDay !== undefined &&
+		options.dailyCap !== undefined &&
+		options.requestedPerDay > options.dailyCap
+	) {
+		extras.push(
+			`You asked for ${options.requestedPerDay} trip${options.requestedPerDay === 1 ? '' : 's'} per day, but only ${options.dailyCap} can start each day because of your daily queue limit.`
+		);
+	}
+	if ((options.refunded ?? 0) > 0) {
+		extras.push('Your current queue was refunded so those trips are not started twice.');
+	}
+	if (options.replacedRecurring) {
+		extras.push('This replaces your previous recurring schedule.');
+	}
+	return `Scheduled ${recurringTripSummary(options.trips)} each day at ${options.timeLabel} (next <t:${Math.floor(options.scheduledAt / 1000)}:F>) for ${options.days} day${options.days === 1 ? '' : 's'} (${total} trip${total === 1 ? '' : 's'} total). Use /queue unschedule to cancel.${extras.length ? ` ${extras.join(' ')}` : ''}`;
+}

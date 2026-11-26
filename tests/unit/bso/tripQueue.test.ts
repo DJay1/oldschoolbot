@@ -163,4 +163,16 @@ describe('refundUnstartedTrips', () => {
 		expect(result.refunded).toBe(0);
 		expect(result.state.dailyUsed).toBe(2);
 	});
+
+	test('refund cannot exceed the remaining trips or credit more than was spent', () => {
+		const spent = 8;
+		const remaining = 8;
+		const result = refundUnstartedTrips({ remaining, dailyUsed: spent });
+		expect(result.refunded).toBe(remaining);
+		expect(result.refunded).toBeLessThanOrEqual(remaining);
+		expect(result.state.remaining).toBe(0);
+		expect(result.state.dailyUsed).toBe(0);
+		expect(result.state.dailyUsed).toBeGreaterThanOrEqual(0);
+		expect(result.refunded).toBeLessThanOrEqual(spent);
+	});
 });

@@ -34,7 +34,9 @@ import {
 	type QueuedTrip,
 	type QueuedTripGroup,
 	type RecurringQueue,
-	recurringTripSummary
+	buildRecurringQueueTemplate,
+	clampRecurringTemplateToDailyCap,
+	formatRecurringScheduleConfirmation
 } from '@/lib/bsc/tripQueueState.js';
 import { globalConfig, PerkTier } from '@/lib/constants.js';
 import { fetchRepeatTrips, startRepeatTripFromActivity } from '@/lib/util/repeatStoredTrip.js';
@@ -336,7 +338,8 @@ export async function scheduleQueuedTrips(
 	channelId: string,
 	options?: { trip?: string; times?: number; days?: number }
 ): Promise<string> {
-	if ((await user.fetchPerkTier()) < PerkTier.Two) return 'Queue scheduling is available to all Patreon tiers.';
+	const perkTier = await user.fetchPerkTier();
+	if (perkTier < PerkTier.Two) return 'Queue scheduling is available to all Patreon tiers.';
 	const now = Date.now();
 	const scheduledAt = nextQueueScheduleAt(time, timezone, now);
 	if (scheduledAt === null) {
@@ -353,17 +356,24 @@ export async function scheduleQueuedTrips(
 
 	if (days) {
 		const state = await getTripQueueState(user.id, now);
-		let snapshot = [...state.trips];
+		let addedTrip = null as { activityId: number; type: string; count: number } | null;
 		if (options?.trip && options.times !== undefined) {
 			const recent = await fetchRepeatTrips(user);
 			const activity = recent.find(trip => trip.type === options.trip);
 			if (!activity) {
 				return "Couldn't find that recent trip. Finish a trip first, then pick it from the list.";
 			}
-			snapshot = appendQueuedTrips(snapshot, { activityId: activity.id, type: activity.type }, options.times);
+			addedTrip = { activityId: activity.id, type: activity.type, count: options.times };
 		}
+		let snapshot = buildRecurringQueueTemplate(state.trips, addedTrip);
 		if (snapshot.length === 0) {
 			return 'Queue at least one trip before scheduling it, or pick a trip in this command.';
+		}
+		const dailyCap = dailyQueueAllowance(perkTier);
+		const clamped = clampRecurringTemplateToDailyCap(snapshot, dailyCap);
+		snapshot = clamped.trips;
+		if (snapshot.length === 0) {
+			return `You can only queue ${dailyCap} trip${dailyCap === 1 ? '' : 's'} per day.`;
 		}
 		const trips = await Promise.all(
 			snapshot.map(async trip => {
@@ -399,14 +409,16 @@ export async function scheduleQueuedTrips(
 		state.scheduledStartAt = null;
 		state.scheduledChannelId = null;
 		await saveState(state);
-		const extras: string[] = [];
-		if (refunded > 0) {
-			extras.push('Your current queue was refunded so those trips are not started twice.');
-		}
-		if (replacedRecurring) {
-			extras.push('This replaces your previous recurring schedule.');
-		}
-		return `Scheduled ${recurringTripSummary(trips)} to start daily at ${formatQueueClock(time, timezone)} (next <t:${Math.floor(scheduledAt / 1000)}:F>) for ${days} day${days === 1 ? '' : 's'}. Use /queue unschedule to cancel.${extras.length ? ` ${extras.join(' ')}` : ''}`;
+		return formatRecurringScheduleConfirmation({
+			trips,
+			timeLabel: formatQueueClock(time, timezone),
+			scheduledAt,
+			days,
+			refunded,
+			replacedRecurring,
+			requestedPerDay: clamped.requested,
+			dailyCap
+		});
 	}
 
 	const existing = await getTripQueueState(user.id, now);

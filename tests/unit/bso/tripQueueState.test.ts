@@ -11,7 +11,11 @@ import {
 	parseRecurringDays,
 	parseRecurringQueue,
 	type QueuedTripGroup,
-	type RecurringQueue
+	type RecurringQueue,
+	buildRecurringQueueTemplate,
+	clampRecurringTemplateToDailyCap,
+	planRecurringEnqueue,
+	formatRecurringScheduleConfirmation
 } from '@/lib/bsc/tripQueueState.js';
 
 describe('trip queue state', () => {
@@ -148,5 +152,120 @@ describe('recurring scheduled queue', () => {
 		).toBeNull();
 		expect(parseRecurringQueue(sampleRecurring({ daysLeft: 6 }))).toBeNull();
 		expect(parseRecurringQueue(sampleRecurring())?.trips[0].count).toBe(2);
+	});
+});
+
+
+describe('recurring schedule template', () => {
+	const queuedEight = [{ activityId: 20294, type: 'AerialFishing', count: 8 }];
+	const addedEight = { activityId: 20294, type: 'AerialFishing', count: 8 };
+
+	test('a named daily count replaces the current queue instead of stacking on it', () => {
+		expect(buildRecurringQueueTemplate(queuedEight, addedEight)).toEqual([addedEight]);
+	});
+
+	test('omitting a trip uses the current queue as the daily plan', () => {
+		expect(buildRecurringQueueTemplate(queuedEight)).toEqual(queuedEight);
+		expect(buildRecurringQueueTemplate(queuedEight, null)).toEqual(queuedEight);
+	});
+
+	test('an empty queue with a named trip still builds a plan', () => {
+		expect(buildRecurringQueueTemplate([], addedEight)).toEqual([addedEight]);
+	});
+
+	test('clamps a plan that is larger than the daily cap', () => {
+		const result = clampRecurringTemplateToDailyCap([{ ...addedEight, count: 16 }], 8);
+		expect(result.requested).toBe(16);
+		expect(result.stored).toBe(8);
+		expect(result.trips).toEqual([{ activityId: 20294, type: 'AerialFishing', count: 8 }]);
+	});
+
+	test('clamps mixed trips in order and drops the overflow', () => {
+		const result = clampRecurringTemplateToDailyCap(
+			[
+				{ activityId: 1, type: 'Woodcutting', count: 5 },
+				{ activityId: 2, type: 'Fishing', count: 5 }
+			],
+			8
+		);
+		expect(result.requested).toBe(10);
+		expect(result.stored).toBe(8);
+		expect(result.trips).toEqual([
+			{ activityId: 1, type: 'Woodcutting', count: 5 },
+			{ activityId: 2, type: 'Fishing', count: 3 }
+		]);
+	});
+});
+
+describe('planRecurringEnqueue anti-exploit', () => {
+	test('a 16-trip plan cannot enqueue more than the daily cap or queue room', () => {
+		const planned = planRecurringEnqueue(
+			[{ activityId: 20294, type: 'AerialFishing', count: 16 }],
+			8,
+			8
+		);
+		expect(planned).toEqual([{ activityId: 20294, type: 'AerialFishing', count: 8 }]);
+		expect(planned.reduce((sum, trip) => sum + trip.count, 0)).toBe(8);
+	});
+
+	test('enqueue cannot add trips when the daily allowance is already used', () => {
+		expect(planRecurringEnqueue([{ activityId: 1, type: 'AerialFishing', count: 8 }], 0, 8)).toEqual([]);
+	});
+
+	test('enqueue cannot overflow an already full queue', () => {
+		expect(planRecurringEnqueue([{ activityId: 1, type: 'AerialFishing', count: 8 }], 8, 0)).toEqual([]);
+	});
+});
+
+describe('formatRecurringScheduleConfirmation', () => {
+	const DISCORD_MESSAGE_LIMIT = 2000;
+	const LENGTH_BUFFER = 150;
+	const base = {
+		trips: [{ activityId: 20294, type: 'AerialFishing', count: 8, label: 'Aerial Fishing' }],
+		timeLabel: '10 PM CT',
+		scheduledAt: 1795752000000,
+		days: 5,
+		refunded: 8
+	};
+
+	test('says each day and the total, and does not report a stacked 16', () => {
+		const msg = formatRecurringScheduleConfirmation(base);
+		expect(msg).toContain('Scheduled 8 Aerial Fishing trips each day at 10 PM CT');
+		expect(msg).toContain('for 5 days (40 trips total)');
+		expect(msg).toContain('Your current queue was refunded so those trips are not started twice.');
+		expect(msg).not.toContain('16 Aerial');
+		expect(msg).not.toContain('to start daily');
+	});
+
+	test('explains when the daily cap cuts the plan down', () => {
+		const msg = formatRecurringScheduleConfirmation({
+			...base,
+			requestedPerDay: 16,
+			dailyCap: 8
+		});
+		expect(msg).toContain(
+			'You asked for 16 trips per day, but only 8 can start each day because of your daily queue limit.'
+		);
+	});
+
+	test('worst-case confirmation stays 150 under the Discord message limit', () => {
+		const longName = 'A'.repeat(100);
+		const trips = Array.from({ length: 8 }, (_, index) => ({
+			activityId: index + 1,
+			type: 'MonsterKilling',
+			count: 1,
+			label: `${longName} ${index + 1}`
+		}));
+		const msg = formatRecurringScheduleConfirmation({
+			trips,
+			timeLabel: '12 AM Chamorro Time',
+			scheduledAt: Date.parse('2099-12-31T23:59:59.000Z'),
+			days: 5,
+			refunded: 8,
+			replacedRecurring: true,
+			requestedPerDay: 18,
+			dailyCap: 8
+		});
+		expect(msg.length).toBeLessThanOrEqual(DISCORD_MESSAGE_LIMIT - LENGTH_BUFFER);
 	});
 });

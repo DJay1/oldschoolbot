@@ -119,7 +119,7 @@ export const queueCommand = defineCommand({
 		{
 			type: 'Subcommand',
 			name: 'schedule',
-			description: 'Schedule queued trips, optionally add a trip and repeat daily for up to 5 days.',
+			description: 'Schedule a daily trip plan for up to 5 days, or a one-time start for your current queue.',
 			options: [
 				{
 					type: 'String',
@@ -138,7 +138,7 @@ export const queueCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'trip',
-					description: 'Optional recent trip to add to the queue before scheduling.',
+					description: 'Trip to run each day. If set, this is the daily plan, not added on top of your queue.',
 					autocomplete: async ({ userId, value }: StringAutoComplete) => {
 						const user = await mUserFetch(userId);
 						const trips = await fetchRepeatTrips(user);
@@ -158,14 +158,14 @@ export const queueCommand = defineCommand({
 				{
 					type: 'Integer',
 					name: 'times',
-					description: 'How many times to queue the trip selected above.',
+					description: 'How many of that trip to run each day.',
 					min_value: 1,
 					max_value: 18
 				},
 				{
 					type: 'Integer',
 					name: 'days',
-					description: 'Repeat this scheduled queue daily for 1 to 5 days.',
+					description: 'Repeat this daily plan for 1 to 5 days.',
 					min_value: 1,
 					max_value: 5
 				}
