@@ -207,18 +207,31 @@ async function playerLimitError(userId: string, type?: TicketType): Promise<stri
 			same_type: number;
 			same_id: number | null;
 			same_channel: string | null;
+			same_closed: boolean | null;
 		}[]
 	>`
+		WITH waiting AS (
+			-- Same rule as ticketBlocksFiler: unreviewed, not deleted, and not closed by staff.
+			SELECT id, type, ticket_channel_id, closed_at FROM bsc_tickets
+			WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND channel_deleted_at IS NULL AND (closed_at IS NULL OR closed_by = reporter_id)
+		)
 		SELECT
-			(SELECT COUNT(*)::int FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open') AS open_count,
-			(SELECT COUNT(*)::int FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''}) AS same_type,
-			(SELECT id FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_id,
-			(SELECT CASE WHEN channel_deleted_at IS NULL THEN ticket_channel_id END FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_channel
+			(SELECT COUNT(*)::int FROM waiting) AS open_count,
+			(SELECT COUNT(*)::int FROM waiting WHERE type = ${type ?? ''}) AS same_type,
+			(SELECT id FROM waiting WHERE type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_id,
+			(SELECT ticket_channel_id FROM waiting WHERE type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_channel,
+			(SELECT closed_at IS NOT NULL FROM waiting WHERE type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_closed
 	`;
 	return playerTicketLimitError({
 		openCount: Number(rows[0]?.open_count ?? 0),
 		openSameType: Number(rows[0]?.same_type ?? 0),
-		openTicket: rows[0]?.same_id ? { id: Number(rows[0].same_id), channelId: rows[0].same_channel ?? null } : null,
+		openTicket: rows[0]?.same_id
+			? {
+					id: Number(rows[0].same_id),
+					channelId: rows[0].same_channel ?? null,
+					closed: Boolean(rows[0].same_closed)
+				}
+			: null,
 		type
 	});
 }
@@ -237,11 +250,12 @@ async function insertTicket(t: CleanTicketInput): Promise<TicketRecord | null> {
 		INSERT INTO bsc_tickets (type, source, reporter_id, filed_by, guild_id, origin_channel_id, what, command, screenshot)
 		SELECT ${t.type}, 'player', ${t.reporterId}, ${t.filedBy}, ${t.guildId}, ${t.originChannelId}, ${t.what}, ${t.command}, ${t.screenshot}
 		WHERE (
-			SELECT COUNT(*) FROM bsc_tickets WHERE reporter_id = ${t.reporterId} AND source = 'player' AND status = 'open'
+			SELECT COUNT(*) FROM bsc_tickets b
+			WHERE b.reporter_id = ${t.reporterId} AND b.source = 'player' AND b.status = 'open' AND b.channel_deleted_at IS NULL AND (b.closed_at IS NULL OR b.closed_by = b.reporter_id)
 		) < ${TICKET_MAX_OPEN_PER_PLAYER}
 		AND NOT EXISTS (
-			SELECT 1 FROM bsc_tickets
-			WHERE reporter_id = ${t.reporterId} AND source = 'player' AND status = 'open' AND type = ${t.type}
+			SELECT 1 FROM bsc_tickets b
+			WHERE b.reporter_id = ${t.reporterId} AND b.source = 'player' AND b.type = ${t.type} AND b.status = 'open' AND b.channel_deleted_at IS NULL AND (b.closed_at IS NULL OR b.closed_by = b.reporter_id)
 		)
 		RETURNING *
 	`;

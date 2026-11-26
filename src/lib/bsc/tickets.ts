@@ -253,6 +253,19 @@ export function prepareNewTicket(
 	};
 }
 
+/**
+ * Does this ticket still count as "waiting" for its filer (max open + one per type)? Only while staff haven't
+ * reviewed it (status open), the channel isn't deleted, and it's either still open or the filer closed it
+ * themselves. Staff Close, Delete, or any review (Confirm/Ignore/Resolved/Denied) frees the slot.
+ * The SQL in ticketService (playerLimitError + insertTicket) mirrors this. Found in Krypt's test run (Nov 26).
+ */
+export function ticketBlocksFiler(
+	t: Pick<TicketRecord, 'status' | 'reporterId' | 'closedAt' | 'closedBy' | 'channelDeletedAt'>
+): boolean {
+	if (t.status !== 'open' || t.channelDeletedAt) return false;
+	return !t.closedAt || (t.closedBy !== null && t.closedBy === t.reporterId);
+}
+
 /** Player anti-spam: max open tickets and one waiting per type (no filing timer). Auto and staff tickets skip this. */
 export function playerTicketLimitError(input: {
 	openCount: number;
@@ -260,15 +273,17 @@ export function playerTicketLimitError(input: {
 	openSameType?: number;
 	type?: TicketType;
 	/** The waiting ticket of that type, so the refusal can say which one and where it is. */
-	openTicket?: { id: number; channelId: string | null } | null;
+	openTicket?: { id: number; channelId: string | null; closed?: boolean } | null;
 }): string | null {
 	if (input.type && (input.openSameType ?? 0) > 0) {
 		const kind = TICKET_TYPE_LABELS[input.type].toLowerCase();
 		const t = input.openTicket;
 		if (t) {
-			const where = t.channelId
-				? ` in <#${t.channelId}>. Add any extra details there.`
-				: '. Staff are reviewing it.';
+			const where = t.closed
+				? '. You closed it, but staff still need to look at it.'
+				: t.channelId
+					? ` in <#${t.channelId}>. Add any extra details there.`
+					: '. Staff are reviewing it.';
 			return `You already have ${kind} ticket **#${t.id}** waiting for staff${where} You can file another ${kind} once it is looked at.`;
 		}
 		return `You already have a ${kind} ticket waiting for staff. Please wait until it is looked at.`;
@@ -754,7 +769,8 @@ export function isTicketTool(value: unknown): value is TicketTool {
 /**
  * The player who filed a ticket may Close it themselves (like Krypt's Server Helper bot). Only Close: Reopen,
  * Delete and every other tool stay staff-only. Closing only locks the channel and saves the transcript; the
- * ticket's status (open/confirmed/...) is untouched, so it still counts toward the one-waiting-ticket limit.
+ * ticket's status (open/confirmed/...) is untouched, so a filer-closed unreviewed ticket still counts toward the
+ * one-waiting-ticket limit (see ticketBlocksFiler). A staff Close or Delete does not.
  */
 export function filerCanClose(
 	ticket: Pick<TicketRecord, 'reporterId' | 'ticketChannelId' | 'closedAt' | 'channelDeletedAt'>,

@@ -40,6 +40,7 @@ import {
 	ticketAccessRoleIds,
 	ticketActionButtonId,
 	ticketActionRule,
+	ticketBlocksFiler,
 	ticketButtonRows,
 	ticketChannelName,
 	ticketChannelOpenContent,
@@ -658,5 +659,39 @@ describe('ticket staff roles (all staff roles, single source)', () => {
 		expect(roleRows.map(o => o.id)).toEqual([ping, ...staff]);
 		const pingRow = roleRows[0];
 		for (const o of roleRows) expect(o.allow).toBe(pingRow.allow);
+	});
+});
+
+// Krypt's test run (Nov 26): staff Closed + Deleted his suggestion #10, but it still blocked a new suggestion.
+describe('one-waiting limit: which tickets still block the filer', () => {
+	const filer = '611598764574114049';
+	const staff = '290167629966999552';
+	const base = { status: 'open' as const, reporterId: filer, closedAt: null, closedBy: null, channelDeletedAt: null };
+	const at = new Date('2026-11-26T14:07:00Z');
+
+	test('open and unreviewed blocks', () => expect(ticketBlocksFiler(base)).toBe(true));
+	test('filer closed it before review: still blocks', () =>
+		expect(ticketBlocksFiler({ ...base, closedAt: at, closedBy: filer })).toBe(true));
+	test('staff closed it: frees the slot', () =>
+		expect(ticketBlocksFiler({ ...base, closedAt: at, closedBy: staff })).toBe(false));
+	test('deleted always frees the slot (even filer-closed)', () => {
+		expect(ticketBlocksFiler({ ...base, closedAt: at, closedBy: staff, channelDeletedAt: at })).toBe(false);
+		expect(ticketBlocksFiler({ ...base, closedAt: at, closedBy: filer, channelDeletedAt: at })).toBe(false);
+	});
+	test('any review frees the slot', () => {
+		for (const status of TICKET_STATUSES.filter(x => x !== 'open'))
+			expect(ticketBlocksFiler({ ...base, status })).toBe(false);
+	});
+	test('filer-closed refusal says they closed it, no channel link', () => {
+		const msg = playerTicketLimitError({
+			openCount: 1,
+			openSameType: 1,
+			type: 'suggestion',
+			openTicket: { id: 10, channelId: '123', closed: true }
+		});
+		expect(msg).toContain('#10');
+		expect(msg).toContain('You closed it');
+		expect(msg).not.toContain('<#123>');
+		expect((msg ?? '').length).toBeLessThan(2000 - 150);
 	});
 });
