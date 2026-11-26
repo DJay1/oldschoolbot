@@ -1,17 +1,17 @@
 import { codeBlock, EmbedBuilder } from '@oldschoolgg/discord';
 import { Emoji } from '@oldschoolgg/toolkit';
-import type { Bank } from 'oldschooljs';
+import { Bank, type ItemBank } from 'oldschooljs';
 import { chunk } from 'remeda';
 
 import { choicesOf, filterOption, itemOption } from '@/discord/index.js';
 import type { BankFlag } from '@/lib/canvas/bankImage.js';
 import { bankFlags } from '@/lib/canvas/bankImage.js';
 import { type Flags, OverrideStatus } from '@/lib/minions/types.js';
-import { BankSortMethods } from '@/lib/sorts.js';
+import { BankSortMethods, formatBankSortWeightingsList } from '@/lib/sorts.js';
 import { makeBankImage } from '@/lib/util/makeBankImage.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
 
-const bankFormats = ['json', 'text_paged', 'text_full'] as const;
+const bankFormats = ['json', 'text_paged', 'text_full', 'weights'] as const;
 const bankItemsPerPage = 10;
 
 async function getBankPage({
@@ -132,6 +132,16 @@ export const bankCommand = defineCommand({
 
 		if (bank.length === 0) {
 			return 'No items found.';
+		}
+
+		if (options.format === 'weights') {
+			const list = formatBankSortWeightingsList(new Bank(user.user.bank_sort_weightings as ItemBank));
+			if (list.length <= 1900) {
+				return list;
+			}
+			return new MessageBuilder()
+				.setContent('Here are all of your bank sort weightings.')
+				.addFile({ name: 'BankSortWeightings.txt', buffer: Buffer.from(list, 'utf8') });
 		}
 
 		if (['text_full', 'text_paged'].includes(options.format ?? '')) {

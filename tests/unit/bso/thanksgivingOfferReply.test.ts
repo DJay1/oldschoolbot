@@ -37,7 +37,9 @@ describe('Thanksgiving offer reply', () => {
 		expect(text).not.toContain('best roll');
 		expect(text).not.toContain('Got it!');
 		expect(text).toContain('**Offered:** 5x Bountiful cornucopia (Total offers: 15)');
-		expect(text).toContain('🦃 **Gobble Streak** (2/5 offers): +15% rare chance');
+		expect(text).toContain(
+			'🦃 **Gobble Streak**: 2 of these 5 offers had the +15% rare boost (it starts on your 4th offer of the day, CT).'
+		);
 		expect(text).toContain('-# Pilgrim hat, Straw hat, Gobbles 1/196 · Laboon 1/652');
 		expect(text).toContain(`**Gobbles guarantee:** 15/${GOBBLES_PITY_OFFERS} offers`);
 		expect(text).not.toContain('Your best rolls');
@@ -125,7 +127,8 @@ describe('Thanksgiving offer reply', () => {
 		expect(text).toBe(
 			[
 				'**Offered:** 20x Bountiful cornucopia (Total offers: 60)',
-				'🦃 **Gobble Streak** (20/20 offers): +15% rare chance',
+				'🦃 **Gobble Streak**: 20 of these 20 offers had the +15% rare boost (it starts on your 4th offer of the day, CT).',
+				'-# Now active until midnight CT (24 offers today)',
 				'-# Pilgrim hat, Straw hat, Gobbles 1/196 · Laboon 1/652',
 				'🌾 **Harvest Blessing**: +15% supplies',
 				'-# Paint box 1/39 · Cornucopia 1/52 · Harvest turkey 1/43'

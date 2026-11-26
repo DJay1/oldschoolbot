@@ -28,7 +28,13 @@ export type DailyRate = { coinMultiplier: number; xpChance: number; lootChance: 
 export type DailyOutcome =
 	| { difficulty: 'easy'; correct: boolean }
 	| { difficulty: 'medium'; success: boolean; game: 'buttons'; detail?: string }
-	| { difficulty: 'hard'; success: boolean; game: 'wordle' | 'typing' | 'buttons'; detail?: string };
+	| {
+			difficulty: 'hard';
+			success: boolean;
+			game: 'wordle' | 'typing' | 'buttons';
+			detail?: string;
+			noHintBonus?: boolean;
+	  };
 
 export function parseDailyDifficulty(input?: string | null): DailyDifficulty {
 	const value = input?.trim().toLowerCase();
@@ -118,4 +124,18 @@ export function dailyClaimLockWhere(userId: string, previousTimestamp: bigint | 
 
 export function messageHasUserPing(content: string): boolean {
 	return /<@!?\d+>/.test(content) || content.includes('@everyone') || content.includes('@here');
+}
+
+/** Extra coins and boxes for a Hard Wordle win with no hint used. Applied after other coin bonuses. */
+export const WORDLE_NO_HINT_COIN_BONUS = 0.5;
+export const WORDLE_NO_HINT_TRADEABLE_BOXES = 1;
+export const WORDLE_NO_HINT_UNTRADEABLE_BOXES = 1;
+export const WORDLE_NO_HINT_BONUS_LINE =
+	'No hint bonus: +50% coins, +1 Tradeable Mystery Box, +1 Untradeable Mystery Box!';
+
+export function applyWordleNoHintBonus(loot: Bank, coins: number): { coins: number; line: string } {
+	const nextCoins = coins > 0 ? Math.floor(coins * (1 + WORDLE_NO_HINT_COIN_BONUS)) : coins;
+	loot.add('Tradeable Mystery Box', WORDLE_NO_HINT_TRADEABLE_BOXES);
+	loot.add('Untradeable Mystery Box', WORDLE_NO_HINT_UNTRADEABLE_BOXES);
+	return { coins: nextCoins, line: WORDLE_NO_HINT_BONUS_LINE };
 }

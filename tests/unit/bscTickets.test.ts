@@ -19,6 +19,8 @@ import {
 	playerTicketLimitError,
 	prepareNewTicket,
 	readModalInputs,
+	resolveTicketStaffRoleId,
+	TEST_TICKET_STAFF_ROLE_FALLBACK_ID,
 	TICKET_ACTION_RULES,
 	TICKET_ACTIONS,
 	TICKET_LENGTH_MARGIN,
@@ -31,6 +33,7 @@ import {
 	ticketButtonRows,
 	ticketEmbed,
 	ticketFiledReply,
+	ticketFilerCopyContent,
 	ticketFormButtonId,
 	ticketFormButtonLabel,
 	ticketHelpPrompt,
@@ -101,7 +104,7 @@ describe('ticket Discord length limits (150 under)', () => {
 				const notice = ticketNoticeContent({ ...t, type }, action);
 				if (notice) expect(notice.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - TICKET_LENGTH_MARGIN);
 			}
-			expect(ticketFiledReply({ id: BIG_ID, type }, true).length).toBeLessThanOrEqual(
+			expect(ticketFiledReply({ id: BIG_ID, type }, true, 'channel').length).toBeLessThanOrEqual(
 				DISCORD_CONTENT_LIMIT - TICKET_LENGTH_MARGIN
 			);
 			expect(ticketHelpPrompt(type).length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - TICKET_LENGTH_MARGIN);
@@ -198,7 +201,9 @@ describe('ticket safety', () => {
 			originChannelId: null
 		};
 		expect(prepareNewTicket({ ...base, what: 'short' }).ok).toBe(false);
-		expect(prepareNewTicket({ ...base, type: 'admin' as unknown as 'bug', what: 'long enough text here' }).ok).toBe(false);
+		expect(prepareNewTicket({ ...base, type: 'admin' as unknown as 'bug', what: 'long enough text here' }).ok).toBe(
+			false
+		);
 		expect(prepareNewTicket({ ...base, reporterId: 'abc', what: 'long enough text here' }).ok).toBe(false);
 		const ok = prepareNewTicket({ ...base, what: 'x'.repeat(5000), screenshot: 'javascript:alert(1)' });
 		expect(ok.ok).toBe(true);
@@ -255,5 +260,26 @@ describe('ticket safety', () => {
 			]
 		});
 		expect(out).toEqual({ what: 'hello', command: '/fish' });
+	});
+
+	test('filer copy never pings and stays under the Discord length limit', () => {
+		for (const type of TICKET_TYPES) {
+			for (const copy of ['channel', 'dm', 'none'] as const) {
+				expect(ticketFiledReply({ id: BIG_ID, type }, true, copy).length).toBeLessThanOrEqual(
+					DISCORD_CONTENT_LIMIT - TICKET_LENGTH_MARGIN
+				);
+			}
+			const copy = ticketFilerCopyContent({ id: BIG_ID, type });
+			expect(copy.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - TICKET_LENGTH_MARGIN);
+			expect(copy).not.toMatch(/<@/);
+			expect(copy).not.toMatch(/@(everyone|here)/);
+		}
+	});
+
+	test('test bot falls back to the test Mod role when no staff role env is set', () => {
+		expect(resolveTicketStaffRoleId(null, false)).toBe(TEST_TICKET_STAFF_ROLE_FALLBACK_ID);
+		expect(resolveTicketStaffRoleId(null, true)).toBeNull();
+		expect(resolveTicketStaffRoleId(ID, true)).toBe(ID);
+		expect(resolveTicketStaffRoleId(ID, false)).toBe(ID);
 	});
 });

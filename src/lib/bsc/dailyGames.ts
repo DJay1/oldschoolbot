@@ -227,6 +227,28 @@ export function formatWordleHintLine(answer: string, tier: 1 | 2 = 1): string | 
 	return `Hint: ${hint.category}`;
 }
 
+/** True if the player pressed Hint or the free category appeared after 2 misses. */
+export function wordleUsedHint(state: Pick<WordleState, 'hintRevealed' | 'betterHintRevealed'>): boolean {
+	return Boolean(state.hintRevealed || state.betterHintRevealed);
+}
+
+/**
+ * First letter that is not already green from a prior guess. Same letter every time for the same board,
+ * so clicking Better hint cannot reroll which letter is shown.
+ */
+export function formatWordleLetterReveal(answer: string, rows: WordleRow[]): string | null {
+	const known = Array(DAILY_WORDLE_LENGTH).fill(false);
+	for (const row of rows) {
+		for (let i = 0; i < DAILY_WORDLE_LENGTH; i++) {
+			if (row.marks[i] === 'correct') known[i] = true;
+		}
+	}
+	let index = known.findIndex(seen => !seen);
+	if (index === -1) index = 0;
+	const tiles = Array.from({ length: DAILY_WORDLE_LENGTH }, (_, i) => (i === index ? answer[i] : '▢'));
+	return `Revealed letter: ${tiles.join(' ')}`;
+}
+
 /** Remaining time after a better-hint click. Never extends the timer, and will not drop below 5s unless less than 5s was already left. */
 export function betterHintRemainingMs(remainingMs: number): number {
 	const penalized = remainingMs - DAILY_WORDLE_BETTER_HINT_COST_MS;
@@ -316,7 +338,7 @@ export function applyWordleAction(state: WordleState, action: WordleAction): Wor
 		if (!state.hintRevealed) {
 			return { ...state, hintRevealed: true, notice: undefined };
 		}
-		if (state.betterHintRevealed || !wordleHintFor(state.answer)?.nudge) return state;
+		if (state.betterHintRevealed) return state;
 		return { ...state, hintRevealed: true, betterHintRevealed: true, notice: undefined };
 	}
 	const next: WordleState = { ...state, rows: [...state.rows], notice: undefined };
@@ -353,7 +375,7 @@ export function wordleGuessRows(
 	}
 	if (!isWordleHintVisible(state)) {
 		buttons.push({ id: DAILY_WORDLE_HINT_BUTTON_ID, label: 'Hint' });
-	} else if (!state.betterHintRevealed && wordleHintFor(state.answer)?.nudge) {
+	} else if (!state.betterHintRevealed) {
 		buttons.push({ id: DAILY_WORDLE_HINT_BUTTON_ID, label: DAILY_WORDLE_BETTER_HINT_BUTTON_LABEL });
 	}
 	return [buttons];
@@ -377,6 +399,10 @@ export function formatWordleMessage(state: WordleState, remainingMs: number): st
 	if (isWordleHintVisible(state)) {
 		const hintLine = formatWordleHintLine(state.answer, state.betterHintRevealed ? 2 : 1);
 		if (hintLine) lines.push(hintLine);
+	}
+	if (state.betterHintRevealed) {
+		const letterLine = formatWordleLetterReveal(state.answer, state.rows);
+		if (letterLine) lines.push(letterLine);
 	}
 	if (state.notice) lines.push(state.notice);
 	return lines.join('\n');
@@ -747,7 +773,8 @@ export function hardestDailyRewardPreview(maxLootLine: string): string {
 		'😂',
 		'✨ The sparkle fizzled, so Diango stuffed a smaller prize in the bag.',
 		'🐧 Skipper negotiated you 50% more coins!',
-		'🎉 Launch event: your mystery boxes were tripled!'
+		'🎉 Launch event: your mystery boxes were tripled!',
+		'No hint bonus: +50% coins, +1 Tradeable Mystery Box, +1 Untradeable Mystery Box!'
 	];
 	return `${tokenLines.join('\n')}\n${bonuses.join('')}**Hard daily: Wordle — You got HYDRA in 5 tries.**\nThat's correct! I've picked you some random items as a reward...\n\nYou received ${maxLootLine}`;
 }

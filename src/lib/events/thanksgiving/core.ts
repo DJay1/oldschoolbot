@@ -248,7 +248,9 @@ export interface FarmingHarvestedPatch {
 }
 
 export function farmingCornucopiaChance(blessing: boolean): number {
-	return (FARMING_CORNUCOPIA_SUCCESSES / FARMING_CORNUCOPIA_ONE_IN) * (blessing ? HARVEST_BLESSING_EVENT_MULTIPLIER : 1);
+	return (
+		(FARMING_CORNUCOPIA_SUCCESSES / FARMING_CORNUCOPIA_ONE_IN) * (blessing ? HARVEST_BLESSING_EVENT_MULTIPLIER : 1)
+	);
 }
 
 /** A real harvest of a fully grown, long crop with at least one live plant. Dead, cleared or early patches never count. */
@@ -490,14 +492,14 @@ export function formatHarvestBlessingRatesSubtext(): string {
 export function formatGobbleStreakStatusLine(offersToday: number): string {
 	if (offersToday >= GOBBLE_STREAK_OFFERS) {
 		return [
-			`🦃 **Gobble Streak**: active today (${offersToday.toLocaleString()} offers)`,
-			'-# +15% rare chance until midnight CT',
+			`🦃 **Gobble Streak**: active until midnight CT (${offersToday.toLocaleString()} offers today)`,
+			'-# +15% rare chance. The boost starts on your 4th offer of the day (CT).',
 			formatGobbleStreakRatesSubtext()
 		].join('\n');
 	}
 	return [
 		`🦃 **Gobble Streak**: ${offersToday.toLocaleString()}/${GOBBLE_STREAK_OFFERS} offers today (CT)`,
-		`-# At ${GOBBLE_STREAK_OFFERS}: +15% rare chance until midnight CT`,
+		`-# The +15% rare boost starts on your 4th offer of the day, then lasts until midnight CT.`,
 		formatGobbleStreakRatesSubtext()
 	].join('\n');
 }
@@ -537,10 +539,17 @@ export function formatOfferReply({
 		`**Offered:** ${quantity.toLocaleString()}x Bountiful cornucopia (Total offers: ${offersAfter.toLocaleString()})`
 	];
 	if (result.streakOffers > 0) {
-		lines.push(`🦃 **Gobble Streak** (${result.streakOffers}/${quantity} offers): +15% rare chance`);
+		lines.push(
+			`🦃 **Gobble Streak**: ${result.streakOffers} of these ${quantity} offers had the +15% rare boost (it starts on your 4th offer of the day, CT).`
+		);
+		if (offersTodayAfter >= GOBBLE_STREAK_OFFERS) {
+			lines.push(`-# Now active until midnight CT (${offersTodayAfter.toLocaleString()} offers today)`);
+		}
 		lines.push(formatGobbleStreakRatesSubtext());
 	} else if (offersTodayAfter < GOBBLE_STREAK_OFFERS) {
-		lines.push(`🦃 **Gobble Streak**: ${offersTodayAfter}/${GOBBLE_STREAK_OFFERS} offers today (CT)`);
+		lines.push(
+			`🦃 **Gobble Streak**: ${offersTodayAfter}/${GOBBLE_STREAK_OFFERS} offers today (CT). The +15% rare boost starts on your 4th offer.`
+		);
 	}
 	if (blessing) {
 		lines.push('🌾 **Harvest Blessing**: +15% supplies');

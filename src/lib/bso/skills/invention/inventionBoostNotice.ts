@@ -1,7 +1,10 @@
-import type { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
+import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 
+import { SpecialResponse } from '@oldschoolgg/discord';
 import { toTitleCase } from '@oldschoolgg/toolkit';
 
+import type { CommandResponseValue } from '@/discord/commands/commandTypes.js';
+import { MessageBuilderClass } from '@/discord/MessageBuilder.js';
 import { BitField } from '@/lib/constants.js';
 import { getCommandInvokeContext, isInteractiveSlashCommandStart } from '@/lib/util/commandInvokeContext.js';
 import { isQueuedTripStart } from '@/lib/util/tripLength.js';
@@ -126,4 +129,63 @@ export async function confirmInventionMaterialSkips(user: MUser, skips: Inventio
 export function formatInventionUsageCostLine(usageCostMultiplier: number | null): string | null {
 	if (usageCostMultiplier === null) return null;
 	return `Charged per 3 minutes of trip x ${usageCostMultiplier} usage`;
+}
+
+export const INVENTION_TRIP_TOTAL_PREFIX = 'Invention materials for this trip:';
+const DISCORD_CONTENT_SAFE_MAX = 2000 - 150;
+
+export function formatInventionTripMaterialTotal(cost: MaterialBank): string {
+	return `${INVENTION_TRIP_TOTAL_PREFIX} ${cost.toString()}`;
+}
+
+export function recordInventionTripMaterialCost(cost: MaterialBank): void {
+	if (cost.values().length === 0) return;
+	const ctx = getCommandInvokeContext();
+	if (!ctx) return;
+	ctx.inventionMaterialsCharged ??= new MaterialBank();
+	ctx.inventionMaterialsCharged.add(cost);
+}
+
+export function takeInventionTripMaterialTotal(user: { bitfield: readonly number[] }): string | null {
+	if (!user.bitfield.includes(BitField.ShowInventionTripMaterials)) return null;
+	const ctx = getCommandInvokeContext();
+	const cost = ctx?.inventionMaterialsCharged;
+	if (!cost || cost.values().length === 0) return null;
+	ctx.inventionMaterialsCharged = new MaterialBank();
+	return formatInventionTripMaterialTotal(cost);
+}
+
+export function appendInventionTripMaterialTotalToResponse(
+	user: { bitfield: readonly number[] },
+	response: CommandResponseValue
+): CommandResponseValue {
+	if (
+		response === SpecialResponse.PaginatedMessageResponse ||
+		response === SpecialResponse.SilentErrorResponse ||
+		response === SpecialResponse.RespondedManually
+	) {
+		return response;
+	}
+	const line = takeInventionTripMaterialTotal(user);
+	if (!line) return response;
+	if (response instanceof MessageBuilderClass) {
+		const current = response.message.content ?? '';
+		if (current.length + 1 + line.length <= DISCORD_CONTENT_SAFE_MAX) {
+			response.addContent(current.length > 0 ? `\n${line}` : line);
+		}
+		return response;
+	}
+	if (typeof response === 'string') {
+		if (response.length + 1 + line.length <= DISCORD_CONTENT_SAFE_MAX) {
+			return response.length > 0 ? `${response}\n${line}` : line;
+		}
+		return response;
+	}
+	if (response && typeof response === 'object' && 'content' in response) {
+		const current = response.content ?? '';
+		if (current.length + 1 + line.length <= DISCORD_CONTENT_SAFE_MAX) {
+			return { ...response, content: current.length > 0 ? `${current}\n${line}` : line };
+		}
+	}
+	return response;
 }

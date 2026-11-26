@@ -2,7 +2,7 @@ import '../../src/lib/util/clientSettings.js';
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { Items } from 'oldschooljs';
+import { Bank, Items } from 'oldschooljs';
 import { describe, expect, test } from 'vitest';
 
 import {
@@ -43,6 +43,7 @@ import {
 	formatButtonGameMessage,
 	formatTypingMessage,
 	formatWordleHintLine,
+	formatWordleLetterReveal,
 	formatWordleMessage,
 	HARD_GAME_TYPES,
 	hardestDailyRewardPreview,
@@ -63,7 +64,8 @@ import {
 	wordleGuessRows,
 	wordleHintFor,
 	wordleModalSpec,
-	wordleTiles
+	wordleTiles,
+	wordleUsedHint
 } from '@/lib/bsc/dailyGames.js';
 import type { DailyPendingRow } from '@/lib/bsc/dailyPending.js';
 import {
@@ -75,6 +77,7 @@ import {
 	shouldExemptDailyGameButtonFromGlobalRatelimit
 } from '@/lib/bsc/dailyPending.js';
 import {
+	applyWordleNoHintBonus,
 	buildDailyRewardContent,
 	DAILY_TIER,
 	type DailyOutcome,
@@ -86,7 +89,9 @@ import {
 	dailyTokenWinLines,
 	messageHasUserPing,
 	parseDailyDifficulty,
-	rollDailyRewardTokens
+	rollDailyRewardTokens,
+	WORDLE_NO_HINT_BONUS_LINE,
+	WORDLE_NO_HINT_COIN_BONUS
 } from '@/lib/bsc/dailyRewards.js';
 import {
 	DAILY_EASY_TRIVIA,
@@ -389,6 +394,8 @@ describe('Wordle game', () => {
 		expect(better.betterHintRevealed).toBe(true);
 		const betterText = formatWordleMessage(better, DAILY_WORDLE_MS - DAILY_WORDLE_BETTER_HINT_COST_MS);
 		expect(betterText).toContain('Hint: Monster — a high-level slayer target');
+		expect(betterText).toContain('Revealed letter:');
+		expect(betterText).toContain(formatWordleLetterReveal('HYDRA', better.rows)!);
 		expect(betterText).not.toContain('The Alchemical boss');
 		expect(wordleGuessRows(better)).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
 		const again = applyWordleAction(better, { kind: 'hint' });
@@ -434,10 +441,17 @@ describe('Wordle game', () => {
 		state = applyWordleAction(state, { kind: 'hint' });
 		expect(formatWordleMessage(state, DAILY_WORDLE_MS)).toContain('Hint: Custom');
 		expect(formatWordleMessage(state, DAILY_WORDLE_MS)).not.toContain('four-legged mascot');
-		expect(wordleGuessRows(state)).toEqual([[{ id: 'dlyw:GO', label: 'Guess' }]]);
-		const noBetter = applyWordleAction(state, { kind: 'hint' });
-		expect(noBetter.betterHintRevealed).toBeFalsy();
-		state = applyWordleAction(state, { kind: 'submit', guess: 'corgo' });
+		expect(wordleGuessRows(state)).toEqual([
+			[
+				{ id: 'dlyw:GO', label: 'Guess' },
+				{ id: 'dlyw:HINT', label: DAILY_WORDLE_BETTER_HINT_BUTTON_LABEL }
+			]
+		]);
+		const better = applyWordleAction(state, { kind: 'hint' });
+		expect(better.betterHintRevealed).toBe(true);
+		expect(formatWordleMessage(better, DAILY_WORDLE_MS)).toContain('Revealed letter: C ▢ ▢ ▢ ▢');
+		expect(formatWordleMessage(better, DAILY_WORDLE_MS)).not.toContain('four-legged mascot');
+		state = applyWordleAction(better, { kind: 'submit', guess: 'corgo' });
 		expect(state.status).toBe('won');
 		expect(state.rows).toHaveLength(1);
 		expect(state.answer).toBe('CORGO');
@@ -473,6 +487,35 @@ describe('Wordle game', () => {
 			text.length + Math.max(0, longest.length - (formatWordleHintLine('HYDRA', 2) ?? '').length)
 		).toBeLessThanOrEqual(2000 - 150);
 		expect(text.length).toBeLessThanOrEqual(2000 - 150);
+		expect(text).toContain('Revealed letter:');
+	});
+
+	test('the better hint reveals a letter that does not change when clicked again', () => {
+		let state = createWordleState(mockRng([], ['HYDRA']));
+		state = applyWordleAction(state, { kind: 'submit', guess: 'HASTA' });
+		state = applyWordleAction(state, { kind: 'hint' });
+		state = applyWordleAction(state, { kind: 'hint' });
+		const first = formatWordleLetterReveal(state.answer, state.rows);
+		expect(first).toBe('Revealed letter: ▢ Y ▢ ▢ ▢');
+		const again = applyWordleAction(state, { kind: 'hint' });
+		expect(formatWordleLetterReveal(again.answer, again.rows)).toBe(first);
+		expect(again.betterHintRevealed).toBe(true);
+	});
+
+	test('a no-hint Wordle win is only available if no hint was used, including the auto hint after two misses', () => {
+		const win = applyWordleAction(createWordleState(mockRng([], ['HYDRA'])), { kind: 'submit', guess: 'HYDRA' });
+		expect(win.status).toBe('won');
+		expect(wordleUsedHint(win)).toBe(false);
+		const hinted = applyWordleAction(createWordleState(mockRng([], ['HYDRA'])), { kind: 'hint' });
+		const hintedWin = applyWordleAction(hinted, { kind: 'submit', guess: 'HYDRA' });
+		expect(hintedWin.status).toBe('won');
+		expect(wordleUsedHint(hintedWin)).toBe(true);
+		let auto = createWordleState(mockRng([], ['HYDRA']));
+		auto = applyWordleAction(auto, { kind: 'submit', guess: 'AHRIM' });
+		auto = applyWordleAction(auto, { kind: 'submit', guess: 'KARIL' });
+		auto = applyWordleAction(auto, { kind: 'submit', guess: 'HYDRA' });
+		expect(auto.status).toBe('won');
+		expect(wordleUsedHint(auto)).toBe(true);
 	});
 });
 
@@ -963,5 +1006,53 @@ describe('interrupted daily game command path', () => {
 		expect(messageHasUserPing(DAILY_GAME_UPDATE_FAILED)).toBe(false);
 		expect(DAILY_GAME_UPDATE_FAILED).toContain('/minion daily');
 		expect(DAILY_GAME_UPDATE_FAILED).toContain("weren't charged twice");
+	});
+});
+
+describe('Wordle no-hint bonus', () => {
+	test('adds 50% coins and one of each mystery box, and the reward text stays under the Discord limit', () => {
+		const loot = new Bank().add('Coins', 1000).add('Tradeable Mystery Box', 1);
+		const { coins, line } = applyWordleNoHintBonus(loot, 1000);
+		expect(WORDLE_NO_HINT_COIN_BONUS).toBe(0.5);
+		expect(coins).toBe(1500);
+		expect(loot.amount('Tradeable Mystery Box')).toBe(2);
+		expect(loot.amount('Untradeable Mystery Box')).toBe(1);
+		expect(line).toBe(WORDLE_NO_HINT_BONUS_LINE);
+		loot.set('Coins', coins);
+		const content = buildDailyRewardContent({
+			bonuses: [
+				'💰',
+				'🤖',
+				'😂',
+				'✨ The sparkle fizzled, so Diango stuffed a smaller prize in the bag.',
+				'🐧 Skipper negotiated you 50% more coins!',
+				'🎉 Launch event: your mystery boxes were tripled!',
+				line
+			],
+			outcome: {
+				difficulty: 'hard',
+				success: true,
+				game: 'wordle',
+				detail: 'You got HYDRA in 1 try.',
+				noHintBonus: true
+			},
+			loot,
+			tokenLines: [
+				'**Double XP token!** Use it with `/use item:Double XP token`.',
+				'**Double loot token!** Use it with `/use item:Double loot token`.'
+			]
+		});
+		expect(content).toContain(WORDLE_NO_HINT_BONUS_LINE);
+		expect(content.length).toBeLessThanOrEqual(DISCORD_CONTENT_LIMIT - DISCORD_LENGTH_MARGIN);
+		expect(messageHasUserPing(content)).toBe(false);
+	});
+
+	test('an ironman with 0 coins still receives the extra boxes', () => {
+		const loot = new Bank();
+		const { coins, line } = applyWordleNoHintBonus(loot, 0);
+		expect(coins).toBe(0);
+		expect(loot.amount('Tradeable Mystery Box')).toBe(1);
+		expect(loot.amount('Untradeable Mystery Box')).toBe(1);
+		expect(line).toBe(WORDLE_NO_HINT_BONUS_LINE);
 	});
 });

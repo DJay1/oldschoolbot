@@ -1,4 +1,4 @@
-import { InteractionResponseType, MessageFlags, Routes, SpecialResponse } from '@oldschoolgg/discord';
+import { EmbedBuilder, InteractionResponseType, MessageFlags, Routes, SpecialResponse } from '@oldschoolgg/discord';
 
 import { gifs } from '@/lib/bsc/corgoGifs.js';
 import { staffGuildAllowed, staffTierOf } from '@/lib/bsc/staffAccess.js';
@@ -14,6 +14,7 @@ import {
 	playerTicketLimitError,
 	prepareNewTicket,
 	readModalInputs,
+	resolveTicketStaffRoleId,
 	TICKET_ACTION_RULES,
 	TICKET_INPUT_COMMAND,
 	TICKET_INPUT_REASON,
@@ -29,6 +30,7 @@ import {
 	ticketButtonRows,
 	ticketEmbed,
 	ticketFiledReply,
+	ticketFilerCopyContent,
 	ticketNewModal,
 	ticketNoticeContent,
 	ticketReasonModal,
@@ -67,7 +69,7 @@ export function ticketConfig(): {
 	const fallback = globalConfig.isProduction ? null : Channel.BotLogs;
 	return {
 		channelId: envId('TICKET_CHANNEL_ID') ?? (fallback && SNOWFLAKE.test(fallback) ? fallback : null),
-		staffRoleId: envId('TICKET_STAFF_ROLE_ID'),
+		staffRoleId: resolveTicketStaffRoleId(envId('TICKET_STAFF_ROLE_ID'), globalConfig.isProduction),
 		noticeChannelId: envId('TICKET_NOTICE_CHANNEL_ID')
 	};
 }
@@ -178,8 +180,9 @@ export type FileTicketResult =
 
 /**
  * Files a ticket. Use this for player tickets, /staff ticket_file and the bug scan (source 'auto').
- * Nothing is ever sent to the player here: the staff post only pings the staff role.
- * The player is pinged once, as a new message, when staff press Confirm (and again on Live).
+ * The staff post pings the staff role. Player-filed tickets also get a visible copy in the origin
+ * channel (or a DM if that fails). The player is pinged once, as a new message, when staff press
+ * Confirm (and again on Live).
  */
 export async function fileTicket(input: NewTicketInput, opts: { post?: boolean } = {}): Promise<FileTicketResult> {
 	if (!ticketConfig().channelId) return { ok: false, error: NOT_SET_UP };
@@ -194,8 +197,54 @@ export async function fileTicket(input: NewTicketInput, opts: { post?: boolean }
 		const limit = input.reporterId ? await playerLimitError(input.reporterId) : null;
 		return { ok: false, error: limit ?? 'Could not file that ticket. Please try again in a minute.' };
 	}
-	if (opts.post !== false) await postTicketToStaff(ticket.id);
+	if (opts.post !== false) {
+		await postTicketToStaff(ticket.id);
+		if (input.source === 'player') await postTicketFilerCopy(ticket);
+	}
 	return { ok: true, ticket, screenshotDropped: prepared.ticket.screenshotDropped };
+}
+
+export type TicketFilerCopyResult = 'channel' | 'dm' | 'none';
+
+const FILER_COPY_NO_PINGS = { users: [] as string[], roles: [] as string[] };
+
+/** Visible copy for the player who filed. No staff buttons, and nobody is pinged. */
+export async function postTicketFilerCopy(ticket: TicketRecord): Promise<TicketFilerCopyResult> {
+	if (ticket.source !== 'player' || !ticket.reporterId) return 'none';
+	const { channelId } = ticketConfig();
+	const raw = ticketEmbed(ticket);
+	const body = {
+		content: ticketFilerCopyContent(ticket),
+		embeds: [
+			new EmbedBuilder()
+				.setTitle(raw.title)
+				.setColor(raw.color)
+				.setFields(raw.fields)
+				.setFooter(raw.footer)
+				.setTimestamp(new Date(raw.timestamp))
+		],
+		allowedMentions: FILER_COPY_NO_PINGS
+	};
+	const origin = ticket.originChannelId;
+	if (origin && origin !== channelId) {
+		try {
+			await globalClient.sendMessage(origin, body);
+			return 'channel';
+		} catch (err) {
+			Logging.logError(err as Error, { type: 'TICKET_FILER_COPY', ticket_id: ticket.id, channel_id: origin });
+		}
+	}
+	try {
+		await globalClient.sendDm(ticket.reporterId, body);
+		return 'dm';
+	} catch (err) {
+		Logging.logError(err as Error, {
+			type: 'TICKET_FILER_COPY_DM',
+			ticket_id: ticket.id,
+			user_id: ticket.reporterId
+		});
+		return 'none';
+	}
 }
 
 /** Posts a ticket to the staff channel once. Safe to call from the ticker and the filer at the same time. */
@@ -417,8 +466,13 @@ export async function handleTicketModalSubmit(itx: TicketModalSubmit, user: MUse
 			},
 			{ post: false }
 		);
-		await reply(result.ok ? ticketFiledReply(result.ticket, result.screenshotDropped) : result.error);
-		if (result.ok) await postTicketToStaff(result.ticket.id);
+		if (!result.ok) {
+			await reply(result.error);
+			return;
+		}
+		await postTicketToStaff(result.ticket.id);
+		const copy = await postTicketFilerCopy(result.ticket);
+		await reply(ticketFiledReply(result.ticket, result.screenshotDropped, copy));
 		return;
 	}
 

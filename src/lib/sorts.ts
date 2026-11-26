@@ -1,4 +1,4 @@
-import type { Item } from 'oldschooljs';
+import type { Bank, Item } from 'oldschooljs';
 
 import { marketPriceOrBotPrice } from '@/lib/marketPrices.js';
 
@@ -16,4 +16,17 @@ export const sorts: Record<BankSortMethod, SortFn> = {
 
 export function isValidBankSortMethod(method: string): method is BankSortMethod {
 	return BankSortMethods.includes(method as BankSortMethod);
+}
+
+export const BANK_WEIGHTINGS_ADD_HINT =
+	'Add weightings with `/config user bank_sort add_weightings:`, for example `5 Coal, 1 Trout`.';
+
+/** Clean text list of custom bank sort weightings, highest weight first. */
+export function formatBankSortWeightingsList(weightings: Bank): string {
+	const items = weightings.items().sort((a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name));
+	if (items.length === 0) {
+		return `You have no bank sort weightings. ${BANK_WEIGHTINGS_ADD_HINT}`;
+	}
+	const lines = items.map(([item, weight]) => `${item.name}: ${weight.toLocaleString()}`);
+	return `**Bank sort weightings** (${items.length} item${items.length === 1 ? '' : 's'}):\n${lines.join('\n')}`;
 }

@@ -17,7 +17,6 @@ import { clamp } from 'remeda';
 
 import type { activity_type_enum } from '@/prisma/main/enums.js';
 import { choicesOf, itemOption } from '@/discord/index.js';
-import { CanvasModule } from '@/lib/canvas/CanvasModule.js';
 import { gearImages } from '@/lib/canvas/gearImageData.js';
 import { ItemIconPacks } from '@/lib/canvas/iconPacks.js';
 import { BitField, BitFieldData, PerkTier } from '@/lib/constants.js';
@@ -27,7 +26,7 @@ import { withPatreonLink } from '@/lib/patreonLink.js';
 import { birdhouseSeeds } from '@/lib/skilling/skills/hunter/birdHouseTrapping.js';
 import { autoslayChoices, slayerMasterChoices } from '@/lib/slayer/constants.js';
 import { setDefaultAutoslay, setDefaultSlayerMaster } from '@/lib/slayer/slayerUtil.js';
-import { BankSortMethods, isValidBankSortMethod } from '@/lib/sorts.js';
+import { BankSortMethods, formatBankSortWeightingsList, isValidBankSortMethod } from '@/lib/sorts.js';
 import { parseBank } from '@/lib/util/parseStringBank.js';
 import { isValidNickname } from '@/lib/util/smallUtils.js';
 import { toggleBitfield } from '@/lib/util.js';
@@ -291,16 +290,13 @@ async function bankSortConfig(
 		const sortStr = currentMethod
 			? `Your current bank sort method is ${inlineCode(currentMethod)}.`
 			: 'You have not set a bank sort method.';
-		const weightingBankStr = currentWeightingBank.toString();
+		const list = formatBankSortWeightingsList(currentWeightingBank);
 		const response = new MessageBuilder().setContent(sortStr);
-		if (weightingBankStr.length < 500) {
-			response.addContent(`\n**Weightings:**${weightingBankStr}`);
+		if (sortStr.length + 1 + list.length <= 2000 - 150) {
+			response.addContent(`\n${list}`);
 		} else {
-			response.addBankImage({
-				bank: currentWeightingBank.filter(_it => CanvasModule.allItemIdsWithSprite.has(_it.id)),
-				title: 'Bank Sort Weightings',
-				user
-			});
+			response.addContent('\nYour weightings are in the attached file.');
+			response.addFile({ name: 'BankSortWeightings.txt', buffer: Buffer.from(list, 'utf8') });
 		}
 		return response;
 	}

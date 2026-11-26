@@ -2,13 +2,15 @@
  * BSC ticket system: pure helpers only (no Discord or DB), so they are easy to test.
  *
  * Flow: a player files a ticket with `/help ticket:Bug` (or Suggestion), or staff/the bug scan files one.
- * It is posted to the staff ticket channel. Staff press Confirm or Ignore. Confirm pings the player once
+ * It is posted to the staff ticket channel, and the filer also gets a visible copy in the channel they
+ * filed from (or a DM if that post fails). Staff press Confirm or Ignore. Confirm pings the player once
  * as a new message. Devs then move it to On test, Live or Won't fix. Live pings the player once more.
  *
  * Config (env, all optional on the test bot):
  *   TICKET_CHANNEL_ID         Staff-only channel the tickets are posted in. Test default: the bot log channel.
  *                             Prod: required, tickets are off until it is set.
- *   TICKET_STAFF_ROLE_ID      Role pinged on each new ticket. Unset = no role ping.
+ *   TICKET_STAFF_ROLE_ID      Role pinged on each new ticket. On the test bot, unset falls back to the
+ *                             test Mod role. Prod: set this or staff will not be pinged.
  *   TICKET_NOTICE_CHANNEL_ID  Where player notices go for tickets with no channel of their own
  *                             (auto-filed ones). Unset = the staff ticket channel.
  */
@@ -78,6 +80,23 @@ export const DISCORD_MODAL_TITLE_LIMIT = 45;
 export const DISCORD_TEXT_INPUT_LABEL_LIMIT = 45;
 export const TICKET_LENGTH_MARGIN = 150;
 
+/** Test-server Mod role, used only when TICKET_STAFF_ROLE_ID is unset on the test bot. */
+export const TEST_TICKET_STAFF_ROLE_FALLBACK_ID = '1564759392795099148';
+
+/** Prod Los Perros staff roles to set as TICKET_STAFF_ROLE_ID (pick one, usually Mod). */
+export const PROD_TICKET_STAFF_ROLE_IDS = {
+	moderator: '1325179339641458749',
+	headMod: '1353916725086785646',
+	developer: '1569683439190286346',
+	contributor: '1569683812621881454'
+} as const;
+
+export function resolveTicketStaffRoleId(envRoleId: string | null, isProduction: boolean): string | null {
+	if (envRoleId) return envRoleId;
+	if (isProduction) return null;
+	return TEST_TICKET_STAFF_ROLE_FALLBACK_ID;
+}
+
 export interface TicketRecord {
 	id: number;
 	type: TicketType;
@@ -139,7 +158,7 @@ export function cleanScreenshotLink(text: string | null | undefined): string | n
 	const trimmed = (text ?? '').trim();
 	if (!trimmed) return null;
 	if (trimmed.length > TICKET_SCREENSHOT_MAX) return null;
-	if (!/^https:\/\/[^\s<>()\[\]`|]+$/i.test(trimmed)) return null;
+	if (!/^https:\/\/[^\s<>()[\]`|]+$/i.test(trimmed)) return null;
 	return trimmed;
 }
 
@@ -406,9 +425,25 @@ export function ticketNoticeContent(
 		: `${mention} 🚀 ${ref}: your suggestion is now live. Thanks for the idea!`;
 }
 
-export function ticketFiledReply(ticket: Pick<TicketRecord, 'id' | 'type'>, screenshotDropped: boolean): string {
+export function ticketFiledReply(
+	ticket: Pick<TicketRecord, 'id' | 'type'>,
+	screenshotDropped: boolean,
+	copy: 'channel' | 'dm' | 'none' = 'none'
+): string {
 	const skipped = screenshotDropped ? '\nThe screenshot link was skipped (it has to start with https://).' : '';
-	return `${TICKET_TYPE_ICONS[ticket.type]} **Ticket #${ticket.id}** sent to staff. You'll get a ping here if staff confirm it.${skipped}`;
+	const where =
+		copy === 'channel'
+			? ' A copy is in this channel so you can see it.'
+			: copy === 'dm'
+				? ' A copy was sent to your DMs.'
+				: '';
+	return `${TICKET_TYPE_ICONS[ticket.type]} **Ticket #${ticket.id}** sent to staff.${where} You'll get a ping here if staff confirm it.${skipped}`;
+}
+
+/** Visible filer copy. Never pings; staff buttons stay on the staff post only. */
+export function ticketFilerCopyContent(ticket: Pick<TicketRecord, 'id' | 'type'>): string {
+	const kind = TICKET_TYPE_LABELS[ticket.type].toLowerCase();
+	return `${TICKET_TYPE_ICONS[ticket.type]} **Ticket #${ticket.id}** (${kind}) sent to staff. This is your copy. You'll get a ping if staff confirm it.`;
 }
 
 export function ticketHelpPrompt(type: TicketType): string {
