@@ -32,7 +32,6 @@ import {
 	TICKET_LENGTH_MARGIN,
 	TICKET_MAX_OPEN_PER_PLAYER,
 	TICKET_PERMS,
-	TICKET_PLAYER_COOLDOWN_MS,
 	TICKET_STATUSES,
 	TICKET_TOOLS,
 	TICKET_TYPES,
@@ -243,16 +242,10 @@ describe('ticket safety', () => {
 		expect(cleanScreenshotLink('https://x.com/a) [x](https://evil')).toBeNull();
 	});
 
-	test('player anti-spam', () => {
-		const now = Date.now();
-		expect(playerTicketLimitError({ openCount: 0, lastCreatedAt: null, now })).toBeNull();
-		expect(playerTicketLimitError({ openCount: TICKET_MAX_OPEN_PER_PLAYER, lastCreatedAt: null, now })).toMatch(
-			/already/
-		);
-		expect(playerTicketLimitError({ openCount: 0, lastCreatedAt: new Date(now - 1000), now })).toMatch(/min/);
-		expect(
-			playerTicketLimitError({ openCount: 0, lastCreatedAt: new Date(now - TICKET_PLAYER_COOLDOWN_MS - 1), now })
-		).toBeNull();
+	test('player anti-spam: open cap only, no filing timer', () => {
+		expect(playerTicketLimitError({ openCount: 0 })).toBeNull();
+		expect(playerTicketLimitError({ openCount: TICKET_MAX_OPEN_PER_PLAYER - 1 })).toBeNull();
+		expect(playerTicketLimitError({ openCount: TICKET_MAX_OPEN_PER_PLAYER })).toMatch(/already/);
 	});
 
 	test('status moves and tiers', () => {
@@ -474,19 +467,13 @@ describe('ticket channels (Krypt-style, private by default)', () => {
 	});
 
 	test('one waiting ticket per type per player', () => {
-		expect(
-			playerTicketLimitError({ openCount: 1, openSameType: 1, type: 'bug', lastCreatedAt: null, now: 0 })
-		).toContain('bug ticket waiting');
-		expect(
-			playerTicketLimitError({ openCount: 1, openSameType: 0, type: 'suggestion', lastCreatedAt: null, now: 0 })
-		).toBeNull();
+		expect(playerTicketLimitError({ openCount: 1, openSameType: 1, type: 'bug' })).toContain('bug ticket waiting');
+		expect(playerTicketLimitError({ openCount: 1, openSameType: 0, type: 'suggestion' })).toBeNull();
 		const inChannel = playerTicketLimitError({
 			openCount: 3,
 			openSameType: 1,
 			type: 'suggestion',
-			openTicket: { id: BIG_ID, channelId: ID },
-			lastCreatedAt: null,
-			now: 0
+			openTicket: { id: BIG_ID, channelId: ID }
 		});
 		expect(inChannel).toContain(`**#${BIG_ID}**`);
 		expect(inChannel).toContain(`<#${ID}>`);
@@ -495,9 +482,7 @@ describe('ticket channels (Krypt-style, private by default)', () => {
 			openCount: 1,
 			openSameType: 1,
 			type: 'bug',
-			openTicket: { id: 2, channelId: null },
-			lastCreatedAt: null,
-			now: 0
+			openTicket: { id: 2, channelId: null }
 		});
 		expect(noChannel).toContain('**#2**');
 		expect(noChannel).toContain('Staff are reviewing it.');

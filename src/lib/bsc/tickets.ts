@@ -95,7 +95,6 @@ export const TICKET_WHAT_MIN = 10;
 export const TICKET_COMMAND_MAX = 100;
 export const TICKET_SCREENSHOT_MAX = 300;
 export const TICKET_REASON_MAX = 200;
-export const TICKET_PLAYER_COOLDOWN_MS = 10 * 60 * 1000;
 export const TICKET_MAX_OPEN_PER_PLAYER = 3;
 export const TICKET_LIST_MAX_LINES = 20;
 
@@ -254,11 +253,9 @@ export function prepareNewTicket(
 	};
 }
 
-/** Player anti-spam. Auto and staff tickets skip this. */
+/** Player anti-spam: max open tickets and one waiting per type (no filing timer). Auto and staff tickets skip this. */
 export function playerTicketLimitError(input: {
 	openCount: number;
-	lastCreatedAt: Date | null;
-	now: number;
 	/** Open (not yet looked at) tickets of the type being filed. One per type at a time. */
 	openSameType?: number;
 	type?: TicketType;
@@ -278,13 +275,6 @@ export function playerTicketLimitError(input: {
 	}
 	if (input.openCount >= TICKET_MAX_OPEN_PER_PLAYER) {
 		return `You already have ${TICKET_MAX_OPEN_PER_PLAYER} tickets waiting for staff. Please wait until one is looked at.`;
-	}
-	if (input.lastCreatedAt) {
-		const wait = input.lastCreatedAt.getTime() + TICKET_PLAYER_COOLDOWN_MS - input.now;
-		if (wait > 0) {
-			const minutes = Math.max(1, Math.ceil(wait / 60_000));
-			return `You just filed a ticket. You can file another in ${minutes} min.`;
-		}
 	}
 	return null;
 }

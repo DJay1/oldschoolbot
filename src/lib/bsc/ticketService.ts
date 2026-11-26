@@ -35,7 +35,6 @@ import {
 	TICKET_INPUT_WHAT,
 	TICKET_MAX_ADDED_USERS,
 	TICKET_MAX_OPEN_PER_PLAYER,
-	TICKET_PLAYER_COOLDOWN_MS,
 	TICKET_REASON_MAX,
 	TICKET_TOOL_RULES,
 	TICKET_TRANSCRIPT_MAX_MESSAGES,
@@ -197,23 +196,19 @@ async function playerLimitError(userId: string, type?: TicketType): Promise<stri
 			same_type: number;
 			same_id: number | null;
 			same_channel: string | null;
-			last_created: Date | null;
 		}[]
 	>`
 		SELECT
 			(SELECT COUNT(*)::int FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open') AS open_count,
 			(SELECT COUNT(*)::int FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''}) AS same_type,
 			(SELECT id FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_id,
-			(SELECT CASE WHEN channel_deleted_at IS NULL THEN ticket_channel_id END FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_channel,
-			(SELECT MAX(created_at) FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player') AS last_created
+			(SELECT CASE WHEN channel_deleted_at IS NULL THEN ticket_channel_id END FROM bsc_tickets WHERE reporter_id = ${userId} AND source = 'player' AND status = 'open' AND type = ${type ?? ''} ORDER BY id ASC LIMIT 1) AS same_channel
 	`;
 	return playerTicketLimitError({
 		openCount: Number(rows[0]?.open_count ?? 0),
 		openSameType: Number(rows[0]?.same_type ?? 0),
 		openTicket: rows[0]?.same_id ? { id: Number(rows[0].same_id), channelId: rows[0].same_channel ?? null } : null,
-		type,
-		lastCreatedAt: rows[0]?.last_created ? new Date(rows[0].last_created) : null,
-		now: Date.now()
+		type
 	});
 }
 
@@ -226,17 +221,11 @@ async function insertTicket(t: CleanTicketInput): Promise<TicketRecord | null> {
 		`;
 		return rows[0] ? toRecord(rows[0]) : null;
 	}
-	// Player tickets: the cooldown and open cap are re-checked inside the insert, so a double submit can't skip them.
-	const cooldownMs = TICKET_PLAYER_COOLDOWN_MS;
+	// Player tickets: the open cap and one-waiting-per-type are re-checked inside the insert, so a double submit can't skip them.
 	const rows = await prisma.$queryRaw<TicketRow[]>`
 		INSERT INTO bsc_tickets (type, source, reporter_id, filed_by, guild_id, origin_channel_id, what, command, screenshot)
 		SELECT ${t.type}, 'player', ${t.reporterId}, ${t.filedBy}, ${t.guildId}, ${t.originChannelId}, ${t.what}, ${t.command}, ${t.screenshot}
-		WHERE NOT EXISTS (
-			SELECT 1 FROM bsc_tickets
-			WHERE reporter_id = ${t.reporterId} AND source = 'player'
-			AND created_at > NOW() - (${cooldownMs}::int * INTERVAL '1 millisecond')
-		)
-		AND (
+		WHERE (
 			SELECT COUNT(*) FROM bsc_tickets WHERE reporter_id = ${t.reporterId} AND source = 'player' AND status = 'open'
 		) < ${TICKET_MAX_OPEN_PER_PLAYER}
 		AND NOT EXISTS (
