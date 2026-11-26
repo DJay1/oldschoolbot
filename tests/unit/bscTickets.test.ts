@@ -18,6 +18,7 @@ import {
 	embedTotalLength,
 	filerCanClose,
 	filerCanToggleVisibility,
+	holdsTicketStaffRole,
 	maskTicketOverwrite,
 	neutralizeMentions,
 	parseTicketCustomId,
@@ -36,6 +37,7 @@ import {
 	TICKET_TOOLS,
 	TICKET_TYPES,
 	type TicketRecord,
+	ticketAccessRoleIds,
 	ticketActionButtonId,
 	ticketActionRule,
 	ticketButtonRows,
@@ -610,5 +612,51 @@ describe('ticket channels (Krypt-style, private by default)', () => {
 		expect(lines[3]).toBe('Closed at: Dec 31, 1969, 6:00 PM CT');
 		expect(lines.at(-2)).toContain('a [BOT] (1): [embed: Bug #7]');
 		expect(lines.at(-1)).toContain('b (2): second [file: https://x/y.png]');
+	});
+});
+
+// Krypt's test run (Nov 26): Mods and Admins were refused because tickets only read bot flags, not staff roles.
+describe('ticket staff roles (all staff roles, single source)', () => {
+	const ping = '1497678842188271756';
+	const staff = [
+		'1385684584976482374',
+		'1456110293825355819',
+		'1353916725086785646',
+		'1325179339641458749',
+		'1496337775560232970'
+	];
+
+	test('access roles = ping role + every staff role, deduped', () => {
+		expect(ticketAccessRoleIds(ping, [...staff, ping, staff[0]])).toEqual([ping, ...staff]);
+		expect(ticketAccessRoleIds(null, staff)).toEqual(staff);
+		expect(ticketAccessRoleIds(ping, ['', 'abc'])).toEqual([ping]);
+	});
+
+	test('roles missing from the server are skipped', () => {
+		expect(ticketAccessRoleIds(ping, staff, new Set([ping, staff[3]]))).toEqual([ping, staff[3]]);
+	});
+
+	test('any staff role counts as ticket staff; QC or no roles does not', () => {
+		const access = ticketAccessRoleIds(ping, staff);
+		for (const r of access) expect(holdsTicketStaffRole([r], access)).toBe(true);
+		expect(holdsTicketStaffRole(['1564455672270290975'], access)).toBe(false);
+		expect(holdsTicketStaffRole([], access)).toBe(false);
+		expect(holdsTicketStaffRole(undefined, access)).toBe(false);
+	});
+
+	test('channel overwrites give every staff role access, once each', () => {
+		const ows = buildTicketOverwrites({
+			guildId: 'g1',
+			botId: 'b1',
+			staffRoleId: ping,
+			staffRoleIds: [ping, ...staff],
+			memberIds: ['u1'],
+			visibility: 'private',
+			closed: false
+		});
+		const roleRows = ows.filter(o => o.type === 0 && o.id !== 'g1');
+		expect(roleRows.map(o => o.id)).toEqual([ping, ...staff]);
+		const pingRow = roleRows[0];
+		for (const o of roleRows) expect(o.allow).toBe(pingRow.allow);
 	});
 });

@@ -1022,17 +1022,39 @@ export function ticketBotOverwrite(botId: string): TicketOverwrite {
 	return ow(botId, 1, MEMBER_PERMS, 0n);
 }
 
+/** The ping role plus every staff role, deduped. Optionally only roles that exist in the server. */
+export function ticketAccessRoleIds(
+	pingRoleId: string | null,
+	staffRoleIds: readonly string[],
+	existingRoleIds?: ReadonlySet<string> | null
+): string[] {
+	const ids = [...new Set([...(pingRoleId ? [pingRoleId] : []), ...staffRoleIds].filter(id => /^\d+$/.test(id)))];
+	return existingRoleIds ? ids.filter(id => existingRoleIds.has(id)) : ids;
+}
+
+/** Holding any ticket staff role counts as Moderator for tickets (bit flags can only raise it further). */
+export function holdsTicketStaffRole(
+	roleIds: readonly string[] | null | undefined,
+	accessRoleIds: readonly string[]
+): boolean {
+	return Boolean(roleIds?.some(id => accessRoleIds.includes(id)));
+}
+
 /** The full overwrite list for a new ticket channel. */
 export function buildTicketOverwrites(opts: {
 	guildId: string;
 	botId: string;
 	staffRoleId: string | null;
+	/** Every staff role that should see and type in tickets (DJ, Owner, Admin, Head Mod, Mod, STAFF). */
+	staffRoleIds?: readonly string[];
 	memberIds: string[];
 	visibility: TicketVisibility;
 	closed: boolean;
 }): TicketOverwrite[] {
 	const out = [ticketEveryoneOverwrite(opts.guildId, opts.visibility), ticketBotOverwrite(opts.botId)];
-	if (opts.staffRoleId) out.push(ticketStaffOverwrite(opts.staffRoleId));
+	for (const roleId of ticketAccessRoleIds(opts.staffRoleId, opts.staffRoleIds ?? [])) {
+		if (roleId !== opts.guildId) out.push(ticketStaffOverwrite(roleId));
+	}
 	for (const id of [...new Set(opts.memberIds)]) {
 		if (id !== opts.botId && id !== opts.guildId) out.push(ticketMemberOverwrite(id, opts.closed));
 	}

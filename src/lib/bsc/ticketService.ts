@@ -8,7 +8,9 @@ import {
 } from '@oldschoolgg/discord';
 
 import { corgoDeniedReply } from '@/lib/bsc/corgoGifs.js';
+import { bscStaffRoleIds } from '@/lib/bsc/patronTiers.js';
 import { staffGuildAllowed, staffTierOf } from '@/lib/bsc/staffAccess.js';
+import { higherStaffTier } from '@/lib/bsc/staffRoleBits.js';
 import { STAFF_TIER_NAMES, type StaffTier, tierAtLeast } from '@/lib/bsc/staffTiers.js';
 import {
 	actionPingsReporter,
@@ -18,6 +20,7 @@ import {
 	cleanTicketLine,
 	filerCanClose,
 	filerCanToggleVisibility,
+	holdsTicketStaffRole,
 	isSensitiveTicketType,
 	isTicketStatus,
 	isTicketType,
@@ -47,6 +50,7 @@ import {
 	type TicketType,
 	type TicketVisibility,
 	type TranscriptMessage,
+	ticketAccessRoleIds,
 	ticketActionRule,
 	ticketButtonRows,
 	ticketCanBePublic,
@@ -82,6 +86,7 @@ export interface TicketModalSubmit {
 	id: string;
 	token: string;
 	guild_id?: string;
+	member?: { roles?: string[] };
 	channel?: { id: string };
 	message?: unknown;
 	data: {
@@ -103,12 +108,18 @@ export function ticketConfig(): {
 	categoryId: string | null;
 	/** Close transcripts and delete notes. TICKET_LOG_CHANNEL_ID, else the staff ticket channel. */
 	logChannelId: string | null;
+	/** Every role that counts as ticket staff and can see ticket channels: the ping role + STAFF_ROLE_IDS. */
+	accessRoleIds: string[];
 } {
 	const fallback = globalConfig.isProduction ? null : Channel.BotLogs;
 	const channelId = envId('TICKET_CHANNEL_ID') ?? (fallback && SNOWFLAKE.test(fallback) ? fallback : null);
 	return {
 		channelId,
 		logChannelId: envId('TICKET_LOG_CHANNEL_ID') ?? channelId,
+		accessRoleIds: ticketAccessRoleIds(
+			resolveTicketStaffRoleId(envId('TICKET_STAFF_ROLE_ID'), globalConfig.isProduction),
+			bscStaffRoleIds()
+		),
 		staffRoleId: resolveTicketStaffRoleId(envId('TICKET_STAFF_ROLE_ID'), globalConfig.isProduction),
 		noticeChannelId: envId('TICKET_NOTICE_CHANNEL_ID'),
 		categoryId: envId('TICKET_CATEGORY_ID')
@@ -482,8 +493,18 @@ async function finishAction(
 }
 
 /** Non-staff pressing any ticket staff button gets a random Corgo gif from the shared list (same set as /staff and /admin). */
-function staffDenied(user: MUser, guildId: string | null): ReturnType<typeof corgoDeniedReply> | null {
-	const tier = staffTierOf(user);
+/** Staff tier for tickets: bot flags, synced roles, or holding any staff role (STAFF_ROLE_IDS, single source). */
+function ticketTier(user: MUser, roleIds: readonly string[] | null | undefined): StaffTier {
+	const tier = staffTierOf(user, roleIds);
+	return holdsTicketStaffRole(roleIds, ticketConfig().accessRoleIds) ? higherStaffTier(tier, 'moderator') : tier;
+}
+
+function staffDenied(
+	user: MUser,
+	guildId: string | null,
+	roleIds: readonly string[] | null | undefined
+): ReturnType<typeof corgoDeniedReply> | null {
+	const tier = ticketTier(user, roleIds);
 	if (!staffGuildAllowed(guildId) || tier === 'none') return corgoDeniedReply();
 	return null;
 }
@@ -511,7 +532,7 @@ export async function handleTicketButton(user: MUser, customId: string, interact
 	}
 
 	if (parsed.kind === 'tool') {
-		const denied = staffDenied(user, interaction.guildId);
+		const denied = staffDenied(user, interaction.guildId, interaction.member?.roles);
 		if (denied) {
 			// The filer may Close their own ticket, and Make Public/Private their own Suggestion.
 			// Everything else (and everyone else) gets the Corgo.
@@ -529,9 +550,9 @@ export async function handleTicketButton(user: MUser, customId: string, interact
 	}
 
 	if (parsed.kind !== 'act') return { content: 'That ticket button is not valid.', ephemeral: true };
-	const denied = staffDenied(user, interaction.guildId);
+	const denied = staffDenied(user, interaction.guildId, interaction.member?.roles);
 	if (denied) return deniedResponse(denied);
-	const tier = staffTierOf(user);
+	const tier = ticketTier(user, interaction.member?.roles);
 	const ticket = await getTicket(parsed.id);
 	if (!ticket || (ticket.staffMessageId && ticket.staffMessageId !== interaction.messageId)) {
 		return { content: `Ticket #${parsed.id} could not be found on this message.`, ephemeral: true };
@@ -601,7 +622,7 @@ export async function handleTicketModalSubmit(itx: TicketModalSubmit, user: MUse
 	}
 
 	if (parsed.kind !== 'rsn') return;
-	const denied = staffDenied(user, itx.guild_id ?? null);
+	const denied = staffDenied(user, itx.guild_id ?? null, itx.member?.roles);
 	if (denied) {
 		return respond(itx.id, itx.token, InteractionResponseType.ChannelMessageWithSource, {
 			...denied,
@@ -609,7 +630,7 @@ export async function handleTicketModalSubmit(itx: TicketModalSubmit, user: MUse
 			allowed_mentions: { parse: [] }
 		});
 	}
-	const tier = staffTierOf(user);
+	const tier = ticketTier(user, itx.member?.roles);
 	const result = await applyTicketAction(
 		parsed.id,
 		parsed.action,
@@ -663,6 +684,8 @@ async function discordUsername(userId: string): Promise<string | null> {
 
 const ADMINISTRATOR = 1n << 3n;
 const botPermsCache = new Map<string, { perms: bigint; at: number }>();
+/** Role IDs that exist in each server, so staff roles from another server never break channel creation. */
+const guildRoleIdsCache = new Map<string, Set<string>>();
 
 /**
  * The bot's server-wide permissions. Discord refuses an overwrite that allows or denies a permission the bot
@@ -677,6 +700,7 @@ async function botGuildPerms(guildId: string): Promise<bigint | null> {
 			globalClient.rest.get(Routes.guildRoles(guildId)),
 			globalClient.rest.get(Routes.guildMember(guildId, botId))
 		])) as [{ id: string; permissions: string }[], { roles: string[] }];
+		guildRoleIdsCache.set(guildId, new Set(roles.map(r => r.id)));
 		let perms = 0n;
 		for (const r of roles) if (r.id === guildId || member.roles.includes(r.id)) perms |= BigInt(r.permissions);
 		if ((perms & ADMINISTRATOR) === ADMINISTRATOR) perms = (1n << 60n) - 1n;
@@ -716,7 +740,7 @@ async function postNote(channelId: string, content: string, pingUserIds: string[
  * (no category set, missing Manage Channels / Manage Roles, or the category is full at 50 channels).
  */
 async function postTicketToOwnChannel(ticket: TicketRecord): Promise<boolean> {
-	const { categoryId, staffRoleId } = ticketConfig();
+	const { categoryId, staffRoleId, accessRoleIds } = ticketConfig();
 	if (!categoryId) return false;
 	let channelId: string | null = null;
 	try {
@@ -736,6 +760,7 @@ async function postTicketToOwnChannel(ticket: TicketRecord): Promise<boolean> {
 					guildId,
 					botId,
 					staffRoleId,
+					staffRoleIds: ticketAccessRoleIds(null, accessRoleIds, guildRoleIdsCache.get(guildId) ?? null),
 					memberIds,
 					visibility: 'private',
 					closed: false
@@ -876,10 +901,11 @@ async function handleTicketTool(
 	interaction: OSInteraction,
 	asFiler = false
 ): CommandResponse {
+	const roleIds = interaction.member?.roles;
 	if (asFiler && tool !== 'close' && tool !== 'public' && tool !== 'private') {
 		return { content: 'Only staff can do that.', ephemeral: true };
 	}
-	const tier = staffTierOf(user);
+	const tier = ticketTier(user, roleIds);
 	const rule = TICKET_TOOL_RULES[tool];
 	if (!asFiler && !tierAtLeast(tier, rule.minTier)) {
 		return { content: `${rule.label} needs the ${STAFF_TIER_NAMES[rule.minTier]} role.`, ephemeral: true };
@@ -949,7 +975,8 @@ async function handleTicketTool(
 		}
 		// A second channel update after the permission change. Discord's app only adds a channel that just became
 		// visible when it gets a fresh channel update; without it, people who were pinged bounce back out of it.
-		await globalClient.rest
+		// Not awaited: Discord rate limits topic edits (2 per 10 min per channel), so waiting could miss the 3s reply.
+		void globalClient.rest
 			.patch(Routes.channel(channelId), { body: { topic: ticketChannelTopic(ticket, tool) } })
 			.catch(err => Logging.logError(err as Error, { type: 'TICKET_TOPIC', ticket_id: id }));
 		return finishTool(itx, toRecord(rows[0]), ticketToolNote(tool, user.id));
@@ -986,8 +1013,9 @@ async function handleTicketTool(
 		`;
 		if (!rows[0]) return { content: `Ticket #${id} is already open.`, ephemeral: true };
 		const reopened = toRecord(rows[0]);
-		const unlocked = await setMembersLocked(reopened, false);
+		// Reply first (3s limit), then unlock everyone.
 		const res = await finishTool(itx, reopened, ticketToolNote('reopen', user.id));
+		const unlocked = await setMembersLocked(reopened, false);
 		if (!unlocked) await followUpEphemeral(token, `Reopened, but some people are still locked. ${NO_PERMS_HINT}`);
 		return res;
 	}
@@ -1000,16 +1028,16 @@ async function handleTicketTool(
 		RETURNING *
 	`;
 	if (!rows[0]) return { content: `Ticket #${id} is already deleted.`, ephemeral: true };
-	// Grab the name before the channel is gone, for the staff log line.
-	const deletedName = await globalClient.rest
-		.get(Routes.channel(channelId))
-		.then(c => (c as { name?: string }).name ?? `ticket-${id}`)
-		.catch(() => `ticket-${id}`);
+	// Reply first (3s limit), then grab the name before the channel is gone, for the staff log line.
 	await respond(interaction.id, token, InteractionResponseType.ChannelMessageWithSource, {
 		content: 'Deleting this ticket channel…',
 		flags: MessageFlags.Ephemeral,
 		allowed_mentions: { parse: [] }
 	});
+	const deletedName = await globalClient.rest
+		.get(Routes.channel(channelId))
+		.then(c => (c as { name?: string }).name ?? `ticket-${id}`)
+		.catch(() => `ticket-${id}`);
 	try {
 		await globalClient.rest.delete(Routes.channel(channelId), { reason: `BSC ticket #${id} deleted by staff` });
 	} catch (err) {
@@ -1029,6 +1057,7 @@ export interface TicketUserSelectInteraction {
 	id: string;
 	token: string;
 	guild_id?: string;
+	member?: { roles?: string[] };
 	channel?: { id: string };
 	data: {
 		custom_id: string;
@@ -1050,7 +1079,7 @@ export async function handleTicketUserSelect(itx: TicketUserSelectInteraction, u
 			components: [],
 			allowed_mentions: { parse: [] }
 		});
-	const denied = staffDenied(user, itx.guild_id ?? null);
+	const denied = staffDenied(user, itx.guild_id ?? null, itx.member?.roles);
 	if (denied) {
 		return respond(itx.id, itx.token, InteractionResponseType.UpdateMessage, {
 			...denied,
@@ -1058,7 +1087,7 @@ export async function handleTicketUserSelect(itx: TicketUserSelectInteraction, u
 			allowed_mentions: { parse: [] }
 		});
 	}
-	const tier = staffTierOf(user);
+	const tier = ticketTier(user, itx.member?.roles);
 	const rule = TICKET_TOOL_RULES[parsed.mode];
 	if (!tierAtLeast(tier, rule.minTier))
 		return reply(`${rule.label} needs the ${STAFF_TIER_NAMES[rule.minTier]} role.`);
