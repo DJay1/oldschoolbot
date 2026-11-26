@@ -2,20 +2,20 @@ import { describe, expect, test } from 'vitest';
 
 import {
 	appendQueuedTrips,
+	buildRecurringQueueTemplate,
 	claimRecurringRun,
+	clampRecurringTemplateToDailyCap,
 	dequeueQueuedTrip,
+	formatRecurringScheduleConfirmation,
 	isValidQueueLocalTime,
 	MAX_RECURRING_QUEUE_DAYS,
 	nextQueueScheduleAt,
 	parseQueuedTrips,
 	parseRecurringDays,
 	parseRecurringQueue,
-	type QueuedTripGroup,
-	type RecurringQueue,
-	buildRecurringQueueTemplate,
-	clampRecurringTemplateToDailyCap,
 	planRecurringEnqueue,
-	formatRecurringScheduleConfirmation
+	type QueuedTripGroup,
+	type RecurringQueue
 } from '@/lib/bsc/tripQueueState.js';
 
 describe('trip queue state', () => {
@@ -155,7 +155,6 @@ describe('recurring scheduled queue', () => {
 	});
 });
 
-
 describe('recurring schedule template', () => {
 	const queuedEight = [{ activityId: 20294, type: 'AerialFishing', count: 8 }];
 	const addedEight = { activityId: 20294, type: 'AerialFishing', count: 8 };
@@ -199,11 +198,7 @@ describe('recurring schedule template', () => {
 
 describe('planRecurringEnqueue anti-exploit', () => {
 	test('a 16-trip plan cannot enqueue more than the daily cap or queue room', () => {
-		const planned = planRecurringEnqueue(
-			[{ activityId: 20294, type: 'AerialFishing', count: 16 }],
-			8,
-			8
-		);
+		const planned = planRecurringEnqueue([{ activityId: 20294, type: 'AerialFishing', count: 16 }], 8, 8);
 		expect(planned).toEqual([{ activityId: 20294, type: 'AerialFishing', count: 8 }]);
 		expect(planned.reduce((sum, trip) => sum + trip.count, 0)).toBe(8);
 	});

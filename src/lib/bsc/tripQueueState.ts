@@ -212,11 +212,7 @@ export function clampRecurringTemplateToDailyCap<T extends QueuedTripGroup>(
 }
 
 /** How many of a recurring plan can be copied into the live queue this window. */
-export function planRecurringEnqueue(
-	trips: QueuedTripGroup[],
-	dailyLeft: number,
-	room: number
-): QueuedTripGroup[] {
+export function planRecurringEnqueue(trips: QueuedTripGroup[], dailyLeft: number, room: number): QueuedTripGroup[] {
 	const planned: QueuedTripGroup[] = [];
 	let added = 0;
 	for (const trip of trips) {

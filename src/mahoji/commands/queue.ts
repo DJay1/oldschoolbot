@@ -138,7 +138,8 @@ export const queueCommand = defineCommand({
 				{
 					type: 'String',
 					name: 'trip',
-					description: 'Trip to run each day. If set, this is the daily plan, not added on top of your queue.',
+					description:
+						'Trip to run each day. If set, this is the daily plan, not added on top of your queue.',
 					autocomplete: async ({ userId, value }: StringAutoComplete) => {
 						const user = await mUserFetch(userId);
 						const trips = await fetchRepeatTrips(user);
