@@ -330,7 +330,17 @@ export const minigamesCommand = defineCommand({
 				{
 					type: 'Subcommand',
 					name: 'start',
-					description: 'Start a trip.'
+					description: 'Start a trip.',
+					options: [
+						{
+							type: 'Integer',
+							name: 'quantity',
+							description: 'The amount of games to do.',
+							required: false,
+							min_value: 1,
+							max_value: 100_000
+						}
+					]
 				}
 			]
 		},
@@ -673,7 +683,17 @@ export const minigamesCommand = defineCommand({
 				{
 					type: 'Subcommand',
 					name: 'start',
-					description: 'Start a trip.'
+					description: 'Start a trip.',
+					options: [
+						{
+							type: 'Integer',
+							name: 'quantity',
+							description: 'The amount of games to do.',
+							required: false,
+							min_value: 1,
+							max_value: 100_000
+						}
+					]
 				}
 			]
 		},
@@ -1277,7 +1297,9 @@ export const minigamesCommand = defineCommand({
 		 * Fishing Trawler
 		 *
 		 */
-		if (options.fishing_trawler?.start) return fishingTrawlerCommand(user, channelId);
+		if (options.fishing_trawler?.start) {
+			return fishingTrawlerCommand(user, channelId, options.fishing_trawler.start.quantity);
+		}
 
 		/**
 		 *
@@ -1387,8 +1409,8 @@ export const minigamesCommand = defineCommand({
 		 * Pyramid Plunder
 		 *
 		 */
-		if (options.pyramid_plunder) {
-			return pyramidPlunderCommand(user, channelId);
+		if (options.pyramid_plunder?.start) {
+			return pyramidPlunderCommand(user, channelId, options.pyramid_plunder.start.quantity);
 		}
 
 		/**

@@ -76,6 +76,7 @@ import type {
 	OfferingActivityTaskOptions,
 	OuraniaAltarOptions,
 	PickpocketActivityTaskOptions,
+	PlunderActivityTaskOptions,
 	PuroPuroActivityTaskOptions,
 	RaidsOptions,
 	RunecraftActivityTaskOptions,
@@ -449,7 +450,9 @@ const tripHandlers: {
 	},
 	[activity_type_enum.FishingTrawler]: {
 		commandName: 'minigames',
-		args: () => ({ fishing_trawler: { start: {} } })
+		args: (data: ActivityTaskOptionsWithQuantity | MinigameActivityTaskOptionsWithNoChanges) => ({
+			fishing_trawler: { start: { quantity: data.quantity } }
+		})
 	},
 	[activity_type_enum.Fletching]: {
 		commandName: 'fletch',
@@ -620,7 +623,9 @@ const tripHandlers: {
 	},
 	[activity_type_enum.Plunder]: {
 		commandName: 'minigames',
-		args: () => ({ pyramid_plunder: {} })
+		args: (data: PlunderActivityTaskOptions) => ({
+			pyramid_plunder: { start: { quantity: data.quantity } }
+		})
 	},
 	[activity_type_enum.PuroPuro]: {
 		commandName: 'activities',

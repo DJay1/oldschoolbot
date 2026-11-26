@@ -3,8 +3,9 @@ import { formatDuration, reduceNumByPercent, Time } from '@oldschoolgg/toolkit';
 import { plunderBoosts, plunderRooms } from '@/lib/minions/data/plunder.js';
 import type { PlunderActivityTaskOptions } from '@/lib/types/minions.js';
 import { formatTripDuration } from '@/lib/util/minionUtils.js';
+import { MAX_QUANTITY, validateQuantity } from '@/lib/util/validateQuantity.js';
 
-export async function pyramidPlunderCommand(user: MUser, channelId: string) {
+export async function pyramidPlunderCommand(user: MUser, channelId: string, quantity?: number) {
 	if (await user.minionIsBusy()) return `${user.minionName} is busy.`;
 	const skills = user.skillsAsLevels;
 	const thievingLevel = skills.thieving;
@@ -40,12 +41,21 @@ export async function pyramidPlunderCommand(user: MUser, channelId: string) {
 			plunderTime = reduceNumByPercent(plunderTime, percent);
 		}
 	}
-	const maxQuantity = Math.floor((await user.calcMaxTripLength('Plunder')) / plunderTime);
-	const tripLength = maxQuantity * plunderTime;
+	const maxTripLength = await user.calcMaxTripLength('Plunder');
+	const maxQuantity = Math.floor(maxTripLength / plunderTime);
+	if (quantity !== undefined) {
+		const parsedQuantity = validateQuantity(quantity, { min: 1, max: MAX_QUANTITY });
+		if (!parsedQuantity.ok) return parsedQuantity.error;
+		quantity = parsedQuantity.value;
+	}
+	if (!quantity || quantity > maxQuantity) {
+		quantity = maxQuantity;
+	}
+	const tripLength = quantity * plunderTime;
 
 	await ActivityManager.startTrip<PlunderActivityTaskOptions>({
 		rooms: completableRooms.map(room => room.number),
-		quantity: maxQuantity,
+		quantity,
 		userID: user.id,
 		duration: tripLength,
 		type: 'Plunder',
@@ -55,7 +65,7 @@ export async function pyramidPlunderCommand(user: MUser, channelId: string) {
 
 	let str = `${
 		user.minionName
-	} is now doing Pyramid Plunder ${maxQuantity} times, each cycle they are looting the last two rooms ${
+	} is now doing Pyramid Plunder ${quantity} times, each cycle they are looting the last two rooms ${
 		completableRooms.length < 2 ? 1 : completableRooms[completableRooms.length - 2].number
 	} and ${completableRooms[completableRooms.length - 1].number}, the trip will return in about ${formatTripDuration(user, tripLength)}, with each cycle taking ${formatDuration(plunderTime)}.`;
 
