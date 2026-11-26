@@ -4,8 +4,7 @@ import {
 	formatInventionFullTripCostLine,
 	formatInventionMaterialSkipLine,
 	formatInventionUsageCostLine,
-	type InventionMaterialSkip,
-	recordInventionTripMaterialCost
+	type InventionMaterialSkip
 } from '@/lib/bso/skills/invention/inventionBoostNotice.js';
 import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 
@@ -768,7 +767,6 @@ export async function chargeInventionItemBoost(
 			remove: materialCost,
 			addToGlobalInventionCostBank: true
 		});
-		recordInventionTripMaterialCost(materialCost);
 		return { success: true, materialCost, messages: messages.join(', ') };
 	} catch (err) {
 		Logging.logError(err as Error, { user_id: user.id });

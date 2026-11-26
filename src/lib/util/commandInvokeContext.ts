@@ -1,11 +1,8 @@
-import type { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
-
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 export type CommandInvokeStore = {
 	interaction: OSInteraction;
 	isContinue: boolean;
-	inventionMaterialsCharged?: MaterialBank;
 };
 
 const commandInvokeContext = new AsyncLocalStorage<CommandInvokeStore>();

@@ -283,7 +283,7 @@ export enum BitField {
 	HasBugHunterTitle = 249,
 	/** Player has already seen the first-time invention material-skip confirm. */
 	HasSeenInventionMaterialSkipConfirm = 250,
-	/** Opt-in: show total invention materials charged for the whole trip. */
+	/** Reserved. Was the opt-in trip-start invention totals line; no longer used. */
 	ShowInventionTripMaterials = 251
 }
 
@@ -647,7 +647,7 @@ export const BitFieldData: Record<BitField, IBitFieldData> = {
 	[BitField.ShowInventionTripMaterials]: {
 		name: 'Show Invention Trip Material Totals',
 		protected: false,
-		userConfigurable: true
+		userConfigurable: false
 	}
 } as const;
 

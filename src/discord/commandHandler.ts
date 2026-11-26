@@ -1,5 +1,3 @@
-import { appendInventionTripMaterialTotalToResponse } from '@/lib/bso/skills/invention/inventionBoostNotice.js';
-
 import { type APIChatInputApplicationCommandInteraction, SpecialResponse } from '@oldschoolgg/discord';
 import { UserError } from '@oldschoolgg/toolkit';
 import { cryptoRng } from 'node-rng/crypto';
@@ -78,19 +76,16 @@ export async function rawCommandHandlerInner({
 
 		const runClosure = () =>
 			runInCommandInvokeContext({ interaction, isContinue: Boolean(isContinue) }, async () =>
-				appendInventionTripMaterialTotalToResponse(
+				command.run({
+					interaction,
+					options,
 					user,
-					await command.run({
-						interaction,
-						options,
-						user,
-						member: interaction.member,
-						channelId: interaction.channelId,
-						guildId: interaction.guildId,
-						userId: interaction.userId,
-						rng
-					})
-				)
+					member: interaction.member,
+					channelId: interaction.channelId,
+					guildId: interaction.guildId,
+					userId: interaction.userId,
+					rng
+				})
 			);
 
 		const requiresLock = Boolean('flags' in command && command.flags?.includes('REQUIRES_LOCK'));
