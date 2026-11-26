@@ -753,8 +753,15 @@ export function ticketChannelName(ticket: Pick<TicketRecord, 'id' | 'type'>, nam
 	return `${ticket.type}-${num}-${ticketChannelSlug(name)}`;
 }
 
-export function ticketChannelTopic(ticket: Pick<TicketRecord, 'id' | 'type'>): string {
-	return `${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} ticket #${ticket.id}. Only the player, staff and anyone staff add can see this.`;
+export function ticketChannelTopic(
+	ticket: Pick<TicketRecord, 'id' | 'type'>,
+	visibility: TicketVisibility = 'private'
+): string {
+	const who =
+		visibility === 'public'
+			? 'Public: everyone can read and react. Only people in the ticket can type.'
+			: 'Only the player, staff and anyone staff add can see this.';
+	return `${TICKET_TYPE_ICONS[ticket.type]} ${TICKET_TYPE_LABELS[ticket.type]} ticket #${ticket.id}. ${who}`;
 }
 
 /** First message in a ticket channel. Pings the staff role; also the player on tickets they filed themselves. */

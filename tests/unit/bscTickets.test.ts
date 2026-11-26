@@ -347,6 +347,9 @@ describe('ticket channels (Krypt-style, private by default)', () => {
 			expect(content.length).toBeLessThan(limit);
 		}
 		expect(ticketChannelTopic(t).length).toBeLessThan(1024 - TICKET_LENGTH_MARGIN);
+		expect(ticketChannelTopic(t, 'public').length).toBeLessThan(1024 - TICKET_LENGTH_MARGIN);
+		expect(ticketChannelTopic(t, 'public')).toContain('Public');
+		expect(ticketChannelTopic(t)).toContain('Only the player');
 		expect(ticketTranscriptFileName(t)).toBe('suggestion-999999999-transcript.txt');
 	});
 

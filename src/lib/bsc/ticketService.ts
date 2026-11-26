@@ -879,6 +879,11 @@ async function handleTicketTool(
 			await prisma.$executeRaw`UPDATE bsc_tickets SET visibility = ${from} WHERE id = ${id}`;
 			return { content: NO_PERMS_HINT, ephemeral: true };
 		}
+		// A second channel update after the permission change. Discord's app only adds a channel that just became
+		// visible when it gets a fresh channel update; without it, people who were pinged bounce back out of it.
+		await globalClient.rest
+			.patch(Routes.channel(channelId), { body: { topic: ticketChannelTopic(ticket, tool) } })
+			.catch(err => Logging.logError(err as Error, { type: 'TICKET_TOPIC', ticket_id: id }));
 		return finishTool(itx, toRecord(rows[0]), ticketToolNote(tool, user.id));
 	}
 
