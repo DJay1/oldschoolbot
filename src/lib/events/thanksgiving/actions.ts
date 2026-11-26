@@ -1,3 +1,5 @@
+import { MessageFlags } from '@oldschoolgg/discord';
+
 import { unqueuedTransactItems } from '@/lib/util/transactItemsFromBank.js';
 import { userQueueFn } from '@/lib/util/userQueues.js';
 import { thanksgivingMakeButtons } from './buttons.js';
@@ -14,6 +16,19 @@ import {
 	thanksgivingButtonOwnerId
 } from './make.js';
 import { thanksgivingOffer } from './offer.js';
+
+function sourceMessageIsEphemeral(interaction: { message?: { flags?: number } | null }): boolean {
+	return Boolean((interaction.message?.flags ?? 0) & MessageFlags.Ephemeral);
+}
+
+function withSourceEphemeral(
+	result: string | Record<string, unknown>,
+	ephemeral: boolean
+): string | Record<string, unknown> {
+	if (!ephemeral) return result;
+	if (typeof result === 'string') return { content: result, ephemeral: true };
+	return { ...result, ephemeral: true };
+}
 
 async function executeCornucopiaMake(user: MUser, confirmedQuantity: number, requested?: number) {
 	const next = resolveCornucopiaMakeAfterConfirm(user.bank, requested, confirmedQuantity);
@@ -41,11 +56,13 @@ export async function handleThanksgivingMakeButton({
 	user: MUser;
 	interaction: {
 		userId: string;
-		confirmation: (message: { content: string; confirmLabel?: string }) => Promise<void>;
+		message?: { flags?: number } | null;
+		confirmation: (message: { content: string; confirmLabel?: string; ephemeral?: boolean }) => Promise<void>;
 	};
 	id: string;
 	rng: ThanksgivingRng;
 }) {
+	const ephemeral = sourceMessageIsEphemeral(interaction);
 	const ownerId = thanksgivingButtonOwnerId(id);
 	if (!ownerId || ownerId !== interaction.userId || ownerId !== user.id) {
 		return { content: 'This button is only for the person who ran the command.', ephemeral: true };
@@ -64,33 +81,52 @@ export async function handleThanksgivingMakeButton({
 	if (makeAndOffer) {
 		const alreadyOwned = user.bank.amount(ThanksgivingItem.BOUNTIFUL_CORNUCOPIA);
 		const confirm = formatMakeAndOfferConfirm(preview, alreadyOwned);
-		await interaction.confirmation({ content: confirm.content, confirmLabel: confirm.confirmLabel });
+		await interaction.confirmation({
+			content: confirm.content,
+			confirmLabel: confirm.confirmLabel,
+			ephemeral
+		});
 		return userQueueFn(user.id, async () => {
 			await user.sync();
 			const made = await executeCornucopiaMake(user, preview.quantity, undefined);
-			if (!made.ok) return made.error;
+			if (!made.ok) return withSourceEphemeral(made.error, ephemeral);
 			if (!isThanksgivingActive()) {
-				return `${made.message} The Straw Hat Harvest is not running, so nothing was offered.`;
+				return withSourceEphemeral(
+					`${made.message} The Straw Hat Harvest is not running, so nothing was offered.`,
+					ephemeral
+				);
 			}
 			const offerResult = await thanksgivingOffer(user, 'all', rng, { alreadyQueued: true });
-			if (typeof offerResult === 'string') return `${made.message}\n${offerResult}`;
-			return {
-				content: `${made.message}\n${offerResult.content}`,
-				files: 'files' in offerResult ? offerResult.files : undefined,
-				components: thanksgivingMakeButtons(user.id, user.bank, { includeOffer: true })
-			};
+			if (typeof offerResult === 'string') {
+				return withSourceEphemeral(`${made.message}\n${offerResult}`, ephemeral);
+			}
+			return withSourceEphemeral(
+				{
+					content: `${made.message}\n${offerResult.content}`,
+					files: 'files' in offerResult ? offerResult.files : undefined,
+					components: thanksgivingMakeButtons(user.id, user.bank, { includeOffer: true })
+				},
+				ephemeral
+			);
 		});
 	}
 
 	const confirm = formatCornucopiaMakeConfirm(preview);
-	await interaction.confirmation({ content: confirm.content, confirmLabel: confirm.confirmLabel });
+	await interaction.confirmation({
+		content: confirm.content,
+		confirmLabel: confirm.confirmLabel,
+		ephemeral
+	});
 	return userQueueFn(user.id, async () => {
 		await user.sync();
 		const made = await executeCornucopiaMake(user, preview.quantity, undefined);
-		if (!made.ok) return made.error;
-		return {
-			content: made.message,
-			components: thanksgivingMakeButtons(user.id, user.bank, { includeOffer: isThanksgivingActive() })
-		};
+		if (!made.ok) return withSourceEphemeral(made.error, ephemeral);
+		return withSourceEphemeral(
+			{
+				content: made.message,
+				components: thanksgivingMakeButtons(user.id, user.bank, { includeOffer: isThanksgivingActive() })
+			},
+			ephemeral
+		);
 	});
 }

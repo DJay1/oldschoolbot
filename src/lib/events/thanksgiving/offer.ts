@@ -252,5 +252,7 @@ export async function thanksgivingStatus(user: MUser) {
 		formatThanksgivingBaseRatesLine(),
 		formatLaboonFishingRateLine()
 	];
-	return withThanksgivingMakeButtons(user, lines.join('\n'), { includeOffer: active });
+	const result = withThanksgivingMakeButtons(user, lines.join('\n'), { includeOffer: active });
+	if (typeof result === 'string') return { content: result, ephemeral: true };
+	return { ...result, ephemeral: true };
 }

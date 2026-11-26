@@ -5,6 +5,8 @@ import { thanksgivingFeast, thanksgivingOffer, thanksgivingStatus } from '@/lib/
 export const thanksgivingCommand = defineCommand({
 	name: 'thanksgiving',
 	description: 'The Straw Hat Harvest: offer Bountiful cornucopias and check your progress.',
+	// Status is only shown to the player who asked, so it doesn't clutter the channel.
+	privateSubcommands: ['status'],
 	options: [
 		{
 			type: 'Subcommand',
