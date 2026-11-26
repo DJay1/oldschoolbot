@@ -1,7 +1,7 @@
 import { MaterialBank } from '@/lib/bso/skills/invention/MaterialBank.js';
 
 import { SpecialResponse } from '@oldschoolgg/discord';
-import { toTitleCase } from '@oldschoolgg/toolkit';
+import { formatDuration, toTitleCase } from '@oldschoolgg/toolkit';
 
 import type { CommandResponseValue } from '@/discord/commands/commandTypes.js';
 import { MessageBuilderClass } from '@/discord/MessageBuilder.js';
@@ -129,6 +129,10 @@ export async function confirmInventionMaterialSkips(user: MUser, skips: Inventio
 export function formatInventionUsageCostLine(usageCostMultiplier: number | null): string | null {
 	if (usageCostMultiplier === null) return null;
 	return `Charged per 3 minutes of trip x ${usageCostMultiplier} usage`;
+}
+
+export function formatInventionFullTripCostLine(durationMs: number, cost: MaterialBank): string {
+	return `Full trip cost for your max trip of ${formatDuration(durationMs)}: ${cost.toString()}. Some activities have a longer max trip, which costs more.`;
 }
 
 export const INVENTION_TRIP_TOTAL_PREFIX = 'Invention materials for this trip:';

@@ -1,7 +1,9 @@
 import type { IMaterialBank, MaterialType } from '@/lib/bso/skills/invention/index.js';
 import {
 	confirmInventionMaterialSkips,
+	formatInventionFullTripCostLine,
 	formatInventionMaterialSkipLine,
+	formatInventionUsageCostLine,
 	type InventionMaterialSkip,
 	recordInventionTripMaterialCost
 } from '@/lib/bso/skills/invention/inventionBoostNotice.js';
@@ -678,6 +680,31 @@ export function canAffordInventionBoostRaw(materialsOwned: MaterialBank, inventi
 
 export function canAffordInventionBoost(user: MUser, inventionID: InventionID, duration: number) {
 	return canAffordInventionBoostRaw(user.materialsOwned(), inventionID, duration);
+}
+
+export function formatInventionDetailsUsageLines(
+	invention: Pick<Invention, 'id' | 'usageCostMultiplier'>,
+	durationMs: number
+): string {
+	const usageLine = formatInventionUsageCostLine(invention.usageCostMultiplier);
+	if (!usageLine) return '';
+	const { materialCost } = canAffordInventionBoostRaw(new MaterialBank(), invention.id, durationMs);
+	return `\n- ${usageLine}\n- ${formatInventionFullTripCostLine(durationMs, materialCost)}`;
+}
+
+export function formatInventionDetails(invention: Invention, durationMs: number): string {
+	let str = `**${invention.name}** - *${invention.description}*
+- Requires level ${invention.inventionLevelNeeded} Invention
+- The materials used for this invention: ${invention.materialTypeBank
+		.values()
+		.map(i => `${i.type} (${i.quantity})`)
+		.join(', ')}`;
+	str += formatInventionDetailsUsageLines(invention, durationMs);
+	str += `
+- Required cost to make: ${inventingCost(invention)} and ${invention.itemCost ? `${invention.itemCost}` : 'No items'}
+- ${invention.flags.includes('equipped') ? 'Must be equipped' : 'Works in bank'}`;
+	if (invention.extraDescription) str += `\n${invention.extraDescription()}`;
+	return str;
 }
 
 export function inventionItemBoostRaw({
