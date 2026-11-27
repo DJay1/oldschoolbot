@@ -8,6 +8,7 @@ import {
 	buildTicketTranscript,
 	cleanScreenshotLink,
 	DISCORD_BUTTON_LABEL_LIMIT,
+	DISCORD_CHANNEL_NAME_LIMIT,
 	DISCORD_CONTENT_LIMIT,
 	DISCORD_CUSTOM_ID_LIMIT,
 	DISCORD_EMBED_FIELD_VALUE_LIMIT,
@@ -33,6 +34,10 @@ import {
 	TICKET_LENGTH_MARGIN,
 	TICKET_MAX_OPEN_PER_PLAYER,
 	TICKET_PERMS,
+	TICKET_RENAME_EMPTY,
+	TICKET_RENAME_NOT_TICKET,
+	TICKET_RENAME_SLOW,
+	TICKET_RENAME_WINDOW_MS,
 	TICKET_STATUSES,
 	TICKET_TOOLS,
 	TICKET_TYPES,
@@ -62,6 +67,10 @@ import {
 	ticketPlayerReplyWithChannel,
 	ticketReasonModal,
 	ticketReasonModalId,
+	ticketRenamedChannelName,
+	ticketRenamedNote,
+	ticketRenameWaitContent,
+	ticketRenameWaitMs,
 	ticketStaffContent,
 	ticketToolButtonId,
 	ticketToolNote,
@@ -693,5 +702,62 @@ describe('one-waiting limit: which tickets still block the filer', () => {
 		expect(msg).toContain('You closed it');
 		expect(msg).not.toContain('<#123>');
 		expect((msg ?? '').length).toBeLessThan(2000 - 150);
+	});
+});
+
+describe('staff ticket rename', () => {
+	test('keeps the type and number, slugs the rest, never doubles the prefix', () => {
+		expect(ticketRenamedChannelName({ id: 7, type: 'bug' }, 'Missing Bank Items!')).toBe(
+			'bug-0007-missing-bank-items'
+		);
+		expect(ticketRenamedChannelName({ id: 7, type: 'bug' }, 'bug-0007-trawler')).toBe('bug-0007-trawler');
+		expect(ticketRenamedChannelName({ id: 23, type: 'appeal' }, '  Mute / Salty  ')).toBe('appeal-0023-mute-salty');
+		expect(ticketRenamedChannelName({ id: 7, type: 'bug' }, '!!!')).toBeNull();
+		expect(ticketRenamedChannelName({ id: 7, type: 'bug' }, 'bug-0007')).toBeNull();
+		expect(ticketRenamedChannelName({ id: 7, type: 'bug' }, '')).toBeNull();
+	});
+
+	test('mentions, @everyone and markdown can never reach the name', () => {
+		for (const evil of [
+			'@everyone',
+			'@here hi',
+			'<@123456789012345678>',
+			'<@&123456789012345678>',
+			'**bold** `x`'
+		]) {
+			const name = ticketRenamedChannelName({ id: 9, type: 'suggestion' }, evil);
+			expect(name === null || /^[a-z0-9-]+$/.test(name)).toBe(true);
+		}
+	});
+
+	test('worst-case name fits Discord (100) and notes stay 150 under the limit', () => {
+		const name = ticketRenamedChannelName({ id: 999999999, type: 'suggestion' }, 'Ab_c.'.repeat(500))!;
+		expect(name.length).toBeLessThanOrEqual(DISCORD_CHANNEL_NAME_LIMIT);
+		expect(name).toMatch(/^suggestion-999999999-[a-z0-9-]+[a-z0-9]$/);
+		const limit = DISCORD_CONTENT_LIMIT - TICKET_LENGTH_MARGIN;
+		for (const c of [
+			ticketRenamedNote('123456789012345678', { id: 999999999 }, name),
+			ticketRenameWaitContent(TICKET_RENAME_WINDOW_MS),
+			TICKET_RENAME_SLOW,
+			TICKET_RENAME_NOT_TICKET,
+			TICKET_RENAME_EMPTY
+		]) {
+			expect(c.length).toBeLessThanOrEqual(limit);
+		}
+	});
+
+	test('rate limit: 2 renames per channel every 10 minutes', () => {
+		const now = 1_000_000_000;
+		expect(ticketRenameWaitMs([], now)).toBe(0);
+		expect(ticketRenameWaitMs([now - 1000], now)).toBe(0);
+		expect(ticketRenameWaitMs([now - 60_000, now - 1000], now)).toBe(TICKET_RENAME_WINDOW_MS - 60_000);
+		expect(ticketRenameWaitMs([now - TICKET_RENAME_WINDOW_MS - 1, now - 1000], now)).toBe(0);
+		expect(ticketRenameWaitContent(30_000)).toContain('about 1 minute.');
+		expect(ticketRenameWaitContent(9 * 60_000 + 1)).toContain('about 10 minutes.');
+	});
+
+	test('rename is listed for staff in /staff help', () => {
+		expect(staffActionsFor('moderator').some(a => a.command.startsWith('/staff ticket_rename'))).toBe(true);
+		expect(staffActionsFor('none')).toHaveLength(0);
 	});
 });

@@ -895,6 +895,53 @@ export function ticketChannelName(ticket: Pick<TicketRecord, 'id' | 'type'>, nam
 	return `${ticket.type}-${num}-${ticketChannelSlug(name)}`;
 }
 
+/** Discord channel names are max 100 characters. */
+export const DISCORD_CHANNEL_NAME_LIMIT = 100;
+/** Discord allows 2 renames per channel every 10 minutes. */
+export const TICKET_RENAME_LIMIT = 2;
+export const TICKET_RENAME_WINDOW_MS = 10 * 60_000;
+
+/**
+ * Staff rename (/staff ticket_rename): keeps the type and number (bug-0007-) and replaces the rest with the new
+ * name as a slug (a-z, 0-9, dashes). Typing the prefix again does not double it. Null if nothing usable is left.
+ */
+export function ticketRenamedChannelName(
+	ticket: Pick<TicketRecord, 'id' | 'type'>,
+	name: string | null | undefined
+): string | null {
+	const prefix = `${ticket.type}-${String(ticket.id).padStart(4, '0')}-`;
+	let slug = (name ?? '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+	while (slug === prefix.slice(0, -1) || slug.startsWith(prefix)) slug = slug.slice(prefix.length);
+	slug = slug.slice(0, DISCORD_CHANNEL_NAME_LIMIT - prefix.length).replace(/-+$/g, '');
+	return slug ? `${prefix}${slug}` : null;
+}
+
+/** How long until this channel may be renamed again (0 = now), from the times of recent renames. */
+export function ticketRenameWaitMs(history: readonly number[], now: number): number {
+	const recent = history.filter(t => now - t < TICKET_RENAME_WINDOW_MS).sort((a, b) => a - b);
+	if (recent.length < TICKET_RENAME_LIMIT) return 0;
+	return Math.max(1, recent[recent.length - TICKET_RENAME_LIMIT] + TICKET_RENAME_WINDOW_MS - now);
+}
+
+export const TICKET_RENAME_NOT_TICKET =
+	'Use this inside a ticket channel (like bug-0007-name). Tickets posted in the staff channel have no channel to rename.';
+export const TICKET_RENAME_EMPTY = 'The new name needs at least one letter or number.';
+export const TICKET_RENAME_SLOW =
+	"⏳ Discord is holding this rename because of its limit (2 renames per channel every 10 minutes). It will go through by itself, so there's no need to run it again.";
+
+export function ticketRenameWaitContent(waitMs: number): string {
+	const mins = Math.max(1, Math.ceil(waitMs / 60_000));
+	return `⏳ Discord only lets a channel be renamed 2 times every 10 minutes. Try again in about ${mins} minute${mins === 1 ? '' : 's'}.`;
+}
+
+/** Ping-free note posted in the ticket channel. The name is already a slug, so it can't hold mentions or markdown. */
+export function ticketRenamedNote(staffId: string, ticket: Pick<TicketRecord, 'id'>, newName: string): string {
+	return `✏️ <@${staffId}> renamed ticket **#${ticket.id}** to **${newName}**.`;
+}
+
 export function ticketChannelTopic(
 	ticket: Pick<TicketRecord, 'id' | 'type'>,
 	visibility: TicketVisibility = 'private'

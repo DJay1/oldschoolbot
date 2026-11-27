@@ -130,6 +130,11 @@ export const STAFF_ACTIONS: StaffActionInfo[] = [
 		help: 'List tickets. Confirm or Ignore new ones in the ticket channel.'
 	},
 	{
+		command: '/staff ticket_rename',
+		minTier: 'moderator',
+		help: 'Rename the ticket channel you are in.'
+	},
+	{
 		command: '/staff ticket_file',
 		minTier: 'developer',
 		help: 'File a ticket for a player (staff only until Confirm).'

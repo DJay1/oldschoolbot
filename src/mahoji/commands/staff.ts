@@ -16,7 +16,7 @@ import {
 	staffDeniedReply,
 	staffViewNameAutoComplete
 } from '@/lib/bsc/staffView.js';
-import { fileTicket, listTickets } from '@/lib/bsc/ticketService.js';
+import { fileTicket, listTickets, renameTicketChannel, ticketStaffTier } from '@/lib/bsc/ticketService.js';
 import { buildTicketList, TICKET_ACTIVE_STATUSES, TICKET_STATUS_LABELS, type TicketStatus } from '@/lib/bsc/tickets.js';
 import { globalConfig } from '@/lib/constants.js';
 import { adminCommand } from '@/mahoji/commands/admin.js';
@@ -82,7 +82,7 @@ export const staffCommand = defineCommand({
 	name: 'staff',
 	description: 'Staff tools. Use /staff help to see what your role can use.',
 	guildId: globalConfig.supportServerID,
-	privateSubcommands: [...STAFF_PRIVATE_SUBCOMMANDS],
+	privateSubcommands: [...STAFF_PRIVATE_SUBCOMMANDS, 'ticket_rename'],
 	options: [
 		{
 			type: 'Subcommand',
@@ -194,6 +194,19 @@ export const staffCommand = defineCommand({
 		},
 		{
 			type: 'Subcommand',
+			name: 'ticket_rename',
+			description: 'Staff: rename the ticket channel you are in. Keeps the type and number.',
+			options: [
+				{
+					type: 'String',
+					name: 'name',
+					description: 'New name, like missing-bank-items. Letters, numbers and dashes.',
+					required: true
+				}
+			]
+		},
+		{
+			type: 'Subcommand',
 			name: 'ticket_file',
 			description: 'Dev: file a ticket for a player. Only staff see it until someone presses Confirm.',
 			options: [
@@ -232,7 +245,8 @@ export const staffCommand = defineCommand({
 		const { user, guildId, interaction, rng } = ctx;
 		const options = ctx.options as Record<string, any>;
 		const roleIds = interaction.member?.roles;
-		const tier = staffTierOf(user, roleIds);
+		// Ticket rename is open to every staff role (same check as the ticket buttons).
+		const tier = options.ticket_rename ? ticketStaffTier(user, roleIds) : staffTierOf(user, roleIds);
 		const denied = staffDeniedReply(guildId, tier, rng);
 		if (denied) return denied;
 
@@ -271,6 +285,11 @@ export const staffCommand = defineCommand({
 				Logging.logError(err as Error, { type: 'TICKET_LIST' });
 				return 'Could not load tickets. Is the bsc_tickets table set up on this database?';
 			}
+		}
+
+		if (options.ticket_rename) {
+			const result = await renameTicketChannel(user.id, ctx.channelId, String(options.ticket_rename.name ?? ''));
+			return { content: result.content, allowedMentions: { parse: [], users: [], roles: [] } };
 		}
 
 		if (options.ticket_file) {

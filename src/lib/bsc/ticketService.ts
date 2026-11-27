@@ -39,6 +39,10 @@ import {
 	TICKET_MAX_ADDED_USERS,
 	TICKET_MAX_OPEN_PER_PLAYER,
 	TICKET_REASON_MAX,
+	TICKET_RENAME_EMPTY,
+	TICKET_RENAME_NOT_TICKET,
+	TICKET_RENAME_SLOW,
+	TICKET_RENAME_WINDOW_MS,
 	TICKET_TOOL_RULES,
 	TICKET_TRANSCRIPT_MAX_MESSAGES,
 	type TicketAction,
@@ -69,6 +73,10 @@ import {
 	ticketNoticeContent,
 	ticketPlayerReplyWithChannel,
 	ticketReasonModal,
+	ticketRenamedChannelName,
+	ticketRenamedNote,
+	ticketRenameWaitContent,
+	ticketRenameWaitMs,
 	ticketStaffContent,
 	ticketToolNote,
 	ticketTranscriptFileName,
@@ -511,6 +519,11 @@ async function finishAction(
 function ticketTier(user: MUser, roleIds: readonly string[] | null | undefined): StaffTier {
 	const tier = staffTierOf(user, roleIds);
 	return holdsTicketStaffRole(roleIds, ticketConfig().accessRoleIds) ? higherStaffTier(tier, 'moderator') : tier;
+}
+
+/** Ticket staff tier: any staff role (STAFF_ROLE_IDS or the ticket ping role) counts, same as the ticket buttons. */
+export function ticketStaffTier(user: MUser, roleIds: readonly string[] | null | undefined): StaffTier {
+	return ticketTier(user, roleIds);
 }
 
 function staffDenied(
@@ -1164,4 +1177,82 @@ export async function handleTicketUserSelect(itx: TicketUserSelectInteraction, u
 	}
 	await reply(`Removed <@${targetId}>.`);
 	await postNote(channelId, ticketToolNote('removed', user.id, targetId));
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Staff rename (/staff ticket_rename). The caller has already checked the user is ticket staff.
+
+const renameHistory = new Map<string, number[]>();
+const RENAME_WAIT_MS = 8000;
+
+async function getTicketByChannel(channelId: string): Promise<TicketRecord | null> {
+	const rows = await prisma.$queryRaw<TicketRow[]>`
+		SELECT * FROM bsc_tickets WHERE ticket_channel_id = ${channelId} AND channel_deleted_at IS NULL
+		ORDER BY id DESC LIMIT 1
+	`;
+	return rows[0] ? toRecord(rows[0]) : null;
+}
+
+export async function renameTicketChannel(
+	staffId: string,
+	channelId: string | null | undefined,
+	rawName: string
+): Promise<{ ok: boolean; content: string }> {
+	if (!channelId || !SNOWFLAKE.test(channelId)) return { ok: false, content: TICKET_RENAME_NOT_TICKET };
+	let ticket: TicketRecord | null;
+	try {
+		ticket = await getTicketByChannel(channelId);
+	} catch (err) {
+		Logging.logError(err as Error, { type: 'TICKET_RENAME_LOAD', channel_id: channelId });
+		return { ok: false, content: 'Could not load the ticket. Try again in a minute.' };
+	}
+	if (!ticket?.ticketChannelId) return { ok: false, content: TICKET_RENAME_NOT_TICKET };
+	const t = ticket;
+	const newName = ticketRenamedChannelName(t, rawName);
+	if (!newName) return { ok: false, content: TICKET_RENAME_EMPTY };
+
+	const now = Date.now();
+	const recent = (renameHistory.get(channelId) ?? []).filter(t => now - t < TICKET_RENAME_WINDOW_MS);
+	const wait = ticketRenameWaitMs(recent, now);
+	if (wait > 0) return { ok: false, content: ticketRenameWaitContent(wait) };
+	// Counted before the request, so a double submit can't sneak past the limit.
+	renameHistory.set(channelId, [...recent, now]);
+
+	const request = globalClient.rest
+		.patch(Routes.channel(channelId), {
+			body: { name: newName },
+			reason: `BSC ticket #${ticket.id} renamed by staff ${staffId}`
+		})
+		.then(() => 'done' as const);
+	let outcome: 'done' | 'slow';
+	try {
+		outcome = await Promise.race([
+			request,
+			new Promise<'slow'>(resolve => setTimeout(() => resolve('slow'), RENAME_WAIT_MS))
+		]);
+	} catch (err) {
+		renameHistory.set(
+			channelId,
+			(renameHistory.get(channelId) ?? []).filter(at => at !== now)
+		);
+		Logging.logError(err as Error, { type: 'TICKET_RENAME', ticket_id: ticket.id });
+		const code = (err as { code?: number }).code;
+		return {
+			ok: false,
+			content:
+				code === 50013
+					? "I can't rename this channel. The bot needs the Manage Channels permission."
+					: 'Could not rename the channel. Try again in a minute.'
+		};
+	}
+	if (outcome === 'slow') {
+		// Discord's limit is holding it. It finishes by itself; block more tries until the window passes.
+		renameHistory.set(channelId, [now, now]);
+		request
+			.then(() => postNote(channelId, ticketRenamedNote(staffId, t, newName)))
+			.catch(err => Logging.logError(err as Error, { type: 'TICKET_RENAME', ticket_id: t.id }));
+		return { ok: true, content: TICKET_RENAME_SLOW };
+	}
+	await postNote(channelId, ticketRenamedNote(staffId, ticket, newName));
+	return { ok: true, content: `Renamed to **${newName}**.` };
 }
